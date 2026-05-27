@@ -1,6 +1,8 @@
-@model LuminaTutors.Application.DTOs.Class.ClassDetailDto
+@using LuminaTutors.Application.DTOs.Class
+@model ClassDetailDto
 @{
     ViewData["Title"] = $"Lớp {Model?.ClassName}";
+    var unassigned = ViewBag.UnassignedStudents as List<ClassStudentDto> ?? new List<ClassStudentDto>();
 }
 
 <div class="lt-page-header">
@@ -83,6 +85,94 @@
                 <div class="lt-stat__label">Phòng học</div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- ── Students Panel ──────────────────────────────────────────────────── -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title">
+            <i class="bi bi-people-fill" style="color:var(--lt-navy);margin-right:6px"></i>
+            Danh sách học sinh
+            <span class="lt-badge lt-badge--navy" style="margin-left:8px">@(Model?.Students.Count ?? 0) / @(Model?.MaxStudents ?? 0)</span>
+        </h3>
+        @if (User.IsInRole("ADMIN"))
+        {
+            <button class="lt-btn lt-btn--primary lt-btn--sm"
+                    data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                <i class="bi bi-person-plus-fill"></i> Thêm học sinh
+            </button>
+        }
+    </div>
+    <div class="lt-card__body" style="padding:0">
+        @if (!(Model?.Students.Any() == true))
+        {
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-people"></i></div>
+                <p class="lt-empty__title">Chưa có học sinh nào</p>
+                @if (User.IsInRole("ADMIN"))
+                {
+                    <p class="lt-empty__text">Nhấn <strong>Thêm học sinh</strong> để xếp học sinh vào lớp.</p>
+                }
+            </div>
+        }
+        else
+        {
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th>Học sinh</th>
+                        <th>Mã học sinh</th>
+                        <th>Số điện thoại</th>
+                        <th>Ngày vào lớp</th>
+                        @if (User.IsInRole("ADMIN"))
+                        {
+                            <th style="width:80px"></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model!.Students)
+                    {
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    @if (!string.IsNullOrEmpty(s.AvatarUrl))
+                                    {
+                                        <img src="@s.AvatarUrl" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover"/>
+                                    }
+                                    else
+                                    {
+                                        <div style="width:32px;height:32px;border-radius:50%;background:var(--lt-navy);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem;flex-shrink:0">
+                                            @s.FullName.FirstOrDefault()
+                                        </div>
+                                    }
+                                    <span class="lt-fw-600">@s.FullName</span>
+                                </div>
+                            </td>
+                            <td><code>@s.StudentCode</code></td>
+                            <td class="lt-text-muted">@(s.PhoneNumber ?? "—")</td>
+                            <td class="lt-text-sm lt-text-muted">@s.EnrolledDate.ToString("dd/MM/yyyy")</td>
+                            @if (User.IsInRole("ADMIN"))
+                            {
+                                <td>
+                                    <form asp-action="RemoveStudent" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="classId" value="@Model.ClassId"/>
+                                        <input type="hidden" name="studentUserId" value="@s.UserId"/>
+                                        <button type="submit" class="lt-btn lt-btn--sm"
+                                                style="background:#fee2e2;color:#dc2626;border:none"
+                                                onclick="return confirm('Xóa @s.FullName khỏi lớp?')">
+                                            <i class="bi bi-person-dash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
     </div>
 </div>
 
@@ -188,6 +278,57 @@
 
 @if (User.IsInRole("ADMIN"))
 {
+<!-- Enroll Student Modal -->
+<div class="modal fade lt-modal" id="enrollStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus-fill" style="color:var(--lt-navy);margin-right:6px"></i>
+                    Thêm học sinh vào lớp
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="EnrollStudent" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="classId" value="@Model?.ClassId"/>
+                <div class="modal-body">
+                    @if (unassigned.Any())
+                    {
+                        <div class="lt-form-group lt-mb-0">
+                            <label class="lt-label">Chọn học sinh <span class="lt-text-danger">*</span></label>
+                            <select name="studentUserId" class="lt-select" required>
+                                <option value="">— Chọn học sinh —</option>
+                                @foreach (var s in unassigned)
+                                {
+                                    <option value="@s.UserId">@s.FullName (@s.StudentCode)</option>
+                                }
+                            </select>
+                            <span class="lt-form-hint">Chỉ hiển thị học sinh chưa thuộc lớp này</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="lt-alert lt-alert--warning" style="border-radius:8px;padding:12px;font-size:.85rem">
+                            <i class="bi bi-info-circle"></i>
+                            Tất cả học sinh đã được xếp vào lớp này hoặc chưa có học sinh nào trong hệ thống.
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    @if (unassigned.Any())
+                    {
+                        <button type="submit" class="lt-btn lt-btn--primary">
+                            <i class="bi bi-check"></i> Thêm vào lớp
+                        </button>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Assign Subject Modal -->
 <div class="modal fade lt-modal" id="assignSubjectModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

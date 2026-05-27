@@ -2,18 +2,20 @@
 @model CreateClassRequest
 @{
     ViewData["Title"] = "Tạo lớp học mới";
-    var teachers = ViewBag.Teachers as List<TeacherSummaryDto> ?? new List<TeacherSummaryDto>();
-    var academicYearId = ViewBag.AcademicYearId as int? ?? 1;
+    var teachers      = ViewBag.Teachers      as List<TeacherSummaryDto>      ?? new List<TeacherSummaryDto>();
+    var gradeLevels   = ViewBag.GradeLevels   as List<GradeLevelSelectDto>    ?? new List<GradeLevelSelectDto>();
+    var academicYears = ViewBag.AcademicYears as List<AcademicYearSelectDto>  ?? new List<AcademicYearSelectDto>();
+    var presetYear    = ViewBag.AcademicYearId as int?;
 }
 
 <div class="lt-page-header">
     <div>
-        <a asp-action="Index" asp-route-academicYearId="@academicYearId"
+        <a asp-action="Index" asp-route-academicYearId="@presetYear"
            class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
             <i class="bi bi-arrow-left"></i> Quay lại
         </a>
         <h1 class="lt-page-title">Tạo lớp học mới</h1>
-        <p class="lt-page-subtitle">Điền thông tin để tạo lớp học cho năm học hiện tại</p>
+        <p class="lt-page-subtitle">Điền thông tin để tạo lớp học mới</p>
     </div>
 </div>
 
@@ -21,28 +23,89 @@
     <div class="col-lg-7">
         <div class="lt-card">
             <div class="lt-card__header">
-                <h3 class="lt-card__title">Thông tin lớp học</h3>
+                <h3 class="lt-card__title">
+                    <i class="bi bi-building" style="color:var(--lt-navy);margin-right:6px"></i>
+                    Thông tin lớp học
+                </h3>
             </div>
             <div class="lt-card__body">
+                @if (!ViewContext.ModelState.IsValid)
+                {
+                    <div class="lt-alert lt-alert--danger lt-mb-4">
+                        @foreach (var err in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <div>@err.ErrorMessage</div>
+                        }
+                    </div>
+                }
+
                 <form asp-action="Create" method="post">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="AcademicYearId" value="@academicYearId"/>
 
+                    <!-- Tên lớp -->
                     <div class="lt-form-group">
                         <label class="lt-label" asp-for="ClassName">
                             Tên lớp <span class="lt-text-danger">*</span>
                         </label>
                         <input asp-for="ClassName" class="lt-input"
-                               placeholder="VD: 10A1" required data-testid="input-class-name"/>
+                               placeholder="VD: 10A1, 11B2..." required data-testid="input-class-name"/>
                         <span asp-validation-for="ClassName" class="lt-form-error"></span>
                     </div>
 
+                    <!-- Năm học -->
                     <div class="lt-form-group">
-                        <label class="lt-label">ID Khối lớp <span class="lt-text-danger">*</span></label>
-                        <input type="number" name="GradeLevelId" class="lt-input"
-                               placeholder="VD: 1" required/>
+                        <label class="lt-label">
+                            Năm học <span class="lt-text-danger">*</span>
+                        </label>
+                        @if (academicYears.Any())
+                        {
+                            <select name="AcademicYearId" class="lt-select" required>
+                                <option value="">— Chọn năm học —</option>
+                                @foreach (var ay in academicYears)
+                                {
+                                    <option value="@ay.AcademicYearId"
+                                            selected="@(presetYear == ay.AcademicYearId || ay.IsActive ? "selected" : null)">
+                                        @ay.YearName @(ay.IsActive ? "(Hiện tại)" : "")
+                                    </option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <div class="lt-alert lt-alert--warning" style="padding:8px 12px;border-radius:8px;font-size:.85rem">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Chưa có năm học nào. Vui lòng tạo năm học trước.
+                            </div>
+                            <input type="hidden" name="AcademicYearId" value="0"/>
+                        }
                     </div>
 
+                    <!-- Khối lớp -->
+                    <div class="lt-form-group">
+                        <label class="lt-label">
+                            Khối lớp <span class="lt-text-danger">*</span>
+                        </label>
+                        @if (gradeLevels.Any())
+                        {
+                            <select name="GradeLevelId" class="lt-select" required>
+                                <option value="">— Chọn khối lớp —</option>
+                                @foreach (var gl in gradeLevels)
+                                {
+                                    <option value="@gl.GradeLevelId">@gl.GradeName</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <div class="lt-alert lt-alert--warning" style="padding:8px 12px;border-radius:8px;font-size:.85rem">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Chưa có khối lớp nào. Vui lòng cấu hình hệ thống.
+                            </div>
+                            <input type="hidden" name="GradeLevelId" value="0"/>
+                        }
+                    </div>
+
+                    <!-- Giáo viên chủ nhiệm -->
                     <div class="lt-form-group">
                         <label class="lt-label" asp-for="HomeRoomTeacherId">Giáo viên chủ nhiệm</label>
                         <select asp-for="HomeRoomTeacherId" class="lt-select">
@@ -52,22 +115,29 @@
                                 <option value="@t.UserId">@t.FullName (@t.TeacherCode)</option>
                             }
                         </select>
+                        <span class="lt-form-hint">Có thể bổ sung sau khi tạo lớp</span>
                     </div>
 
-                    <div class="lt-form-group">
-                        <label class="lt-label" asp-for="MaxStudents">Sĩ số tối đa</label>
-                        <input asp-for="MaxStudents" type="number" class="lt-input"
-                               min="1" max="60" value="40"/>
-                        <span asp-validation-for="MaxStudents" class="lt-form-error"></span>
+                    <div class="row g-3">
+                        <!-- Sĩ số tối đa -->
+                        <div class="col-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label" asp-for="MaxStudents">Sĩ số tối đa</label>
+                                <input asp-for="MaxStudents" type="number" class="lt-input"
+                                       min="1" max="60" value="40"/>
+                            </div>
+                        </div>
+                        <!-- Phòng học -->
+                        <div class="col-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label" asp-for="RoomNumber">Phòng học</label>
+                                <input asp-for="RoomNumber" class="lt-input" placeholder="VD: A101"/>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="lt-form-group lt-mb-4">
-                        <label class="lt-label" asp-for="RoomNumber">Phòng học</label>
-                        <input asp-for="RoomNumber" class="lt-input" placeholder="VD: A101"/>
-                    </div>
-
-                    <div class="lt-flex-between">
-                        <a asp-action="Index" asp-route-academicYearId="@academicYearId"
+                    <div class="lt-flex-between" style="margin-top:24px">
+                        <a asp-action="Index" asp-route-academicYearId="@presetYear"
                            class="lt-btn lt-btn--outline">Hủy</a>
                         <button type="submit" class="lt-btn lt-btn--primary" data-testid="btn-submit-class">
                             <i class="bi bi-check-lg"></i> Tạo lớp học

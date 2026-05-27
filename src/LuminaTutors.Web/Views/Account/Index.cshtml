@@ -1,0 +1,226 @@
+@using LuminaTutors.Application.DTOs.Account
+@model AccountIndexViewModel
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+    var roles = new[] {
+        new { Code = "",           Label = "Tất cả",    Icon = "bi-people-fill",       Color = "#64748b" },
+        new { Code = "STUDENT",    Label = "Học sinh",  Icon = "bi-mortarboard-fill",  Color = "#2563eb" },
+        new { Code = "TEACHER",    Label = "Giáo viên", Icon = "bi-person-video3",     Color = "#059669" },
+        new { Code = "SUPERVISOR", Label = "Giám thị",  Icon = "bi-shield-fill",       Color = "#c2410c" },
+        new { Code = "PARENT",     Label = "Phụ huynh", Icon = "bi-house-heart-fill",  Color = "#7c3aed" },
+    };
+    var currentRole = Model.Filter.RoleCode ?? "";
+}
+
+<!-- Banner -->
+<div class="dash-banner dash-banner--admin" style="min-height:110px;margin-bottom:20px">
+    <div class="dash-banner__grid"></div>
+    <div class="dash-banner__left">
+        <div class="dash-banner__eyebrow"><i class="bi bi-people-fill"></i> QUẢN LÝ TÀI KHOẢN</div>
+        <div class="dash-banner__title" style="font-size:1.5rem">Tài khoản người dùng</div>
+        <div class="dash-banner__sub">Tạo, chỉnh sửa và quản lý tài khoản cho tất cả thành viên</div>
+    </div>
+    <div class="dash-banner__right">
+        <a asp-action="Create" class="lt-btn lt-btn--primary" style="gap:8px">
+            <i class="bi bi-person-plus-fill"></i> Tạo tài khoản
+        </a>
+    </div>
+</div>
+
+<!-- Role Filter Tabs -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+    @foreach (var r in roles)
+    {
+        var isActive = currentRole == r.Code;
+        <a asp-action="Index" asp-route-role="@r.Code"
+           asp-route-keyword="@Model.Filter.Keyword"
+           style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:99px;font-size:.83rem;font-weight:600;text-decoration:none;border:1.5px solid @(isActive ? r.Color : "#e2e8f0");background:@(isActive ? r.Color : "#fff");color:@(isActive ? "#fff" : "#374151");transition:all .2s">
+            <i class="bi @r.Icon"></i> @r.Label
+        </a>
+    }
+</div>
+
+<!-- Search + Filter Bar -->
+<div class="dcard" style="margin-bottom:20px">
+    <div class="dcard__body" style="padding:16px 20px">
+        <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+            <input type="hidden" name="role" value="@Model.Filter.RoleCode"/>
+            <div style="flex:1;min-width:220px;position:relative">
+                <i class="bi bi-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8"></i>
+                <input type="text" name="keyword" value="@Model.Filter.Keyword"
+                       placeholder="Tìm theo tên, email, SĐT..."
+                       style="width:100%;padding:9px 12px 9px 36px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.875rem;outline:none"/>
+            </div>
+            <select name="isActive" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.875rem;background:#fff">
+                <option value="">Tất cả trạng thái</option>
+                <option value="true"  selected="@(Model.Filter.IsActive == true  ? "selected" : null)">Đang hoạt động</option>
+                <option value="false" selected="@(Model.Filter.IsActive == false ? "selected" : null)">Đã vô hiệu hóa</option>
+            </select>
+            <button type="submit" class="lt-btn lt-btn--primary" style="padding:9px 20px">
+                <i class="bi bi-funnel"></i> Lọc
+            </button>
+            <a asp-action="Index" asp-route-role="@Model.Filter.RoleCode" style="padding:9px 16px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:.875rem;color:#64748b;text-decoration:none;font-weight:500">
+                <i class="bi bi-x-circle"></i> Xóa lọc
+            </a>
+        </form>
+    </div>
+</div>
+
+<!-- Account Table -->
+<div class="dcard">
+    <div class="dcard__head">
+        <div class="dcard__title">
+            <i class="bi bi-list-ul" style="color:#2563eb"></i>
+            @Model.Accounts.TotalCount tài khoản
+        </div>
+        <div style="display:flex;gap:8px">
+            <a asp-action="Create" asp-route-role="STUDENT"    class="dcard__action" style="background:#eff6ff;color:#2563eb">+ Học sinh</a>
+            <a asp-action="Create" asp-route-role="TEACHER"    class="dcard__action" style="background:#ecfdf5;color:#059669">+ Giáo viên</a>
+            <a asp-action="Create" asp-route-role="SUPERVISOR" class="dcard__action" style="background:#fff7ed;color:#c2410c">+ Giám thị</a>
+            <a asp-action="Create" asp-route-role="PARENT"     class="dcard__action" style="background:#f5f3ff;color:#7c3aed">+ Phụ huynh</a>
+        </div>
+    </div>
+    <div class="dcard__body" style="padding:0">
+        @if (!Model.Accounts.Items.Any())
+        {
+            <div class="dash-empty" style="padding:48px">
+                <i class="bi bi-people"></i>
+                <p>Không có tài khoản nào phù hợp</p>
+            </div>
+        }
+        else
+        {
+            <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse">
+                    <thead>
+                        <tr style="border-bottom:1px solid #f1f5f9;background:#f8fafc">
+                            <th style="padding:12px 20px;font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;text-align:left">Tài khoản</th>
+                            <th style="padding:12px 16px;font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;text-align:left">Vai trò</th>
+                            <th style="padding:12px 16px;font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;text-align:left">Liên hệ</th>
+                            <th style="padding:12px 16px;font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;text-align:left">Thông tin</th>
+                            <th style="padding:12px 16px;font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;text-align:center">Trạng thái</th>
+                            <th style="padding:12px 20px;font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;text-align:right">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var acc in Model.Accounts.Items)
+                        {
+                            var roleColor = acc.RoleCode switch {
+                                "STUDENT"    => ("#eff6ff", "#2563eb"),
+                                "TEACHER"    => ("#ecfdf5", "#059669"),
+                                "SUPERVISOR" => ("#fff7ed", "#c2410c"),
+                                "PARENT"     => ("#f5f3ff", "#7c3aed"),
+                                _ => ("#f8fafc", "#64748b")
+                            };
+                            var initials = acc.FullName.Length > 0
+                                ? string.Concat(acc.FullName.Split(' ').TakeLast(2).Select(p => p[0]))
+                                : "?";
+
+                            <tr style="border-bottom:1px solid #f8fafc;transition:background .15s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                                <!-- Account info -->
+                                <td style="padding:14px 20px">
+                                    <div style="display:flex;align-items:center;gap:12px">
+                                        @if (!string.IsNullOrEmpty(acc.AvatarUrl))
+                                        {
+                                            <img src="@acc.AvatarUrl" alt="" style="width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0"/>
+                                        }
+                                        else
+                                        {
+                                            <div style="width:40px;height:40px;border-radius:10px;background:@roleColor.Item1;color:@roleColor.Item2;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;flex-shrink:0">@initials</div>
+                                        }
+                                        <div>
+                                            <div style="font-size:.875rem;font-weight:700;color:#0f172a">@acc.FullName</div>
+                                            <div style="font-size:.75rem;color:#94a3b8">@acc.Email</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <!-- Role -->
+                                <td style="padding:14px 16px">
+                                    <span style="font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px;background:@roleColor.Item1;color:@roleColor.Item2">
+                                        @acc.RoleName
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(acc.Code))
+                                    {
+                                        <div style="font-size:.72rem;color:#94a3b8;margin-top:3px">@acc.Code</div>
+                                    }
+                                </td>
+                                <!-- Contact -->
+                                <td style="padding:14px 16px">
+                                    <div style="font-size:.82rem;color:#374151">@(acc.PhoneNumber ?? "–")</div>
+                                </td>
+                                <!-- Extra info -->
+                                <td style="padding:14px 16px">
+                                    @if (!string.IsNullOrEmpty(acc.SubjectName))
+                                    {
+                                        <div style="font-size:.78rem;color:#64748b"><i class="bi bi-book"></i> @acc.SubjectName</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(acc.ClassName))
+                                    {
+                                        <div style="font-size:.78rem;color:#64748b"><i class="bi bi-building"></i> @acc.ClassName</div>
+                                    }
+                                    <div style="font-size:.72rem;color:#94a3b8;margin-top:2px"><i class="bi bi-clock"></i> @acc.CreatedAt.ToString("dd/MM/yyyy")</div>
+                                </td>
+                                <!-- Status -->
+                                <td style="padding:14px 16px;text-align:center">
+                                    @if (acc.IsActive)
+                                    {
+                                        <span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:99px;background:#dcfce7;color:#166534">
+                                            <i class="bi bi-circle-fill" style="font-size:.4rem"></i> Hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:99px;background:#f1f5f9;color:#64748b">
+                                            <i class="bi bi-circle" style="font-size:.4rem"></i> Tắt
+                                        </span>
+                                    }
+                                </td>
+                                <!-- Actions -->
+                                <td style="padding:14px 20px;text-align:right">
+                                    <div style="display:flex;gap:6px;justify-content:flex-end">
+                                        <a asp-action="Detail" asp-route-id="@acc.UserId"
+                                           style="width:32px;height:32px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#64748b;text-decoration:none;transition:all .15s"
+                                           title="Xem chi tiết"><i class="bi bi-eye"></i></a>
+                                        <a asp-action="Edit" asp-route-id="@acc.UserId"
+                                           style="width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center;color:#2563eb;text-decoration:none;transition:all .15s"
+                                           title="Chỉnh sửa"><i class="bi bi-pencil"></i></a>
+                                        <a asp-action="ResetPassword" asp-route-id="@acc.UserId"
+                                           style="width:32px;height:32px;border-radius:8px;background:#fffbeb;display:flex;align-items:center;justify-content:center;color:#d97706;text-decoration:none;transition:all .15s"
+                                           title="Đặt lại mật khẩu"><i class="bi bi-key"></i></a>
+                                        <form asp-action="ToggleActive" asp-route-id="@acc.UserId" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit"
+                                                    style="width:32px;height:32px;border-radius:8px;background:@(acc.IsActive ? "#fef2f2" : "#ecfdf5");border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:@(acc.IsActive ? "#dc2626" : "#059669")"
+                                                    title="@(acc.IsActive ? "Vô hiệu hóa" : "Kích hoạt")">
+                                                <i class="bi @(acc.IsActive ? "bi-slash-circle" : "bi-check-circle")"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.Accounts.TotalPages > 1)
+            {
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-top:1px solid #f1f5f9">
+                    <span style="font-size:.82rem;color:#64748b">
+                        Hiển thị @((Model.Accounts.PageNumber - 1) * 20 + 1)–@(Math.Min(Model.Accounts.PageNumber * 20, Model.Accounts.TotalCount)) / @Model.Accounts.TotalCount
+                    </span>
+                    <div style="display:flex;gap:4px">
+                        @for (var p = 1; p <= Model.Accounts.TotalPages; p++)
+                        {
+                            var isCurrentPage = p == Model.Accounts.PageNumber;
+                            <a asp-action="Index" asp-route-role="@Model.Filter.RoleCode"
+                               asp-route-keyword="@Model.Filter.Keyword" asp-route-page="@p"
+                               style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:600;text-decoration:none;background:@(isCurrentPage ? "#2563eb" : "#f1f5f9");color:@(isCurrentPage ? "#fff" : "#374151")">@p</a>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

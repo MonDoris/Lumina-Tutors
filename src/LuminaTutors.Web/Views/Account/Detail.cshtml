@@ -1,0 +1,211 @@
+@using LuminaTutors.Application.DTOs.Account
+@model AccountDetailDto
+@{
+    ViewData["Title"] = Model.FullName;
+    var roleColor = Model.RoleCode switch {
+        "STUDENT"    => ("#eff6ff", "#2563eb", "#dbeafe"),
+        "TEACHER"    => ("#ecfdf5", "#059669", "#bbf7d0"),
+        "SUPERVISOR" => ("#fff7ed", "#c2410c", "#fed7aa"),
+        "PARENT"     => ("#f5f3ff", "#7c3aed", "#ddd6fe"),
+        _ => ("#f8fafc", "#64748b", "#e2e8f0")
+    };
+    var roleName = Model.RoleCode switch {
+        "STUDENT"    => "Học sinh",
+        "TEACHER"    => "Giáo viên",
+        "SUPERVISOR" => "Giám thị",
+        "PARENT"     => "Phụ huynh",
+        _ => Model.RoleCode
+    };
+    var initials = Model.FullName.Length > 0
+        ? string.Concat(Model.FullName.Split(' ').TakeLast(2).Select(p => p[0]))
+        : "?";
+}
+
+<div style="max-width:900px;margin:0 auto">
+
+    <!-- Header nav -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
+        <a asp-action="Index" style="font-size:.82rem;color:#94a3b8;text-decoration:none"><i class="bi bi-people-fill"></i> Tài khoản</a>
+        <i class="bi bi-chevron-right" style="font-size:.7rem;color:#cbd5e1"></i>
+        <span style="font-size:.82rem;color:#0f172a;font-weight:600">@Model.FullName</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
+
+        <!-- Left: Profile card -->
+        <div>
+            <div class="dcard" style="text-align:center;padding:28px 20px">
+                <!-- Avatar -->
+                <div style="margin-bottom:16px">
+                    @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                    {
+                        <img src="@Model.AvatarUrl" alt=""
+                             style="width:90px;height:90px;border-radius:20px;object-fit:cover;margin:0 auto;display:block;border:3px solid @roleColor.Item3"/>
+                    }
+                    else
+                    {
+                        <div style="width:90px;height:90px;border-radius:20px;background:@roleColor.Item1;color:@roleColor.Item2;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;margin:0 auto;border:3px solid @roleColor.Item3">
+                            @initials
+                        </div>
+                    }
+                </div>
+
+                <div style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:4px">@Model.FullName</div>
+                <span style="font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:99px;background:@roleColor.Item1;color:@roleColor.Item2">@roleName</span>
+
+                @if (!string.IsNullOrEmpty(Model.Code))
+                {
+                    <div style="font-size:.78rem;color:#94a3b8;margin-top:8px">@Model.Code</div>
+                }
+
+                <!-- Status -->
+                <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f1f5f9">
+                    @if (Model.IsActive)
+                    {
+                        <div style="display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:600;color:#059669;background:#dcfce7;padding:6px 14px;border-radius:99px">
+                            <i class="bi bi-circle-fill" style="font-size:.5rem"></i> Đang hoạt động
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:600;color:#64748b;background:#f1f5f9;padding:6px 14px;border-radius:99px">
+                            <i class="bi bi-circle" style="font-size:.5rem"></i> Đã vô hiệu hóa
+                        </div>
+                    }
+                </div>
+
+                <!-- Login info -->
+                <div style="margin-top:14px;font-size:.75rem;color:#94a3b8">
+                    <div><i class="bi bi-calendar-plus"></i> Tạo lúc: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                    @if (Model.LastLoginAt.HasValue)
+                    {
+                        <div style="margin-top:3px"><i class="bi bi-clock-history"></i> Đăng nhập: @Model.LastLoginAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                    }
+                    <div style="margin-top:3px">
+                        <i class="bi bi-envelope-check@(Model.IsEmailVerified ? "-fill" : "")"></i>
+                        Email @(Model.IsEmailVerified ? "đã xác minh" : "chưa xác minh")
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+                <a asp-action="Edit" asp-route-id="@Model.UserId"
+                   style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:12px;background:#2563eb;color:#fff;text-decoration:none;font-size:.875rem;font-weight:600">
+                    <i class="bi bi-pencil-fill"></i> Chỉnh sửa thông tin
+                </a>
+                <a asp-action="ResetPassword" asp-route-id="@Model.UserId"
+                   style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:12px;background:#fffbeb;color:#d97706;text-decoration:none;font-size:.875rem;font-weight:600;border:1.5px solid #fde68a">
+                    <i class="bi bi-key-fill"></i> Đặt lại mật khẩu
+                </a>
+                <form asp-action="ToggleActive" asp-route-id="@Model.UserId" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:12px;background:@(Model.IsActive ? "#fef2f2" : "#ecfdf5");color:@(Model.IsActive ? "#dc2626" : "#059669");font-size:.875rem;font-weight:600;border:1.5px solid @(Model.IsActive ? "#fecaca" : "#bbf7d0");cursor:pointer">
+                        <i class="bi @(Model.IsActive ? "bi-slash-circle-fill" : "bi-check-circle-fill")"></i>
+                        @(Model.IsActive ? "Vô hiệu hóa tài khoản" : "Kích hoạt tài khoản")
+                    </button>
+                </form>
+                <form asp-action="Delete" asp-route-id="@Model.UserId" method="post"
+                      onsubmit="return confirm('Xác nhận vô hiệu hóa tài khoản @Model.FullName?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:12px;background:#fef2f2;color:#dc2626;font-size:.875rem;font-weight:600;border:1.5px solid #fecaca;cursor:pointer">
+                        <i class="bi bi-trash3-fill"></i> Xóa tài khoản
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right: Detail info -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+
+            <!-- Contact info -->
+            <div class="dcard">
+                <div class="dcard__head">
+                    <div class="dcard__title"><i class="bi bi-info-circle-fill" style="color:#2563eb"></i> Thông tin liên hệ</div>
+                </div>
+                <div class="dcard__body">
+                    @{
+                        void InfoRow(string icon, string label, string? value)
+                        {
+                            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f8fafc">
+                                <div style="width:32px;height:32px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                    <i class="bi @icon" style="color:#64748b"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:.72rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px">@label</div>
+                                    <div style="font-size:.875rem;font-weight:600;color:#0f172a">@(value ?? "–")</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    @{ InfoRow("bi-envelope-fill", "Email", Model.Email); }
+                    @{ InfoRow("bi-telephone-fill", "Số điện thoại", Model.PhoneNumber); }
+                    @{ InfoRow("bi-calendar3", "Ngày sinh", Model.DateOfBirth?.ToString("dd/MM/yyyy")); }
+                    @{ InfoRow("bi-gender-ambiguous", "Giới tính", Model.Gender?.ToString() switch { "0" => "Nam", "1" => "Nữ", "2" => "Khác", _ => Model.Gender?.ToString() }); }
+                </div>
+            </div>
+
+            <!-- Role-specific info -->
+            @if (Model.RoleCode == "TEACHER")
+            {
+                <div class="dcard">
+                    <div class="dcard__head">
+                        <div class="dcard__title"><i class="bi bi-book-fill" style="color:#059669"></i> Thông tin giảng dạy</div>
+                    </div>
+                    <div class="dcard__body">
+                        @{ InfoRow("bi-book", "Bộ môn giảng dạy", Model.SpecializationSubject); }
+                        @{ InfoRow("bi-award-fill", "Trình độ", Model.Qualification); }
+                    </div>
+                </div>
+            }
+
+            @if (Model.RoleCode == "STUDENT")
+            {
+                <div class="dcard">
+                    <div class="dcard__head">
+                        <div class="dcard__title"><i class="bi bi-building" style="color:#2563eb"></i> Thông tin học tập</div>
+                    </div>
+                    <div class="dcard__body">
+                        @{ InfoRow("bi-building", "Lớp học hiện tại", Model.ClassName); }
+                    </div>
+                </div>
+            }
+
+            @if (Model.RoleCode == "PARENT")
+            {
+                <div class="dcard" style="margin-bottom:16px">
+                    <div class="dcard__head">
+                        <div class="dcard__title"><i class="bi bi-people-fill" style="color:#7c3aed"></i> Thông tin gia đình</div>
+                    </div>
+                    <div class="dcard__body">
+                        @{ InfoRow("bi-mortarboard-fill", "Học sinh được liên kết",
+                            Model.LinkedStudentName ?? "Chưa liên kết"); }
+                        @if (Model.LinkedStudentId.HasValue)
+                        {
+                            <div style="margin-top:8px">
+                                <a asp-controller="Account" asp-action="Detail" asp-route-id="@Model.LinkedStudentId"
+                                   style="font-size:.8rem;color:#7c3aed;text-decoration:none;font-weight:600">
+                                    <i class="bi bi-box-arrow-up-right"></i> Xem hồ sơ học sinh
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="dcard">
+                    <div class="dcard__head">
+                        <div class="dcard__title"><i class="bi bi-briefcase-fill" style="color:#7c3aed"></i> Nghề nghiệp</div>
+                    </div>
+                    <div class="dcard__body">
+                        @{ InfoRow("bi-person-workspace", "Nghề nghiệp",
+                            Model.Occupation ?? "Chưa cập nhật"); }
+                        @{ InfoRow("bi-geo-alt-fill", "Địa chỉ làm việc",
+                            Model.WorkAddress ?? "Chưa cập nhật"); }
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+
+</div>

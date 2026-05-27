@@ -120,14 +120,39 @@
             </div>
             }
 
-            <!-- HR (Admin only) -->
+            <!-- Accounts (Admin only) -->
             @if (roleCode == "ADMIN")
             {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Tài khoản</div>
+                <a asp-controller="Account" asp-action="Index" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-people-fill"></i></span>
+                    Tất cả tài khoản
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-role="STUDENT" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-mortarboard-fill"></i></span>
+                    Học sinh
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-role="TEACHER" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-person-video3"></i></span>
+                    Giáo viên
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-role="SUPERVISOR" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-shield-fill"></i></span>
+                    Giám thị
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-role="PARENT" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-house-heart-fill"></i></span>
+                    Phụ huynh
+                </a>
+            </div>
+
+            <!-- HR (Admin only) -->
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Nhân sự</div>
                 <a href="/HR/Teachers" class="@Nav("HR")">
                     <span class="lt-nav__icon"><i class="bi bi-person-badge-fill"></i></span>
-                    Giáo viên
+                    Hợp đồng GV
                 </a>
                 <a asp-controller="Auth" asp-action="InviteLinks" class="@Nav("Auth", "InviteLinks")">
                     <span class="lt-nav__icon"><i class="bi bi-link-45deg"></i></span>

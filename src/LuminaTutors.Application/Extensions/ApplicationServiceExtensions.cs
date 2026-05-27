@@ -32,6 +32,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IMessageService,      MessageService>();
         services.AddScoped<INewsBoardService,    NewsBoardService>();
+        services.AddScoped<IAccountService,      AccountService>();
 
         return services;
     }

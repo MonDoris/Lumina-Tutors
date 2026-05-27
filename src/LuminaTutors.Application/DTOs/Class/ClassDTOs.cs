@@ -29,7 +29,17 @@ public record ClassDetailDto(
     int    MaxStudents,
     bool   IsActive,
     List<SubjectAssignmentDto> SubjectAssignments,
-    List<ScheduleSlotDto>      Schedule
+    List<ScheduleSlotDto>      Schedule,
+    List<ClassStudentDto>      Students
+);
+
+public record ClassStudentDto(
+    int    UserId,
+    string FullName,
+    string StudentCode,
+    string? PhoneNumber,
+    string? AvatarUrl,
+    DateOnly EnrolledDate
 );
 
 public record SubjectAssignmentDto(
@@ -85,6 +95,11 @@ public record CreateScheduleRequest(
     [Required] TimeOnly EndTime,
     string? RoomOverride
 );
+
+// ─── Select List DTOs ─────────────────────────────────────────────────────────
+
+public record GradeLevelSelectDto(int GradeLevelId, string GradeName, byte GradeNumber);
+public record AcademicYearSelectDto(int AcademicYearId, string YearName, bool IsActive);
 
 // ─── Teacher DTOs ──────────────────────────────────────────────────────────────
 

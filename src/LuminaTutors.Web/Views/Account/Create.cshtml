@@ -1,0 +1,232 @@
+@using LuminaTutors.Application.DTOs.Account
+@using LuminaTutors.Domain.Enums
+@model CreateAccountRequest
+@{
+    ViewData["Title"] = "Tạo tài khoản mới";
+    var presetRole = (string)(ViewBag.PresetRole ?? "STUDENT");
+    var roleMap = new Dictionary<string, (string Label, string Icon, string Color, string Grad)>
+    {
+        ["STUDENT"]    = ("Học sinh",  "bi-mortarboard-fill", "#2563eb", "linear-gradient(135deg,#0f1f4a,#2563eb)"),
+        ["TEACHER"]    = ("Giáo viên", "bi-person-video3",    "#059669", "linear-gradient(135deg,#052e1c,#059669)"),
+        ["SUPERVISOR"] = ("Giám thị",  "bi-shield-fill",      "#c2410c", "linear-gradient(135deg,#431407,#c2410c)"),
+        ["PARENT"]     = ("Phụ huynh", "bi-house-heart-fill", "#7c3aed", "linear-gradient(135deg,#2e1065,#7c3aed)"),
+    };
+    var students = (IReadOnlyList<(int UserId, string FullName, string? ClassName)>)(ViewBag.StudentList ?? new List<(int, string, string?)>());
+    var classes  = (IReadOnlyList<(int ClassId, string ClassName)>)(ViewBag.ClassList ?? new List<(int, string)>());
+}
+
+<div style="max-width:860px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+        <a asp-action="Index" style="width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#64748b;text-decoration:none">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h2 style="font-size:1.25rem;font-weight:800;color:#0f172a;margin:0">Tạo tài khoản mới</h2>
+            <p style="font-size:.82rem;color:#94a3b8;margin:0">Điền đầy đủ thông tin bên dưới</p>
+        </div>
+    </div>
+
+    <form asp-action="Create" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+
+        <!-- Role Selector -->
+        <div class="dcard" style="margin-bottom:20px">
+            <div class="dcard__head">
+                <div class="dcard__title"><i class="bi bi-person-badge-fill" style="color:#2563eb"></i> Chọn vai trò</div>
+            </div>
+            <div class="dcard__body">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+                    @foreach (var (code, info) in roleMap)
+                    {
+                        var isSelected = (Model.RoleCode ?? presetRole) == code;
+                        <label style="cursor:pointer">
+                            <input type="radio" name="RoleCode" value="@code" @(isSelected ? "checked" : "") style="display:none" onchange="updateRoleUI(this.value)"/>
+                            <div class="role-select-card @(isSelected ? "role-selected" : "")" data-role="@code"
+                                 style="border:2px solid @(isSelected ? info.Color : "#e2e8f0");border-radius:14px;padding:16px;text-align:center;transition:all .2s;background:@(isSelected ? "#f8fafc" : "#fff")">
+                                <div style="width:44px;height:44px;border-radius:12px;background:@(isSelected ? info.Color : "#f1f5f9");color:@(isSelected ? "#fff" : "#64748b");display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 10px">
+                                    <i class="bi @info.Icon"></i>
+                                </div>
+                                <div style="font-size:.875rem;font-weight:700;color:@(isSelected ? info.Color : "#374151")">@info.Label</div>
+                            </div>
+                        </label>
+                    }
+                </div>
+                <span asp-validation-for="RoleCode" class="text-danger" style="font-size:.78rem"></span>
+            </div>
+        </div>
+
+        <!-- Basic Info -->
+        <div class="dcard" style="margin-bottom:20px">
+            <div class="dcard__head">
+                <div class="dcard__title"><i class="bi bi-person-fill" style="color:#0f172a"></i> Thông tin cơ bản</div>
+            </div>
+            <div class="dcard__body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+                    <div style="grid-column:1/-1">
+                        <label class="lt-form__label">Họ và tên <span style="color:#dc2626">*</span></label>
+                        <input asp-for="FullName" class="lt-form__input" placeholder="Nguyễn Văn An"/>
+                        <span asp-validation-for="FullName" class="text-danger" style="font-size:.78rem"></span>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Email <span style="color:#dc2626">*</span></label>
+                        <input asp-for="Email" type="email" class="lt-form__input" placeholder="email@example.com"/>
+                        <span asp-validation-for="Email" class="text-danger" style="font-size:.78rem"></span>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Mật khẩu <span style="color:#dc2626">*</span></label>
+                        <input asp-for="Password" type="password" class="lt-form__input" placeholder="Tối thiểu 8 ký tự"/>
+                        <span asp-validation-for="Password" class="text-danger" style="font-size:.78rem"></span>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Số điện thoại</label>
+                        <input asp-for="PhoneNumber" class="lt-form__input" placeholder="0901234567"/>
+                        <span asp-validation-for="PhoneNumber" class="text-danger" style="font-size:.78rem"></span>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Ngày sinh</label>
+                        <input asp-for="DateOfBirth" type="date" class="lt-form__input"/>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Giới tính</label>
+                        <select asp-for="Gender" class="lt-form__input">
+                            <option value="">-- Chọn --</option>
+                            <option value="1">Nam</option>
+                            <option value="2">Nữ</option>
+                            <option value="3">Khác</option>
+                        </select>
+                    </div>
+
+                    <div style="grid-column:1/-1">
+                        <label class="lt-form__label">Ảnh đại diện</label>
+                        <div style="display:flex;align-items:center;gap:14px">
+                            <div id="avatarPreview" style="width:64px;height:64px;border-radius:14px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                                <i class="bi bi-person-fill" style="font-size:1.8rem;color:#cbd5e1"></i>
+                            </div>
+                            <div>
+                                <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)"/>
+                                <button type="button" onclick="document.getElementById('avatarInput').click()"
+                                        style="padding:8px 16px;border:1.5px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#64748b;font-size:.82rem;cursor:pointer">
+                                    <i class="bi bi-upload"></i> Chọn ảnh (jpg/png, tối đa 5MB)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Role-specific fields -->
+        <div id="section-teacher" class="dcard role-section" style="margin-bottom:20px;display:@(Model.RoleCode == "TEACHER" ? "block" : "none")">
+            <div class="dcard__head">
+                <div class="dcard__title"><i class="bi bi-book-fill" style="color:#059669"></i> Thông tin giáo viên</div>
+            </div>
+            <div class="dcard__body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                    <div>
+                        <label class="lt-form__label">Bộ môn giảng dạy</label>
+                        <input asp-for="SpecializationSubject" class="lt-form__input" placeholder="Toán, Văn, Tiếng Anh..."/>
+                    </div>
+                    <div>
+                        <label class="lt-form__label">Trình độ học vấn</label>
+                        <input asp-for="Qualification" class="lt-form__input" placeholder="Thạc sĩ, Cử nhân..."/>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-student" class="dcard role-section" style="margin-bottom:20px;display:@(Model.RoleCode == "STUDENT" ? "block" : "none")">
+            <div class="dcard__head">
+                <div class="dcard__title"><i class="bi bi-building" style="color:#2563eb"></i> Thông tin học sinh</div>
+            </div>
+            <div class="dcard__body">
+                <label class="lt-form__label">Gán vào lớp học</label>
+                <select asp-for="ClassId" class="lt-form__input">
+                    <option value="">-- Chưa gán lớp --</option>
+                    @foreach (var c in classes)
+                    {
+                        <option value="@c.ClassId">@c.ClassName</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div id="section-parent" class="dcard role-section" style="margin-bottom:20px;display:@(Model.RoleCode == "PARENT" ? "block" : "none")">
+            <div class="dcard__head">
+                <div class="dcard__title"><i class="bi bi-people-fill" style="color:#7c3aed"></i> Thông tin phụ huynh</div>
+            </div>
+            <div class="dcard__body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                    <div>
+                        <label class="lt-form__label">Liên kết với học sinh</label>
+                        <select asp-for="LinkedStudentUserId" class="lt-form__input">
+                            <option value="">-- Chọn học sinh --</option>
+                            @foreach (var s in students)
+                            {
+                                <option value="@s.UserId">@s.FullName @(s.ClassName != null ? $"({s.ClassName})" : "")</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="lt-form__label">Quan hệ với học sinh</label>
+                        <select asp-for="Relationship" class="lt-form__input">
+                            <option value="Cha">Cha</option>
+                            <option value="Mẹ">Mẹ</option>
+                            <option value="Người giám hộ">Người giám hộ</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation summary -->
+        <div asp-validation-summary="ModelOnly" class="lt-alert lt-alert--danger" style="display:@(ViewData.ModelState.ErrorCount > 0 ? "flex" : "none");margin-bottom:16px"></div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <a asp-action="Index" style="padding:11px 24px;border:1.5px solid #e2e8f0;border-radius:10px;color:#64748b;font-size:.875rem;font-weight:600;text-decoration:none">Hủy</a>
+            <button type="submit" class="lt-btn lt-btn--primary" style="padding:11px 28px">
+                <i class="bi bi-person-plus-fill"></i> Tạo tài khoản
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+function updateRoleUI(code) {
+    // Hide all role sections
+    document.querySelectorAll('.role-section').forEach(s => s.style.display = 'none');
+    // Show relevant section
+    const map = { TEACHER: 'section-teacher', STUDENT: 'section-student', PARENT: 'section-parent' };
+    if (map[code]) document.getElementById(map[code]).style.display = 'block';
+
+    // Update card borders
+    const colors = { STUDENT:'#2563eb', TEACHER:'#059669', SUPERVISOR:'#c2410c', PARENT:'#7c3aed' };
+    document.querySelectorAll('.role-select-card').forEach(card => {
+        const r = card.dataset.role;
+        card.style.borderColor = r === code ? (colors[r] || '#e2e8f0') : '#e2e8f0';
+        card.style.background  = r === code ? '#f8fafc' : '#fff';
+    });
+}
+
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const preview = document.getElementById('avatarPreview');
+            preview.innerHTML = `<img src="${e.target.result}" style="width:64px;height:64px;object-fit:cover"/>`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+}

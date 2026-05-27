@@ -34,9 +34,17 @@ public sealed class ClassController : Controller
 
     public async Task<IActionResult> Details(int id)
     {
-        var result = await _classService.GetByIdAsync(GetCurrentSchoolId(), id);
+        var sid    = GetCurrentSchoolId();
+        var result = await _classService.GetByIdAsync(sid, id);
         if (!result.IsSuccess)
             return NotFound();
+
+        // Load unassigned students for the Admin enroll modal
+        if (User.IsInRole("ADMIN"))
+        {
+            var unassigned = await _classService.GetUnassignedStudentsAsync(sid, id);
+            ViewBag.UnassignedStudents = unassigned.Data?.ToList() ?? new List<ClassStudentDto>();
+        }
 
         return View(result.Data);
     }
@@ -44,10 +52,16 @@ public sealed class ClassController : Controller
     // ─── GET /Class/Create ────────────────────────────────────────────────────
 
     [Authorize(Policy = "AdminOnly")]
-    public async Task<IActionResult> Create(int academicYearId)
+    public async Task<IActionResult> Create(int? academicYearId)
     {
-        var teachersResult = await _classService.GetAvailableTeachersAsync(GetCurrentSchoolId());
-        ViewBag.Teachers       = teachersResult.Data ?? new List<TeacherSummaryDto>();
+        var sid = GetCurrentSchoolId();
+        var teachersResult     = await _classService.GetAvailableTeachersAsync(sid);
+        var gradeLevelsResult  = await _classService.GetGradeLevelsAsync(sid);
+        var academicYearsResult= await _classService.GetAcademicYearsAsync(sid);
+
+        ViewBag.Teachers       = teachersResult.Data      ?? new List<TeacherSummaryDto>();
+        ViewBag.GradeLevels    = gradeLevelsResult.Data   ?? new List<GradeLevelSelectDto>();
+        ViewBag.AcademicYears  = academicYearsResult.Data ?? new List<AcademicYearSelectDto>();
         ViewBag.AcademicYearId = academicYearId;
         return View();
     }
@@ -61,8 +75,7 @@ public sealed class ClassController : Controller
     {
         if (!ModelState.IsValid)
         {
-            var teachersResult = await _classService.GetAvailableTeachersAsync(GetCurrentSchoolId());
-            ViewBag.Teachers = teachersResult.Data ?? new List<TeacherSummaryDto>();
+            await LoadCreateSelectListsAsync();
             return View(model);
         }
 
@@ -70,8 +83,7 @@ public sealed class ClassController : Controller
         if (!result.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, result.Error ?? "Tạo lớp thất bại.");
-            var teachersResult = await _classService.GetAvailableTeachersAsync(GetCurrentSchoolId());
-            ViewBag.Teachers = teachersResult.Data ?? new List<TeacherSummaryDto>();
+            await LoadCreateSelectListsAsync();
             return View(model);
         }
 
@@ -168,8 +180,45 @@ public sealed class ClassController : Controller
         return RedirectToAction(nameof(Details), new { id = classId });
     }
 
+    // ─── POST /Class/EnrollStudent ────────────────────────────────────────────
+
+    [HttpPost]
+    [Authorize(Policy = "AdminOnly")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EnrollStudent(int classId, int studentUserId)
+    {
+        var result = await _classService.EnrollStudentAsync(GetCurrentSchoolId(), classId, studentUserId);
+        TempData[result.IsSuccess ? "Success" : "Error"] =
+            result.IsSuccess ? "Đã thêm học sinh vào lớp." : result.Error;
+        return RedirectToAction(nameof(Details), new { id = classId });
+    }
+
+    // ─── POST /Class/RemoveStudent ────────────────────────────────────────────
+
+    [HttpPost]
+    [Authorize(Policy = "AdminOnly")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveStudent(int classId, int studentUserId)
+    {
+        var result = await _classService.RemoveStudentAsync(GetCurrentSchoolId(), classId, studentUserId);
+        TempData[result.IsSuccess ? "Success" : "Error"] =
+            result.IsSuccess ? "Đã xóa học sinh khỏi lớp." : result.Error;
+        return RedirectToAction(nameof(Details), new { id = classId });
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────────
 
     private int GetCurrentSchoolId() =>
         int.Parse(User.FindFirstValue("SchoolId") ?? "0");
+
+    private async Task LoadCreateSelectListsAsync()
+    {
+        var sid = GetCurrentSchoolId();
+        var teachers      = await _classService.GetAvailableTeachersAsync(sid);
+        var gradeLevels   = await _classService.GetGradeLevelsAsync(sid);
+        var academicYears = await _classService.GetAcademicYearsAsync(sid);
+        ViewBag.Teachers      = teachers.Data      ?? new List<TeacherSummaryDto>();
+        ViewBag.GradeLevels   = gradeLevels.Data   ?? new List<GradeLevelSelectDto>();
+        ViewBag.AcademicYears = academicYears.Data ?? new List<AcademicYearSelectDto>();
+    }
 }

@@ -47,6 +47,8 @@ public sealed class ClassService : IClassService
         var classes = await _uow.Classes.FindAsync(
             c => c.Id == classId && c.SchoolId == schoolId,
             include: q => q
+                .Include(c => c.GradeLevel)
+                .Include(c => c.AcademicYear)
                 .Include(c => c.HomeRoomTeacher!)
                 .Include(c => c.SubjectAssignments)
                     .ThenInclude(sa => sa.Subject)
@@ -54,17 +56,78 @@ public sealed class ClassService : IClassService
                     .ThenInclude(sa => sa.Teacher)
                 .Include(c => c.SubjectAssignments)
                     .ThenInclude(sa => sa.Schedules)
-                .Include(c => c.Enrollments)
-                    .ThenInclude(e => e.Student),
+                .Include(c => c.Enrollments.Where(e => e.Status == Domain.Enums.EnrollmentStatus.Active))
+                    .ThenInclude(e => e.Student)
+                        .ThenInclude(s => s.StudentProfile),
             ct: ct);
 
         var cls = classes.FirstOrDefault();
         if (cls is null)
             return Result<ClassDetailDto>.Failure("NOT_FOUND", "Lớp học không tồn tại.");
 
-        var dto = _mapper.Map<ClassDetailDto>(cls);
-        return Result<ClassDetailDto>.Success(dto);
+        return Result<ClassDetailDto>.Success(BuildClassDetailDto(cls));
     }
+
+    private static ClassDetailDto BuildClassDetailDto(Class cls)
+    {
+        var subjects = cls.SubjectAssignments.Select(sa => new SubjectAssignmentDto(
+            sa.Id,
+            sa.Subject?.SubjectName ?? "",
+            sa.Subject?.SubjectCode ?? "",
+            sa.Teacher?.FullName    ?? "",
+            sa.PeriodsPerWeek
+        )).ToList();
+
+        var schedule = cls.SubjectAssignments
+            .SelectMany(sa => sa.Schedules.Select(s => new ScheduleSlotDto(
+                s.Id,
+                sa.Subject?.SubjectName ?? "",
+                sa.Teacher?.FullName    ?? "",
+                s.DayOfWeek,
+                GetDayName(s.DayOfWeek),
+                s.PeriodStart,
+                s.PeriodEnd,
+                s.StartTime.ToString("HH:mm"),
+                s.EndTime.ToString("HH:mm"),
+                s.RoomOverride
+            ))).ToList();
+
+        var students = cls.Enrollments
+            .Where(e => e.Status == Domain.Enums.EnrollmentStatus.Active)
+            .Select(e => new ClassStudentDto(
+                e.Student.Id,
+                e.Student.FullName,
+                e.Student.StudentProfile?.StudentCode ?? "",
+                e.Student.PhoneNumber,
+                e.Student.AvatarUrl,
+                e.EnrolledDate
+            )).OrderBy(s => s.FullName).ToList();
+
+        return new ClassDetailDto(
+            ClassId:            cls.Id,
+            ClassName:          cls.ClassName,
+            GradeLevelId:       cls.GradeLevelId,
+            GradeName:          cls.GradeLevel?.GradeName ?? "",
+            EducationLevel:     cls.GradeLevel?.EducationLevel.ToString() ?? "",
+            AcademicYearId:     cls.AcademicYearId,
+            AcademicYearName:   cls.AcademicYear?.YearName ?? "",
+            HomeRoomTeacherId:  cls.HomeRoomTeacherId,
+            HomeRoomTeacherName:cls.HomeRoomTeacher?.FullName,
+            RoomNumber:         cls.RoomNumber,
+            MaxStudents:        cls.MaxStudents,
+            IsActive:           cls.IsActive,
+            SubjectAssignments: subjects,
+            Schedule:           schedule,
+            Students:           students
+        );
+    }
+
+    private static string GetDayName(byte day) => day switch
+    {
+        2 => "Thứ Hai", 3 => "Thứ Ba", 4 => "Thứ Tư",
+        5 => "Thứ Năm", 6 => "Thứ Sáu", 7 => "Thứ Bảy",
+        _ => "Chủ Nhật"
+    };
 
     // ─── Create ───────────────────────────────────────────────────────────────
 
@@ -224,6 +287,138 @@ public sealed class ClassService : IClassService
 
         var dtos = _mapper.Map<List<TeacherSummaryDto>>(teachers);
         return Result<IReadOnlyList<TeacherSummaryDto>>.Success(dtos);
+    }
+
+    // ─── EnrollStudent ────────────────────────────────────────────────────────
+
+    public async Task<Result> EnrollStudentAsync(
+        int schoolId, int classId, int studentUserId, CancellationToken ct = default)
+    {
+        // Verify class belongs to school
+        var cls = await _uow.Classes.GetByIdAsync(classId, ct);
+        if (cls is null || cls.SchoolId != schoolId)
+            return Result.Failure("NOT_FOUND", "Lớp học không tồn tại.");
+
+        // Verify student belongs to school
+        var students = await _uow.Users.FindAsync(
+            u => u.Id == studentUserId && u.SchoolId == schoolId,
+            include: q => q.Include(u => u.Role),
+            ct: ct);
+        var student = students.FirstOrDefault();
+        if (student is null || student.Role.RoleCode != "STUDENT")
+            return Result.Failure("NOT_FOUND", "Học sinh không tồn tại.");
+
+        // Check already enrolled in THIS class
+        var alreadyIn = await _uow.ClassEnrollments.FindAsync(
+            e => e.ClassId == classId && e.StudentId == studentUserId &&
+                 e.Status == Domain.Enums.EnrollmentStatus.Active, ct: ct);
+        if (alreadyIn.Any())
+            return Result.Failure("ALREADY_ENROLLED", "Học sinh đã được xếp vào lớp này.");
+
+        // Withdraw from any other active class first
+        var existing = await _uow.ClassEnrollments.FindAsync(
+            e => e.StudentId == studentUserId &&
+                 e.Status == Domain.Enums.EnrollmentStatus.Active, ct: ct);
+        foreach (var e in existing) e.Status = Domain.Enums.EnrollmentStatus.Withdrawn;
+
+        await _uow.ClassEnrollments.AddAsync(new Domain.Entities.Academic.ClassEnrollment
+        {
+            ClassId      = classId,
+            StudentId    = studentUserId,
+            EnrolledDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            Status       = Domain.Enums.EnrollmentStatus.Active
+        }, ct);
+
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("Student UserId={StudentId} enrolled in Class {ClassId}", studentUserId, classId);
+        return Result.Success();
+    }
+
+    // ─── RemoveStudent ────────────────────────────────────────────────────────
+
+    public async Task<Result> RemoveStudentAsync(
+        int schoolId, int classId, int studentUserId, CancellationToken ct = default)
+    {
+        var cls = await _uow.Classes.GetByIdAsync(classId, ct);
+        if (cls is null || cls.SchoolId != schoolId)
+            return Result.Failure("NOT_FOUND", "Lớp học không tồn tại.");
+
+        var enrollments = await _uow.ClassEnrollments.FindAsync(
+            e => e.ClassId == classId && e.StudentId == studentUserId &&
+                 e.Status == Domain.Enums.EnrollmentStatus.Active, ct: ct);
+        var enrollment = enrollments.FirstOrDefault();
+        if (enrollment is null)
+            return Result.Failure("NOT_ENROLLED", "Học sinh không có trong lớp này.");
+
+        enrollment.Status = Domain.Enums.EnrollmentStatus.Withdrawn;
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("Student UserId={StudentId} removed from Class {ClassId}", studentUserId, classId);
+        return Result.Success();
+    }
+
+    // ─── GetUnassignedStudents ────────────────────────────────────────────────
+
+    public async Task<Result<IReadOnlyList<ClassStudentDto>>> GetUnassignedStudentsAsync(
+        int schoolId, int classId, CancellationToken ct = default)
+    {
+        // Students in school NOT currently enrolled in classId
+        var allStudents = await _uow.StudentProfiles.FindAsync(
+            sp => sp.SchoolId == schoolId && sp.User.IsActive,
+            include: q => q.Include(sp => sp.User),
+            ct: ct);
+
+        // Get IDs already in this class
+        var enrolledIds = (await _uow.ClassEnrollments.FindAsync(
+            e => e.ClassId == classId && e.Status == Domain.Enums.EnrollmentStatus.Active, ct: ct))
+            .Select(e => e.StudentId)
+            .ToHashSet();
+
+        var unassigned = allStudents
+            .Where(sp => !enrolledIds.Contains(sp.UserId))
+            .OrderBy(sp => sp.User.FullName)
+            .Select(sp => new ClassStudentDto(
+                sp.UserId,
+                sp.User.FullName,
+                sp.StudentCode,
+                sp.User.PhoneNumber,
+                sp.User.AvatarUrl,
+                DateOnly.MinValue // not enrolled yet
+            ))
+            .ToList() as IReadOnlyList<ClassStudentDto>;
+
+        return Result<IReadOnlyList<ClassStudentDto>>.Success(unassigned);
+    }
+
+    // ─── GetGradeLevels ───────────────────────────────────────────────────────
+
+    public async Task<Result<IReadOnlyList<GradeLevelSelectDto>>> GetGradeLevelsAsync(
+        int schoolId, CancellationToken ct = default)
+    {
+        var levels = await _uow.GradeLevels.FindAsync(
+            gl => gl.SchoolId == schoolId, ct: ct);
+
+        var dtos = levels
+            .OrderBy(gl => gl.GradeNumber)
+            .Select(gl => new GradeLevelSelectDto(gl.Id, gl.GradeName, gl.GradeNumber))
+            .ToList() as IReadOnlyList<GradeLevelSelectDto>;
+
+        return Result<IReadOnlyList<GradeLevelSelectDto>>.Success(dtos);
+    }
+
+    // ─── GetAcademicYears ─────────────────────────────────────────────────────
+
+    public async Task<Result<IReadOnlyList<AcademicYearSelectDto>>> GetAcademicYearsAsync(
+        int schoolId, CancellationToken ct = default)
+    {
+        var years = await _uow.AcademicYears.FindAsync(
+            ay => ay.SchoolId == schoolId, ct: ct);
+
+        var dtos = years
+            .OrderByDescending(ay => ay.StartDate)
+            .Select(ay => new AcademicYearSelectDto(ay.Id, ay.YearName, ay.IsActive))
+            .ToList() as IReadOnlyList<AcademicYearSelectDto>;
+
+        return Result<IReadOnlyList<AcademicYearSelectDto>>.Success(dtos);
     }
 
     // ─── HasScheduleConflict ──────────────────────────────────────────────────

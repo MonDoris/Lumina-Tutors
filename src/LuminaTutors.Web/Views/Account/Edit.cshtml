@@ -1,0 +1,246 @@
+@using LuminaTutors.Application.DTOs.Account
+@using LuminaTutors.Domain.Enums
+@model UpdateAccountRequest
+@{
+    var acc     = (AccountDetailDto)ViewBag.AccountDetail;
+    ViewData["Title"] = $"Chỉnh sửa — {acc.FullName}";
+    var students = (IReadOnlyList<(int UserId, string FullName, string? ClassName)>)(ViewBag.StudentList ?? new List<(int, string, string?)>());
+    var classes  = (IReadOnlyList<(int ClassId, string ClassName)>)(ViewBag.ClassList ?? new List<(int, string)>());
+    var roleColor = acc.RoleCode switch {
+        "STUDENT"    => "#2563eb",
+        "TEACHER"    => "#059669",
+        "SUPERVISOR" => "#c2410c",
+        "PARENT"     => "#7c3aed",
+        _ => "#64748b"
+    };
+    var roleName = acc.RoleCode switch {
+        "STUDENT"    => "Học sinh",
+        "TEACHER"    => "Giáo viên",
+        "SUPERVISOR" => "Giám thị",
+        "PARENT"     => "Phụ huynh",
+        _ => acc.RoleCode
+    };
+    var initials = acc.FullName.Length > 0
+        ? string.Concat(acc.FullName.Split(' ').TakeLast(2).Select(p => p[0]))
+        : "?";
+}
+
+<div style="max-width:860px;margin:0 auto">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+        <a asp-action="Detail" asp-route-id="@acc.UserId" style="width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#64748b;text-decoration:none">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div style="display:flex;align-items:center;gap:10px;flex:1">
+            @if (!string.IsNullOrEmpty(acc.AvatarUrl))
+            {
+                <img src="@acc.AvatarUrl" style="width:44px;height:44px;border-radius:12px;object-fit:cover"/>
+            }
+            else
+            {
+                <div style="width:44px;height:44px;border-radius:12px;background:@roleColor;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700">@initials</div>
+            }
+            <div>
+                <h2 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin:0">@acc.FullName</h2>
+                <span style="font-size:.75rem;font-weight:700;color:@roleColor">@roleName &nbsp;·&nbsp; @(acc.Code ?? acc.Email)</span>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Edit" asp-route-id="@acc.UserId" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+
+        <!-- Basic Info -->
+        <div class="dcard" style="margin-bottom:20px">
+            <div class="dcard__head">
+                <div class="dcard__title"><i class="bi bi-person-fill" style="color:#0f172a"></i> Thông tin cơ bản</div>
+            </div>
+            <div class="dcard__body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+                    <div style="grid-column:1/-1">
+                        <label class="lt-form__label">Họ và tên <span style="color:#dc2626">*</span></label>
+                        <input asp-for="FullName" class="lt-form__input"/>
+                        <span asp-validation-for="FullName" class="text-danger" style="font-size:.78rem"></span>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Email</label>
+                        <input value="@acc.Email" class="lt-form__input" readonly style="background:#f8fafc;color:#94a3b8"/>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Số điện thoại</label>
+                        <input asp-for="PhoneNumber" class="lt-form__input"/>
+                        <span asp-validation-for="PhoneNumber" class="text-danger" style="font-size:.78rem"></span>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Ngày sinh</label>
+                        <input asp-for="DateOfBirth" type="date" class="lt-form__input"/>
+                    </div>
+
+                    <div>
+                        <label class="lt-form__label">Giới tính</label>
+                        <select asp-for="Gender" class="lt-form__input">
+                            <option value="">-- Chọn --</option>
+                            <option value="1">Nam</option>
+                            <option value="2">Nữ</option>
+                            <option value="3">Khác</option>
+                        </select>
+                    </div>
+
+                    <div style="grid-column:1/-1">
+                        <label class="lt-form__label">
+                            <input asp-for="IsActive" type="checkbox" style="width:16px;height:16px;accent-color:@roleColor;margin-right:6px;vertical-align:middle"/>
+                            Tài khoản đang hoạt động
+                        </label>
+                    </div>
+
+                    <div style="grid-column:1/-1">
+                        <label class="lt-form__label">Thay đổi ảnh đại diện</label>
+                        <div style="display:flex;align-items:center;gap:14px">
+                            <div id="avatarPreview" style="width:56px;height:56px;border-radius:12px;overflow:hidden;flex-shrink:0">
+                                @if (!string.IsNullOrEmpty(acc.AvatarUrl))
+                                {
+                                    <img src="@acc.AvatarUrl" style="width:56px;height:56px;object-fit:cover"/>
+                                }
+                                else
+                                {
+                                    <div style="width:56px;height:56px;background:#f1f5f9;display:flex;align-items:center;justify-content:center">
+                                        <i class="bi bi-person-fill" style="font-size:1.5rem;color:#cbd5e1"></i>
+                                    </div>
+                                }
+                            </div>
+                            <div>
+                                <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)"/>
+                                <button type="button" onclick="document.getElementById('avatarInput').click()"
+                                        style="padding:7px 14px;border:1.5px dashed #cbd5e1;border-radius:10px;background:#f8fafc;color:#64748b;font-size:.82rem;cursor:pointer">
+                                    <i class="bi bi-upload"></i> Chọn ảnh mới
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Role-specific -->
+        @if (acc.RoleCode == "TEACHER")
+        {
+            <div class="dcard" style="margin-bottom:20px">
+                <div class="dcard__head">
+                    <div class="dcard__title"><i class="bi bi-book-fill" style="color:#059669"></i> Thông tin giảng dạy</div>
+                </div>
+                <div class="dcard__body">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                        <div>
+                            <label class="lt-form__label">Bộ môn giảng dạy</label>
+                            <input asp-for="SpecializationSubject" class="lt-form__input"/>
+                        </div>
+                        <div>
+                            <label class="lt-form__label">Trình độ học vấn</label>
+                            <input asp-for="Qualification" class="lt-form__input"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (acc.RoleCode == "STUDENT")
+        {
+            <div class="dcard" style="margin-bottom:20px">
+                <div class="dcard__head">
+                    <div class="dcard__title"><i class="bi bi-building" style="color:#2563eb"></i> Lớp học</div>
+                </div>
+                <div class="dcard__body">
+                    <label class="lt-form__label">Gán lớp học</label>
+                    <select asp-for="ClassId" class="lt-form__input">
+                        <option value="">-- Không gán lớp --</option>
+                        @foreach (var c in classes)
+                        {
+                            <option value="@c.ClassId">@c.ClassName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        }
+
+        @if (acc.RoleCode == "PARENT")
+        {
+            <div class="dcard" style="margin-bottom:20px">
+                <div class="dcard__head">
+                    <div class="dcard__title"><i class="bi bi-people-fill" style="color:#7c3aed"></i> Liên kết học sinh</div>
+                </div>
+                <div class="dcard__body">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                        <div>
+                            <label class="lt-form__label">Học sinh con / phụ trách</label>
+                            <select asp-for="LinkedStudentUserId" class="lt-form__input">
+                                <option value="">-- Không liên kết --</option>
+                                @foreach (var s in students)
+                                {
+                                    <option value="@s.UserId">@s.FullName</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="lt-form__label">Quan hệ</label>
+                            <select asp-for="Relationship" class="lt-form__input">
+                                <option value="Cha">Cha</option>
+                                <option value="Mẹ">Mẹ</option>
+                                <option value="Người giám hộ">Người giám hộ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dcard" style="margin-bottom:20px">
+                <div class="dcard__head">
+                    <div class="dcard__title"><i class="bi bi-briefcase-fill" style="color:#7c3aed"></i> Thông tin nghề nghiệp</div>
+                </div>
+                <div class="dcard__body">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                        <div>
+                            <label class="lt-form__label">Nghề nghiệp</label>
+                            <input asp-for="Occupation" class="lt-form__input"
+                                   placeholder="VD: Kỹ sư, Giáo viên, Kinh doanh..."/>
+                        </div>
+                        <div>
+                            <label class="lt-form__label">Địa chỉ nơi làm việc</label>
+                            <input asp-for="WorkAddress" class="lt-form__input"
+                                   placeholder="VD: 123 Lê Lợi, Q.1, TP.HCM"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div asp-validation-summary="ModelOnly" class="lt-alert lt-alert--danger" style="margin-bottom:16px"></div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+            <a asp-action="Detail" asp-route-id="@acc.UserId" style="padding:11px 24px;border:1.5px solid #e2e8f0;border-radius:10px;color:#64748b;font-size:.875rem;font-weight:600;text-decoration:none">Hủy</a>
+            <button type="submit" class="lt-btn lt-btn--primary" style="padding:11px 28px;background:@roleColor">
+                <i class="bi bi-check2-circle"></i> Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+<script>
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('avatarPreview').innerHTML =
+                `<img src="${e.target.result}" style="width:56px;height:56px;object-fit:cover"/>`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+}
