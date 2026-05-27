@@ -1,0 +1,1041 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Lumina Tutors — Nền tảng quản lý giáo dục toàn diện</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --navy:       #060d1f;
+            --navy-2:     #0d1a35;
+            --navy-3:     #1a2d52;
+            --blue:       #2563eb;
+            --blue-l:     #3b82f6;
+            --blue-ll:    #60a5fa;
+            --gold:       #f59e0b;
+            --gold-l:     #fbbf24;
+            --white:      #ffffff;
+            --gray-50:    #f8fafc;
+            --gray-100:   #f1f5f9;
+            --gray-200:   #e2e8f0;
+            --gray-300:   #cbd5e1;
+            --gray-400:   #94a3b8;
+            --gray-500:   #64748b;
+            --gray-600:   #475569;
+            --gray-700:   #334155;
+            --green:      #10b981;
+            --purple:     #8b5cf6;
+            --teal:       #14b8a6;
+            --rose:       #f43f5e;
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--gray-700);
+            background: #fff;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ══════════════ NAVBAR ══════════════ */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            padding: 0 48px;
+            height: 68px;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: background .3s, box-shadow .3s, border-color .3s;
+        }
+        .nav.scrolled {
+            background: rgba(255,255,255,.95);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 1px 0 rgba(0,0,0,.08);
+        }
+        .nav__logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.35rem; font-weight: 800;
+            color: #fff; text-decoration: none;
+            display: flex; align-items: center; gap: 8px;
+            transition: color .3s;
+        }
+        .nav__logo-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--gold); display: inline-block;
+        }
+        .nav.scrolled .nav__logo { color: var(--navy); }
+        .nav__links { display: flex; gap: 4px; }
+        .nav__link {
+            font-size: .875rem; font-weight: 500;
+            color: rgba(255,255,255,.8); text-decoration: none;
+            padding: 8px 16px; border-radius: 8px;
+            transition: color .2s, background .2s;
+        }
+        .nav__link:hover { color: #fff; background: rgba(255,255,255,.12); }
+        .nav.scrolled .nav__link { color: var(--gray-600); }
+        .nav.scrolled .nav__link:hover { color: var(--blue); background: #eff6ff; }
+        .nav__actions { display: flex; gap: 10px; align-items: center; }
+        .nav-login {
+            font-size: .875rem; font-weight: 500;
+            color: rgba(255,255,255,.85); text-decoration: none;
+            padding: 9px 18px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,.25);
+            transition: all .2s;
+        }
+        .nav-login:hover { color: #fff; border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.1); }
+        .nav.scrolled .nav-login { color: var(--gray-700); border-color: var(--gray-200); }
+        .nav.scrolled .nav-login:hover { color: var(--blue); border-color: var(--blue); background: #eff6ff; }
+        .nav-register {
+            font-size: .875rem; font-weight: 600;
+            color: var(--navy); background: var(--gold);
+            text-decoration: none; padding: 9px 20px; border-radius: 8px;
+            transition: background .2s, transform .15s, box-shadow .2s;
+            box-shadow: 0 2px 10px rgba(245,158,11,.4);
+        }
+        .nav-register:hover { background: var(--gold-l); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(245,158,11,.5); }
+
+        /* ══════════════ HERO ══════════════ */
+        .hero {
+            min-height: 100vh;
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 120px 48px 80px;
+        }
+
+        /* Video background */
+        .hero__video {
+            position: absolute; inset: 0; z-index: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        /* Dark overlay — giữ text dễ đọc */
+        .hero__overlay {
+            position: absolute; inset: 0; z-index: 1;
+            background: linear-gradient(
+                135deg,
+                rgba(6,13,31,.88)  0%,
+                rgba(13,26,53,.80) 50%,
+                rgba(14,31,74,.75) 100%
+            );
+        }
+
+        /* Grid overlay */
+        .hero-grid {
+            position: absolute; inset: 0; z-index: 1;
+            background-image:
+                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .hero__inner {
+            position: relative; z-index: 3;
+            max-width: 900px; text-align: center;
+        }
+        .hero__badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: .8rem; font-weight: 600;
+            color: var(--gold); letter-spacing: .8px; text-transform: uppercase;
+            background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3);
+            padding: 6px 16px; border-radius: 99px; margin-bottom: 28px;
+        }
+        .hero__badge i { font-size: .9rem; }
+        .hero__title {
+            font-size: clamp(2.4rem, 6vw, 4.5rem);
+            font-weight: 900; line-height: 1.1;
+            color: #fff; letter-spacing: -1px;
+            margin-bottom: 24px;
+        }
+        .hero__title-grad {
+            background: linear-gradient(90deg, var(--gold) 0%, #fde68a 50%, var(--blue-ll) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero__sub {
+            font-size: 1.125rem; color: rgba(255,255,255,.6);
+            line-height: 1.75; max-width: 600px; margin: 0 auto 40px;
+        }
+        .hero__cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .btn-hero-primary {
+            font-size: 1rem; font-weight: 700;
+            color: var(--navy); background: var(--gold);
+            text-decoration: none; padding: 15px 36px; border-radius: 10px;
+            box-shadow: 0 4px 24px rgba(245,158,11,.45);
+            transition: all .2s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-hero-primary:hover { background: var(--gold-l); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(245,158,11,.55); }
+        .btn-hero-ghost {
+            font-size: 1rem; font-weight: 600;
+            color: rgba(255,255,255,.85); text-decoration: none;
+            padding: 15px 32px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.2);
+            transition: all .2s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-hero-ghost:hover { color: #fff; border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.07); transform: translateY(-2px); }
+
+        /* Dashboard preview card */
+        .hero__preview {
+            position: relative; z-index: 3;
+            max-width: 960px; width: 100%;
+            margin: 60px auto 0;
+        }
+        .hero__screen {
+            background: #111827; border-radius: 16px;
+            border: 1px solid rgba(255,255,255,.12);
+            box-shadow: 0 40px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
+            overflow: hidden;
+        }
+        .screen__bar {
+            background: #1f2937; height: 38px;
+            display: flex; align-items: center; gap: 8px; padding: 0 16px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+        .screen__dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .screen__url {
+            flex: 1; background: rgba(255,255,255,.07); border-radius: 6px;
+            height: 22px; margin: 0 12px; display: flex; align-items: center; padding: 0 10px;
+        }
+        .screen__url-text { font-size: .7rem; color: rgba(255,255,255,.35); font-family: monospace; }
+        .screen__body {
+            display: grid; grid-template-columns: 220px 1fr;
+            min-height: 360px;
+        }
+        .screen__sidebar {
+            background: #060d1f; padding: 20px 14px;
+            display: flex; flex-direction: column; gap: 4px;
+            border-right: 1px solid rgba(255,255,255,.07);
+        }
+        .screen__logo-area { padding: 0 8px 16px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 10px; }
+        .screen__logo-txt { font-size: .9rem; font-weight: 700; color: var(--gold); font-family: 'Playfair Display', serif; }
+        .s-item {
+            height: 34px; border-radius: 7px; display: flex; align-items: center;
+            gap: 8px; padding: 0 10px; cursor: pointer;
+        }
+        .s-item.act { background: rgba(37,99,235,.25); }
+        .s-item-icon { width: 16px; height: 16px; border-radius: 4px; background: rgba(255,255,255,.12); flex-shrink: 0; }
+        .s-item.act .s-item-icon { background: var(--blue-l); }
+        .s-item-text { height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); flex: 1; }
+        .s-item.act .s-item-text { background: rgba(255,255,255,.5); }
+        .screen__main { padding: 20px; display: flex; flex-direction: column; gap: 14px; background: #f8fafc; }
+        .s-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .s-stat {
+            background: #fff; border-radius: 10px; padding: 12px 14px;
+            border: 1px solid #e2e8f0;
+        }
+        .s-stat-val { font-size: 1.25rem; font-weight: 800; color: #0f172a; }
+        .s-stat-lbl { height: 6px; border-radius: 3px; background: #e2e8f0; width: 65%; margin-top: 6px; }
+        .s-stat-icon { width: 28px; height: 28px; border-radius: 6px; margin-bottom: 8px; }
+        .s-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+        .s-card { background: #fff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; }
+        .s-card-head { height: 32px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 14px; gap: 6px; }
+        .s-card-head-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .s-card-head-label { height: 6px; border-radius: 3px; background: #cbd5e1; width: 80px; }
+        .s-table { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+        .s-tr { height: 20px; border-radius: 5px; background: #f8fafc; display: flex; align-items: center; padding: 0 8px; gap: 8px; }
+        .s-td { height: 5px; border-radius: 2px; background: #e2e8f0; }
+        .s-chart { padding: 12px; }
+        .s-bars { display: flex; gap: 5px; align-items: flex-end; height: 80px; }
+        .s-bar { flex: 1; border-radius: 4px 4px 0 0; background: linear-gradient(to top, var(--blue), var(--blue-ll)); opacity: .7; }
+        .s-bar:nth-child(4) { opacity: 1; }
+
+        /* Floating UI cards over hero */
+        .hero__floats {
+            position: absolute; inset: 0; z-index: 4; pointer-events: none;
+        }
+        .hero__float {
+            position: absolute; background: rgba(255,255,255,.08);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,.18); border-radius: 14px;
+            padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+        }
+        .hero__float-1 { left: 2%; top: 28%; animation: float1 6s ease-in-out infinite; }
+        .hero__float-2 { right: 2%; top: 40%; animation: float2 7s ease-in-out infinite; }
+        @@keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        @@keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(10px)} }
+        .hf-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .hf-text { font-size: .8rem; font-weight: 600; color: #fff; white-space: nowrap; }
+        .hf-sub  { font-size: .7rem; color: rgba(255,255,255,.55); white-space: nowrap; }
+        .hf-pill {
+            font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px;
+        }
+        .pill-green { background: rgba(16,185,129,.25); color: #34d399; }
+        .pill-blue  { background: rgba(59,130,246,.25); color: #93c5fd; }
+
+        /* ══════════════ STATS ══════════════ */
+        .stats-bar {
+            background: linear-gradient(90deg, var(--blue) 0%, #1d4ed8 100%);
+            padding: 40px 48px;
+        }
+        .stats-bar__inner {
+            max-width: 1100px; margin: 0 auto;
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            divide-x: 1px solid rgba(255,255,255,.2);
+            gap: 0;
+        }
+        .stat-item {
+            text-align: center; padding: 0 24px;
+            border-right: 1px solid rgba(255,255,255,.2);
+        }
+        .stat-item:last-child { border-right: none; }
+        .stat-num {
+            font-size: 2.5rem; font-weight: 900; color: #fff;
+            letter-spacing: -1px; line-height: 1;
+        }
+        .stat-num span { color: var(--gold-l); }
+        .stat-lbl { font-size: .85rem; color: rgba(255,255,255,.65); margin-top: 6px; }
+
+        /* ══════════════ FEATURES ══════════════ */
+        .features { padding: 100px 48px; background: #fff; }
+        .features__inner { max-width: 1200px; margin: 0 auto; }
+
+        .section-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: .75rem; font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase; color: var(--blue);
+            background: #eff6ff; border: 1px solid #bfdbfe;
+            padding: 5px 14px; border-radius: 99px; margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: clamp(1.75rem, 3vw, 2.5rem);
+            font-weight: 900; color: var(--navy);
+            letter-spacing: -0.5px; line-height: 1.2;
+            margin-bottom: 16px;
+        }
+        .section-sub {
+            font-size: 1rem; color: var(--gray-500); line-height: 1.75;
+            max-width: 560px;
+        }
+        .features__header {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+            align-items: end; margin-bottom: 60px;
+        }
+        .features__right { text-align: right; }
+        .btn-outline-blue {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: .875rem; font-weight: 600; color: var(--blue);
+            text-decoration: none; padding: 10px 20px; border-radius: 8px;
+            border: 1.5px solid var(--blue);
+            transition: all .2s;
+        }
+        .btn-outline-blue:hover { background: var(--blue); color: #fff; }
+
+        .features__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .feat-card {
+            border-radius: 20px; padding: 32px 28px;
+            border: 1px solid var(--gray-100);
+            position: relative; overflow: hidden;
+            transition: transform .25s, box-shadow .25s;
+            background: #fff;
+        }
+        .feat-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px rgba(0,0,0,.1); }
+        .feat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .feat-card.fc-blue::before  { background: linear-gradient(90deg, var(--blue), var(--blue-ll)); }
+        .feat-card.fc-gold::before  { background: linear-gradient(90deg, var(--gold), var(--gold-l)); }
+        .feat-card.fc-green::before { background: linear-gradient(90deg, var(--green), #34d399); }
+        .feat-card.fc-purple::before{ background: linear-gradient(90deg, var(--purple), #a78bfa); }
+        .feat-card.fc-teal::before  { background: linear-gradient(90deg, var(--teal), #2dd4bf); }
+        .feat-card.fc-rose::before  { background: linear-gradient(90deg, var(--rose), #fb7185); }
+        .feat-card__icon {
+            width: 56px; height: 56px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; margin-bottom: 20px;
+        }
+        .fi-blue   { background: #eff6ff; color: var(--blue); }
+        .fi-gold   { background: #fffbeb; color: var(--gold); }
+        .fi-green  { background: #ecfdf5; color: var(--green); }
+        .fi-purple { background: #f5f3ff; color: var(--purple); }
+        .fi-teal   { background: #f0fdfa; color: var(--teal); }
+        .fi-rose   { background: #fff1f2; color: var(--rose); }
+        .feat-card__title {
+            font-size: 1.0625rem; font-weight: 700; color: var(--navy);
+            margin-bottom: 10px;
+        }
+        .feat-card__desc {
+            font-size: .875rem; color: var(--gray-500); line-height: 1.7;
+            margin-bottom: 20px;
+        }
+        .feat-card__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .f-tag {
+            font-size: .72rem; font-weight: 600; padding: 3px 10px;
+            border-radius: 99px; background: var(--gray-100); color: var(--gray-500);
+        }
+
+        /* Featured large card */
+        .feat-card.fc-large {
+            grid-column: span 2;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+            align-items: center;
+        }
+        .feat-large__visual {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+            border-radius: 12px; padding: 20px;
+            min-height: 160px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .flv-row { display: flex; gap: 8px; }
+        .flv-card {
+            flex: 1; background: rgba(255,255,255,.07); border-radius: 8px;
+            padding: 10px; border: 1px solid rgba(255,255,255,.1);
+        }
+        .flv-num { font-size: 1.1rem; font-weight: 800; color: var(--gold-l); }
+        .flv-lbl { height: 5px; border-radius: 3px; background: rgba(255,255,255,.15); width: 60%; margin-top: 4px; }
+        .flv-bar { background: rgba(255,255,255,.07); border-radius: 8px; padding: 10px; border: 1px solid rgba(255,255,255,.1); }
+        .flv-bars { display: flex; gap: 5px; align-items: flex-end; height: 50px; margin-top: 6px; }
+        .flv-b { flex: 1; border-radius: 3px 3px 0 0; background: linear-gradient(to top, var(--blue), var(--blue-ll)); }
+
+        /* ══════════════ HOW IT WORKS ══════════════ */
+        .how { padding: 100px 48px; background: var(--gray-50); }
+        .how__inner { max-width: 1100px; margin: 0 auto; }
+        .how__header { text-align: center; margin-bottom: 64px; }
+        .how__steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; position: relative; }
+        .how__steps::before {
+            content: '';
+            position: absolute; top: 40px; left: calc(16.67% + 40px); right: calc(16.67% + 40px);
+            height: 2px; background: linear-gradient(90deg, var(--blue), var(--purple));
+        }
+        .how-step { text-align: center; padding: 0 16px; }
+        .how-step__num {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.75rem; font-weight: 900; color: #fff;
+            margin: 0 auto 24px; position: relative; z-index: 1;
+            box-shadow: 0 8px 24px rgba(37,99,235,.35);
+        }
+        .how-step__title { font-size: 1.125rem; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+        .how-step__desc { font-size: .875rem; color: var(--gray-500); line-height: 1.7; }
+
+        /* ══════════════ SOLUTIONS ══════════════ */
+        .solutions { padding: 100px 48px; background: #fff; }
+        .solutions__inner { max-width: 1200px; margin: 0 auto; }
+        .solutions__header { text-align: center; margin-bottom: 60px; }
+        .solutions__header .section-sub { margin: 0 auto; }
+        .sol-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .sol-card {
+            border-radius: 24px; overflow: hidden;
+            border: 1px solid var(--gray-100);
+            transition: transform .25s, box-shadow .25s;
+            display: flex; flex-direction: column;
+        }
+        .sol-card:hover { transform: translateY(-8px); box-shadow: 0 24px 64px rgba(0,0,0,.12); }
+        .sol-card__img {
+            height: 220px; position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sol-img-school  { background: linear-gradient(145deg, #0f1c2e 0%, #1a3560 60%, #2563eb 100%); }
+        .sol-img-teacher { background: linear-gradient(145deg, #064e3b 0%, #065f46 60%, #10b981 100%); }
+        .sol-img-parent  { background: linear-gradient(145deg, #3b0764 0%, #6d28d9 60%, #8b5cf6 100%); }
+        .sol-card__emoji { font-size: 5rem; filter: drop-shadow(0 4px 20px rgba(0,0,0,.3)); }
+        .sol-card__tag {
+            position: absolute; top: 14px; left: 14px;
+            font-size: .72rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+            color: #fff; background: rgba(255,255,255,.15);
+            backdrop-filter: blur(8px); padding: 4px 12px; border-radius: 99px;
+            border: 1px solid rgba(255,255,255,.25);
+        }
+        .sol-card__body { padding: 24px; background: #fff; flex: 1; display: flex; flex-direction: column; }
+        .sol-card__title { font-size: 1.125rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+        .sol-card__desc { font-size: .875rem; color: var(--gray-500); line-height: 1.7; flex: 1; margin-bottom: 18px; }
+        .sol-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: .875rem; font-weight: 600; color: var(--blue);
+            text-decoration: none; transition: gap .15s;
+        }
+        .sol-link:hover { gap: 10px; }
+
+        /* ══════════════ TESTIMONIALS ══════════════ */
+        .testi { padding: 100px 48px; background: var(--gray-50); }
+        .testi__inner { max-width: 1100px; margin: 0 auto; }
+        .testi__header { text-align: center; margin-bottom: 56px; }
+        .testi__header .section-sub { margin: 0 auto; }
+        .testi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .testi-card {
+            background: #fff; border-radius: 20px; padding: 28px;
+            border: 1px solid var(--gray-100);
+            transition: transform .25s, box-shadow .25s;
+        }
+        .testi-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.08); }
+        .testi-stars { display: flex; gap: 3px; color: var(--gold); font-size: .9rem; margin-bottom: 16px; }
+        .testi-text {
+            font-size: .9375rem; color: var(--gray-600); line-height: 1.75;
+            margin-bottom: 20px; font-style: italic;
+        }
+        .testi-author { display: flex; align-items: center; gap: 12px; }
+        .testi-avatar {
+            width: 42px; height: 42px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; font-weight: 700; color: #fff; flex-shrink: 0;
+        }
+        .testi-name { font-size: .875rem; font-weight: 700; color: var(--navy); }
+        .testi-role { font-size: .78rem; color: var(--gray-400); }
+
+        /* ══════════════ CTA BANNER ══════════════ */
+        .cta-banner {
+            padding: 80px 48px;
+            background: linear-gradient(135deg, var(--navy) 0%, #1e3a5f 50%, var(--navy-3) 100%);
+            position: relative; overflow: hidden;
+        }
+        .cta-banner::before {
+            content: ''; position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+        .cta-banner__inner {
+            position: relative; z-index: 1;
+            max-width: 700px; margin: 0 auto; text-align: center;
+        }
+        .cta-banner__title {
+            font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 900;
+            color: #fff; letter-spacing: -.5px; margin-bottom: 16px; line-height: 1.2;
+        }
+        .cta-banner__title span { color: var(--gold-l); }
+        .cta-banner__sub { font-size: 1rem; color: rgba(255,255,255,.6); line-height: 1.7; margin-bottom: 36px; }
+        .cta-banner__btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .btn-cta-gold {
+            font-size: .9375rem; font-weight: 700; color: var(--navy);
+            background: var(--gold); text-decoration: none;
+            padding: 14px 32px; border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(245,158,11,.4);
+            transition: all .2s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-cta-gold:hover { background: var(--gold-l); transform: translateY(-2px); }
+        .btn-cta-outline {
+            font-size: .9375rem; font-weight: 600; color: rgba(255,255,255,.85);
+            text-decoration: none; padding: 14px 28px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.25);
+            transition: all .2s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-cta-outline:hover { color: #fff; border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.08); }
+
+        /* ══════════════ FOOTER ══════════════ */
+        .footer { background: var(--navy); padding: 64px 48px 32px; }
+        .footer__inner { max-width: 1200px; margin: 0 auto; }
+        .footer__top {
+            display: grid; grid-template-columns: 2.5fr 1fr 1fr 1fr; gap: 48px;
+            padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,.08);
+            margin-bottom: 28px;
+        }
+        .footer__logo {
+            font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 800;
+            color: var(--gold); display: flex; align-items: center; gap: 8px;
+            margin-bottom: 16px; text-decoration: none;
+        }
+        .footer__desc { font-size: .875rem; color: rgba(255,255,255,.4); line-height: 1.7; max-width: 280px; margin-bottom: 24px; }
+        .footer__social { display: flex; gap: 8px; }
+        .footer__soc-btn {
+            width: 36px; height: 36px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.4);
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: .9rem;
+            transition: all .2s;
+        }
+        .footer__soc-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .footer__col-title { font-size: .72rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,.3); margin-bottom: 16px; }
+        .footer__col-link {
+            display: block; font-size: .875rem; color: rgba(255,255,255,.5);
+            text-decoration: none; margin-bottom: 10px; transition: color .15s;
+        }
+        .footer__col-link:hover { color: var(--gold); }
+        .footer__bottom { display: flex; justify-content: space-between; align-items: center; }
+        .footer__copy { font-size: .8rem; color: rgba(255,255,255,.3); }
+        .footer__badge {
+            font-size: .75rem; color: rgba(255,255,255,.3); display: flex; align-items: center; gap: 6px;
+        }
+        .footer__badge i { color: var(--gold); }
+
+        /* ══════════════ RESPONSIVE ══════════════ */
+        @@media (max-width: 1024px) {
+            .nav { padding: 0 24px; }
+            .nav__links { display: none; }
+            .hero { padding: 100px 24px 60px; }
+            .stats-bar__inner { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+            .stat-item { border-right: none; }
+            .features, .how, .solutions, .testi, .cta-banner { padding: 72px 24px; }
+            .features__header { grid-template-columns: 1fr; gap: 16px; }
+            .features__right { text-align: left; }
+            .features__grid { grid-template-columns: repeat(2, 1fr); }
+            .feat-card.fc-large { grid-column: span 2; }
+            .how__steps { grid-template-columns: 1fr; }
+            .how__steps::before { display: none; }
+            .sol-grid, .testi-grid { grid-template-columns: repeat(2, 1fr); }
+            .screen__body { grid-template-columns: 1fr; }
+            .screen__sidebar { display: none; }
+            .footer { padding: 48px 24px 24px; }
+            .footer__top { grid-template-columns: 1fr 1fr; gap: 32px; }
+        }
+        @@media (max-width: 640px) {
+            .hero__title { font-size: 2rem; }
+            .stats-bar { padding: 32px 20px; }
+            .stats-bar__inner { grid-template-columns: repeat(2, 1fr); }
+            .features__grid { grid-template-columns: 1fr; }
+            .feat-card.fc-large { grid-column: span 1; }
+            .feat-card.fc-large { display: block; }
+            .sol-grid, .testi-grid { grid-template-columns: 1fr; }
+            .footer__top { grid-template-columns: 1fr; gap: 24px; }
+            .footer__bottom { flex-direction: column; gap: 8px; text-align: center; }
+        }
+
+        /* Scroll animation */
+        .reveal { opacity: 0; transform: translateY(28px); transition: opacity .6s ease, transform .6s ease; }
+        .reveal.visible { opacity: 1; transform: none; }
+        .reveal-delay-1 { transition-delay: .1s; }
+        .reveal-delay-2 { transition-delay: .2s; }
+        .reveal-delay-3 { transition-delay: .3s; }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════════ NAVBAR ══════════════════════════ -->
+<nav class="nav" id="mainNav" data-testid="landing-nav">
+    <a href="/" class="nav__logo">Lumina<span class="nav__logo-dot"></span></a>
+    <div class="nav__links">
+        <a href="#features"  class="nav__link">Tính năng</a>
+        <a href="#solutions" class="nav__link">Giải pháp</a>
+        <a href="#how"       class="nav__link">Cách dùng</a>
+        <a href="#contact"   class="nav__link">Liên hệ</a>
+    </div>
+    <div class="nav__actions">
+        <a asp-controller="Auth" asp-action="SelectRole"  class="nav-login"    data-testid="nav-login">Đăng nhập</a>
+        <a asp-controller="Auth" asp-action="InviteLinks" class="nav-register" data-testid="nav-register">Bắt đầu miễn phí</a>
+    </div>
+</nav>
+
+<!-- ══════════════════════════ HERO ══════════════════════════ -->
+<section class="hero" data-testid="hero-section">
+    <!-- Video background -->
+    <video class="hero__video" autoplay muted loop playsinline preload="auto"
+           aria-hidden="true" data-testid="hero-video">
+        <source src="~/videos/hero-bg.mp4" type="video/mp4"/>
+    </video>
+
+    <!-- Dark overlay -->
+    <div class="hero__overlay"></div>
+
+    <!-- Grid pattern -->
+    <div class="hero-grid"></div>
+
+    <!-- Floating cards -->
+    <div class="hero__floats">
+        <div class="hero__float hero__float-1">
+            <div class="hf-icon" style="background:rgba(16,185,129,.2);color:#34d399"><i class="bi bi-check-circle-fill"></i></div>
+            <div>
+                <div class="hf-text">Điểm danh tự động</div>
+                <div class="hf-sub">QR Code · Nhận diện khuôn mặt</div>
+            </div>
+            <div class="hf-pill pill-green">LIVE</div>
+        </div>
+        <div class="hero__float hero__float-2">
+            <div class="hf-icon" style="background:rgba(59,130,246,.2);color:#93c5fd"><i class="bi bi-shield-check-fill"></i></div>
+            <div>
+                <div class="hf-text">Bảo mật đa lớp</div>
+                <div class="hf-sub">Multi-tenant · Mã hóa AES-256</div>
+            </div>
+            <div class="hf-pill pill-blue">ISO 27001</div>
+        </div>
+    </div>
+
+    <div class="hero__inner">
+        <div class="hero__badge"><i class="bi bi-stars"></i> Hệ thống quản lý giáo dục thế hệ mới</div>
+        <h1 class="hero__title">
+            Chuyển đổi số toàn diện<br/>
+            <span class="hero__title-grad">nền giáo dục Việt Nam</span>
+        </h1>
+        <p class="hero__sub">
+            Một nền tảng duy nhất kết nối nhà trường, giáo viên, học sinh và phụ huynh —
+            tự động hóa quy trình, nâng cao chất lượng dạy và học.
+        </p>
+        <div class="hero__cta">
+            <a asp-controller="Auth" asp-action="SelectRole" class="btn-hero-primary" data-testid="hero-cta-primary">
+                <i class="bi bi-rocket-takeoff-fill"></i> Dùng thử ngay
+            </a>
+            <a href="#how" class="btn-hero-ghost" data-testid="hero-cta-demo">
+                <i class="bi bi-play-circle-fill"></i> Xem hoạt động
+            </a>
+        </div>
+    </div>
+
+    <!-- Screen preview -->
+    <div class="hero__preview">
+        <div class="hero__screen">
+            <div class="screen__bar">
+                <div class="screen__dot" style="background:#f87171"></div>
+                <div class="screen__dot" style="background:#fbbf24"></div>
+                <div class="screen__dot" style="background:#34d399"></div>
+                <div class="screen__url"><span class="screen__url-text">app.luminatutors.vn/dashboard</span></div>
+            </div>
+            <div class="screen__body">
+                <div class="screen__sidebar">
+                    <div class="screen__logo-area"><span class="screen__logo-txt">Lumina·</span></div>
+                    <div class="s-item act"><div class="s-item-icon"></div><div class="s-item-text" style="width:70%"></div></div>
+                    <div class="s-item"><div class="s-item-icon"></div><div class="s-item-text" style="width:55%"></div></div>
+                    <div class="s-item"><div class="s-item-icon"></div><div class="s-item-text" style="width:65%"></div></div>
+                    <div class="s-item"><div class="s-item-icon"></div><div class="s-item-text" style="width:50%"></div></div>
+                    <div class="s-item"><div class="s-item-icon"></div><div class="s-item-text" style="width:72%"></div></div>
+                    <div class="s-item"><div class="s-item-icon"></div><div class="s-item-text" style="width:58%"></div></div>
+                </div>
+                <div class="screen__main">
+                    <div class="s-stats">
+                        <div class="s-stat"><div class="s-stat-icon" style="background:#eff6ff"></div><div class="s-stat-val">1,284</div><div class="s-stat-lbl"></div></div>
+                        <div class="s-stat"><div class="s-stat-icon" style="background:#ecfdf5"></div><div class="s-stat-val" style="color:#10b981">96.2%</div><div class="s-stat-lbl"></div></div>
+                        <div class="s-stat"><div class="s-stat-icon" style="background:#fffbeb"></div><div class="s-stat-val" style="color:#f59e0b">48</div><div class="s-stat-lbl"></div></div>
+                        <div class="s-stat"><div class="s-stat-icon" style="background:#f5f3ff"></div><div class="s-stat-val" style="color:#8b5cf6">12</div><div class="s-stat-lbl"></div></div>
+                    </div>
+                    <div class="s-row">
+                        <div class="s-card">
+                            <div class="s-card-head"><div class="s-card-head-dot" style="background:#3b82f6"></div><div class="s-card-head-label"></div></div>
+                            <div class="s-table">
+                                <div class="s-tr"><div class="s-td" style="width:28%"></div><div class="s-td" style="width:18%"></div><div class="s-td" style="width:22%"></div><div class="s-td" style="width:12%"></div></div>
+                                <div class="s-tr"><div class="s-td" style="width:32%"></div><div class="s-td" style="width:20%"></div><div class="s-td" style="width:16%"></div><div class="s-td" style="width:14%"></div></div>
+                                <div class="s-tr"><div class="s-td" style="width:25%"></div><div class="s-td" style="width:22%"></div><div class="s-td" style="width:20%"></div><div class="s-td" style="width:10%"></div></div>
+                                <div class="s-tr"><div class="s-td" style="width:30%"></div><div class="s-td" style="width:16%"></div><div class="s-td" style="width:18%"></div><div class="s-td" style="width:16%"></div></div>
+                            </div>
+                        </div>
+                        <div class="s-card">
+                            <div class="s-card-head"><div class="s-card-head-dot" style="background:#10b981"></div><div class="s-card-head-label"></div></div>
+                            <div class="s-chart">
+                                <div class="s-bars">
+                                    <div class="s-bar" style="height:35%"></div>
+                                    <div class="s-bar" style="height:55%"></div>
+                                    <div class="s-bar" style="height:45%"></div>
+                                    <div class="s-bar" style="height:75%"></div>
+                                    <div class="s-bar" style="height:60%"></div>
+                                    <div class="s-bar" style="height:90%"></div>
+                                    <div class="s-bar" style="height:70%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ STATS ══════════════════════════ -->
+<div class="stats-bar" data-testid="stats-section">
+    <div class="stats-bar__inner">
+        <div class="stat-item reveal">
+            <div class="stat-num">500<span>+</span></div>
+            <div class="stat-lbl">Trường học đang dùng</div>
+        </div>
+        <div class="stat-item reveal reveal-delay-1">
+            <div class="stat-num">120<span>K</span></div>
+            <div class="stat-lbl">Học sinh được quản lý</div>
+        </div>
+        <div class="stat-item reveal reveal-delay-2">
+            <div class="stat-num">99.9<span>%</span></div>
+            <div class="stat-lbl">Uptime đảm bảo</div>
+        </div>
+        <div class="stat-item reveal reveal-delay-3">
+            <div class="stat-num">4.9<span>★</span></div>
+            <div class="stat-lbl">Điểm đánh giá trung bình</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════ FEATURES ══════════════════════════ -->
+<section class="features" id="features" data-testid="features-section">
+    <div class="features__inner">
+        <div class="features__header">
+            <div>
+                <div class="section-badge reveal"><i class="bi bi-grid-3x3-gap-fill"></i> Tính năng</div>
+                <h2 class="section-title reveal">Mọi thứ bạn cần trong<br/>một nền tảng duy nhất</h2>
+                <p class="section-sub reveal">Hơn 50 tính năng được xây dựng chuyên biệt cho hệ sinh thái giáo dục Việt Nam.</p>
+            </div>
+            <div class="features__right reveal">
+                <a href="#solutions" class="btn-outline-blue">Xem tất cả tính năng <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+
+        <div class="features__grid">
+            <!-- Large card -->
+            <div class="feat-card fc-blue fc-large reveal">
+                <div>
+                    <div class="feat-card__icon fi-blue"><i class="bi bi-bar-chart-line-fill"></i></div>
+                    <h3 class="feat-card__title">Báo cáo & Phân tích thông minh</h3>
+                    <p class="feat-card__desc">Dashboard trực quan với biểu đồ realtime, phân tích xu hướng học tập và dự báo kết quả dựa trên AI. Xuất báo cáo PDF/Excel với một cú nhấp.</p>
+                    <div class="feat-card__tags">
+                        <span class="f-tag">Realtime</span>
+                        <span class="f-tag">AI Insights</span>
+                        <span class="f-tag">PDF Export</span>
+                    </div>
+                </div>
+                <div class="feat-large__visual">
+                    <div class="flv-row">
+                        <div class="flv-card"><div class="flv-num">1,284</div><div class="flv-lbl"></div></div>
+                        <div class="flv-card"><div class="flv-num" style="color:#34d399">96%</div><div class="flv-lbl"></div></div>
+                    </div>
+                    <div class="flv-bar">
+                        <div style="height:5px;border-radius:3px;background:rgba(255,255,255,.15);width:60%;margin-bottom:6px"></div>
+                        <div class="flv-bars">
+                            <div class="flv-b" style="height:30%"></div>
+                            <div class="flv-b" style="height:55%"></div>
+                            <div class="flv-b" style="height:42%"></div>
+                            <div class="flv-b" style="height:80%"></div>
+                            <div class="flv-b" style="height:65%"></div>
+                            <div class="flv-b" style="height:95%"></div>
+                            <div class="flv-b" style="height:72%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feat-card fc-gold reveal reveal-delay-1">
+                <div class="feat-card__icon fi-gold"><i class="bi bi-qr-code-scan"></i></div>
+                <h3 class="feat-card__title">Điểm danh QR & Face ID</h3>
+                <p class="feat-card__desc">Học sinh chỉ cần scan QR code hoặc nhìn vào camera — hệ thống tự động ghi nhận và thông báo phụ huynh ngay lập tức.</p>
+                <div class="feat-card__tags"><span class="f-tag">QR Code</span><span class="f-tag">Realtime Alert</span></div>
+            </div>
+
+            <div class="feat-card fc-green reveal reveal-delay-2">
+                <div class="feat-card__icon fi-green"><i class="bi bi-cash-stack"></i></div>
+                <h3 class="feat-card__title">Quản lý học phí tự động</h3>
+                <p class="feat-card__desc">Tự động tạo hóa đơn theo kỳ, ghi nhận thanh toán MoMo/VNPay/chuyển khoản và nhắc nhở công nợ đúng hạn.</p>
+                <div class="feat-card__tags"><span class="f-tag">MoMo</span><span class="f-tag">VNPay</span></div>
+            </div>
+
+            <div class="feat-card fc-purple reveal">
+                <div class="feat-card__icon fi-purple"><i class="bi bi-chat-dots-fill"></i></div>
+                <h3 class="feat-card__title">Nhắn tin Phụ huynh</h3>
+                <p class="feat-card__desc">Kênh liên lạc trực tiếp giữa nhà trường, giáo viên và phụ huynh. Thông báo vi phạm, vắng mặt tức thì.</p>
+                <div class="feat-card__tags"><span class="f-tag">Push Notification</span><span class="f-tag">In-app Chat</span></div>
+            </div>
+
+            <div class="feat-card fc-teal reveal reveal-delay-1">
+                <div class="feat-card__icon fi-teal"><i class="bi bi-mortarboard-fill"></i></div>
+                <h3 class="feat-card__title">Chấm điểm theo TT22</h3>
+                <p class="feat-card__desc">Tự động tính ĐTBm theo Thông tư 22/2021: ĐTXi + ĐGK×2 + ĐCK×3, khóa sổ điểm và xuất học bạ chuẩn Bộ GD&ĐT.</p>
+                <div class="feat-card__tags"><span class="f-tag">TT22/2021</span><span class="f-tag">Tự động tính</span></div>
+            </div>
+
+            <div class="feat-card fc-rose reveal reveal-delay-2">
+                <div class="feat-card__icon fi-rose"><i class="bi bi-shield-lock-fill"></i></div>
+                <h3 class="feat-card__title">Bảo mật & Phân quyền</h3>
+                <p class="feat-card__desc">6 vai trò riêng biệt, xác thực đa lớp, multi-tenant cách ly dữ liệu giữa các trường. Audit log toàn bộ thao tác.</p>
+                <div class="feat-card__tags"><span class="f-tag">6 Roles</span><span class="f-tag">Multi-tenant</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ HOW IT WORKS ══════════════════════════ -->
+<section class="how" id="how" data-testid="how-section">
+    <div class="how__inner">
+        <div class="how__header">
+            <div class="section-badge reveal"><i class="bi bi-lightning-charge-fill"></i> Triển khai</div>
+            <h2 class="section-title reveal">Bắt đầu trong 3 bước đơn giản</h2>
+            <p class="section-sub reveal" style="margin:0 auto">Không cần kiến thức kỹ thuật. Đội ngũ hỗ trợ 24/7 sẵn sàng đồng hành cùng bạn.</p>
+        </div>
+        <div class="how__steps">
+            <div class="how-step reveal">
+                <div class="how-step__num"><i class="bi bi-building-add"></i></div>
+                <h3 class="how-step__title">Đăng ký & Cấu hình</h3>
+                <p class="how-step__desc">Tạo tài khoản trường học, nhập danh sách lớp, giáo viên và học sinh. Hệ thống tự động thiết lập cơ cấu tổ chức.</p>
+            </div>
+            <div class="how-step reveal reveal-delay-1">
+                <div class="how-step__num"><i class="bi bi-people-fill"></i></div>
+                <h3 class="how-step__title">Mời thành viên tham gia</h3>
+                <p class="how-step__desc">Gửi link mời qua email đến giáo viên và phụ huynh. Mỗi người nhận quyền truy cập tương ứng với vai trò của mình.</p>
+            </div>
+            <div class="how-step reveal reveal-delay-2">
+                <div class="how-step__num"><i class="bi bi-rocket-takeoff-fill"></i></div>
+                <h3 class="how-step__title">Vận hành ngay hôm nay</h3>
+                <p class="how-step__desc">Bắt đầu điểm danh, nhập điểm và quản lý học phí ngay lập tức. Dữ liệu đồng bộ realtime trên mọi thiết bị.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ SOLUTIONS ══════════════════════════ -->
+<section class="solutions" id="solutions" data-testid="solutions-section">
+    <div class="solutions__inner">
+        <div class="solutions__header">
+            <div class="section-badge reveal"><i class="bi bi-diagram-3-fill"></i> Giải pháp</div>
+            <h2 class="section-title reveal">Thiết kế riêng cho từng vai trò</h2>
+            <p class="section-sub reveal">Mỗi người dùng có trải nghiệm được tối ưu hóa — phù hợp với nhu cầu và workflow thực tế.</p>
+        </div>
+        <div class="sol-grid">
+            <div class="sol-card reveal" data-testid="sol-school">
+                <div class="sol-card__img sol-img-school">
+                    <div class="sol-card__tag">Nhà trường</div>
+                    <span class="sol-card__emoji">🏫</span>
+                </div>
+                <div class="sol-card__body">
+                    <h3 class="sol-card__title">Dành cho Ban Giám hiệu</h3>
+                    <p class="sol-card__desc">Tổng quan toàn trường trên một màn hình. Quản lý nhân sự, tài chính, kỷ luật và báo cáo học vụ chuyên sâu theo chuẩn Bộ GD&ĐT.</p>
+                    <a href="#" class="sol-link">Tìm hiểu thêm <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="sol-card reveal reveal-delay-1" data-testid="sol-teacher">
+                <div class="sol-card__img sol-img-teacher">
+                    <div class="sol-card__tag">Giáo viên</div>
+                    <span class="sol-card__emoji">👩‍🏫</span>
+                </div>
+                <div class="sol-card__body">
+                    <h3 class="sol-card__title">Dành cho Giáo viên</h3>
+                    <p class="sol-card__desc">Sổ điểm điện tử, điểm danh QR, giáo án số và nhắn tin phụ huynh — tất cả trên một ứng dụng. Giảm 70% thời gian hành chính.</p>
+                    <a href="#" class="sol-link">Tìm hiểu thêm <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="sol-card reveal reveal-delay-2" data-testid="sol-parent">
+                <div class="sol-card__img sol-img-parent">
+                    <div class="sol-card__tag">Phụ huynh</div>
+                    <span class="sol-card__emoji">👨‍👧</span>
+                </div>
+                <div class="sol-card__body">
+                    <h3 class="sol-card__title">Dành cho Phụ huynh</h3>
+                    <p class="sol-card__desc">Nhận thông báo tức thời khi con đến trường, xem điểm số, đóng học phí online và nhắn tin trực tiếp với giáo viên bất kỳ lúc nào.</p>
+                    <a href="#" class="sol-link">Tìm hiểu thêm <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ TESTIMONIALS ══════════════════════════ -->
+<section class="testi" id="contact" data-testid="testi-section">
+    <div class="testi__inner">
+        <div class="testi__header">
+            <div class="section-badge reveal"><i class="bi bi-chat-quote-fill"></i> Đánh giá</div>
+            <h2 class="section-title reveal">Được tin tưởng bởi hàng nghìn trường học</h2>
+            <p class="section-sub reveal">Những gì các nhà giáo dục nói về Lumina Tutors.</p>
+        </div>
+        <div class="testi-grid">
+            <div class="testi-card reveal">
+                <div class="testi-stars">
+                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </div>
+                <p class="testi-text">"Từ khi dùng Lumina, việc quản lý điểm danh và học phí chỉ tốn 1/3 thời gian so với trước. Phụ huynh cũng rất hài lòng vì nhận thông báo tức thì."</p>
+                <div class="testi-author">
+                    <div class="testi-avatar" style="background:linear-gradient(135deg,#2563eb,#7c3aed)">NL</div>
+                    <div>
+                        <div class="testi-name">Nguyễn Thị Lan</div>
+                        <div class="testi-role">Hiệu trưởng — THCS Nguyễn Du, TP.HCM</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testi-card reveal reveal-delay-1">
+                <div class="testi-stars">
+                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </div>
+                <p class="testi-text">"Tính năng chấm điểm theo TT22 tự động tính toán chính xác hoàn toàn. Giáo viên chúng tôi không còn phải tính tay nữa — tiết kiệm rất nhiều thời gian."</p>
+                <div class="testi-author">
+                    <div class="testi-avatar" style="background:linear-gradient(135deg,#0d9488,#2563eb)">TH</div>
+                    <div>
+                        <div class="testi-name">Trần Minh Hoàng</div>
+                        <div class="testi-role">Giáo viên Toán — THPT Lê Hồng Phong, HN</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testi-card reveal reveal-delay-2">
+                <div class="testi-stars">
+                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                    <i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+                </div>
+                <p class="testi-text">"Con tôi vừa đến trường là tôi nhận được thông báo. Xem điểm, đóng học phí đều trên điện thoại. Ứng dụng thực sự rất tiện lợi cho phụ huynh bận rộn."</p>
+                <div class="testi-author">
+                    <div class="testi-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">PT</div>
+                    <div>
+                        <div class="testi-name">Phạm Thị Thu</div>
+                        <div class="testi-role">Phụ huynh học sinh lớp 9A3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ CTA BANNER ══════════════════════════ -->
+<section class="cta-banner" data-testid="cta-section">
+    <div class="cta-banner__inner">
+        <h2 class="cta-banner__title reveal">Sẵn sàng chuyển đổi số<br/><span>trường học của bạn?</span></h2>
+        <p class="cta-banner__sub reveal">Tham gia cùng hơn 500 trường học đang sử dụng Lumina Tutors. Miễn phí trong 30 ngày đầu — không cần thẻ tín dụng.</p>
+        <div class="cta-banner__btns reveal">
+            <a asp-controller="Auth" asp-action="SelectRole" class="btn-cta-gold" data-testid="cta-primary">
+                <i class="bi bi-rocket-takeoff-fill"></i> Bắt đầu miễn phí
+            </a>
+            <a href="mailto:contact@luminatutors.vn" class="btn-cta-outline" data-testid="cta-contact">
+                <i class="bi bi-telephone-fill"></i> Liên hệ tư vấn
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════ FOOTER ══════════════════════════ -->
+<footer class="footer" data-testid="landing-footer">
+    <div class="footer__inner">
+        <div class="footer__top">
+            <div>
+                <a href="/" class="footer__logo"><i class="bi bi-mortarboard-fill" style="color:var(--gold)"></i> Lumina Tutors</a>
+                <p class="footer__desc">Nền tảng quản lý giáo dục toàn diện, kiến tạo môi trường học tập thông minh và hiệu quả cho tương lai Việt Nam.</p>
+                <div class="footer__social">
+                    <a href="#" class="footer__soc-btn"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="footer__soc-btn"><i class="bi bi-twitter-x"></i></a>
+                    <a href="#" class="footer__soc-btn"><i class="bi bi-linkedin"></i></a>
+                    <a href="#" class="footer__soc-btn"><i class="bi bi-youtube"></i></a>
+                </div>
+            </div>
+            <div>
+                <p class="footer__col-title">Sản phẩm</p>
+                <a href="#features"  class="footer__col-link">Tính năng</a>
+                <a href="#solutions" class="footer__col-link">Giải pháp</a>
+                <a href="#how"       class="footer__col-link">Cách dùng</a>
+                <a href="#"          class="footer__col-link">Bảng giá</a>
+            </div>
+            <div>
+                <p class="footer__col-title">Công ty</p>
+                <a href="#" class="footer__col-link">Về chúng tôi</a>
+                <a href="#" class="footer__col-link">Blog</a>
+                <a href="#" class="footer__col-link">Tuyển dụng</a>
+                <a href="#" class="footer__col-link">Đối tác</a>
+            </div>
+            <div>
+                <p class="footer__col-title">Hỗ trợ</p>
+                <a href="#" class="footer__col-link">Tài liệu</a>
+                <a href="#" class="footer__col-link">Liên hệ</a>
+                <a href="#" class="footer__col-link">Chính sách BM</a>
+                <a href="#" class="footer__col-link">Điều khoản DV</a>
+            </div>
+        </div>
+        <div class="footer__bottom">
+            <p class="footer__copy">© @DateTime.Now.Year Lumina Tutors. All rights reserved.</p>
+            <div class="footer__badge"><i class="bi bi-shield-check-fill"></i> Bảo mật SSL · Dữ liệu lưu trữ tại Việt Nam</div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Navbar scroll effect
+    const nav = document.getElementById('mainNav');
+    window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Reveal on scroll
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

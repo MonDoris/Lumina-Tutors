@@ -1,0 +1,149 @@
+@using LuminaTutors.Application.DTOs.Grading
+@model StudentSemesterSummaryDto
+@{
+    ViewData["Title"] = "Kết quả học tập học sinh";
+}
+
+<div class="lt-page-header">
+    <div>
+        <a onclick="history.back()" class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+        <h1 class="lt-page-title">Kết quả học tập</h1>
+        @if (Model != null)
+        {
+            <p class="lt-page-subtitle">
+                <strong>@Model.StudentName</strong> — @Model.SemesterName
+            </p>
+        }
+    </div>
+</div>
+
+@if (Model == null)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-journal-x"></i></div>
+                <p class="lt-empty__title">Không tìm thấy dữ liệu</p>
+                <p class="lt-empty__text">Chưa có kết quả học tập cho học kỳ này.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- GPA banner -->
+    <div class="row g-3 lt-mb-4">
+        <div class="col-md-4">
+            <div class="lt-card" style="text-align:center;background:var(--lt-navy)">
+                <div class="lt-card__body" style="padding:28px 20px">
+                    <p class="lt-text-sm" style="color:rgba(255,255,255,.6);margin-bottom:6px">ĐTB học kỳ</p>
+                    <div style="font-family:'Playfair Display',Georgia,serif;font-size:2.8rem;
+                                font-weight:700;color:var(--lt-gold);line-height:1">
+                        @(Model.SemesterGpa.HasValue ? Model.SemesterGpa.Value.ToString("F1") : "—")
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.SemesterRemark))
+                    {
+                        <div style="margin-top:10px">
+                            <span class="lt-badge" style="background:rgba(201,168,76,.2);color:var(--lt-gold);font-size:.7rem">
+                                @Model.SemesterRemark
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--navy">
+                    <i class="bi bi-book-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.SubjectAverages.Count</div>
+                    <div class="lt-stat__label">Số môn học</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--danger">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.AbsenceCount</div>
+                    <div class="lt-stat__label">Buổi vắng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subject results table -->
+    <div class="lt-card">
+        <div class="lt-card__header">
+            <h3 class="lt-card__title">
+                <i class="bi bi-journal-text" style="color:var(--lt-gold);margin-right:6px"></i>
+                Kết quả từng môn
+            </h3>
+        </div>
+        <div class="lt-card__body" style="padding:0;overflow-x:auto">
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th>Môn học</th>
+                        <th class="lt-th--right">ĐTBm</th>
+                        <th>Xếp loại</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.SubjectAverages.OrderBy(x => x.SubjectName))
+                    {
+                        <tr>
+                            <td class="lt-fw-600">@s.SubjectName</td>
+                            <td class="lt-td--right lt-td--mono">
+                                @if (s.AverageScore.HasValue)
+                                {
+                                    var score = s.AverageScore.Value;
+                                    var color = score >= 8 ? "var(--lt-success)" : score >= 6.5m ? "var(--lt-navy)" : score >= 5 ? "var(--lt-warning)" : "var(--lt-danger)";
+                                    <span class="lt-fw-600" style="color:@color">@score.ToString("F1")</span>
+                                }
+                                else
+                                {
+                                    <span class="lt-text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(s.Remark))
+                                {
+                                    var badgeCls = s.Remark switch
+                                    {
+                                        "EXCELLENT"  => "lt-badge--success",
+                                        "GOOD"       => "lt-badge--navy",
+                                        "AVERAGE"    => "lt-badge--warning",
+                                        "BELOW_AVG"  => "lt-badge--warning",
+                                        "FAIL"       => "lt-badge--danger",
+                                        _            => "lt-badge--navy"
+                                    };
+                                    var remarkLabel = s.Remark switch
+                                    {
+                                        "EXCELLENT" => "Giỏi",
+                                        "GOOD"      => "Khá",
+                                        "AVERAGE"   => "Trung bình",
+                                        "BELOW_AVG" => "Yếu",
+                                        "FAIL"      => "Kém",
+                                        _           => s.Remark
+                                    };
+                                    <span class="lt-badge @badgeCls">@remarkLabel</span>
+                                }
+                                else
+                                {
+                                    <span class="lt-text-muted lt-text-xs">Chưa tính</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

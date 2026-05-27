@@ -1,0 +1,129 @@
+@model List<LuminaTutors.Application.DTOs.Class.ClassSummaryDto>
+@{
+    ViewData["Title"] = "Lớp học";
+    var academicYearId = ViewBag.AcademicYearId as int? ?? 1;
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Lớp học</h1>
+        <p class="lt-page-subtitle">Quản lý các lớp học trong năm học</p>
+    </div>
+    @if (User.IsInRole("ADMIN"))
+    {
+        <div class="lt-page-header__actions">
+            <a asp-action="Create" asp-route-academicYearId="@academicYearId"
+               class="lt-btn lt-btn--primary" data-testid="btn-create-class">
+                <i class="bi bi-plus-lg"></i> Tạo lớp mới
+            </a>
+        </div>
+    }
+</div>
+
+<!-- Filter bar -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body" style="padding:14px 24px">
+        <form method="get">
+            <div class="lt-filter-bar">
+                <div class="lt-filter-group">
+                    <label class="lt-label">Năm học (ID)</label>
+                    <input type="number" name="academicYearId" value="@academicYearId"
+                           class="lt-input" style="width:120px"
+                           placeholder="VD: 1" data-testid="input-academic-year"/>
+                </div>
+                <div class="lt-filter-group--auto" style="align-self:flex-end">
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-funnel"></i> Lọc
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Class grid -->
+@if (Model == null || Model.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-building"></i></div>
+                <p class="lt-empty__title">Chưa có lớp học nào</p>
+                <p class="lt-empty__text">
+                    @if (User.IsInRole("ADMIN"))
+                    {
+                        <span>Nhấn <strong>Tạo lớp mới</strong> để bắt đầu.</span>
+                    }
+                    else
+                    {
+                        <span>Chưa có lớp học nào trong năm học này.</span>
+                    }
+                </p>
+                @if (User.IsInRole("ADMIN"))
+                {
+                    <a asp-action="Create" asp-route-academicYearId="@academicYearId"
+                       class="lt-btn lt-btn--primary">
+                        <i class="bi bi-plus-lg"></i> Tạo lớp mới
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var cls in Model)
+        {
+            <div class="col-sm-6 col-xl-4" data-testid="class-card">
+                <div class="lt-card lt-card--hover" style="height:100%">
+                    <div class="lt-card__body">
+                        <div class="lt-flex-between lt-mb-3">
+                            <span class="lt-badge lt-badge--navy">@cls.GradeName</span>
+                            <span class="lt-badge @(cls.IsActive ? "lt-badge--success" : "lt-badge--gray")">
+                                @(cls.IsActive ? "Đang hoạt động" : "Không hoạt động")
+                            </span>
+                        </div>
+                        <h3 class="lt-fw-700" style="font-size:1.1rem;margin-bottom:4px">@cls.ClassName</h3>
+                        <p class="lt-text-sm lt-text-muted lt-mb-3">@cls.AcademicYearName</p>
+
+                        <div class="lt-flex-between lt-text-sm lt-mb-2">
+                            <span>
+                                <i class="bi bi-person-fill lt-text-navy"></i>
+                                GVCN: @(cls.HomeRoomTeacherName ?? "Chưa phân công")
+                            </span>
+                        </div>
+                        <div class="lt-flex-between lt-text-sm lt-mb-3">
+                            <span>
+                                <i class="bi bi-people-fill lt-text-navy"></i>
+                                @cls.EnrolledCount / @cls.MaxStudents học sinh
+                            </span>
+                        </div>
+
+                        <!-- Enrollment progress -->
+                        <div class="lt-progress lt-mb-3">
+                            <div class="lt-progress__bar"
+                                 style="width:@(cls.MaxStudents > 0 ? (cls.EnrolledCount * 100 / cls.MaxStudents) : 0)%">
+                            </div>
+                        </div>
+
+                        <div class="lt-flex-between">
+                            <a asp-action="Details" asp-route-id="@cls.ClassId"
+                               class="lt-btn lt-btn--outline lt-btn--sm"
+                               data-testid="btn-class-details">
+                                <i class="bi bi-eye"></i> Chi tiết
+                            </a>
+                            @if (User.IsInRole("ADMIN"))
+                            {
+                                <a asp-action="Edit" asp-route-id="@cls.ClassId"
+                                   class="lt-btn lt-btn--outline lt-btn--sm">
+                                    <i class="bi bi-pencil"></i> Sửa
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

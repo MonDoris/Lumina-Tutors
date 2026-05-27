@@ -1,0 +1,365 @@
+@model LuminaTutors.Application.DTOs.Auth.LoginRequest
+@{
+    Layout = null;
+    string role = (ViewBag.Role as string ?? "student").ToLower();
+
+    // Role metadata
+    var roles = new Dictionary<string, (string Label, string Sub, string Icon, string Grad, string[] Features)>
+    {
+        ["student"] = (
+            "Học Sinh", "Xem lịch học, điểm số và nhận thông báo từ thầy cô",
+            "bi-mortarboard-fill",
+            "linear-gradient(145deg,#0f1f4a 0%,#1a3a8f 50%,#2563eb 100%)",
+            new[]{ "Xem thời khóa biểu cá nhân", "Tra cứu điểm số realtime", "Nhận thông báo từ giáo viên", "Tham gia điểm danh QR" }
+        ),
+        ["teacher"] = (
+            "Giáo Viên", "Điểm danh, nhập điểm và quản lý lớp học của bạn",
+            "bi-person-video3",
+            "linear-gradient(145deg,#052e1c 0%,#065f3e 50%,#059669 100%)",
+            new[]{ "Tạo phiên điểm danh QR", "Nhập điểm theo TT22/2021", "Quản lý sổ điểm điện tử", "Nhắn tin phụ huynh trực tiếp" }
+        ),
+        ["supervisor"] = (
+            "Giám Thị", "Giám sát kỷ luật và quản lý cổng trường học",
+            "bi-shield-fill",
+            "linear-gradient(145deg,#431407 0%,#92400e 50%,#d97706 100%)",
+            new[]{ "Kiểm tra cổng vào/ra", "Ghi nhận vi phạm kỷ luật", "Xử lý hồ sơ vi phạm", "Gửi thông báo đến phụ huynh" }
+        ),
+        ["parent"] = (
+            "Phụ Huynh", "Theo dõi việc học và liên lạc với nhà trường",
+            "bi-people-fill",
+            "linear-gradient(145deg,#2e1065 0%,#5b21b6 50%,#7c3aed 100%)",
+            new[]{ "Nhận thông báo học sinh vắng mặt", "Xem điểm số theo kỳ", "Đóng học phí online", "Nhắn tin giáo viên" }
+        ),
+        ["admin"] = (
+            "Quản Trị Viên", "Quản lý toàn bộ hệ thống trường học",
+            "bi-shield-lock-fill",
+            "linear-gradient(145deg,#030712 0%,#111827 50%,#1f2937 100%)",
+            new[]{ "Quản lý toàn bộ người dùng", "Cấu hình học kỳ & môn học", "Báo cáo tài chính tổng hợp", "Audit log hệ thống" }
+        ),
+    };
+
+    if (!roles.TryGetValue(role, out var rMeta))
+        rMeta = roles["student"];
+
+    var (rLabel, rSub, rIcon, rGrad, rFeatures) = rMeta;
+    ViewData["Title"] = $"Đăng nhập — {rLabel}";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Đăng nhập @rLabel — Lumina Tutors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+    <link rel="stylesheet" href="~/css/lumina.css" asp-append-version="true"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+
+        .login-wrap {
+            display: grid; grid-template-columns: 1fr 1fr;
+            min-height: 100vh;
+        }
+
+        /* ── Left panel ── */
+        .login-left {
+            position: relative; overflow: hidden;
+            background: @rGrad;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 48px;
+        }
+        .login-left::before {
+            content: ''; position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+        .login-left::after {
+            content: ''; position: absolute;
+            width: 400px; height: 400px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,.07) 0%, transparent 70%);
+            bottom: -100px; right: -80px;
+        }
+        .ll-top { position: relative; z-index: 1; }
+        .ll-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem; font-weight: 800; color: rgba(255,255,255,.9);
+            text-decoration: none; display: flex; align-items: center; gap: 8px;
+            margin-bottom: 56px;
+        }
+        .ll-logo-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.6); }
+
+        /* Role badge */
+        .ll-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+            border-radius: 99px; padding: 6px 14px;
+            font-size: .78rem; font-weight: 600; color: rgba(255,255,255,.8);
+            text-transform: uppercase; letter-spacing: .6px;
+            margin-bottom: 20px;
+        }
+        .ll-title {
+            font-size: clamp(1.6rem, 2.5vw, 2.2rem); font-weight: 800;
+            color: #fff; line-height: 1.2; letter-spacing: -.4px;
+            margin-bottom: 12px;
+        }
+        .ll-sub { font-size: .9rem; color: rgba(255,255,255,.55); line-height: 1.65; max-width: 340px; }
+
+        /* Feature list */
+        .ll-features { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; }
+        .ll-feat {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; border-radius: 12px;
+            background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+        }
+        .ll-feat-icon {
+            width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+            background: rgba(255,255,255,.15);
+            display: flex; align-items: center; justify-content: center;
+            color: rgba(255,255,255,.9); font-size: .85rem;
+        }
+        .ll-feat-text { font-size: .85rem; font-weight: 500; color: rgba(255,255,255,.75); }
+
+        /* Back link */
+        .ll-back {
+            position: relative; z-index: 1;
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: .8rem; font-weight: 500; color: rgba(255,255,255,.4);
+            text-decoration: none; transition: color .2s;
+        }
+        .ll-back:hover { color: rgba(255,255,255,.75); }
+
+        /* ── Right panel ── */
+        .login-right {
+            background: #fff; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 48px 56px; position: relative;
+        }
+        .lr-inner { width: 100%; max-width: 380px; }
+
+        /* Role switcher */
+        .lr-role-pill {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 99px; padding: 6px 14px 6px 8px;
+            margin-bottom: 24px;
+        }
+        .lr-role-icon {
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .8rem; color: #fff;
+        }
+        .lr-role-name { font-size: .8rem; font-weight: 600; color: #334155; }
+        .lr-role-change {
+            font-size: .75rem; font-weight: 500; color: #94a3b8;
+            text-decoration: none; margin-left: 4px; transition: color .15s;
+        }
+        .lr-role-change:hover { color: #3b82f6; }
+
+        .lr-heading { font-size: 1.625rem; font-weight: 800; color: #0f172a; letter-spacing: -.4px; margin-bottom: 6px; }
+        .lr-sub { font-size: .875rem; color: #94a3b8; margin-bottom: 28px; }
+
+        /* Form */
+        .form-field { margin-bottom: 18px; }
+        .form-label { display: block; font-size: .8rem; font-weight: 600; color: #374151; margin-bottom: 6px; }
+        .form-input {
+            width: 100%; height: 46px; border-radius: 10px;
+            border: 1.5px solid #e2e8f0; padding: 0 14px;
+            font-size: .9375rem; font-family: inherit; color: #0f172a;
+            background: #f8fafc;
+            transition: border-color .2s, box-shadow .2s, background .2s;
+            outline: none;
+        }
+        .form-input:focus {
+            border-color: var(--focus-color, #3b82f6);
+            box-shadow: 0 0 0 3px var(--focus-shadow, rgba(59,130,246,.12));
+            background: #fff;
+        }
+        .form-input.is-invalid { border-color: #ef4444; }
+        .pw-wrap { position: relative; }
+        .pw-toggle {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: #94a3b8; font-size: 1rem; padding: 4px;
+            transition: color .15s;
+        }
+        .pw-toggle:hover { color: #475569; }
+        .form-error { font-size: .78rem; color: #ef4444; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+
+        .form-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+        .remember { display: flex; align-items: center; gap: 7px; font-size: .8rem; color: #64748b; cursor: pointer; }
+        .remember input { width: 15px; height: 15px; accent-color: var(--btn-color, #2563eb); cursor: pointer; }
+
+        .btn-submit {
+            width: 100%; height: 48px; border: none; border-radius: 10px;
+            font-size: .9375rem; font-weight: 700; color: #fff;
+            background: var(--btn-color, #2563eb);
+            box-shadow: 0 4px 16px var(--btn-shadow, rgba(37,99,235,.35));
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: background .2s, transform .15s, box-shadow .2s;
+            font-family: inherit;
+        }
+        .btn-submit:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+
+        .divider {
+            display: flex; align-items: center; gap: 12px; margin: 22px 0;
+            font-size: .78rem; color: #cbd5e1;
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
+
+        .lr-footer { font-size: .8rem; color: #94a3b8; text-align: center; line-height: 1.6; }
+
+        .alert-error {
+            background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+            padding: 12px 14px; font-size: .875rem; color: #dc2626;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 18px;
+        }
+
+        /* Role color overrides */
+        .role-student  { --btn-color:#2563eb; --btn-shadow:rgba(37,99,235,.35); --focus-color:#3b82f6; --focus-shadow:rgba(59,130,246,.12); --pill-bg:#eff6ff; --pill-color:#2563eb; }
+        .role-teacher  { --btn-color:#059669; --btn-shadow:rgba(5,150,105,.35); --focus-color:#10b981; --focus-shadow:rgba(16,185,129,.12); --pill-bg:#ecfdf5; --pill-color:#059669; }
+        .role-supervisor{ --btn-color:#d97706; --btn-shadow:rgba(217,119,6,.35); --focus-color:#f59e0b; --focus-shadow:rgba(245,158,11,.12); --pill-bg:#fffbeb; --pill-color:#d97706; }
+        .role-parent   { --btn-color:#7c3aed; --btn-shadow:rgba(124,58,237,.35); --focus-color:#8b5cf6; --focus-shadow:rgba(139,92,246,.12); --pill-bg:#f5f3ff; --pill-color:#7c3aed; }
+        .role-admin    { --btn-color:#1f2937; --btn-shadow:rgba(31,41,55,.35); --focus-color:#374151; --focus-shadow:rgba(55,65,81,.12); --pill-bg:#f8fafc; --pill-color:#1f2937; }
+
+        .lr-role-icon { background: var(--btn-color, #2563eb); }
+
+        @@media (max-width: 768px) {
+            .login-wrap { grid-template-columns: 1fr; }
+            .login-left { display: none; }
+            .login-right { padding: 40px 24px; }
+        }
+    </style>
+</head>
+<body class="role-@role">
+
+<div class="login-wrap">
+
+    <!-- ═══════════ LEFT PANEL ═══════════ -->
+    <div class="login-left">
+        <div class="ll-top">
+            <a href="/" class="ll-logo">Lumina<span class="ll-logo-dot"></span></a>
+
+            <div class="ll-badge">
+                <i class="bi @rIcon"></i> @rLabel
+            </div>
+            <h1 class="ll-title">Chào mừng<br/>trở lại!</h1>
+            <p class="ll-sub">@rSub</p>
+        </div>
+
+        <div class="ll-features">
+            @foreach (var f in rFeatures)
+            {
+                <div class="ll-feat">
+                    <div class="ll-feat-icon"><i class="bi bi-check-lg"></i></div>
+                    <span class="ll-feat-text">@f</span>
+                </div>
+            }
+        </div>
+
+        <a asp-controller="Auth" asp-action="SelectRole" class="ll-back">
+            <i class="bi bi-arrow-left"></i> Chọn vai trò khác
+        </a>
+    </div>
+
+    <!-- ═══════════ RIGHT PANEL ═══════════ -->
+    <div class="login-right">
+        <div class="lr-inner">
+
+            <!-- Role indicator pill -->
+            <div class="lr-role-pill">
+                <div class="lr-role-icon"><i class="bi @rIcon" style="font-size:.75rem"></i></div>
+                <span class="lr-role-name">@rLabel</span>
+                <a asp-controller="Auth" asp-action="SelectRole" class="lr-role-change" data-testid="change-role">
+                    · Đổi vai trò
+                </a>
+            </div>
+
+            <h2 class="lr-heading">Đăng nhập</h2>
+            <p class="lr-sub">Nhập thông tin tài khoản của bạn</p>
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                <div class="alert-error" role="alert" data-testid="login-error">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    @Html.ValidationSummary(true, "", new { @class = "m-0 p-0", style = "list-style:none" })
+                </div>
+            }
+
+            <form asp-controller="Auth" asp-action="Login" method="post"
+                  asp-route-returnUrl="@ViewData["ReturnUrl"]"
+                  data-testid="login-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="role" value="@role"/>
+
+                <div class="form-field">
+                    <label asp-for="Email" class="form-label">Địa chỉ Email</label>
+                    <input asp-for="Email"
+                           class="form-input @(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                           placeholder="email@truong.edu.vn"
+                           autocomplete="email" autofocus
+                           data-testid="input-email"/>
+                    @if (ViewData.ModelState["Email"]?.Errors.Count > 0)
+                    {
+                        <div class="form-error"><i class="bi bi-exclamation-circle"></i> <span asp-validation-for="Email"></span></div>
+                    }
+                </div>
+
+                <div class="form-field">
+                    <label asp-for="Password" class="form-label">Mật khẩu</label>
+                    <div class="pw-wrap">
+                        <input asp-for="Password" type="password" id="pwInput"
+                               class="form-input @(ViewData.ModelState["Password"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                               placeholder="••••••••" autocomplete="current-password"
+                               style="padding-right:42px"
+                               data-testid="input-password"/>
+                        <button type="button" class="pw-toggle" onclick="togglePw()" aria-label="Hiện/ẩn mật khẩu">
+                            <i class="bi bi-eye" id="pwEye"></i>
+                        </button>
+                    </div>
+                    @if (ViewData.ModelState["Password"]?.Errors.Count > 0)
+                    {
+                        <div class="form-error"><i class="bi bi-exclamation-circle"></i> <span asp-validation-for="Password"></span></div>
+                    }
+                </div>
+
+                <div class="form-row">
+                    <label class="remember">
+                        <input asp-for="RememberMe" type="checkbox" data-testid="check-remember"/>
+                        Ghi nhớ đăng nhập
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit" data-testid="btn-login">
+                    <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+                </button>
+            </form>
+
+            <div class="divider">hoặc</div>
+
+            <p class="lr-footer">
+                Chưa có tài khoản?<br/>
+                Vui lòng liên hệ quản trị viên để nhận liên kết kích hoạt.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function togglePw() {
+    const inp  = document.getElementById('pwInput');
+    const icon = document.getElementById('pwEye');
+    inp.type   = inp.type === 'password' ? 'text' : 'password';
+    icon.className = inp.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+</script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

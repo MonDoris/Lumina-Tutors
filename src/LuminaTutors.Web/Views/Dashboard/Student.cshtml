@@ -1,0 +1,223 @@
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Dashboard";
+    var fullName  = User.FindFirstValue(ClaimTypes.Name) ?? "Học sinh";
+    var firstName = fullName.Split(' ').Last();
+    var hour      = DateTime.Now.Hour;
+    var greeting  = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+    var today     = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
+}
+
+<!-- Banner -->
+<div class="dash-banner dash-banner--student">
+    <div class="dash-banner__grid"></div>
+    <div class="dash-banner__left">
+        <div class="dash-banner__eyebrow">
+            <i class="bi bi-mortarboard-fill"></i>
+            HỌC SINH
+        </div>
+        <div class="dash-banner__title">@greeting, @firstName! 📚</div>
+        <div class="dash-banner__sub">
+            <i class="bi bi-calendar3"></i> @today
+            <span style="opacity:.4">·</span>
+            <i class="bi bi-building"></i> Lớp 11A2
+        </div>
+    </div>
+    <div class="dash-banner__right">
+        <div class="dash-banner__icon-bg"><i class="bi bi-mortarboard"></i></div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="dash-stats dash-stats-4">
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--blue"><i class="bi bi-journal-text"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">7.9</div>
+            <div class="dstat__label">Điểm trung bình HK2</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +0.4 so với HK1</div>
+        </div>
+    </div>
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--green"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">96%</div>
+            <div class="dstat__label">Tỷ lệ chuyên cần</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> Tốt</div>
+        </div>
+    </div>
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--amber"><i class="bi bi-clock-history"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">4</div>
+            <div class="dstat__label">Tiết học hôm nay</div>
+            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Lịch bình thường</div>
+        </div>
+    </div>
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--purple"><i class="bi bi-trophy-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">Giỏi</div>
+            <div class="dstat__label">Xếp loại học lực</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-star-fill"></i> Học kỳ 2</div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 1: Today schedule + Attendance ring -->
+<div class="dash-row dash-row-7-3">
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-calendar-week-fill" style="color:#2563eb"></i> Thời khóa biểu hôm nay</div>
+        </div>
+        <div class="dcard__body">
+            <div class="sched-list">
+                @{
+                    var periods = new[] {
+                        new { Time = "07:00", Subject = "Toán",          Teacher = "Cô Nguyễn Lan",  Room = "101", Done = true,  Active = false },
+                        new { Time = "08:45", Subject = "Ngữ văn",       Teacher = "Thầy Trần Minh", Room = "203", Done = false, Active = true  },
+                        new { Time = "10:30", Subject = "Tiếng Anh",     Teacher = "Cô Mai Hương",   Room = "Lab", Done = false, Active = false },
+                        new { Time = "13:00", Subject = "Vật lý",        Teacher = "Thầy Lê Hùng",   Room = "305", Done = false, Active = false },
+                    };
+                }
+                @foreach (var p in periods)
+                {
+                    <div class="sched-item @(p.Active ? "active" : "")">
+                        <div class="sched-time">@p.Time</div>
+                        <div class="sched-dot" style="background:@(p.Done ? "#10b981" : p.Active ? "#2563eb" : "#cbd5e1")"></div>
+                        <div style="flex:1">
+                            <div class="sched-name">@p.Subject</div>
+                            <div class="sched-room"><i class="bi bi-person"></i> @p.Teacher &nbsp;·&nbsp; <i class="bi bi-geo-alt"></i> P.@p.Room</div>
+                        </div>
+                        @if (p.Done)
+                        {
+                            <span style="font-size:.72rem;font-weight:700;color:#059669;background:#dcfce7;padding:3px 10px;border-radius:99px">Đã học</span>
+                        }
+                        else if (p.Active)
+                        {
+                            <span style="font-size:.72rem;font-weight:700;color:#2563eb;background:#dbeafe;padding:3px 10px;border-radius:99px">Đang học</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-pie-chart-fill" style="color:#2563eb"></i> Chuyên cần</div>
+        </div>
+        <div class="dcard__body">
+            <div class="att-ring-wrap" style="margin-bottom:20px">
+                <div class="att-ring">
+                    <svg viewBox="0 0 100 100" width="100" height="100">
+                        <circle class="att-ring__track" cx="50" cy="50" r="40"/>
+                        <circle class="att-ring__fill" cx="50" cy="50" r="40"
+                                stroke="#2563eb"
+                                stroke-dasharray="241.5 251.2"
+                                stroke-dashoffset="0"/>
+                    </svg>
+                    <div class="att-ring__label">
+                        <div class="att-ring__pct">96%</div>
+                        <div class="att-ring__sub">học kỳ 2</div>
+                    </div>
+                </div>
+                <div class="att-ring-title">Tỷ lệ điểm danh</div>
+            </div>
+            <div style="display:flex;justify-content:space-around;text-align:center;padding-top:4px;border-top:1px solid #f1f5f9">
+                <div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#059669">82</div>
+                    <div style="font-size:.72rem;color:#94a3b8">Có mặt</div>
+                </div>
+                <div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#f59e0b">2</div>
+                    <div style="font-size:.72rem;color:#94a3b8">Có phép</div>
+                </div>
+                <div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#dc2626">2</div>
+                    <div style="font-size:.72rem;color:#94a3b8">Vắng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Row 2: Grades + Notifications -->
+<div class="dash-row dash-row-6-4">
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-bar-chart-fill" style="color:#7c3aed"></i> Điểm số học kỳ 2</div>
+        </div>
+        <div class="dcard__body">
+            <table class="grade-table">
+                <thead>
+                    <tr>
+                        <th>Môn học</th>
+                        <th>TX1</th>
+                        <th>TX2</th>
+                        <th>Giữa kỳ</th>
+                        <th>Cuối kỳ</th>
+                        <th>ĐTBm</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var myGrades = new[] {
+                            new { Sub = "Toán",      TX1 = 8.5, TX2 = 7.5, GK = 8.0, CK = 8.5, DTB = 8.2, Badge = "a" },
+                            new { Sub = "Văn",       TX1 = 7.0, TX2 = 8.0, GK = 7.5, CK = 7.0, DTB = 7.3, Badge = "b" },
+                            new { Sub = "Tiếng Anh", TX1 = 9.0, TX2 = 8.5, GK = 9.0, CK = 9.5, DTB = 9.1, Badge = "a" },
+                            new { Sub = "Vật lý",    TX1 = 7.5, TX2 = 8.0, GK = 7.0, CK = 7.5, DTB = 7.5, Badge = "b" },
+                            new { Sub = "Hóa học",   TX1 = 6.5, TX2 = 7.0, GK = 6.5, CK = 7.0, DTB = 6.8, Badge = "c" },
+                        };
+                    }
+                    @foreach (var g in myGrades)
+                    {
+                        <tr>
+                            <td><strong>@g.Sub</strong></td>
+                            <td>@g.TX1</td>
+                            <td>@g.TX2</td>
+                            <td>@g.GK</td>
+                            <td>@g.CK</td>
+                            <td><span class="grade-badge grade-badge--@g.Badge">@g.DTB</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-bell-fill" style="color:#d97706"></i> Thông báo</div>
+            <a href="/Dashboard/Notifications" class="dcard__action">Tất cả</a>
+        </div>
+        <div class="dcard__body">
+            <div class="activity-list">
+                @{
+                    var notifs = new[] {
+                        new { Icon = "bi-journal-plus",       Color = "#7c3aed", Text = "Thầy Lê vừa nhập điểm Cuối kỳ môn Vật lý",        Time = "30 phút trước" },
+                        new { Icon = "bi-calendar-x",        Color = "#dc2626", Text = "Lịch thi lại Hóa học: Thứ 6, 07/06/2026",          Time = "2 giờ trước"   },
+                        new { Icon = "bi-megaphone-fill",    Color = "#2563eb", Text = "Thông báo nghỉ học ngày 01/06 (Quốc tế thiếu nhi)", Time = "Hôm qua"       },
+                        new { Icon = "bi-patch-check-fill",  Color = "#059669", Text = "Kết quả học kỳ 1 đã được xác nhận",                Time = "3 ngày trước"  },
+                    };
+                }
+                @foreach (var n in notifs)
+                {
+                    <div class="activity-item">
+                        <div class="activity-avatar" style="background:@n.Color;font-size:.9rem">
+                            <i class="bi @n.Icon"></i>
+                        </div>
+                        <div>
+                            <div class="activity-text">@n.Text</div>
+                            <div class="activity-time"><i class="bi bi-clock"></i> @n.Time</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

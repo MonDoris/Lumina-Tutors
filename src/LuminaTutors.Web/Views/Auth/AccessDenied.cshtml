@@ -1,0 +1,17 @@
+@{ ViewData["Title"] = "Không có quyền truy cập"; }
+
+<div class="lt-error-page">
+    <p class="lt-error-page__code">403</p>
+    <div class="lt-error-page__icon">
+        <i class="bi bi-shield-x"></i>
+    </div>
+    <h2 class="lt-error-page__title">Truy cập bị từ chối</h2>
+    <p class="lt-error-page__text">
+        Tài khoản của bạn không có quyền truy cập trang này.
+        Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ quản trị viên.
+    </p>
+    <a asp-controller="Dashboard" asp-action="Index" class="lt-btn lt-btn--primary">
+        <i class="bi bi-house"></i>
+        Về trang chủ
+    </a>
+</div>

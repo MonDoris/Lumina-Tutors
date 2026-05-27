@@ -1,0 +1,100 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace LuminaTutors.Application.DTOs.Class;
+
+// ─── Class DTOs ───────────────────────────────────────────────────────────────
+
+public record ClassSummaryDto(
+    int    ClassId,
+    string ClassName,
+    string GradeName,
+    string AcademicYearName,
+    string? HomeRoomTeacherName,
+    int    EnrolledCount,
+    int    MaxStudents,
+    bool   IsActive
+);
+
+public record ClassDetailDto(
+    int    ClassId,
+    string ClassName,
+    int    GradeLevelId,
+    string GradeName,
+    string EducationLevel,
+    int    AcademicYearId,
+    string AcademicYearName,
+    int?   HomeRoomTeacherId,
+    string? HomeRoomTeacherName,
+    string? RoomNumber,
+    int    MaxStudents,
+    bool   IsActive,
+    List<SubjectAssignmentDto> SubjectAssignments,
+    List<ScheduleSlotDto>      Schedule
+);
+
+public record SubjectAssignmentDto(
+    int    AssignmentId,
+    string SubjectName,
+    string SubjectCode,
+    string TeacherName,
+    byte   PeriodsPerWeek
+);
+
+public record ScheduleSlotDto(
+    int    ScheduleId,
+    string SubjectName,
+    string TeacherName,
+    byte   DayOfWeek,
+    string DayName,
+    byte   PeriodStart,
+    byte   PeriodEnd,
+    string StartTime,
+    string EndTime,
+    string? RoomOverride
+);
+
+public record CreateClassRequest(
+    [Required, MaxLength(20)] string ClassName,
+    [Required] int GradeLevelId,
+    [Required] int AcademicYearId,
+    int?  HomeRoomTeacherId,
+    byte  MaxStudents = 40,
+    string? RoomNumber = null
+);
+
+public record UpdateClassRequest(
+    [Required, MaxLength(20)] string ClassName,
+    int?   HomeRoomTeacherId,
+    byte   MaxStudents,
+    string? RoomNumber
+);
+
+public record AssignSubjectRequest(
+    [Required] int SubjectId,
+    [Required] int TeacherId,
+    [Required] int SemesterId,
+    byte PeriodsPerWeek = 2
+);
+
+public record CreateScheduleRequest(
+    [Required] int  SubjectAssignmentId,
+    [Required] byte DayOfWeek,
+    [Required] byte PeriodStart,
+    [Required] byte PeriodEnd,
+    [Required] TimeOnly StartTime,
+    [Required] TimeOnly EndTime,
+    string? RoomOverride
+);
+
+// ─── Teacher DTOs ──────────────────────────────────────────────────────────────
+
+public record TeacherSummaryDto(
+    int    UserId,
+    string TeacherCode,
+    string FullName,
+    string? PhoneNumber,
+    string? SpecializationSubject,
+    string? Qualification,
+    string? ContractType,
+    bool   IsActive
+);

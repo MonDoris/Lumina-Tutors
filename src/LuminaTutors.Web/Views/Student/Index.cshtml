@@ -1,0 +1,160 @@
+@model LuminaTutors.Domain.Common.PagedResult<LuminaTutors.Application.DTOs.Student.StudentSummaryDto>
+@using LuminaTutors.Application.DTOs.Student
+@{
+    ViewData["Title"] = "Danh sách học sinh";
+    var search = ViewBag.SearchModel as StudentSearchRequest;
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Học sinh</h1>
+        <p class="lt-page-subtitle">Quản lý thông tin học sinh toàn trường</p>
+    </div>
+    @if (User.IsInRole("ADMIN"))
+    {
+        <a asp-action="Create" class="lt-btn lt-btn--gold" data-testid="btn-add-student">
+            <i class="bi bi-person-plus-fill"></i> Thêm học sinh
+        </a>
+    }
+</div>
+
+<!-- Search bar -->
+<div class="lt-card mb-3">
+    <div class="lt-card__body" style="padding:16px 24px">
+        <form asp-action="Index" method="get" data-testid="search-form">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="lt-label">Tìm kiếm</label>
+                    <input type="text" name="search.Keyword" value="@search?.Keyword"
+                           class="lt-input" placeholder="Họ tên, email, mã học sinh..."
+                           data-testid="input-search"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="lt-label">Trạng thái</label>
+                    <select name="search.IsActive" class="lt-select">
+                        <option value="">Tất cả</option>
+                        <option value="true"  selected="@(search?.IsActive == true  ? "selected" : null)">Đang học</option>
+                        <option value="false" selected="@(search?.IsActive == false ? "selected" : null)">Đã nghỉ</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="lt-btn lt-btn--primary" data-testid="btn-search">
+                        <i class="bi bi-search"></i> Tìm
+                    </button>
+                </div>
+                @if (!string.IsNullOrEmpty(search?.Keyword) || search?.IsActive.HasValue == true)
+                {
+                    <div class="col-auto">
+                        <a asp-action="Index" class="lt-btn lt-btn--outline">Xóa bộ lọc</a>
+                    </div>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="lt-card">
+    <div class="lt-card__body" style="padding:0">
+        <table class="lt-table" data-testid="student-table">
+            <thead>
+                <tr>
+                    <th>Mã HS</th>
+                    <th>Họ và tên</th>
+                    <th>Lớp hiện tại</th>
+                    <th>Trạng thái</th>
+                    <th style="width:100px">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Items.Count == 0)
+                {
+                    <tr><td colspan="5" style="text-align:center;padding:48px;color:#9ca3af">
+                        <i class="bi bi-people" style="font-size:2.5rem;display:block;margin-bottom:10px"></i>
+                        Không tìm thấy học sinh nào
+                    </td></tr>
+                }
+                @foreach (var s in Model?.Items ?? new List<StudentSummaryDto>())
+                {
+                    <tr data-testid="student-row">
+                        <td>
+                            <span style="font-family:monospace;font-size:0.82rem;background:#f3f4f6;padding:2px 7px;border-radius:5px">
+                                @s.StudentCode
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--lt-navy),var(--lt-navy-light));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.7rem;flex-shrink:0">
+                                    @(s.FullName.Length > 0 ? string.Concat(s.FullName.Split(' ').TakeLast(1).Select(p => p[0])) : "?")
+                                </div>
+                                <div>
+                                    <div style="font-weight:600;color:var(--lt-navy)">@s.FullName</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="lt-badge lt-badge--navy">@(s.ClassName ?? "Chưa xếp lớp")</span>
+                        </td>
+                        <td>
+                            @if (s.IsActive)
+                            {
+                                <span class="lt-badge lt-badge--success">
+                                    <i class="bi bi-circle-fill" style="font-size:.4rem"></i> Đang học
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="lt-badge lt-badge--gray">Đã nghỉ</span>
+                            }
+                        </td>
+                        <td>
+                            <div style="display:flex;gap:4px">
+                                <a asp-action="Details" asp-route-id="@s.UserId"
+                                   class="lt-btn lt-btn--outline lt-btn--sm"
+                                   data-testid="btn-details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                @if (User.IsInRole("ADMIN"))
+                                {
+                                    <a asp-action="Edit" asp-route-id="@s.UserId"
+                                       class="lt-btn lt-btn--outline lt-btn--sm">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model?.TotalPages > 1)
+    {
+        <div class="lt-card__footer d-flex justify-content-between align-items-center">
+            <span style="font-size:0.82rem;color:#6b7280">
+                Tổng: <strong>@Model.TotalCount</strong> học sinh &nbsp;·&nbsp; Trang @Model.PageNumber / @Model.TotalPages
+            </span>
+            <div class="lt-pagination">
+                @if (Model.HasPreviousPage)
+                {
+                    <a asp-action="Index" asp-route-page="@(Model.PageNumber - 1)" class="lt-page-btn">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                }
+                @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                {
+                    <a asp-action="Index" asp-route-page="@i"
+                       class="lt-page-btn @(i == Model.PageNumber ? "active" : "")">@i</a>
+                }
+                @if (Model.HasNextPage)
+                {
+                    <a asp-action="Index" asp-route-page="@(Model.PageNumber + 1)" class="lt-page-btn">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet restore *)",
+      "Bash(dotnet build *)",
+      "Bash(Select-String \"error CS\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(sqllocaldb info *)",
+      "Bash(dotnet ef *)",
+      "Bash(dotnet add *)",
+      "Bash(for d *)",
+      "Bash(dotnet run *)",
+      "Bash(tasklist)",
+      "Bash(findstr dotnet *)",
+      "Bash(taskkill /F /PID 30848)",
+      "Bash(taskkill /F /IM \"LuminaTutors.Web.exe\")",
+      "PowerShell(Stop-Process -Id 30848 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Name \"LuminaTutors.Web\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process -Name \"dotnet\" | Where-Object { $_.MainWindowTitle -eq \"\" } | Sort-Object CPU -Descending | Select-Object -First 2 | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Host \"Done\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\")",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(node *)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\\\\.impeccable\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Host \"Directory ready\")",
+      "Skill(impeccable)",
+      "Skill(impeccable:*)"
+    ]
+  }
+}

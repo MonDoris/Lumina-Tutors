@@ -1,0 +1,63 @@
+@using LuminaTutors.Application.DTOs.Attendance
+@model ScanQRRequest?
+@{
+    ViewData["Title"] = "Điểm danh QR";
+    var token = ViewBag.Token as Guid? ?? (Model?.QRToken ?? Guid.Empty);
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Điểm danh QR</h1>
+        <p class="lt-page-subtitle">Xác nhận điểm danh của bạn</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+        <div class="lt-card">
+            <div class="lt-card__body" style="text-align:center;padding:40px 32px">
+                <div style="width:72px;height:72px;background:var(--lt-gold-pale);border-radius:50%;
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:2rem;color:var(--lt-gold);margin:0 auto 20px">
+                    <i class="bi bi-qr-code-scan"></i>
+                </div>
+
+                <h2 style="font-size:1.3rem;margin-bottom:8px">Xác nhận điểm danh</h2>
+                <p class="lt-text-sm lt-text-muted lt-mb-4">
+                    Nhập mã học sinh để hoàn tất điểm danh
+                </p>
+
+                @if (!ViewContext.ViewData.ModelState.IsValid && Model != null)
+                {
+                    <div class="lt-alert lt-alert--danger lt-mb-4">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.</span>
+                    </div>
+                }
+
+                <form asp-action="Scan" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="QRToken" value="@token"/>
+
+                    <div class="lt-form-group lt-mb-4">
+                        <label class="lt-label">Mã học sinh (StudentId) <span class="lt-text-danger">*</span></label>
+                        <input type="number" name="StudentId" class="lt-input"
+                               placeholder="VD: 42" required min="1"
+                               value="@Model?.StudentId"
+                               data-testid="input-student-id"
+                               style="text-align:center;font-size:1.1rem"/>
+                    </div>
+
+                    <button type="submit" class="lt-btn lt-btn--primary lt-btn--full"
+                            data-testid="btn-confirm-scan">
+                        <i class="bi bi-check-circle"></i> Điểm danh ngay
+                    </button>
+                </form>
+
+                <p class="lt-text-xs lt-text-muted" style="margin-top:20px">
+                    Token: <code>@token.ToString()[..8]…</code>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,114 @@
+@{
+    ViewData["Title"] = "Sổ điểm TT22";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Sổ điểm TT22</h1>
+        <p class="lt-page-subtitle">Nhập và quản lý điểm theo Thông tư 22/2021/TT-BGDĐT</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-journal-text" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Truy cập sổ điểm
+                </h3>
+            </div>
+            <div class="lt-card__body">
+                <div class="lt-alert lt-alert--info lt-mb-4">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>
+                        Nhập <strong>ID Phân công môn học</strong> (Subject Assignment ID) để mở sổ điểm tương ứng.
+                        ID này lấy từ trang chi tiết lớp học.
+                    </span>
+                </div>
+
+                <form asp-action="GradeBook" method="get" data-testid="gradebook-form">
+                    <div class="lt-form-group">
+                        <label class="lt-label">ID Phân công môn học <span class="lt-text-danger">*</span></label>
+                        <div style="display:flex;gap:12px">
+                            <input type="number" name="subjectAssignmentId" class="lt-input"
+                                   placeholder="VD: 1" required min="1"
+                                   data-testid="input-subject-assignment-id"
+                                   style="flex:1"/>
+                            <button type="submit" class="lt-btn lt-btn--primary"
+                                    data-testid="btn-open-gradebook">
+                                <i class="bi bi-journal-text"></i> Mở sổ điểm
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <hr style="border-color:var(--lt-border);margin:24px 0">
+
+                <h4 class="lt-fw-600 lt-mb-3" style="font-size:0.9rem">Công thức tính ĐTBm (TT22/2021)</h4>
+                <div class="lt-alert lt-alert--info">
+                    <i class="bi bi-calculator"></i>
+                    <span>
+                        <strong>ĐTBm</strong> = (Σ ĐTX×1 + ĐGK×2 + ĐCK×3) ÷ (số ĐTX + 5)
+                        <br>
+                        Điểm từ 0–10, tối đa 1 chữ số thập phân
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-info-circle" style="color:var(--lt-navy);margin-right:6px"></i>
+                    Hướng dẫn nhập điểm
+                </h3>
+            </div>
+            <div class="lt-card__body">
+                <div class="lt-flex-col" style="gap:16px">
+                    <div class="lt-flex-between lt-text-sm" style="align-items:flex-start;gap:12px">
+                        <span class="lt-badge lt-badge--navy" style="flex-shrink:0;min-width:60px;text-align:center">ĐTX</span>
+                        <span>Điểm thường xuyên — nhân hệ số <strong>1</strong>. Tối thiểu 1 điểm/học kỳ.</span>
+                    </div>
+                    <div class="lt-flex-between lt-text-sm" style="align-items:flex-start;gap:12px">
+                        <span class="lt-badge lt-badge--warning" style="flex-shrink:0;min-width:60px;text-align:center">ĐGK</span>
+                        <span>Điểm giữa kỳ — nhân hệ số <strong>2</strong>. 1 điểm/học kỳ.</span>
+                    </div>
+                    <div class="lt-flex-between lt-text-sm" style="align-items:flex-start;gap:12px">
+                        <span class="lt-badge lt-badge--danger" style="flex-shrink:0;min-width:60px;text-align:center">ĐCK</span>
+                        <span>Điểm cuối kỳ — nhân hệ số <strong>3</strong>. 1 điểm/học kỳ.</span>
+                    </div>
+                    <div class="lt-flex-between lt-text-sm" style="align-items:flex-start;gap:12px">
+                        <span class="lt-badge lt-badge--success" style="flex-shrink:0;min-width:60px;text-align:center">ĐTBm</span>
+                        <span>Điểm trung bình môn — tính tự động sau khi nhập đủ điểm.</span>
+                    </div>
+                </div>
+
+                <div class="lt-alert lt-alert--warning lt-mt-4">
+                    <i class="bi bi-lock-fill"></i>
+                    <span>
+                        Sau khi <strong>Khóa sổ điểm</strong>, không thể chỉnh sửa.
+                        Chỉ Admin mới có quyền khóa.
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="lt-card lt-mt-4">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">Liên kết nhanh</h3>
+            </div>
+            <div class="lt-card__body lt-flex-col lt-gap-3">
+                <a asp-controller="Class" asp-action="Index" asp-route-academicYearId="1"
+                   class="lt-btn lt-btn--outline">
+                    <i class="bi bi-building"></i> Danh sách lớp học
+                </a>
+                <a asp-controller="Student" asp-action="Index" class="lt-btn lt-btn--outline">
+                    <i class="bi bi-people-fill"></i> Danh sách học sinh
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

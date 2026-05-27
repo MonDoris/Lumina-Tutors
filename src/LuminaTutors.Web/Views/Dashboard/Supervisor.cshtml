@@ -1,0 +1,204 @@
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Dashboard";
+    var fullName  = User.FindFirstValue(ClaimTypes.Name) ?? "Giám thị";
+    var firstName = fullName.Split(' ').Last();
+    var hour      = DateTime.Now.Hour;
+    var greeting  = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+    var today     = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
+}
+
+<!-- Banner -->
+<div class="dash-banner dash-banner--supervisor">
+    <div class="dash-banner__grid"></div>
+    <div class="dash-banner__left">
+        <div class="dash-banner__eyebrow">
+            <i class="bi bi-shield-fill"></i>
+            GIÁM THỊ
+        </div>
+        <div class="dash-banner__title">@greeting, @firstName 🛡️</div>
+        <div class="dash-banner__sub">
+            <i class="bi bi-calendar3"></i> @today
+            <span style="opacity:.4">·</span>
+            <i class="bi bi-circle-fill" style="color:#4ade80;font-size:.5rem"></i> Đang trực ca sáng
+        </div>
+    </div>
+    <div class="dash-banner__right">
+        <div class="dash-banner__icon-bg"><i class="bi bi-shield-check"></i></div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="dash-stats dash-stats-4">
+    <a href="/Supervisor/Records" class="dstat">
+        <div class="dstat__icon dstat__icon--red"><i class="bi bi-file-earmark-x-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">@(ViewBag.TotalViolations ?? 3)</div>
+            <div class="dstat__label">Vi phạm hôm nay</div>
+            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> -2 so với hôm qua</div>
+        </div>
+    </a>
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--amber"><i class="bi bi-door-open-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">12</div>
+            <div class="dstat__label">Vào/ra cổng hôm nay</div>
+            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Bình thường</div>
+        </div>
+    </div>
+    <a href="/Supervisor/Messages" class="dstat">
+        <div class="dstat__icon dstat__icon--blue"><i class="bi bi-chat-dots-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">@(ViewBag.UnreadMessages ?? 5)</div>
+            <div class="dstat__label">Tin nhắn phụ huynh chưa đọc</div>
+            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> Cần phản hồi</div>
+        </div>
+    </a>
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--green"><i class="bi bi-people-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">231</div>
+            <div class="dstat__label">Học sinh có mặt</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-check-circle"></i> / 248 tổng</div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 1: Recent violations + Quick actions -->
+<div class="dash-row dash-row-7-3">
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-file-earmark-text-fill" style="color:#c2410c"></i> Vi phạm gần đây</div>
+            <a href="/Supervisor/Records" class="dcard__action">Xem tất cả</a>
+        </div>
+        <div class="dcard__body">
+            @{
+                var violations = new[] {
+                    new { Student = "Nguyễn Văn An",  Class = "10A", Type = "Nói chuyện trong lớp",    Severity = "minor",    Time = "07:45",  Teacher = "Cô Lan" },
+                    new { Student = "Trần Thị Bình",  Class = "11B", Type = "Đi học muộn 15 phút",     Severity = "minor",    Time = "08:02",  Teacher = "Thầy Minh" },
+                    new { Student = "Lê Hoàng Cường", Class = "12A", Type = "Bỏ tiết học không phép",  Severity = "moderate", Time = "09:30",  Teacher = "Cô Hoa" },
+                    new { Student = "Phạm Thị Dung",  Class = "10C", Type = "Sử dụng điện thoại",      Severity = "minor",    Time = "10:15",  Teacher = "Thầy Đức" },
+                    new { Student = "Vũ Minh Đức",    Class = "11D", Type = "Đánh nhau trong sân trường",Severity = "severe", Time = "11:00",  Teacher = "Cô Ngân" },
+                };
+            }
+            <div style="display:flex;flex-direction:column;gap:10px">
+                @foreach (var v in violations)
+                {
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:#fafafa;border:1px solid #f1f5f9">
+                        <div style="width:36px;height:36px;border-radius:10px;background:@(v.Severity == "severe" ? "#fef2f2" : v.Severity == "moderate" ? "#fff7ed" : "#fffbeb");display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            <i class="bi bi-exclamation-triangle-fill" style="color:@(v.Severity == "severe" ? "#dc2626" : v.Severity == "moderate" ? "#c2410c" : "#d97706")"></i>
+                        </div>
+                        <div style="flex:1;min-width:0">
+                            <div style="font-size:.85rem;font-weight:700;color:#0f172a">@v.Student <span style="font-weight:400;color:#94a3b8">· @v.Class</span></div>
+                            <div style="font-size:.78rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@v.Type</div>
+                        </div>
+                        <div style="text-align:right;flex-shrink:0">
+                            <div><span class="vio-badge vio-badge--@v.Severity">@(v.Severity == "severe" ? "Nghiêm trọng" : v.Severity == "moderate" ? "Trung bình" : "Nhẹ")</span></div>
+                            <div style="font-size:.72rem;color:#94a3b8;margin-top:4px">@v.Time</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-lightning-fill" style="color:#c2410c"></i> Thao tác nhanh</div>
+        </div>
+        <div class="dcard__body">
+            <div class="quick-actions">
+                <a href="/Supervisor/Records/Create" class="qa-btn" style="--qa-color:#dc2626;--qa-bg:#fef2f2">
+                    <i class="bi bi-file-earmark-plus-fill"></i> Ghi nhận vi phạm
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/Supervisor/Messages" class="qa-btn" style="--qa-color:#2563eb;--qa-bg:#eff6ff">
+                    <i class="bi bi-chat-left-dots-fill"></i> Nhắn tin phụ huynh
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/Supervisor/Records" class="qa-btn" style="--qa-color:#c2410c;--qa-bg:#fff7ed">
+                    <i class="bi bi-clipboard-data-fill"></i> Hồ sơ kỷ luật
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/Dashboard/Notifications" class="qa-btn" style="--qa-color:#7c3aed;--qa-bg:#f5f3ff">
+                    <i class="bi bi-bell-fill"></i> Thông báo hệ thống
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Row 2: Messages + Attendance -->
+<div class="dash-row dash-row-5-5">
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-chat-dots-fill" style="color:#2563eb"></i> Tin nhắn phụ huynh</div>
+            <a href="/Supervisor/Messages" class="dcard__action">Xem tất cả</a>
+        </div>
+        <div class="dcard__body">
+            <div class="msg-list">
+                @{
+                    var msgs = new[] {
+                        new { Init = "NM", Bg = "#7c3aed", Name = "Nguyễn Thị Mai (PH)",  Preview = "Hỏi về việc con bị ghi vi phạm...", Time = "08:30", Unread = true  },
+                        new { Init = "TH", Bg = "#2563eb", Name = "Trần Văn Hùng (PH)",   Preview = "Xin phép cho con nghỉ học ngày mai", Time = "07:15", Unread = true  },
+                        new { Init = "PL", Bg = "#059669", Name = "Phạm Thị Lan (PH)",    Preview = "Cảm ơn thầy đã thông báo kịp thời", Time = "Hôm qua",  Unread = false },
+                        new { Init = "LT", Bg = "#d97706", Name = "Lê Quốc Toàn (PH)",    Preview = "Con tôi đã về nhà an toàn rồi ạ",   Time = "Hôm qua",  Unread = false },
+                    };
+                }
+                @foreach (var m in msgs)
+                {
+                    <div class="msg-item @(m.Unread ? "unread" : "")">
+                        <div class="msg-avatar" style="background:@m.Bg">@m.Init</div>
+                        <div style="flex:1;min-width:0">
+                            <div class="msg-name">@m.Name</div>
+                            <div class="msg-preview">@m.Preview</div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+                            <div class="msg-time">@m.Time</div>
+                            @if (m.Unread) { <div class="msg-unread-dot"></div> }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-bar-chart-fill" style="color:#c2410c"></i> Thống kê vi phạm tuần này</div>
+        </div>
+        <div class="dcard__body">
+            <div style="display:flex;flex-direction:column;gap:14px">
+                @{
+                    var stats = new[] {
+                        new { Label = "Vi phạm nhẹ",        Count = 12, Total = 20, Color = "#d97706" },
+                        new { Label = "Vi phạm trung bình",  Count = 5,  Total = 20, Color = "#c2410c" },
+                        new { Label = "Vi phạm nghiêm trọng",Count = 1,  Total = 20, Color = "#dc2626" },
+                    };
+                }
+                @foreach (var s in stats)
+                {
+                    var pct = (int)((double)s.Count / s.Total * 100);
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                            <span style="font-size:.82rem;font-weight:600;color:#374151">@s.Label</span>
+                            <span style="font-size:.85rem;font-weight:800;color:@s.Color">@s.Count</span>
+                        </div>
+                        <div class="dash-progress">
+                            <div class="dash-progress__bar" style="width:@pct%;background:@s.Color"></div>
+                        </div>
+                    </div>
+                }
+                <div style="margin-top:8px;padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;text-align:center">
+                    <div style="font-size:1.5rem;font-weight:800;color:#c2410c">18</div>
+                    <div style="font-size:.75rem;color:#92400e;margin-top:2px">Tổng vi phạm tuần này</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

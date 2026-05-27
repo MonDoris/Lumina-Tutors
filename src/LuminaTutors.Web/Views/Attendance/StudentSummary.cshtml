@@ -1,0 +1,178 @@
+@using LuminaTutors.Application.DTOs.Attendance
+@model StudentAttendanceSummaryDto
+@{
+    ViewData["Title"] = "Tổng hợp điểm danh học sinh";
+}
+
+<div class="lt-page-header">
+    <div>
+        <a onclick="history.back()" class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+        <h1 class="lt-page-title">Tổng hợp điểm danh</h1>
+        @if (Model != null)
+        {
+            <p class="lt-page-subtitle">
+                <strong>@Model.StudentName</strong> — @Model.SemesterName
+            </p>
+        }
+    </div>
+</div>
+
+@if (Model == null)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-person-x"></i></div>
+                <p class="lt-empty__title">Không tìm thấy dữ liệu</p>
+                <p class="lt-empty__text">Chưa có dữ liệu điểm danh cho học kỳ này.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Summary Stats -->
+    <div class="row g-3 lt-mb-4">
+        <div class="col-6 col-md-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--navy">
+                    <i class="bi bi-calendar3"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.TotalSessions</div>
+                    <div class="lt-stat__label">Tổng buổi học</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.PresentCount</div>
+                    <div class="lt-stat__label">Có mặt</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--danger">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.AbsentCount</div>
+                    <div class="lt-stat__label">Vắng không phép</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--gold">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.AttendanceRate.ToString("F0")%</div>
+                    <div class="lt-stat__label">Tỷ lệ chuyên cần</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">Tổng hợp</h3>
+                </div>
+                <div class="lt-card__body lt-flex-col lt-gap-3">
+                    <div class="lt-flex-between">
+                        <span class="lt-text-sm lt-text-muted">Có mặt</span>
+                        <span class="lt-fw-600 lt-text-success">@Model.PresentCount buổi</span>
+                    </div>
+                    <div class="lt-flex-between">
+                        <span class="lt-text-sm lt-text-muted">Vắng không phép</span>
+                        <span class="lt-fw-600 lt-text-danger">@Model.AbsentCount buổi</span>
+                    </div>
+                    <div class="lt-flex-between">
+                        <span class="lt-text-sm lt-text-muted">Đi trễ</span>
+                        <span class="lt-fw-600" style="color:var(--lt-warning)">@Model.LateCount buổi</span>
+                    </div>
+                    <div class="lt-flex-between">
+                        <span class="lt-text-sm lt-text-muted">Vắng có phép</span>
+                        <span class="lt-fw-600 lt-text-navy">@Model.ExcusedCount buổi</span>
+                    </div>
+
+                    <hr style="border-color:var(--lt-border-light);margin:4px 0"/>
+
+                    <div class="lt-flex-between lt-text-xs lt-text-muted lt-mb-1">
+                        <span>Chuyên cần</span>
+                        <span>@Model.AttendanceRate.ToString("F1")%</span>
+                    </div>
+                    <div class="lt-progress">
+                        <div class="lt-progress__bar" style="width:@Model.AttendanceRate%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            @if (Model.AbsenceDates?.Any() == true)
+            {
+                <div class="lt-card">
+                    <div class="lt-card__header">
+                        <h3 class="lt-card__title">Các ngày vắng / trễ</h3>
+                    </div>
+                    <div class="lt-card__body" style="padding:0;overflow-x:auto">
+                        <table class="lt-table">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Môn học</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var a in Model.AbsenceDates.OrderByDescending(x => x.SessionDate))
+                                {
+                                    <tr>
+                                        <td class="lt-td--mono">@a.SessionDate.ToString("dd/MM/yyyy")</td>
+                                        <td class="lt-fw-600">@a.SubjectName</td>
+                                        <td>
+                                            @{
+                                                var (cls, lbl) = a.Status switch
+                                                {
+                                                    "Absent"  => ("lt-badge--danger",  "Vắng"),
+                                                    "Late"    => ("lt-badge--warning", "Đi trễ"),
+                                                    "Excused" => ("lt-badge--navy",    "Phép"),
+                                                    _         => ("lt-badge--navy",    a.Status)
+                                                };
+                                            }
+                                            <span class="lt-badge @cls">@lbl</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="lt-card">
+                    <div class="lt-card__body">
+                        <div class="lt-empty">
+                            <div class="lt-empty__icon">
+                                <i class="bi bi-check-circle-fill" style="color:var(--lt-success)"></i>
+                            </div>
+                            <p class="lt-empty__title">Xuất sắc!</p>
+                            <p class="lt-empty__text">Không có buổi vắng hoặc đi trễ trong học kỳ này.</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}

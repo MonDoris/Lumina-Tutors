@@ -1,0 +1,102 @@
+@model List<LuminaTutors.Application.DTOs.Finance.StudentDebtDto>
+@{
+    ViewData["Title"] = "Công nợ học phí";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Công nợ học phí</h1>
+        <p class="lt-page-subtitle">Danh sách học sinh có học phí chưa thanh toán hoặc quá hạn</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <a asp-action="Invoices" class="lt-btn lt-btn--outline lt-btn--sm">
+            <i class="bi bi-receipt"></i> Tất cả hóa đơn
+        </a>
+        <a asp-action="Index" class="lt-btn lt-btn--gold lt-btn--sm">
+            <i class="bi bi-bar-chart-fill"></i> Tổng quan
+        </a>
+    </div>
+</div>
+
+@if (Model == null || Model.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-check-circle-fill" style="color:var(--lt-success)"></i></div>
+                <p class="lt-empty__title">Không có công nợ</p>
+                <p class="lt-empty__text">
+                    Tất cả học sinh đã thanh toán học phí đúng hạn. Tuyệt vời!
+                </p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Summary alert -->
+    <div class="lt-alert lt-alert--warning lt-mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>
+            Có <strong>@Model.Count</strong> học sinh đang có công nợ học phí.
+            Tổng nợ: <strong>@Model.Sum(d => d.TotalDebt).ToString("N0")đ</strong>
+        </span>
+    </div>
+
+    <div class="lt-card">
+        <div class="lt-card__body" style="padding:0;overflow-x:auto">
+            <table class="lt-table" data-testid="debt-table">
+                <thead>
+                    <tr>
+                        <th>Mã HS</th>
+                        <th>Học sinh</th>
+                        <th>Lớp</th>
+                        <th class="lt-th--right">Tổng nợ</th>
+                        <th>HĐ quá hạn</th>
+                        <th>Hạn cũ nhất</th>
+                        <th class="lt-td--actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var debt in Model.OrderByDescending(d => d.OverdueCount).ThenByDescending(d => d.TotalDebt))
+                    {
+                        <tr data-testid="debt-row">
+                            <td class="lt-td--dim"><code>@debt.StudentCode</code></td>
+                            <td class="lt-fw-600">@debt.StudentName</td>
+                            <td><span class="lt-badge lt-badge--navy">@debt.ClassName</span></td>
+                            <td class="lt-td--right lt-td--mono lt-fw-600 lt-text-danger">
+                                @debt.TotalDebt.ToString("N0")<span class="lt-text-xs lt-text-muted">đ</span>
+                            </td>
+                            <td>
+                                @if (debt.OverdueCount > 0)
+                                {
+                                    <span class="lt-badge lt-badge--danger">@debt.OverdueCount HĐ quá hạn</span>
+                                }
+                                else
+                                {
+                                    <span class="lt-badge lt-badge--warning">Chưa TT</span>
+                                }
+                            </td>
+                            <td class="lt-td--dim">@debt.EarliestDueDate.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <a asp-action="Invoices" asp-route-studentId="@debt.StudentId"
+                                   class="lt-btn lt-btn--outline lt-btn--sm lt-btn--icon"
+                                   title="Xem hóa đơn" data-testid="btn-view-debts">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="lt-card__footer">
+            <span class="lt-text-sm lt-text-muted">
+                Tổng: <strong class="lt-text-navy">@Model.Count</strong> học sinh có công nợ
+            </span>
+            <span class="lt-text-sm lt-fw-600 lt-text-danger">
+                Tổng nợ: @Model.Sum(d => d.TotalDebt).ToString("N0")đ
+            </span>
+        </div>
+    </div>
+}

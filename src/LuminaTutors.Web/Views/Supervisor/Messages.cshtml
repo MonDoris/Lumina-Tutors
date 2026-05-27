@@ -1,0 +1,91 @@
+@model IReadOnlyList<LuminaTutors.Application.DTOs.Communication.ConversationDto>
+@{
+    ViewData["Title"] = "Hộp thư — Giám thị";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Hộp thư</h1>
+        <p class="lt-page-subtitle">Nhắn tin trực tiếp với phụ huynh học sinh</p>
+    </div>
+    <button class="lt-btn lt-btn--gold" data-bs-toggle="modal" data-bs-target="#newConvModal"
+            data-testid="btn-new-conversation">
+        <i class="bi bi-plus-lg"></i> Cuộc trò chuyện mới
+    </button>
+</div>
+
+<div class="lt-card">
+    <div class="lt-card__body" style="padding:0">
+        @if (!Model?.Any() ?? true)
+        {
+            <div style="text-align:center;padding:48px;color:#9ca3af">
+                <i class="bi bi-chat-dots" style="font-size:3rem;display:block;margin-bottom:12px"></i>
+                <div style="font-size:1rem;font-weight:600;color:#374151;margin-bottom:4px">Chưa có cuộc trò chuyện</div>
+                <div style="font-size:.875rem">Bắt đầu liên lạc với phụ huynh bằng cách tạo cuộc trò chuyện mới</div>
+            </div>
+        }
+        @foreach (var conv in Model ?? new List<LuminaTutors.Application.DTOs.Communication.ConversationDto>())
+        {
+            <a asp-action="Conversation" asp-route-id="@conv.ConversationId"
+               style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid #f3f4f6;text-decoration:none;color:inherit;transition:background .15s"
+               class="conv-item"
+               data-testid="conversation-item">
+                <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--lt-navy),var(--lt-navy-light));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.9rem;flex-shrink:0">
+                    @(conv.OtherPartyName?.Length > 0 ? conv.OtherPartyName[0] : 'P')
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;color:var(--lt-navy)">@(conv.ConversationName ?? conv.OtherPartyName ?? "Cuộc trò chuyện")</div>
+                    <div style="font-size:.8rem;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                        @conv.LastMessage
+                    </div>
+                </div>
+                <div style="flex-shrink:0;text-align:right">
+                    <div style="font-size:.75rem;color:#9ca3af">@conv.LastMessageAt?.ToString("HH:mm")</div>
+                    @if (conv.UnreadCount > 0)
+                    {
+                        <span class="lt-badge lt-badge--gold" style="margin-top:4px">@conv.UnreadCount</span>
+                    }
+                </div>
+            </a>
+        }
+    </div>
+</div>
+
+<!-- New Conversation Modal -->
+<div class="modal fade" id="newConvModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none">
+            <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                <h5 class="modal-title lt-card__title">Cuộc trò chuyện mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="StartConversation" method="post" data-testid="new-conv-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:14px">
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">ID Phụ huynh <span style="color:var(--lt-danger)">*</span></label>
+                        <input type="number" name="model.RecipientUserId" class="lt-input"
+                               placeholder="Nhập User ID của phụ huynh" required
+                               data-testid="input-parent-id"/>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Tin nhắn đầu tiên</label>
+                        <input type="text" name="model.InitialMessage" class="lt-input"
+                               placeholder="Xin chào, tôi muốn trao đổi về..."
+                               data-testid="input-initial-message"/>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--gold" data-testid="btn-start-conv">
+                        <i class="bi bi-chat-dots"></i> Bắt đầu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.conv-item:hover { background: #fafaf8; }
+</style>

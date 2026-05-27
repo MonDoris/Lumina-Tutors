@@ -1,0 +1,232 @@
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Dashboard";
+    var fullName  = User.FindFirstValue(ClaimTypes.Name) ?? "Phụ huynh";
+    var firstName = fullName.Split(' ').Last();
+    var hour      = DateTime.Now.Hour;
+    var greeting  = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+    var today     = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
+}
+
+<!-- Banner -->
+<div class="dash-banner dash-banner--parent">
+    <div class="dash-banner__grid"></div>
+    <div class="dash-banner__left">
+        <div class="dash-banner__eyebrow">
+            <i class="bi bi-house-heart-fill"></i>
+            PHỤ HUYNH
+        </div>
+        <div class="dash-banner__title">@greeting, @firstName 🌟</div>
+        <div class="dash-banner__sub">
+            <i class="bi bi-calendar3"></i> @today
+            <span style="opacity:.4">·</span>
+            <i class="bi bi-person-heart"></i> 1 học sinh đang theo dõi
+        </div>
+    </div>
+    <div class="dash-banner__right">
+        <div class="dash-banner__icon-bg"><i class="bi bi-people-fill"></i></div>
+    </div>
+</div>
+
+<!-- Child info card -->
+<div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1px solid #ddd6fe;border-radius:16px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:16px">
+    <div style="width:52px;height:52px;border-radius:14px;background:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:#fff;flex-shrink:0">NT</div>
+    <div style="flex:1">
+        <div style="font-size:1rem;font-weight:700;color:#0f172a">Nguyễn Minh Tuấn</div>
+        <div style="font-size:.82rem;color:#64748b;margin-top:2px"><i class="bi bi-building"></i> Lớp 11A2 &nbsp;·&nbsp; <i class="bi bi-calendar3"></i> Năm học 2025–2026</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:1.5rem;font-weight:800;color:#7c3aed">7.9</div>
+        <div style="font-size:.72rem;color:#94a3b8">Điểm TB HK2</div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="dash-stats dash-stats-4">
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--green"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">96%</div>
+            <div class="dstat__label">Tỷ lệ chuyên cần</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> Tốt</div>
+        </div>
+    </div>
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--blue"><i class="bi bi-journal-text"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">7.9</div>
+            <div class="dstat__label">Điểm trung bình</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +0.4 HK1</div>
+        </div>
+    </div>
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--amber"><i class="bi bi-receipt"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">2.4tr</div>
+            <div class="dstat__label">Học phí còn lại</div>
+            <div class="dstat__trend dstat__trend--down"><i class="bi bi-exclamation-circle"></i> Cần thanh toán</div>
+        </div>
+    </div>
+    <div class="dstat">
+        <div class="dstat__icon dstat__icon--purple"><i class="bi bi-trophy-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">Giỏi</div>
+            <div class="dstat__label">Xếp loại học lực</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-star-fill"></i> HK2 2025–2026</div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 1: Grades + Attendance -->
+<div class="dash-row dash-row-6-4">
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-bar-chart-fill" style="color:#7c3aed"></i> Kết quả học tập HK2</div>
+        </div>
+        <div class="dcard__body">
+            <table class="grade-table">
+                <thead>
+                    <tr>
+                        <th>Môn học</th>
+                        <th>Thường xuyên</th>
+                        <th>Giữa kỳ</th>
+                        <th>Cuối kỳ</th>
+                        <th>ĐTBm</th>
+                        <th>Xếp loại</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var subjectGrades = new[] {
+                            new { Sub = "Toán",      Avg = 8.2, CK = 8.5, Badge = "a", Level = "Giỏi"  },
+                            new { Sub = "Văn",       Avg = 7.3, CK = 7.0, Badge = "b", Level = "Khá"   },
+                            new { Sub = "Tiếng Anh", Avg = 9.1, CK = 9.5, Badge = "a", Level = "Giỏi"  },
+                            new { Sub = "Vật lý",    Avg = 7.5, CK = 7.5, Badge = "b", Level = "Khá"   },
+                            new { Sub = "Hóa học",   Avg = 6.8, CK = 7.0, Badge = "c", Level = "TB"    },
+                        };
+                    }
+                    @foreach (var g in subjectGrades)
+                    {
+                        <tr>
+                            <td><strong>@g.Sub</strong></td>
+                            <td>–</td>
+                            <td>–</td>
+                            <td>@g.CK</td>
+                            <td><span class="grade-badge grade-badge--@g.Badge">@g.Avg</span></td>
+                            <td style="font-size:.78rem;color:#64748b">@g.Level</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-pie-chart-fill" style="color:#7c3aed"></i> Chuyên cần</div>
+        </div>
+        <div class="dcard__body">
+            <div class="att-ring-wrap" style="margin-bottom:20px">
+                <div class="att-ring">
+                    <svg viewBox="0 0 100 100" width="100" height="100">
+                        <circle class="att-ring__track" cx="50" cy="50" r="40"/>
+                        <circle class="att-ring__fill" cx="50" cy="50" r="40"
+                                stroke="#7c3aed"
+                                stroke-dasharray="241.5 251.2"
+                                stroke-dashoffset="0"/>
+                    </svg>
+                    <div class="att-ring__label">
+                        <div class="att-ring__pct" style="color:#7c3aed">96%</div>
+                        <div class="att-ring__sub">học kỳ 2</div>
+                    </div>
+                </div>
+                <div class="att-ring-title">Tỷ lệ điểm danh</div>
+            </div>
+            <div style="display:flex;justify-content:space-around;text-align:center;padding-top:12px;border-top:1px solid #f1f5f9">
+                <div>
+                    <div style="font-size:1.2rem;font-weight:800;color:#059669">82</div>
+                    <div style="font-size:.72rem;color:#94a3b8">Có mặt</div>
+                </div>
+                <div>
+                    <div style="font-size:1.2rem;font-weight:800;color:#f59e0b">2</div>
+                    <div style="font-size:.72rem;color:#94a3b8">Có phép</div>
+                </div>
+                <div>
+                    <div style="font-size:1.2rem;font-weight:800;color:#dc2626">2</div>
+                    <div style="font-size:.72rem;color:#94a3b8">Vắng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Row 2: Finance + Messages -->
+<div class="dash-row dash-row-5-5">
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-cash-stack" style="color:#d97706"></i> Học phí</div>
+        </div>
+        <div class="dcard__body">
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+                <i class="bi bi-exclamation-triangle-fill" style="color:#d97706;font-size:1.2rem;flex-shrink:0"></i>
+                <div>
+                    <div style="font-size:.85rem;font-weight:700;color:#92400e">Còn nợ 2,400,000 VNĐ</div>
+                    <div style="font-size:.75rem;color:#b45309;margin-top:2px">Hạn thanh toán: 10/06/2026</div>
+                </div>
+            </div>
+            @{
+                var invoices = new[] {
+                    new { Month = "Tháng 5/2026", Amount = "2,400,000 đ", Status = "Chưa thu", StatusColor = "#dc2626", BgColor = "#fef2f2" },
+                    new { Month = "Tháng 4/2026", Amount = "2,400,000 đ", Status = "Đã thu",   StatusColor = "#059669", BgColor = "#f0fdf4" },
+                    new { Month = "Tháng 3/2026", Amount = "2,400,000 đ", Status = "Đã thu",   StatusColor = "#059669", BgColor = "#f0fdf4" },
+                };
+            }
+            @foreach (var inv in invoices)
+            {
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:@inv.BgColor;margin-bottom:8px">
+                    <div>
+                        <div style="font-size:.83rem;font-weight:600;color:#0f172a">@inv.Month</div>
+                        <div style="font-size:.75rem;color:#64748b">@inv.Amount</div>
+                    </div>
+                    <span style="font-size:.72rem;font-weight:700;color:@inv.StatusColor;background:@(inv.StatusColor == "#dc2626" ? "#fee2e2" : "#dcfce7");padding:3px 10px;border-radius:99px">@inv.Status</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-chat-dots-fill" style="color:#7c3aed"></i> Tin nhắn từ nhà trường</div>
+            <a href="/Supervisor/Messages" class="dcard__action">Xem tất cả</a>
+        </div>
+        <div class="dcard__body">
+            <div class="msg-list">
+                @{
+                    var messages = new[] {
+                        new { Init = "GT", Bg = "#d97706", Name = "Giám thị Nguyễn",    Preview = "Con em vắng học tiết 2 thứ 3...", Time = "Hôm nay",    Unread = true  },
+                        new { Init = "GV", Bg = "#059669", Name = "Cô Mai (Toán)",       Preview = "Điểm thi cuối kỳ đã được cập nhật", Time = "Hôm qua",   Unread = false },
+                        new { Init = "BM", Bg = "#2563eb", Name = "Ban giám hiệu",        Preview = "Thông báo họp phụ huynh tháng 6", Time = "25/05",      Unread = false },
+                    };
+                }
+                @foreach (var m in messages)
+                {
+                    <div class="msg-item @(m.Unread ? "unread" : "")">
+                        <div class="msg-avatar" style="background:@m.Bg">@m.Init</div>
+                        <div style="flex:1;min-width:0">
+                            <div class="msg-name">@m.Name</div>
+                            <div class="msg-preview">@m.Preview</div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+                            <div class="msg-time">@m.Time</div>
+                            @if (m.Unread) { <div class="msg-unread-dot" style="background:#7c3aed"></div> }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

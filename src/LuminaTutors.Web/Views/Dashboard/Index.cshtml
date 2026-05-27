@@ -1,0 +1,222 @@
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Dashboard";
+    var role    = User.FindFirstValue(ClaimTypes.Role) ?? "";
+    var name    = User.FindFirstValue(ClaimTypes.Name) ?? "";
+    var finance = ViewBag.FinanceReport as LuminaTutors.Application.DTOs.Finance.MonthlyFinanceReportDto;
+    var now     = DateTime.Now;
+    var firstName = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? name;
+}
+
+<!-- Greeting -->
+<div class="lt-greeting">
+    <div>
+        <h1 class="lt-page-title">Chào mừng, @firstName</h1>
+        <p class="lt-page-subtitle">
+            @now.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"))
+            &nbsp;&middot;&nbsp;
+            <span class="lt-badge lt-badge--navy">@role</span>
+        </p>
+    </div>
+</div>
+
+<!-- ── Stat Cards ── -->
+<div class="row g-3 mb-4">
+
+    @if (role is "ADMIN" or "TEACHER")
+    {
+        <div class="col-sm-6 col-xl-3">
+            <a asp-controller="Student" asp-action="Index" style="text-decoration:none">
+                <div class="lt-stat" data-testid="stat-students">
+                    <div class="lt-stat__icon lt-stat__icon--navy">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div>
+                        <div class="lt-stat__value">—</div>
+                        <div class="lt-stat__label">Học sinh</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <a asp-controller="Class" asp-action="Index" asp-route-academicYearId="1" style="text-decoration:none">
+                <div class="lt-stat" data-testid="stat-classes">
+                    <div class="lt-stat__icon lt-stat__icon--gold">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div>
+                        <div class="lt-stat__value">—</div>
+                        <div class="lt-stat__label">Lớp học</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <a asp-controller="Attendance" asp-action="Index" style="text-decoration:none">
+                <div class="lt-stat" data-testid="stat-sessions">
+                    <div class="lt-stat__icon lt-stat__icon--success">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </div>
+                    <div>
+                        <div class="lt-stat__value">—</div>
+                        <div class="lt-stat__label">Phiên hôm nay</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+
+    @if (role is "ACCOUNTANT" or "ADMIN")
+    {
+        <div class="col-sm-6 col-xl-3">
+            <a asp-controller="Finance" asp-action="OutstandingDebts" style="text-decoration:none">
+                <div class="lt-stat" data-testid="stat-debts">
+                    <div class="lt-stat__icon lt-stat__icon--danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div>
+                        <div class="lt-stat__value">@(finance?.OverdueInvoices ?? 0)</div>
+                        <div class="lt-stat__label">Hóa đơn quá hạn</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+
+    @if (role == "SUPERVISOR")
+    {
+        <div class="col-sm-6 col-xl-3">
+            <a asp-controller="Supervisor" asp-action="Records" style="text-decoration:none">
+                <div class="lt-stat" data-testid="stat-discipline">
+                    <div class="lt-stat__icon lt-stat__icon--danger">
+                        <i class="bi bi-file-earmark-text-fill"></i>
+                    </div>
+                    <div>
+                        <div class="lt-stat__value">—</div>
+                        <div class="lt-stat__label">Vi phạm hôm nay</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+
+    <div class="col-sm-6 col-xl-3">
+        <a asp-controller="Dashboard" asp-action="Notifications" style="text-decoration:none">
+            <div class="lt-stat" data-testid="stat-notifications">
+                <div class="lt-stat__icon lt-stat__icon--info">
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@(ViewBag.UnreadCount ?? 0)</div>
+                    <div class="lt-stat__label">Thông báo chưa đọc</div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- ── Finance + Quick Actions row ── -->
+<div class="row g-4">
+
+    @if (finance != null)
+    {
+    <div class="col-lg-8">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-currency-dollar" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Tài chính tháng @now.Month/@now.Year
+                </h3>
+                <a asp-controller="Finance" asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm">
+                    Chi tiết
+                </a>
+            </div>
+            <div class="lt-card__body">
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="lt-metric">
+                            <div class="lt-metric__value lt-metric__value--navy">
+                                @finance.TotalBilled.ToString("N0")<span class="lt-metric__currency">đ</span>
+                            </div>
+                            <div class="lt-metric__label">Tổng phát sinh</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="lt-metric">
+                            <div class="lt-metric__value lt-metric__value--success">
+                                @finance.TotalCollected.ToString("N0")<span class="lt-metric__currency">đ</span>
+                            </div>
+                            <div class="lt-metric__label">Đã thu</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="lt-metric">
+                            <div class="lt-metric__value lt-metric__value--danger">
+                                @finance.TotalOutstanding.ToString("N0")<span class="lt-metric__currency">đ</span>
+                            </div>
+                            <div class="lt-metric__label">Còn lại</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="lt-metric">
+                            <div class="lt-metric__value lt-metric__value--gold">
+                                @finance.CollectionRate%
+                            </div>
+                            <div class="lt-metric__label">Tỷ lệ thu</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collection progress -->
+                <div class="lt-flex-between lt-text-xs lt-text-muted lt-mb-2">
+                    <span>Tiến độ thu học phí</span>
+                    <span>@finance.PaidInvoices / @finance.TotalInvoices hóa đơn</span>
+                </div>
+                <div class="lt-progress">
+                    <div class="lt-progress__bar" style="width:@finance.CollectionRate%"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    }
+
+    <div class="@(finance != null ? "col-lg-4" : "col-12")">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">Thao tác nhanh</h3>
+            </div>
+            <div class="lt-card__body lt-flex-col lt-gap-3">
+                @if (role is "ADMIN" or "TEACHER")
+                {
+                    <a asp-controller="Attendance" asp-action="Index" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-qr-code-scan"></i> Mở điểm danh
+                    </a>
+                    <a asp-controller="Grading" asp-action="Index" class="lt-btn lt-btn--outline">
+                        <i class="bi bi-journal-text"></i> Nhập điểm TT22
+                    </a>
+                }
+                @if (role is "ACCOUNTANT" or "ADMIN")
+                {
+                    <a asp-controller="Finance" asp-action="Invoices" class="lt-btn lt-btn--outline">
+                        <i class="bi bi-receipt"></i> Xem hóa đơn
+                    </a>
+                }
+                @if (role == "SUPERVISOR")
+                {
+                    <a asp-controller="Supervisor" asp-action="Records" class="lt-btn lt-btn--outline">
+                        <i class="bi bi-file-earmark-text"></i> Hồ sơ kỷ luật
+                    </a>
+                }
+                @if (role == "ADMIN")
+                {
+                    <a asp-controller="Auth" asp-action="InviteLinks" class="lt-btn lt-btn--gold">
+                        <i class="bi bi-link-45deg"></i> Tạo liên kết mời
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

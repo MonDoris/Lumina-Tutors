@@ -1,0 +1,1109 @@
+2026-05-27 00:35:54.933 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-27 00:35:56.696 +07:00 [INF] Executed DbCommand (32ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 00:35:56.747 +07:00 [INF] Executed DbCommand (28ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 00:35:56.754 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 00:35:56.757 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 00:35:56.773 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-27 00:35:57.065 +07:00 [INF] Executed DbCommand (15ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolCode] = N'LT-DEMO-001'
+2026-05-27 00:35:57.162 +07:00 [INF] ℹ️  Demo school already exists (Id=1)
+2026-05-27 00:35:57.215 +07:00 [INF] Executed DbCommand (27ms) [Parameters=[@__normalizedEmail_0='admin@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 00:35:57.220 +07:00 [INF] ℹ️  User [ADMIN] admin@lumina.edu.vn already exists — skipping
+2026-05-27 00:35:57.224 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='teacher@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 00:35:57.228 +07:00 [INF] ℹ️  User [TEACHER] teacher@lumina.edu.vn already exists — skipping
+2026-05-27 00:35:57.230 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='student@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 00:35:57.231 +07:00 [INF] ℹ️  User [STUDENT] student@lumina.edu.vn already exists — skipping
+2026-05-27 00:35:57.233 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='parent@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 00:35:57.235 +07:00 [INF] ℹ️  User [PARENT] parent@lumina.edu.vn already exists — skipping
+2026-05-27 00:35:57.237 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='supervisor@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 00:35:57.238 +07:00 [INF] ℹ️  User [SUPERVISOR] supervisor@lumina.edu.vn already exists — skipping
+2026-05-27 00:35:57.240 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='accountant@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 00:35:57.242 +07:00 [INF] ℹ️  User [ACCOUNTANT] accountant@lumina.edu.vn already exists — skipping
+2026-05-27 00:35:57.270 +07:00 [INF] 🌱 DatabaseSeeder completed.
+2026-05-27 00:35:57.406 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-27 00:35:58.593 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-27 00:35:58.747 +07:00 [INF] HTTP GET / responded 200 in 468.6447 ms
+2026-05-27 00:35:58.806 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 28.5973 ms
+2026-05-27 00:35:58.806 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 27.0921 ms
+2026-05-27 00:35:58.806 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 5.9393 ms
+2026-05-27 00:35:59.151 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 4.3257 ms
+2026-05-27 00:36:31.243 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[@__ToLowerInvariant_0='admin@lumina.edu.vn' (Size = 150)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+INNER JOIN [Schools] AS [s] ON [u].[SchoolId] = [s].[SchoolId]
+WHERE [u].[Email] = @__ToLowerInvariant_0
+2026-05-27 00:36:31.417 +07:00 [INF] User 1 logged in at "2026-05-26T17:36:31.4175189Z"
+2026-05-27 00:36:31.430 +07:00 [INF] User 1 (admin@lumina.edu.vn) signed in
+2026-05-27 00:36:31.441 +07:00 [INF] HTTP POST / responded 302 in 347.2915 ms
+2026-05-27 00:36:31.557 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[@__userId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 00:36:31.621 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__p_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolId] = @__p_0
+2026-05-27 00:36:31.640 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1', @__period_1='2026-05' (Size = 20)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[InvoiceId], [t].[Amount], [t].[BillingPeriod], [t].[ConfigId], [t].[CreatedAt], [t].[CreatedByUserId], [t].[Discount], [t].[DueDate], [t].[InvoiceCode], [t].[Notes], [t].[QRCodeData], [t].[SchoolId], [t].[Status], [t].[StudentId], [t].[UpdatedAt]
+FROM [TuitionInvoices] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND [t].[BillingPeriod] = @__period_1
+2026-05-27 00:36:31.667 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[@__schoolId_0='1', @__month_1='5', @__year_2='2026'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[PaymentId], [t].[AmountPaid], [t].[GatewayResponse], [t].[InvoiceId], [t].[Note], [t].[PaymentDate], [t].[PaymentMethod], [t].[PaymentStatus], [t].[ProcessedByUserId], [t].[SchoolId], [t].[TransactionCode]
+FROM [TuitionPayments] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND DATEPART(month, [t].[PaymentDate]) = @__month_1 AND DATEPART(year, [t].[PaymentDate]) = @__year_2
+2026-05-27 00:36:31.768 +07:00 [INF] HTTP GET /Dashboard/Index responded 200 in 310.5646 ms
+2026-05-27 00:36:40.922 +07:00 [ERR] The view 'Index' was not found. Searched locations: ["/Views/Grading/Index.cshtml","/Views/Shared/Index.cshtml"]
+2026-05-27 00:36:40.935 +07:00 [ERR] HTTP GET /Grading/Index responded 500 in 26.4025 ms
+System.InvalidOperationException: The view 'Index' was not found. The following locations were searched:
+/Views/Grading/Index.cshtml
+/Views/Shared/Index.cshtml
+   at Microsoft.AspNetCore.Mvc.ViewEngines.ViewEngineResult.EnsureSuccessful(IEnumerable`1 originalLocations)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)
+   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeFilterPipelineAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-05-27 00:36:40.958 +07:00 [ERR] An unhandled exception has occurred while executing the request.
+System.InvalidOperationException: The view 'Index' was not found. The following locations were searched:
+/Views/Grading/Index.cshtml
+/Views/Shared/Index.cshtml
+   at Microsoft.AspNetCore.Mvc.ViewEngines.ViewEngineResult.EnsureSuccessful(IEnumerable`1 originalLocations)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)
+   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeFilterPipelineAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2026-05-27 00:36:44.035 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__userId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 00:36:44.045 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolId] = @__p_0
+2026-05-27 00:36:44.050 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__period_1='2026-05' (Size = 20)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[InvoiceId], [t].[Amount], [t].[BillingPeriod], [t].[ConfigId], [t].[CreatedAt], [t].[CreatedByUserId], [t].[Discount], [t].[DueDate], [t].[InvoiceCode], [t].[Notes], [t].[QRCodeData], [t].[SchoolId], [t].[Status], [t].[StudentId], [t].[UpdatedAt]
+FROM [TuitionInvoices] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND [t].[BillingPeriod] = @__period_1
+2026-05-27 00:36:44.053 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__month_1='5', @__year_2='2026'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[PaymentId], [t].[AmountPaid], [t].[GatewayResponse], [t].[InvoiceId], [t].[Note], [t].[PaymentDate], [t].[PaymentMethod], [t].[PaymentStatus], [t].[ProcessedByUserId], [t].[SchoolId], [t].[TransactionCode]
+FROM [TuitionPayments] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND DATEPART(month, [t].[PaymentDate]) = @__month_1 AND DATEPART(year, [t].[PaymentDate]) = @__year_2
+2026-05-27 00:36:44.060 +07:00 [INF] HTTP GET /Dashboard/Index responded 200 in 35.5934 ms
+2026-05-27 07:50:31.100 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-27 07:50:32.669 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 07:50:32.712 +07:00 [INF] Executed DbCommand (22ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 07:50:32.718 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 07:50:32.721 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 07:50:32.740 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-27 07:50:32.944 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolCode] = N'LT-DEMO-001'
+2026-05-27 07:50:33.028 +07:00 [INF] ℹ️  Demo school already exists (Id=1)
+2026-05-27 07:50:33.081 +07:00 [INF] Executed DbCommand (26ms) [Parameters=[@__normalizedEmail_0='admin@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 07:50:33.085 +07:00 [INF] ℹ️  User [ADMIN] admin@lumina.edu.vn already exists — skipping
+2026-05-27 07:50:33.089 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='teacher@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 07:50:33.091 +07:00 [INF] ℹ️  User [TEACHER] teacher@lumina.edu.vn already exists — skipping
+2026-05-27 07:50:33.094 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='student@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 07:50:33.096 +07:00 [INF] ℹ️  User [STUDENT] student@lumina.edu.vn already exists — skipping
+2026-05-27 07:50:33.098 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='parent@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 07:50:33.100 +07:00 [INF] ℹ️  User [PARENT] parent@lumina.edu.vn already exists — skipping
+2026-05-27 07:50:33.102 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='supervisor@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 07:50:33.103 +07:00 [INF] ℹ️  User [SUPERVISOR] supervisor@lumina.edu.vn already exists — skipping
+2026-05-27 07:50:33.105 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='accountant@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 07:50:33.107 +07:00 [INF] ℹ️  User [ACCOUNTANT] accountant@lumina.edu.vn already exists — skipping
+2026-05-27 07:50:33.136 +07:00 [INF] 🌱 DatabaseSeeder completed.
+2026-05-27 07:50:33.282 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-27 07:50:35.320 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-27 07:50:35.510 +07:00 [INF] HTTP GET / responded 200 in 470.7454 ms
+2026-05-27 07:50:35.566 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 20.5291 ms
+2026-05-27 07:50:35.566 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 20.5299 ms
+2026-05-27 07:50:35.566 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 22.5642 ms
+2026-05-27 07:50:35.959 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 7.4453 ms
+2026-05-27 07:51:41.446 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[@__ToLowerInvariant_0='teacher@lumina.edu.vn' (Size = 150)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+INNER JOIN [Schools] AS [s] ON [u].[SchoolId] = [s].[SchoolId]
+WHERE [u].[Email] = @__ToLowerInvariant_0
+2026-05-27 07:51:41.594 +07:00 [INF] User 2 logged in at "2026-05-27T00:51:41.5944671Z"
+2026-05-27 07:51:41.605 +07:00 [INF] User 2 (teacher@lumina.edu.vn) signed in
+2026-05-27 07:51:41.609 +07:00 [INF] HTTP POST / responded 302 in 331.7994 ms
+2026-05-27 07:51:41.762 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[@__userId_0='2'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 07:51:41.942 +07:00 [INF] HTTP GET /Dashboard/Index responded 200 in 324.4637 ms
+2026-05-27 07:51:53.054 +07:00 [INF] HTTP GET /Attendance/Index responded 200 in 16.4802 ms
+2026-05-27 07:51:55.741 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__userId_0='2'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 07:51:55.746 +07:00 [INF] HTTP GET /Dashboard/Index responded 200 in 17.0238 ms
+2026-05-27 07:51:57.982 +07:00 [INF] HTTP GET /Grading/Index responded 200 in 11.7778 ms
+2026-05-27 07:52:13.473 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='0'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [u].[UserId]
+2026-05-27 07:52:13.510 +07:00 [INF] HTTP GET /Class/Index responded 200 in 88.9406 ms
+2026-05-27 07:52:15.596 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [StudentProfiles] AS [s]
+WHERE [s].[SchoolId] = @__schoolId_0
+2026-05-27 07:52:15.631 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [StudentProfiles] AS [s]
+INNER JOIN [Users] AS [u] ON [s].[UserId] = [u].[UserId]
+WHERE [s].[SchoolId] = @__schoolId_0
+ORDER BY [u].[FullName]
+OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+2026-05-27 07:52:15.662 +07:00 [INF] HTTP GET /Student/Index responded 200 in 116.0422 ms
+2026-05-27 07:52:16.883 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__userId_0='2'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 07:52:16.891 +07:00 [INF] HTTP GET /Dashboard/Index responded 200 in 15.8675 ms
+2026-05-27 09:53:42.894 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-27 09:53:45.305 +07:00 [INF] Executed DbCommand (38ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 09:53:45.382 +07:00 [INF] Executed DbCommand (40ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 09:53:45.396 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 09:53:45.402 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 09:53:45.437 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-27 09:53:45.744 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolCode] = N'LT-DEMO-001'
+2026-05-27 09:53:45.842 +07:00 [INF] ℹ️  Demo school already exists (Id=1)
+2026-05-27 09:53:45.901 +07:00 [INF] Executed DbCommand (28ms) [Parameters=[@__normalizedEmail_0='admin@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 09:53:45.906 +07:00 [INF] ℹ️  User [ADMIN] admin@lumina.edu.vn already exists — skipping
+2026-05-27 09:53:45.911 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='teacher@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 09:53:45.913 +07:00 [INF] ℹ️  User [TEACHER] teacher@lumina.edu.vn already exists — skipping
+2026-05-27 09:53:45.916 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='student@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 09:53:45.918 +07:00 [INF] ℹ️  User [STUDENT] student@lumina.edu.vn already exists — skipping
+2026-05-27 09:53:45.921 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='parent@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 09:53:45.924 +07:00 [INF] ℹ️  User [PARENT] parent@lumina.edu.vn already exists — skipping
+2026-05-27 09:53:45.927 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='supervisor@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 09:53:45.930 +07:00 [INF] ℹ️  User [SUPERVISOR] supervisor@lumina.edu.vn already exists — skipping
+2026-05-27 09:53:45.933 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='accountant@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 09:53:45.935 +07:00 [INF] ℹ️  User [ACCOUNTANT] accountant@lumina.edu.vn already exists — skipping
+2026-05-27 09:53:45.998 +07:00 [INF] 🌱 DatabaseSeeder completed.
+2026-05-27 09:53:46.162 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-27 09:53:48.321 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-27 09:53:48.510 +07:00 [INF] HTTP GET / responded 200 in 564.8753 ms
+2026-05-27 09:53:48.548 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 6.9792 ms
+2026-05-27 09:53:48.548 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 7.2993 ms
+2026-05-27 09:53:48.548 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 7.1673 ms
+2026-05-27 09:53:48.953 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 11.4011 ms
+2026-05-27 10:07:11.849 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-27 10:07:13.227 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 10:07:13.267 +07:00 [INF] Executed DbCommand (21ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 10:07:13.272 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 10:07:13.275 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 10:07:13.289 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-27 10:07:13.508 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolCode] = N'LT-DEMO-001'
+2026-05-27 10:07:13.593 +07:00 [INF] ℹ️  Demo school already exists (Id=1)
+2026-05-27 10:07:13.645 +07:00 [INF] Executed DbCommand (27ms) [Parameters=[@__normalizedEmail_0='admin@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:07:13.652 +07:00 [INF] ℹ️  User [ADMIN] admin@lumina.edu.vn already exists — skipping
+2026-05-27 10:07:13.656 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='teacher@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:07:13.658 +07:00 [INF] ℹ️  User [TEACHER] teacher@lumina.edu.vn already exists — skipping
+2026-05-27 10:07:13.660 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='student@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:07:13.663 +07:00 [INF] ℹ️  User [STUDENT] student@lumina.edu.vn already exists — skipping
+2026-05-27 10:07:13.665 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='parent@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:07:13.667 +07:00 [INF] ℹ️  User [PARENT] parent@lumina.edu.vn already exists — skipping
+2026-05-27 10:07:13.669 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='supervisor@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:07:13.671 +07:00 [INF] ℹ️  User [SUPERVISOR] supervisor@lumina.edu.vn already exists — skipping
+2026-05-27 10:07:13.674 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='accountant@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:07:13.677 +07:00 [INF] ℹ️  User [ACCOUNTANT] accountant@lumina.edu.vn already exists — skipping
+2026-05-27 10:07:13.705 +07:00 [INF] 🌱 DatabaseSeeder completed.
+2026-05-27 10:07:13.825 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-27 10:07:15.138 +07:00 [INF] HTTP GET / responded 200 in 178.3826 ms
+2026-05-27 10:07:16.931 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 5.1675 ms
+2026-05-27 10:08:08.367 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-27 10:08:08.497 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 316.8131 ms
+2026-05-27 10:08:08.540 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 3.3660 ms
+2026-05-27 10:08:08.549 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 8.1925 ms
+2026-05-27 10:08:08.540 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 1.9086 ms
+2026-05-27 10:14:46.271 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-27 10:14:47.626 +07:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 10:14:47.667 +07:00 [INF] Executed DbCommand (23ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 10:14:47.671 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 10:14:47.674 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 10:14:47.688 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-27 10:14:47.868 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolCode] = N'LT-DEMO-001'
+2026-05-27 10:14:47.952 +07:00 [INF] ℹ️  Demo school already exists (Id=1)
+2026-05-27 10:14:48.003 +07:00 [INF] Executed DbCommand (25ms) [Parameters=[@__normalizedEmail_0='admin@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:14:48.008 +07:00 [INF] ℹ️  User [ADMIN] admin@lumina.edu.vn already exists — skipping
+2026-05-27 10:14:48.011 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='teacher@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:14:48.013 +07:00 [INF] ℹ️  User [TEACHER] teacher@lumina.edu.vn already exists — skipping
+2026-05-27 10:14:48.015 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='student@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:14:48.017 +07:00 [INF] ℹ️  User [STUDENT] student@lumina.edu.vn already exists — skipping
+2026-05-27 10:14:48.018 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='parent@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:14:48.020 +07:00 [INF] ℹ️  User [PARENT] parent@lumina.edu.vn already exists — skipping
+2026-05-27 10:14:48.021 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='supervisor@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:14:48.023 +07:00 [INF] ℹ️  User [SUPERVISOR] supervisor@lumina.edu.vn already exists — skipping
+2026-05-27 10:14:48.025 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='accountant@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:14:48.026 +07:00 [INF] ℹ️  User [ACCOUNTANT] accountant@lumina.edu.vn already exists — skipping
+2026-05-27 10:14:48.054 +07:00 [INF] 🌱 DatabaseSeeder completed.
+2026-05-27 10:14:48.167 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-27 10:14:49.312 +07:00 [INF] HTTP GET / responded 200 in 168.0275 ms
+2026-05-27 10:14:49.884 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 6.8964 ms
+2026-05-27 10:54:36.880 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-27 10:54:38.644 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 10:54:38.688 +07:00 [INF] Executed DbCommand (24ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 10:54:38.693 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 10:54:38.696 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 10:54:38.713 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-27 10:54:38.934 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolCode] = N'LT-DEMO-001'
+2026-05-27 10:54:39.028 +07:00 [INF] ℹ️  Demo school already exists (Id=1)
+2026-05-27 10:54:39.099 +07:00 [INF] Executed DbCommand (44ms) [Parameters=[@__normalizedEmail_0='admin@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:54:39.105 +07:00 [INF] ℹ️  User [ADMIN] admin@lumina.edu.vn already exists — skipping
+2026-05-27 10:54:39.108 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='teacher@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:54:39.111 +07:00 [INF] ℹ️  User [TEACHER] teacher@lumina.edu.vn already exists — skipping
+2026-05-27 10:54:39.113 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='student@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:54:39.115 +07:00 [INF] ℹ️  User [STUDENT] student@lumina.edu.vn already exists — skipping
+2026-05-27 10:54:39.116 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='parent@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:54:39.118 +07:00 [INF] ℹ️  User [PARENT] parent@lumina.edu.vn already exists — skipping
+2026-05-27 10:54:39.120 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='supervisor@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:54:39.121 +07:00 [INF] ℹ️  User [SUPERVISOR] supervisor@lumina.edu.vn already exists — skipping
+2026-05-27 10:54:39.123 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[@__normalizedEmail_0='accountant@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 10:54:39.124 +07:00 [INF] ℹ️  User [ACCOUNTANT] accountant@lumina.edu.vn already exists — skipping
+2026-05-27 10:54:39.154 +07:00 [INF] 🌱 DatabaseSeeder completed.
+2026-05-27 10:54:39.302 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-27 10:54:40.321 +07:00 [INF] HTTP GET / responded 200 in 228.1058 ms
+2026-05-27 10:54:41.375 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 7.8000 ms
+2026-05-27 10:55:04.010 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-27 10:55:04.099 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 297.8572 ms
+2026-05-27 10:55:04.139 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 4.2909 ms
+2026-05-27 10:55:04.139 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 4.2854 ms
+2026-05-27 10:55:04.139 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 4.3188 ms
+2026-05-27 11:02:17.248 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-27 11:02:18.679 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 11:02:18.718 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 11:02:18.724 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 11:02:18.726 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 11:02:18.741 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-27 11:02:18.933 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolCode] = N'LT-DEMO-001'
+2026-05-27 11:02:19.012 +07:00 [INF] ℹ️  Demo school already exists (Id=1)
+2026-05-27 11:02:19.066 +07:00 [INF] Executed DbCommand (25ms) [Parameters=[@__normalizedEmail_0='admin@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 11:02:19.071 +07:00 [INF] ℹ️  User [ADMIN] admin@lumina.edu.vn already exists — skipping
+2026-05-27 11:02:19.075 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='teacher@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 11:02:19.077 +07:00 [INF] ℹ️  User [TEACHER] teacher@lumina.edu.vn already exists — skipping
+2026-05-27 11:02:19.079 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='student@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 11:02:19.081 +07:00 [INF] ℹ️  User [STUDENT] student@lumina.edu.vn already exists — skipping
+2026-05-27 11:02:19.083 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='parent@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 11:02:19.084 +07:00 [INF] ℹ️  User [PARENT] parent@lumina.edu.vn already exists — skipping
+2026-05-27 11:02:19.086 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='supervisor@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 11:02:19.088 +07:00 [INF] ℹ️  User [SUPERVISOR] supervisor@lumina.edu.vn already exists — skipping
+2026-05-27 11:02:19.090 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='accountant@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 11:02:19.091 +07:00 [INF] ℹ️  User [ACCOUNTANT] accountant@lumina.edu.vn already exists — skipping
+2026-05-27 11:02:19.118 +07:00 [INF] 🌱 DatabaseSeeder completed.
+2026-05-27 11:02:19.242 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-27 11:02:20.338 +07:00 [INF] HTTP GET / responded 200 in 164.1258 ms
+2026-05-27 11:02:21.232 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 5.6680 ms
+2026-05-27 11:02:23.663 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-27 11:02:23.690 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 193.3108 ms
+2026-05-27 11:02:27.207 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 144.2953 ms
+2026-05-27 11:02:27.241 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 3.2173 ms
+2026-05-27 11:02:27.241 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 3.3061 ms
+2026-05-27 11:02:27.243 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 2.4268 ms
+2026-05-27 11:02:35.186 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 13.1970 ms
+2026-05-27 11:02:38.569 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 7.9437 ms
+2026-05-27 11:02:45.164 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 7.7802 ms
+2026-05-27 11:02:45.211 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.3204 ms
+2026-05-27 11:02:45.212 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.3614 ms
+2026-05-27 11:02:45.212 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.4080 ms
+2026-05-27 11:02:52.361 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 5.6925 ms
+2026-05-27 11:02:52.395 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.3337 ms
+2026-05-27 11:02:52.398 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.5419 ms
+2026-05-27 11:02:52.398 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.5277 ms
+2026-05-27 11:02:58.263 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 5.5339 ms
+2026-05-27 11:02:58.296 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.2860 ms
+2026-05-27 11:02:58.301 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 1.0117 ms
+2026-05-27 11:02:58.302 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 1.1072 ms
+2026-05-27 11:03:14.809 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 7.4924 ms
+2026-05-27 11:03:14.842 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.3272 ms
+2026-05-27 11:03:14.846 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.3245 ms
+2026-05-27 11:03:14.847 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 1.2694 ms
+2026-05-27 11:03:21.581 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 4.5293 ms
+2026-05-27 11:03:21.615 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.2553 ms
+2026-05-27 11:03:21.620 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.2967 ms
+2026-05-27 11:03:21.620 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.5130 ms
+2026-05-27 12:46:55.269 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-27 12:46:57.604 +07:00 [INF] Executed DbCommand (44ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 12:46:57.668 +07:00 [INF] Executed DbCommand (31ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 12:46:57.675 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-27 12:46:57.679 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-27 12:46:57.701 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-27 12:46:58.027 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolCode] = N'LT-DEMO-001'
+2026-05-27 12:46:58.154 +07:00 [INF] ℹ️  Demo school already exists (Id=1)
+2026-05-27 12:46:58.226 +07:00 [INF] Executed DbCommand (35ms) [Parameters=[@__normalizedEmail_0='admin@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 12:46:58.235 +07:00 [INF] ℹ️  User [ADMIN] admin@lumina.edu.vn already exists — skipping
+2026-05-27 12:46:58.240 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='teacher@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 12:46:58.242 +07:00 [INF] ℹ️  User [TEACHER] teacher@lumina.edu.vn already exists — skipping
+2026-05-27 12:46:58.244 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='student@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 12:46:58.245 +07:00 [INF] ℹ️  User [STUDENT] student@lumina.edu.vn already exists — skipping
+2026-05-27 12:46:58.247 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='parent@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 12:46:58.249 +07:00 [INF] ℹ️  User [PARENT] parent@lumina.edu.vn already exists — skipping
+2026-05-27 12:46:58.252 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='supervisor@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 12:46:58.254 +07:00 [INF] ℹ️  User [SUPERVISOR] supervisor@lumina.edu.vn already exists — skipping
+2026-05-27 12:46:58.257 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__normalizedEmail_0='accountant@lumina.edu.vn' (Size = 150), @__8__locals1_schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = @__normalizedEmail_0 AND [u].[SchoolId] = @__8__locals1_schoolId_1) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-27 12:46:58.259 +07:00 [INF] ℹ️  User [ACCOUNTANT] accountant@lumina.edu.vn already exists — skipping
+2026-05-27 12:46:58.289 +07:00 [INF] 🌱 DatabaseSeeder completed.
+2026-05-27 12:46:58.482 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-27 12:47:00.681 +07:00 [INF] HTTP GET / responded 200 in 212.8588 ms
+2026-05-27 12:47:01.533 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 13.3364 ms
+2026-05-27 12:47:11.189 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-27 12:47:11.217 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 323.6393 ms
+2026-05-27 12:47:12.835 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 161.6785 ms
+2026-05-27 12:47:12.875 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 10.1393 ms
+2026-05-27 12:47:12.879 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 7.5829 ms
+2026-05-27 12:47:12.880 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 8.4726 ms
+2026-05-27 12:47:15.508 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 14.7777 ms
+2026-05-27 12:47:15.537 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.3061 ms
+2026-05-27 12:47:15.541 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.4095 ms
+2026-05-27 12:47:15.541 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.3961 ms
+2026-05-27 12:47:55.054 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[@__ToLowerInvariant_0='student@lumina.edu.vn' (Size = 150)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+INNER JOIN [Schools] AS [s] ON [u].[SchoolId] = [s].[SchoolId]
+WHERE [u].[Email] = @__ToLowerInvariant_0
+2026-05-27 12:47:55.200 +07:00 [INF] User 3 logged in at "2026-05-27T05:47:55.1999829Z"
+2026-05-27 12:47:55.208 +07:00 [INF] User 3 (student@lumina.edu.vn) signed in
+2026-05-27 12:47:55.212 +07:00 [INF] HTTP POST /Auth/Login responded 302 in 362.5316 ms
+2026-05-27 12:47:55.370 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[@__userId_0='3'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 12:47:55.460 +07:00 [INF] HTTP GET /Dashboard responded 200 in 238.4712 ms
+2026-05-27 12:48:48.014 +07:00 [INF] HTTP GET /Auth/Login responded 302 in 1.0122 ms
+2026-05-27 12:48:48.036 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[@__userId_0='3'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 12:48:48.053 +07:00 [INF] HTTP GET /Dashboard responded 200 in 28.5575 ms
+2026-05-27 12:48:50.031 +07:00 [INF] User 3 logged out
+2026-05-27 12:48:50.037 +07:00 [INF] User 3 signed out
+2026-05-27 12:48:50.041 +07:00 [INF] HTTP POST /Auth/Logout responded 302 in 20.4610 ms
+2026-05-27 12:48:50.060 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 6.3667 ms
+2026-05-27 12:48:50.085 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.3010 ms
+2026-05-27 12:48:50.097 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.2292 ms
+2026-05-27 12:48:50.097 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.3147 ms
+2026-05-27 12:48:52.951 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 3.8412 ms
+2026-05-27 12:48:53.899 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 7.0958 ms
+2026-05-27 12:48:53.934 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.2799 ms
+2026-05-27 12:48:53.937 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.2024 ms
+2026-05-27 12:48:53.937 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.2638 ms
+2026-05-27 12:48:55.938 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 4.1746 ms
+2026-05-27 12:48:57.679 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 13.0702 ms
+2026-05-27 12:48:57.732 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.6673 ms
+2026-05-27 12:48:57.715 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.2142 ms
+2026-05-27 12:48:57.715 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 0.3157 ms
+2026-05-27 12:49:14.964 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__ToLowerInvariant_0='admin@lumina.edu.vn' (Size = 150)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+INNER JOIN [Schools] AS [s] ON [u].[SchoolId] = [s].[SchoolId]
+WHERE [u].[Email] = @__ToLowerInvariant_0
+2026-05-27 12:49:15.069 +07:00 [INF] User 1 logged in at "2026-05-27T05:49:15.0690791Z"
+2026-05-27 12:49:15.073 +07:00 [INF] User 1 (admin@lumina.edu.vn) signed in
+2026-05-27 12:49:15.079 +07:00 [INF] HTTP POST /Auth/Login responded 302 in 122.3575 ms
+2026-05-27 12:49:15.095 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__userId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 12:49:15.119 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__p_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolId] = @__p_0
+2026-05-27 12:49:15.145 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1', @__period_1='2026-05' (Size = 20)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[InvoiceId], [t].[Amount], [t].[BillingPeriod], [t].[ConfigId], [t].[CreatedAt], [t].[CreatedByUserId], [t].[Discount], [t].[DueDate], [t].[InvoiceCode], [t].[Notes], [t].[QRCodeData], [t].[SchoolId], [t].[Status], [t].[StudentId], [t].[UpdatedAt]
+FROM [TuitionInvoices] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND [t].[BillingPeriod] = @__period_1
+2026-05-27 12:49:15.179 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1', @__month_1='5', @__year_2='2026'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[PaymentId], [t].[AmountPaid], [t].[GatewayResponse], [t].[InvoiceId], [t].[Note], [t].[PaymentDate], [t].[PaymentMethod], [t].[PaymentStatus], [t].[ProcessedByUserId], [t].[SchoolId], [t].[TransactionCode]
+FROM [TuitionPayments] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND DATEPART(month, [t].[PaymentDate]) = @__month_1 AND DATEPART(year, [t].[PaymentDate]) = @__year_2
+2026-05-27 12:49:15.266 +07:00 [INF] HTTP GET /Dashboard responded 200 in 176.1961 ms
+2026-05-27 12:49:34.462 +07:00 [ERR] The view 'Create' was not found. Searched locations: ["/Views/Student/Create.cshtml","/Views/Shared/Create.cshtml"]
+2026-05-27 12:49:34.477 +07:00 [ERR] HTTP GET /Student/Create responded 500 in 26.5084 ms
+System.InvalidOperationException: The view 'Create' was not found. The following locations were searched:
+/Views/Student/Create.cshtml
+/Views/Shared/Create.cshtml
+   at Microsoft.AspNetCore.Mvc.ViewEngines.ViewEngineResult.EnsureSuccessful(IEnumerable`1 originalLocations)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)
+   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeFilterPipelineAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-05-27 12:49:34.493 +07:00 [ERR] An unhandled exception has occurred while executing the request.
+System.InvalidOperationException: The view 'Create' was not found. The following locations were searched:
+/Views/Student/Create.cshtml
+/Views/Shared/Create.cshtml
+   at Microsoft.AspNetCore.Mvc.ViewEngines.ViewEngineResult.EnsureSuccessful(IEnumerable`1 originalLocations)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)
+   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeFilterPipelineAsync()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2026-05-27 12:49:36.644 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__userId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 12:49:36.655 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__p_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolId] = @__p_0
+2026-05-27 12:49:36.658 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__period_1='2026-05' (Size = 20)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[InvoiceId], [t].[Amount], [t].[BillingPeriod], [t].[ConfigId], [t].[CreatedAt], [t].[CreatedByUserId], [t].[Discount], [t].[DueDate], [t].[InvoiceCode], [t].[Notes], [t].[QRCodeData], [t].[SchoolId], [t].[Status], [t].[StudentId], [t].[UpdatedAt]
+FROM [TuitionInvoices] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND [t].[BillingPeriod] = @__period_1
+2026-05-27 12:49:36.667 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__month_1='5', @__year_2='2026'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[PaymentId], [t].[AmountPaid], [t].[GatewayResponse], [t].[InvoiceId], [t].[Note], [t].[PaymentDate], [t].[PaymentMethod], [t].[PaymentStatus], [t].[ProcessedByUserId], [t].[SchoolId], [t].[TransactionCode]
+FROM [TuitionPayments] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND DATEPART(month, [t].[PaymentDate]) = @__month_1 AND DATEPART(year, [t].[PaymentDate]) = @__year_2
+2026-05-27 12:49:36.678 +07:00 [INF] HTTP GET /Dashboard responded 200 in 37.4579 ms
+2026-05-27 12:49:39.280 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [TuitionInvoices] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0
+2026-05-27 12:49:39.374 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[@__schoolId_0='1', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t0].[InvoiceId], [t0].[Amount], [t0].[BillingPeriod], [t0].[ConfigId], [t0].[CreatedAt], [t0].[CreatedByUserId], [t0].[Discount], [t0].[DueDate], [t0].[InvoiceCode], [t0].[Notes], [t0].[QRCodeData], [t0].[SchoolId], [t0].[Status], [t0].[StudentId], [t0].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [t1].[PaymentId], [t1].[AmountPaid], [t1].[GatewayResponse], [t1].[InvoiceId], [t1].[Note], [t1].[PaymentDate], [t1].[PaymentMethod], [t1].[PaymentStatus], [t1].[ProcessedByUserId], [t1].[SchoolId], [t1].[TransactionCode]
+FROM (
+    SELECT [t].[InvoiceId], [t].[Amount], [t].[BillingPeriod], [t].[ConfigId], [t].[CreatedAt], [t].[CreatedByUserId], [t].[Discount], [t].[DueDate], [t].[InvoiceCode], [t].[Notes], [t].[QRCodeData], [t].[SchoolId], [t].[Status], [t].[StudentId], [t].[UpdatedAt]
+    FROM [TuitionInvoices] AS [t]
+    WHERE [t].[SchoolId] = @__schoolId_0
+    ORDER BY [t].[DueDate] DESC
+    OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+) AS [t0]
+INNER JOIN [Users] AS [u] ON [t0].[StudentId] = [u].[UserId]
+LEFT JOIN [TuitionPayments] AS [t1] ON [t0].[InvoiceId] = [t1].[InvoiceId]
+ORDER BY [t0].[DueDate] DESC, [t0].[InvoiceId], [u].[UserId]
+2026-05-27 12:49:39.418 +07:00 [INF] HTTP GET /Finance/Invoices responded 200 in 189.8797 ms
+2026-05-27 12:49:41.088 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__userId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 12:49:41.095 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__p_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolId] = @__p_0
+2026-05-27 12:49:41.104 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__period_1='2026-05' (Size = 20)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[InvoiceId], [t].[Amount], [t].[BillingPeriod], [t].[ConfigId], [t].[CreatedAt], [t].[CreatedByUserId], [t].[Discount], [t].[DueDate], [t].[InvoiceCode], [t].[Notes], [t].[QRCodeData], [t].[SchoolId], [t].[Status], [t].[StudentId], [t].[UpdatedAt]
+FROM [TuitionInvoices] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND [t].[BillingPeriod] = @__period_1
+2026-05-27 12:49:41.111 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__month_1='5', @__year_2='2026'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[PaymentId], [t].[AmountPaid], [t].[GatewayResponse], [t].[InvoiceId], [t].[Note], [t].[PaymentDate], [t].[PaymentMethod], [t].[PaymentStatus], [t].[ProcessedByUserId], [t].[SchoolId], [t].[TransactionCode]
+FROM [TuitionPayments] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND DATEPART(month, [t].[PaymentDate]) = @__month_1 AND DATEPART(year, [t].[PaymentDate]) = @__year_2
+2026-05-27 12:49:41.119 +07:00 [INF] HTTP GET /Dashboard responded 200 in 36.8939 ms
+2026-05-27 12:49:44.904 +07:00 [INF] HTTP GET /HR/Teachers responded 404 in 0.4195 ms
+2026-05-27 12:49:47.088 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__userId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 12:49:47.099 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__p_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolId] = @__p_0
+2026-05-27 12:49:47.110 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1', @__period_1='2026-05' (Size = 20)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[InvoiceId], [t].[Amount], [t].[BillingPeriod], [t].[ConfigId], [t].[CreatedAt], [t].[CreatedByUserId], [t].[Discount], [t].[DueDate], [t].[InvoiceCode], [t].[Notes], [t].[QRCodeData], [t].[SchoolId], [t].[Status], [t].[StudentId], [t].[UpdatedAt]
+FROM [TuitionInvoices] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND [t].[BillingPeriod] = @__period_1
+2026-05-27 12:49:47.118 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__month_1='5', @__year_2='2026'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[PaymentId], [t].[AmountPaid], [t].[GatewayResponse], [t].[InvoiceId], [t].[Note], [t].[PaymentDate], [t].[PaymentMethod], [t].[PaymentStatus], [t].[ProcessedByUserId], [t].[SchoolId], [t].[TransactionCode]
+FROM [TuitionPayments] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND DATEPART(month, [t].[PaymentDate]) = @__month_1 AND DATEPART(year, [t].[PaymentDate]) = @__year_2
+2026-05-27 12:49:47.128 +07:00 [INF] HTTP GET /Dashboard responded 200 in 45.1239 ms
+2026-05-27 12:50:43.359 +07:00 [INF] HTTP GET /Attendance responded 200 in 14.0878 ms
+2026-05-27 12:50:44.895 +07:00 [INF] HTTP GET /Grading responded 200 in 15.9255 ms
+2026-05-27 12:50:45.810 +07:00 [INF] HTTP GET /Attendance responded 200 in 6.1761 ms
+2026-05-27 12:50:46.624 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [StudentProfiles] AS [s]
+WHERE [s].[SchoolId] = @__schoolId_0
+2026-05-27 12:50:46.661 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[@__schoolId_0='1', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [StudentProfiles] AS [s]
+INNER JOIN [Users] AS [u] ON [s].[UserId] = [u].[UserId]
+WHERE [s].[SchoolId] = @__schoolId_0
+ORDER BY [u].[FullName]
+OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+2026-05-27 12:50:46.691 +07:00 [INF] HTTP GET /Student responded 200 in 99.6309 ms
+2026-05-27 12:50:47.243 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='0'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [u].[UserId]
+2026-05-27 12:50:47.270 +07:00 [INF] HTTP GET /Class responded 200 in 70.7231 ms
+2026-05-27 12:50:48.023 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__userId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0
+2026-05-27 12:50:48.048 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[@__userId_0='1', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId], [n0].[NotificationId], [n0].[Body], [n0].[Channel], [n0].[CreatedAt], [n0].[IsScheduled], [n0].[NotificationType], [n0].[ScheduledAt], [n0].[SchoolId], [n0].[SentAt], [n0].[SentByUserId], [n0].[TargetAudience], [n0].[TargetClassId], [n0].[TargetGradeLevelId], [n0].[Title], [n0].[UpdatedAt]
+FROM [NotificationRecipients] AS [n]
+INNER JOIN [Notifications] AS [n0] ON [n].[NotificationId] = [n0].[NotificationId]
+WHERE [n].[UserId] = @__userId_0
+ORDER BY [n0].[SentAt] DESC
+OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+2026-05-27 12:50:48.057 +07:00 [ERR] HTTP GET /Dashboard/Notifications responded 500 in 51.7092 ms
+System.InvalidOperationException: The model item passed into the ViewDataDictionary is of type 'System.Collections.Generic.List`1[LuminaTutors.Application.DTOs.Communication.NotificationDto]', but this ViewDataDictionary instance requires a model item of type 'LuminaTutors.Domain.Common.PagedResult`1[LuminaTutors.Application.DTOs.Communication.NotificationDto]'.
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary.EnsureCompatible(Object value)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary..ctor(ViewDataDictionary source, Object model, Type declaredModelType)
+   at lambda_method806(Closure, ViewDataDictionary)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorPagePropertyActivator.Activate(Object page, ViewContext context)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageCoreAsync(IRazorPage page, ViewContext context)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageAsync(IRazorPage page, ViewContext context, Boolean invokeViewStarts)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderAsync(ViewContext context)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ActionContext actionContext, IView view, ViewDataDictionary viewData, ITempDataDictionary tempData, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)
+   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-05-27 12:50:48.068 +07:00 [ERR] An unhandled exception has occurred while executing the request.
+System.InvalidOperationException: The model item passed into the ViewDataDictionary is of type 'System.Collections.Generic.List`1[LuminaTutors.Application.DTOs.Communication.NotificationDto]', but this ViewDataDictionary instance requires a model item of type 'LuminaTutors.Domain.Common.PagedResult`1[LuminaTutors.Application.DTOs.Communication.NotificationDto]'.
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary.EnsureCompatible(Object value)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary..ctor(ViewDataDictionary source, Object model, Type declaredModelType)
+   at lambda_method806(Closure, ViewDataDictionary)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorPagePropertyActivator.Activate(Object page, ViewContext context)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageCoreAsync(IRazorPage page, ViewContext context)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageAsync(IRazorPage page, ViewContext context, Boolean invokeViewStarts)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderAsync(ViewContext context)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ActionContext actionContext, IView view, ViewDataDictionary viewData, ITempDataDictionary tempData, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)
+   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2026-05-27 12:50:49.685 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='0'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [u].[UserId]
+2026-05-27 12:50:49.696 +07:00 [INF] HTTP GET /Class responded 200 in 14.9328 ms
+2026-05-27 12:50:51.359 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__userId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-27 12:50:51.367 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__p_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+WHERE [s].[SchoolId] = @__p_0
+2026-05-27 12:50:51.375 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__period_1='2026-05' (Size = 20)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[InvoiceId], [t].[Amount], [t].[BillingPeriod], [t].[ConfigId], [t].[CreatedAt], [t].[CreatedByUserId], [t].[Discount], [t].[DueDate], [t].[InvoiceCode], [t].[Notes], [t].[QRCodeData], [t].[SchoolId], [t].[Status], [t].[StudentId], [t].[UpdatedAt]
+FROM [TuitionInvoices] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND [t].[BillingPeriod] = @__period_1
+2026-05-27 12:50:51.382 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__month_1='5', @__year_2='2026'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[PaymentId], [t].[AmountPaid], [t].[GatewayResponse], [t].[InvoiceId], [t].[Note], [t].[PaymentDate], [t].[PaymentMethod], [t].[PaymentStatus], [t].[ProcessedByUserId], [t].[SchoolId], [t].[TransactionCode]
+FROM [TuitionPayments] AS [t]
+WHERE [t].[SchoolId] = @__schoolId_0 AND DATEPART(month, [t].[PaymentDate]) = @__month_1 AND DATEPART(year, [t].[PaymentDate]) = @__year_2
+2026-05-27 12:50:51.390 +07:00 [INF] HTTP GET /Dashboard responded 200 in 34.2277 ms

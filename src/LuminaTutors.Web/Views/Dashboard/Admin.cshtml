@@ -1,0 +1,212 @@
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Dashboard";
+    var fullName = User.FindFirstValue(ClaimTypes.Name) ?? "Quản trị viên";
+    var hour = DateTime.Now.Hour;
+    var greeting = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+    var today = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
+    var firstName = fullName.Split(' ').Last();
+}
+
+<!-- Banner -->
+<div class="dash-banner dash-banner--admin">
+    <div class="dash-banner__grid"></div>
+    <div class="dash-banner__left">
+        <div class="dash-banner__eyebrow">
+            <i class="bi bi-shield-fill"></i>
+            QUẢN TRỊ VIÊN
+        </div>
+        <div class="dash-banner__title">@greeting, @firstName 👋</div>
+        <div class="dash-banner__sub">
+            <i class="bi bi-calendar3"></i> @today
+            <span style="opacity:.4">·</span>
+            <i class="bi bi-circle-fill" style="color:#4ade80;font-size:.5rem"></i> Hệ thống hoạt động bình thường
+        </div>
+    </div>
+    <div class="dash-banner__right">
+        <div class="dash-banner__icon-bg"><i class="bi bi-shield-check"></i></div>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="dash-stats dash-stats-4">
+    <a href="/Student" class="dstat">
+        <div class="dstat__icon dstat__icon--blue"><i class="bi bi-people-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">@(ViewBag.TotalStudents ?? 248)</div>
+            <div class="dstat__label">Học sinh đang học</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +12 tháng này</div>
+        </div>
+    </a>
+    <a href="/Class" class="dstat">
+        <div class="dstat__icon dstat__icon--green"><i class="bi bi-building"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">@(ViewBag.TotalClasses ?? 18)</div>
+            <div class="dstat__label">Lớp học đang hoạt động</div>
+            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Không đổi</div>
+        </div>
+    </a>
+    <a href="/Finance/Invoices" class="dstat">
+        <div class="dstat__icon dstat__icon--gold"><i class="bi bi-cash-stack"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">84.5tr</div>
+            <div class="dstat__label">Thu trong tháng (VNĐ)</div>
+            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +8.2% tháng trước</div>
+        </div>
+    </a>
+    <a href="/Finance/OutstandingDebts" class="dstat">
+        <div class="dstat__icon dstat__icon--red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div class="dstat__body">
+            <div class="dstat__value">@(ViewBag.OverdueCount ?? 7)</div>
+            <div class="dstat__label">Hóa đơn quá hạn</div>
+            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> -3 tuần này</div>
+        </div>
+    </a>
+</div>
+
+<!-- Row 1: Finance overview + Quick actions -->
+<div class="dash-row dash-row-7-3">
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-bar-chart-fill" style="color:#c9a84c"></i> Tài chính tháng @DateTime.Now.ToString("MM/yyyy")</div>
+            <a href="/Finance" class="dcard__action">Xem chi tiết</a>
+        </div>
+        <div class="dcard__body">
+            <div class="fin-row">
+                <div class="fin-metric">
+                    <div class="fin-metric__val" style="color:#059669">84.5tr</div>
+                    <div class="fin-metric__lbl">Đã thu</div>
+                </div>
+                <div class="fin-metric">
+                    <div class="fin-metric__val" style="color:#dc2626">12.3tr</div>
+                    <div class="fin-metric__lbl">Còn nợ</div>
+                </div>
+                <div class="fin-metric">
+                    <div class="fin-metric__val" style="color:#0f172a">96.8tr</div>
+                    <div class="fin-metric__lbl">Tổng kỳ vọng</div>
+                </div>
+            </div>
+            <div style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:.78rem;font-weight:600;color:#64748b">Tiến độ thu học phí</span>
+                <span style="font-size:.8rem;font-weight:700;color:#059669">87.3%</span>
+            </div>
+            <div class="dash-progress">
+                <div class="dash-progress__bar" style="width:87.3%;background:linear-gradient(90deg,#059669,#34d399)"></div>
+            </div>
+            <div style="margin-top:20px">
+                <div style="font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Top lớp còn công nợ</div>
+                @{
+                    var debts = new[] {
+                        new { Cls = "Toán nâng cao 10A", Amt = "3.2tr", Col = "#dc2626" },
+                        new { Cls = "Văn học 11B",       Amt = "2.8tr", Col = "#d97706" },
+                        new { Cls = "Tiếng Anh 12C",     Amt = "1.9tr", Col = "#d97706" },
+                        new { Cls = "Lý 10D",            Amt = "1.4tr", Col = "#64748b" },
+                    };
+                }
+                @foreach (var d in debts)
+                {
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f8fafc">
+                        <span style="font-size:.83rem;color:#374151">@d.Cls</span>
+                        <span style="font-size:.83rem;font-weight:700;color:@d.Col">@d.Amt</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-lightning-fill" style="color:#f59e0b"></i> Thao tác nhanh</div>
+        </div>
+        <div class="dcard__body">
+            <div class="quick-actions">
+                <a href="/Student/Create" class="qa-btn" style="--qa-color:#2563eb;--qa-bg:#eff6ff">
+                    <i class="bi bi-person-plus-fill"></i> Thêm học sinh mới
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/Class/Create" class="qa-btn" style="--qa-color:#059669;--qa-bg:#ecfdf5">
+                    <i class="bi bi-plus-circle-fill"></i> Tạo lớp học mới
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/Finance/Invoices" class="qa-btn" style="--qa-color:#c9a84c;--qa-bg:#fffbeb">
+                    <i class="bi bi-receipt"></i> Quản lý hóa đơn
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/HR/Teachers" class="qa-btn" style="--qa-color:#7c3aed;--qa-bg:#f5f3ff">
+                    <i class="bi bi-person-badge-fill"></i> Quản lý giáo viên
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+                <a href="/Auth/InviteLinks" class="qa-btn" style="--qa-color:#0d9488;--qa-bg:#f0fdfa">
+                    <i class="bi bi-link-45deg"></i> Tạo liên kết mời
+                    <i class="bi bi-chevron-right qa-arrow"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Row 2: Today schedule + Activity feed -->
+<div class="dash-row dash-row-5-5">
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-calendar-week-fill" style="color:#2563eb"></i> Lịch hôm nay</div>
+            <a href="/Class" class="dcard__action">Xem tất cả</a>
+        </div>
+        <div class="dcard__body">
+            <div class="sched-list">
+                @{
+                    var schedules = new[] {
+                        new { Time = "07:30", Name = "Toán nâng cao 10A", Room = "Phòng 101", Active = true  },
+                        new { Time = "09:00", Name = "Tiếng Anh 11B",     Room = "Phòng 203", Active = false },
+                        new { Time = "13:30", Name = "Vật lý 12A",        Room = "Lab 1",     Active = false },
+                        new { Time = "15:00", Name = "Văn học 10C",       Room = "Phòng 105", Active = false },
+                    };
+                }
+                @foreach (var s in schedules)
+                {
+                    <div class="sched-item @(s.Active ? "active" : "")">
+                        <div class="sched-time">@s.Time</div>
+                        <div class="sched-dot" style="background:@(s.Active ? "#2563eb" : "#cbd5e1")"></div>
+                        <div>
+                            <div class="sched-name">@s.Name</div>
+                            <div class="sched-room"><i class="bi bi-geo-alt"></i> @s.Room</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="dcard">
+        <div class="dcard__head">
+            <div class="dcard__title"><i class="bi bi-activity" style="color:#7c3aed"></i> Hoạt động gần đây</div>
+            <a href="/Dashboard/Notifications" class="dcard__action">Tất cả</a>
+        </div>
+        <div class="dcard__body">
+            <div class="activity-list">
+                @{
+                    var activities = new[] {
+                        new { Bg = "#0f1c2e", Init = "NT", Name = "Nguyễn Thị Lan",   Action = "đã nộp học phí tháng 5",              Time = "2 phút trước"  },
+                        new { Bg = "#059669", Init = "TM", Name = "Trần Minh Đức",    Action = "đã điểm danh vào lớp Toán 10A",       Time = "15 phút trước" },
+                        new { Bg = "#2563eb", Init = "PH", Name = "Phạm Hoa",         Action = "đã tạo lớp học mới: Hóa 11A",         Time = "1 giờ trước"   },
+                        new { Bg = "#d97706", Init = "LV", Name = "Lê Văn Tú",        Action = "báo cáo vi phạm kỷ luật mức nhẹ",     Time = "2 giờ trước"   },
+                    };
+                }
+                @foreach (var a in activities)
+                {
+                    <div class="activity-item">
+                        <div class="activity-avatar" style="background:@a.Bg">@a.Init</div>
+                        <div>
+                            <div class="activity-text"><strong>@a.Name</strong> @a.Action</div>
+                            <div class="activity-time"><i class="bi bi-clock"></i> @a.Time</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>

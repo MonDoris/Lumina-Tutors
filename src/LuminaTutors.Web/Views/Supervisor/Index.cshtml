@@ -1,0 +1,192 @@
+@model LuminaTutors.Application.DTOs.Discipline.DailyDisciplineReportDto
+@{
+    ViewData["Title"] = "Tổng quan Giám thị";
+    var today = DateOnly.FromDateTime(DateTime.Today);
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Tổng quan Giám thị</h1>
+        <p class="lt-page-subtitle">@today.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"))</p>
+    </div>
+    <div style="display:flex;gap:8px">
+        <button class="lt-btn lt-btn--outline" data-bs-toggle="modal" data-bs-target="#gateModal"
+                data-testid="btn-gate-check">
+            <i class="bi bi-door-open"></i> Kiểm tra cổng
+        </button>
+        <button class="lt-btn lt-btn--gold" data-bs-toggle="modal" data-bs-target="#announceModal">
+            <i class="bi bi-megaphone"></i> Thông báo PH
+        </button>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--danger"><i class="bi bi-file-earmark-text-fill"></i></div>
+            <div>
+                <div class="lt-stat__value">@(Model?.TotalViolations ?? 0)</div>
+                <div class="lt-stat__label">Vi phạm hôm nay</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--warning"><i class="bi bi-clock-fill"></i></div>
+            <div>
+                <div class="lt-stat__value">@(Model?.LateArrivalsCount ?? 0)</div>
+                <div class="lt-stat__label">Đi muộn</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--gold"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+                <div class="lt-stat__value">@(Model?.Records?.Count(r => r.Status == "Pending") ?? 0)</div>
+                <div class="lt-stat__label">Chờ xử lý</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--success"><i class="bi bi-check-circle-fill"></i></div>
+            <div>
+                <div class="lt-stat__value">@(Model?.Records?.Count(r => r.Status == "Resolved") ?? 0)</div>
+                <div class="lt-stat__label">Đã xử lý</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent violations -->
+<div class="lt-card mb-3">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title">Vi phạm hôm nay</h3>
+        <a asp-action="Records" class="lt-btn lt-btn--outline lt-btn--sm">Xem tất cả</a>
+    </div>
+    <div class="lt-card__body" style="padding:0">
+        @if (!Model?.Records.Any() ?? true)
+        {
+            <div style="text-align:center;padding:32px;color:#9ca3af">
+                <i class="bi bi-check-circle" style="font-size:2rem;color:var(--lt-success);display:block;margin-bottom:8px"></i>
+                Không có vi phạm nào hôm nay
+            </div>
+        }
+        <table class="lt-table">
+            <tbody>
+                @foreach (var rec in Model?.Records?.Take(5) ?? new List<LuminaTutors.Application.DTOs.Discipline.DisciplineRecordDto>())
+                {
+                    <tr>
+                        <td style="width:120px">
+                            <span class="lt-badge @(rec.Severity == "Minor" ? "lt-badge--warning" : "lt-badge--danger")">@rec.Severity</span>
+                        </td>
+                        <td><strong>@rec.StudentName</strong> <span style="color:#9ca3af;font-size:.8rem">@rec.StudentCode</span></td>
+                        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@rec.Description</td>
+                        <td>
+                            <span class="lt-badge @(rec.Status == "Pending" ? "lt-badge--warning" : "lt-badge--success")">@rec.Status</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Quick Message to Parents -->
+<div class="lt-card">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title"><i class="bi bi-chat-dots" style="color:var(--lt-gold);margin-right:6px"></i>Nhắn tin nhanh đến phụ huynh</h3>
+        <a asp-action="Messages" class="lt-btn lt-btn--outline lt-btn--sm">Tất cả tin nhắn</a>
+    </div>
+    <div class="lt-card__body">
+        <p style="color:#6b7280;font-size:.875rem">
+            Là giám thị, bạn có thể nhắn tin trực tiếp đến phụ huynh học sinh không qua trung gian.
+        </p>
+        <a asp-action="Messages" class="lt-btn lt-btn--primary">
+            <i class="bi bi-chat-dots-fill"></i> Mở hộp thư
+        </a>
+    </div>
+</div>
+
+<!-- Gate Check Modal -->
+<div class="modal fade" id="gateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none">
+            <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                <h5 class="modal-title lt-card__title">Kiểm tra cổng trường</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="GateCheck" method="post" data-testid="gate-check-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:14px">
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">ID Học sinh</label>
+                        <input type="number" name="studentId" class="lt-input" required data-testid="input-student-id"/>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Loại kiểm tra</label>
+                        <select name="checkType" class="lt-select" data-testid="select-check-type">
+                            <option value="Entry">Vào cổng (sáng)</option>
+                            <option value="Exit">Ra cổng (chiều)</option>
+                        </select>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.875rem;font-weight:600;color:#374151">
+                            <input type="checkbox" name="isLate" value="true"
+                                   style="width:16px;height:16px;accent-color:var(--lt-gold)"
+                                   data-testid="check-is-late">
+                            Đi muộn
+                        </label>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Ghi chú</label>
+                        <input type="text" name="note" class="lt-input" placeholder="Lý do, ghi chú..."/>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--primary" data-testid="btn-confirm-gate">
+                        <i class="bi bi-door-open"></i> Xác nhận
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Announcement Modal -->
+<div class="modal fade" id="announceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none">
+            <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                <h5 class="modal-title lt-card__title">Gửi thông báo phụ huynh</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="SendAnnouncement" method="post" data-testid="announce-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:14px">
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Tiêu đề</label>
+                        <input type="text" name="request.Title" class="lt-input" required
+                               data-testid="input-title" placeholder="VD: Thông báo về buổi học chiều thứ 6"/>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Nội dung</label>
+                        <textarea name="request.Body" class="lt-textarea" rows="4" required
+                                  data-testid="input-body"></textarea>
+                    </div>
+                    <input type="hidden" name="request.Audience" value="Parents"/>
+                    <input type="hidden" name="request.Type" value="General"/>
+                </div>
+                <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--gold" data-testid="btn-send-announce">
+                        <i class="bi bi-send"></i> Gửi thông báo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
