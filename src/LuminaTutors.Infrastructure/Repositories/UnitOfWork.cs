@@ -63,6 +63,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Assignment>?           _assignments;
     private IRepository<AssignmentSubmission>? _assignmentSubmissions;
     private IRepository<SubmissionFile>?       _submissionFiles;
+    private IRepository<VirtualLabSession>?    _virtualLabSessions;
 
     private IRepository<GradeCategory>?           _gradeCategories;
     private IRepository<SubjectGradeRequirement>? _subjectGradeRequirements;
@@ -135,6 +136,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Assignment>           Assignments           => Get(ref _assignments);
     public IRepository<AssignmentSubmission> AssignmentSubmissions => Get(ref _assignmentSubmissions);
     public IRepository<SubmissionFile>       SubmissionFiles       => Get(ref _submissionFiles);
+    public IRepository<VirtualLabSession>    VirtualLabSessions    => Get(ref _virtualLabSessions);
 
     public IRepository<GradeCategory>           GradeCategories          => Get(ref _gradeCategories);
     public IRepository<SubjectGradeRequirement> SubjectGradeRequirements => Get(ref _subjectGradeRequirements);
@@ -189,6 +191,28 @@ public class UnitOfWork : IUnitOfWork
             await _transaction.DisposeAsync();
             _transaction = null;
         }
+    }
+
+    /// <inheritdoc/>
+    public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default)
+    {
+        // SqlServerRetryingExecutionStrategy requires the entire operation (including
+        // the transaction) to be wrapped inside CreateExecutionStrategy().ExecuteAsync().
+        var strategy = _context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync(ct);
+            try
+            {
+                await action();
+                await tx.CommitAsync(ct);
+            }
+            catch
+            {
+                await tx.RollbackAsync(ct);
+                throw;
+            }
+        });
     }
 
     // ── Stored Procedure Execution ────────────────────────────────────────────

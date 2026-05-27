@@ -37,7 +37,7 @@ public interface IDisciplineService
 public interface INotificationService
 {
     Task<Result>                                    SendAsync(int schoolId, int? sentByUserId, SendNotificationRequest request, CancellationToken ct = default);
-    Task<Result<IReadOnlyList<NotificationDto>>>    GetForUserAsync(int userId, int page, int pageSize, CancellationToken ct = default);
+    Task<Result<PagedResult<NotificationDto>>>      GetForUserAsync(int userId, int page, int pageSize, CancellationToken ct = default);
     Task<Result<int>>                               GetUnreadCountAsync(int userId, CancellationToken ct = default);
     Task<Result>                                    MarkReadAsync(int userId, int notificationId, CancellationToken ct = default);
     Task<Result>                                    MarkAllReadAsync(int userId, CancellationToken ct = default);

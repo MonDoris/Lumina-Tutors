@@ -96,6 +96,36 @@ public record CreateScheduleRequest(
     string? RoomOverride
 );
 
+// ─── Academic configuration (Admin) ───────────────────────────────────────────
+
+public record AcademicYearConfigDto(
+    int AcademicYearId,
+    string YearName,
+    DateOnly StartDate,
+    DateOnly EndDate,
+    bool IsActive
+);
+
+public record GradeLevelConfigDto(
+    int GradeLevelId,
+    byte GradeNumber,
+    string GradeName,
+    string EducationLevel
+);
+
+public record CreateAcademicYearRequest(
+    [Required, MaxLength(20)] string YearName,
+    [Required] DateOnly StartDate,
+    [Required] DateOnly EndDate,
+    bool IsActive = false
+);
+
+public record CreateGradeLevelRequest(
+    [Required, Range(1, 12)] byte GradeNumber,
+    [Required, MaxLength(20)] string GradeName,
+    [Required] string EducationLevel
+);
+
 // ─── Select List DTOs ─────────────────────────────────────────────────────────
 
 public record GradeLevelSelectDto(int GradeLevelId, string GradeName, byte GradeNumber);

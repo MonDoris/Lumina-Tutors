@@ -1,11 +1,17 @@
 @using System.Security.Claims
+@using LuminaTutors.Application.DTOs.Account
 @{
     ViewData["Title"] = "Dashboard";
-    var role    = User.FindFirstValue(ClaimTypes.Role) ?? "";
-    var name    = User.FindFirstValue(ClaimTypes.Name) ?? "";
-    var finance = ViewBag.FinanceReport as LuminaTutors.Application.DTOs.Finance.MonthlyFinanceReportDto;
-    var now     = DateTime.Now;
-    var firstName = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? name;
+    var role           = User.FindFirstValue(ClaimTypes.Role) ?? "";
+    var name           = User.FindFirstValue(ClaimTypes.Name) ?? "";
+    var finance        = ViewBag.FinanceReport as LuminaTutors.Application.DTOs.Finance.MonthlyFinanceReportDto;
+    var recentAccounts = ViewBag.RecentAccounts as List<AccountListItemDto>;
+    var now            = DateTime.Now;
+    var firstName      = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? name;
+    var totalStudents  = (int)(ViewBag.TotalStudents ?? 0);
+    var totalTeachers  = (int)(ViewBag.TotalTeachers ?? 0);
+    var totalClasses   = (int)(ViewBag.TotalClasses  ?? 0);
+    var activeYearName = (string)(ViewBag.ActiveYearName ?? "");
 }
 
 <!-- Greeting -->
@@ -26,40 +32,46 @@
     @if (role is "ADMIN" or "TEACHER")
     {
         <div class="col-sm-6 col-xl-3">
-            <a asp-controller="Student" asp-action="Index" style="text-decoration:none">
+            <a asp-controller="Account" asp-action="Index" asp-route-roleCode="STUDENT" style="text-decoration:none">
                 <div class="lt-stat" data-testid="stat-students">
                     <div class="lt-stat__icon lt-stat__icon--navy">
                         <i class="bi bi-people-fill"></i>
                     </div>
                     <div>
-                        <div class="lt-stat__value">—</div>
+                        <div class="lt-stat__value">@totalStudents</div>
                         <div class="lt-stat__label">Học sinh</div>
                     </div>
                 </div>
             </a>
         </div>
         <div class="col-sm-6 col-xl-3">
-            <a asp-controller="Class" asp-action="Index" asp-route-academicYearId="1" style="text-decoration:none">
+            <a asp-controller="Class" asp-action="Index" style="text-decoration:none">
                 <div class="lt-stat" data-testid="stat-classes">
                     <div class="lt-stat__icon lt-stat__icon--gold">
                         <i class="bi bi-building"></i>
                     </div>
                     <div>
-                        <div class="lt-stat__value">—</div>
-                        <div class="lt-stat__label">Lớp học</div>
+                        <div class="lt-stat__value">@totalClasses</div>
+                        <div class="lt-stat__label">
+                            Lớp học
+                            @if (!string.IsNullOrEmpty(activeYearName))
+                            {
+                                <small class="d-block" style="font-size:10px;opacity:.7">@activeYearName</small>
+                            }
+                        </div>
                     </div>
                 </div>
             </a>
         </div>
         <div class="col-sm-6 col-xl-3">
-            <a asp-controller="Attendance" asp-action="Index" style="text-decoration:none">
-                <div class="lt-stat" data-testid="stat-sessions">
+            <a asp-controller="Account" asp-action="Index" asp-route-roleCode="TEACHER" style="text-decoration:none">
+                <div class="lt-stat" data-testid="stat-teachers">
                     <div class="lt-stat__icon lt-stat__icon--success">
-                        <i class="bi bi-qr-code-scan"></i>
+                        <i class="bi bi-person-badge-fill"></i>
                     </div>
                     <div>
-                        <div class="lt-stat__value">—</div>
-                        <div class="lt-stat__label">Phiên hôm nay</div>
+                        <div class="lt-stat__value">@totalTeachers</div>
+                        <div class="lt-stat__label">Giáo viên</div>
                     </div>
                 </div>
             </a>
@@ -220,3 +232,75 @@
     </div>
 
 </div>
+
+@if (role == "ADMIN" && recentAccounts != null && recentAccounts.Count > 0)
+{
+<!-- ── Recent Accounts ── -->
+<div class="row g-4 mt-1">
+    <div class="col-12">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-person-plus-fill" style="color:var(--lt-navy);margin-right:6px"></i>
+                    Tài khoản mới nhất
+                </h3>
+                <a asp-controller="Account" asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm">
+                    Xem tất cả
+                </a>
+            </div>
+            <div class="lt-card__body p-0">
+                <table class="table table-hover mb-0" style="font-size:.875rem">
+                    <thead>
+                        <tr style="background:var(--lt-surface-alt)">
+                            <th class="ps-4 py-2" style="font-weight:600;color:var(--lt-text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">Họ tên</th>
+                            <th class="py-2"       style="font-weight:600;color:var(--lt-text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">Vai trò</th>
+                            <th class="py-2"       style="font-weight:600;color:var(--lt-text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">Email</th>
+                            <th class="py-2 pe-4"  style="font-weight:600;color:var(--lt-text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var acc in recentAccounts)
+                        {
+                            <tr>
+                                <td class="ps-4 py-2 align-middle">
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (!string.IsNullOrEmpty(acc.AvatarUrl))
+                                        {
+                                            <img src="@acc.AvatarUrl" alt="" class="rounded-circle" style="width:32px;height:32px;object-fit:cover">
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                                 style="width:32px;height:32px;background:var(--lt-navy-light);color:var(--lt-navy);font-weight:700;font-size:.75rem;flex-shrink:0">
+                                                @(acc.FullName.Split(' ').LastOrDefault()?.FirstOrDefault())
+                                            </div>
+                                        }
+                                        <a asp-controller="Account" asp-action="Detail" asp-route-id="@acc.UserId"
+                                           style="color:inherit;text-decoration:none;font-weight:500">@acc.FullName</a>
+                                    </div>
+                                </td>
+                                <td class="py-2 align-middle">
+                                    <span class="lt-badge @(acc.RoleCode == "TEACHER" ? "lt-badge--navy" : acc.RoleCode == "STUDENT" ? "lt-badge--gold" : "lt-badge--info")">
+                                        @acc.RoleCode
+                                    </span>
+                                </td>
+                                <td class="py-2 align-middle" style="color:var(--lt-text-muted)">@acc.Email</td>
+                                <td class="py-2 pe-4 align-middle">
+                                    @if (acc.IsActive)
+                                    {
+                                        <span class="lt-badge lt-badge--success">Hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="lt-badge lt-badge--danger">Vô hiệu</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+}

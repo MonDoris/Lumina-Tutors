@@ -33,6 +33,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IMessageService,      MessageService>();
         services.AddScoped<INewsBoardService,    NewsBoardService>();
         services.AddScoped<IAccountService,      AccountService>();
+        services.AddScoped<IVirtualLabService,   VirtualLabService>();
 
         return services;
     }

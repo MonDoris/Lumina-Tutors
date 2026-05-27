@@ -6,6 +6,7 @@ using LuminaTutors.Domain.Entities.Academic;
 using LuminaTutors.Domain.Entities.Attendance;
 using LuminaTutors.Domain.Entities.Profiles;
 using LuminaTutors.Domain.Interfaces.Repositories;
+using LuminaTutors.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -31,11 +32,26 @@ public sealed class ClassService : IClassService
     {
         var classes = await _uow.Classes.FindAsync(
             c => c.SchoolId == schoolId && c.AcademicYearId == academicYearId,
-            include: q => q.Include(c => c.HomeRoomTeacher!)
-                           .Include(c => c.Enrollments),
+            include: q => q
+                .Include(c => c.GradeLevel)
+                .Include(c => c.AcademicYear)
+                .Include(c => c.HomeRoomTeacher!)
+                .Include(c => c.Enrollments),
             ct: ct);
 
-        var dtos = _mapper.Map<List<ClassSummaryDto>>(classes);
+        var dtos = classes
+            .OrderBy(c => c.ClassName)
+            .Select(c => new ClassSummaryDto(
+                ClassId: c.Id,
+                ClassName: c.ClassName,
+                GradeName: c.GradeLevel?.GradeName ?? "",
+                AcademicYearName: c.AcademicYear?.YearName ?? "",
+                HomeRoomTeacherName: c.HomeRoomTeacher?.FullName,
+                EnrolledCount: c.Enrollments.Count(e => e.Status == Domain.Enums.EnrollmentStatus.Active),
+                MaxStudents: c.MaxStudents,
+                IsActive: c.IsActive))
+            .ToList() as IReadOnlyList<ClassSummaryDto>;
+
         return Result<IReadOnlyList<ClassSummaryDto>>.Success(dtos);
     }
 
@@ -285,8 +301,21 @@ public sealed class ClassService : IClassService
             include: q => q.Include(tp => tp.User),
             ct: ct);
 
-        var dtos = _mapper.Map<List<TeacherSummaryDto>>(teachers);
-        return Result<IReadOnlyList<TeacherSummaryDto>>.Success(dtos);
+        var dtos = teachers
+            .OrderBy(tp => tp.User.FullName)
+            .Select(tp => new TeacherSummaryDto(
+                tp.UserId,
+                tp.TeacherCode,
+                tp.User.FullName,
+                tp.User.PhoneNumber,
+                tp.SpecializationSubject,
+                tp.Qualification,
+                tp.ContractType?.ToString(),
+                tp.User.IsActive
+            ))
+            .ToList() as IReadOnlyList<TeacherSummaryDto>;
+
+        return Result<IReadOnlyList<TeacherSummaryDto>>.Success(dtos!);
     }
 
     // ─── EnrollStudent ────────────────────────────────────────────────────────
@@ -419,6 +448,117 @@ public sealed class ClassService : IClassService
             .ToList() as IReadOnlyList<AcademicYearSelectDto>;
 
         return Result<IReadOnlyList<AcademicYearSelectDto>>.Success(dtos);
+    }
+
+    // ─── Academic configuration (Admin) ───────────────────────────────────────
+
+    public async Task<Result<IReadOnlyList<AcademicYearConfigDto>>> GetAcademicYearsForConfigAsync(
+        int schoolId, CancellationToken ct = default)
+    {
+        var years = await _uow.AcademicYears.FindAsync(ay => ay.SchoolId == schoolId, ct: ct);
+
+        var dtos = years
+            .OrderByDescending(ay => ay.StartDate)
+            .Select(ay => new AcademicYearConfigDto(
+                ay.Id,
+                ay.YearName,
+                ay.StartDate,
+                ay.EndDate,
+                ay.IsActive))
+            .ToList() as IReadOnlyList<AcademicYearConfigDto>;
+
+        return Result<IReadOnlyList<AcademicYearConfigDto>>.Success(dtos);
+    }
+
+    public async Task<Result<IReadOnlyList<GradeLevelConfigDto>>> GetGradeLevelsForConfigAsync(
+        int schoolId, CancellationToken ct = default)
+    {
+        var levels = await _uow.GradeLevels.FindAsync(gl => gl.SchoolId == schoolId, ct: ct);
+
+        var dtos = levels
+            .OrderBy(gl => gl.GradeNumber)
+            .Select(gl => new GradeLevelConfigDto(
+                gl.Id,
+                gl.GradeNumber,
+                gl.GradeName,
+                gl.EducationLevel.ToString()))
+            .ToList() as IReadOnlyList<GradeLevelConfigDto>;
+
+        return Result<IReadOnlyList<GradeLevelConfigDto>>.Success(dtos);
+    }
+
+    public async Task<Result<AcademicYearConfigDto>> CreateAcademicYearAsync(
+        int schoolId, CreateAcademicYearRequest request, CancellationToken ct = default)
+    {
+        if (request.EndDate < request.StartDate)
+            return Result<AcademicYearConfigDto>.Failure("INVALID_DATES", "Ngày kết thúc phải sau ngày bắt đầu.");
+
+        var name = request.YearName.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return Result<AcademicYearConfigDto>.Failure("INVALID_NAME", "Tên năm học không hợp lệ.");
+
+        var duplicate = await _uow.AcademicYears.FindAsync(
+            ay => ay.SchoolId == schoolId && ay.YearName == name, ct: ct);
+        if (duplicate.Any())
+            return Result<AcademicYearConfigDto>.Failure("DUPLICATE", "Năm học đã tồn tại.");
+
+        if (request.IsActive)
+        {
+            var existing = await _uow.AcademicYears.FindAsync(ay => ay.SchoolId == schoolId && ay.IsActive, ct: ct);
+            foreach (var ay in existing) ay.IsActive = false;
+        }
+
+        var year = new AcademicYear
+        {
+            SchoolId   = schoolId,
+            YearName   = name,
+            StartDate  = request.StartDate,
+            EndDate    = request.EndDate,
+            IsActive   = request.IsActive
+        };
+
+        await _uow.AcademicYears.AddAsync(year, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        return Result<AcademicYearConfigDto>.Success(new AcademicYearConfigDto(
+            year.Id,
+            year.YearName,
+            year.StartDate,
+            year.EndDate,
+            year.IsActive));
+    }
+
+    public async Task<Result<GradeLevelConfigDto>> CreateGradeLevelAsync(
+        int schoolId, CreateGradeLevelRequest request, CancellationToken ct = default)
+    {
+        var name = request.GradeName.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return Result<GradeLevelConfigDto>.Failure("INVALID_NAME", "Tên khối lớp không hợp lệ.");
+
+        if (!Enum.TryParse<EducationLevel>(request.EducationLevel, ignoreCase: true, out var edu))
+            return Result<GradeLevelConfigDto>.Failure("INVALID_LEVEL", "Bậc học không hợp lệ.");
+
+        var duplicate = await _uow.GradeLevels.FindAsync(
+            gl => gl.SchoolId == schoolId && gl.GradeNumber == request.GradeNumber, ct: ct);
+        if (duplicate.Any())
+            return Result<GradeLevelConfigDto>.Failure("DUPLICATE", "Khối lớp (số khối) đã tồn tại.");
+
+        var level = new GradeLevel
+        {
+            SchoolId        = schoolId,
+            GradeNumber     = request.GradeNumber,
+            GradeName       = name,
+            EducationLevel  = edu
+        };
+
+        await _uow.GradeLevels.AddAsync(level, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        return Result<GradeLevelConfigDto>.Success(new GradeLevelConfigDto(
+            level.Id,
+            level.GradeNumber,
+            level.GradeName,
+            level.EducationLevel.ToString()));
     }
 
     // ─── HasScheduleConflict ──────────────────────────────────────────────────

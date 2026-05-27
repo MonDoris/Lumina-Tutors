@@ -20,14 +20,31 @@ public sealed class ClassController : Controller
 
     // ─── GET /Class ───────────────────────────────────────────────────────────
 
-    public async Task<IActionResult> Index(int academicYearId)
+    public async Task<IActionResult> Index(int? academicYearId)
     {
-        var result = await _classService.GetAllAsync(GetCurrentSchoolId(), academicYearId);
+        var sid = GetCurrentSchoolId();
+
+        // Load academic years for the dropdown
+        var ayResult = await _classService.GetAcademicYearsAsync(sid);
+        var years    = ayResult.Data?.ToList() ?? new List<AcademicYearSelectDto>();
+        ViewBag.AcademicYears = years;
+
+        // Default to the active year if none selected
+        var selectedYearId = academicYearId
+            ?? years.FirstOrDefault(y => y.IsActive)?.AcademicYearId
+            ?? years.FirstOrDefault()?.AcademicYearId
+            ?? 0;
+
+        ViewBag.AcademicYearId = selectedYearId;
+
+        if (selectedYearId == 0)
+            return View(new List<ClassSummaryDto>());
+
+        var result = await _classService.GetAllAsync(sid, selectedYearId);
         if (!result.IsSuccess)
             return StatusCode(500);
 
-        ViewBag.AcademicYearId = academicYearId;
-        return View(result.Data);
+        return View(result.Data ?? new List<ClassSummaryDto>());
     }
 
     // ─── GET /Class/Details/5 ─────────────────────────────────────────────────
@@ -59,11 +76,34 @@ public sealed class ClassController : Controller
         var gradeLevelsResult  = await _classService.GetGradeLevelsAsync(sid);
         var academicYearsResult= await _classService.GetAcademicYearsAsync(sid);
 
-        ViewBag.Teachers       = teachersResult.Data      ?? new List<TeacherSummaryDto>();
-        ViewBag.GradeLevels    = gradeLevelsResult.Data   ?? new List<GradeLevelSelectDto>();
-        ViewBag.AcademicYears  = academicYearsResult.Data ?? new List<AcademicYearSelectDto>();
-        ViewBag.AcademicYearId = academicYearId;
-        return View();
+        var teachers    = teachersResult.Data?.ToList()      ?? new List<TeacherSummaryDto>();
+        var gradeLevels = gradeLevelsResult.Data?.ToList()   ?? new List<GradeLevelSelectDto>();
+        var years       = academicYearsResult.Data?.ToList() ?? new List<AcademicYearSelectDto>();
+
+        ViewBag.Teachers      = teachers;
+        ViewBag.GradeLevels   = gradeLevels;
+        ViewBag.AcademicYears = years;
+
+        // Auto-pick defaults so users don't have to select manually
+        var defaultYearId =
+            academicYearId
+            ?? years.FirstOrDefault(y => y.IsActive)?.AcademicYearId
+            ?? years.FirstOrDefault()?.AcademicYearId
+            ?? 0;
+
+        var defaultGradeLevelId =
+            gradeLevels.FirstOrDefault()?.GradeLevelId
+            ?? 0;
+
+        var model = new CreateClassRequest(
+            ClassName: "",
+            GradeLevelId: defaultGradeLevelId,
+            AcademicYearId: defaultYearId,
+            HomeRoomTeacherId: null,
+            MaxStudents: 40,
+            RoomNumber: null);
+
+        return View(model);
     }
 
     // ─── POST /Class/Create ───────────────────────────────────────────────────
@@ -217,8 +257,8 @@ public sealed class ClassController : Controller
         var teachers      = await _classService.GetAvailableTeachersAsync(sid);
         var gradeLevels   = await _classService.GetGradeLevelsAsync(sid);
         var academicYears = await _classService.GetAcademicYearsAsync(sid);
-        ViewBag.Teachers      = teachers.Data      ?? new List<TeacherSummaryDto>();
-        ViewBag.GradeLevels   = gradeLevels.Data   ?? new List<GradeLevelSelectDto>();
-        ViewBag.AcademicYears = academicYears.Data ?? new List<AcademicYearSelectDto>();
+        ViewBag.Teachers      = teachers.Data?.ToList()      ?? new List<TeacherSummaryDto>();
+        ViewBag.GradeLevels   = gradeLevels.Data?.ToList()   ?? new List<GradeLevelSelectDto>();
+        ViewBag.AcademicYears = academicYears.Data?.ToList() ?? new List<AcademicYearSelectDto>();
     }
 }

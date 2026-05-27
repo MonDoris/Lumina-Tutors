@@ -87,11 +87,19 @@ public record CreateAccountRequest
     // Student-specific
     public int? ClassId { get; init; }
 
-    // Parent-specific
+    // Parent-specific (standalone parent account)
     public int? LinkedStudentUserId { get; init; }
     public string? Relationship { get; init; } // Cha | Mẹ | Người giám hộ
     public string? Occupation { get; init; }
     public string? WorkAddress { get; init; }
+
+    // Auto-create linked parent when creating STUDENT
+    public bool    CreateLinkedParent    { get; init; } = false;
+    public string? ParentFullName        { get; init; }
+    public string? ParentPhoneNumber     { get; init; }
+    public string? ParentEmail           { get; init; }
+    public string? ParentPassword        { get; init; }
+    public string? ParentRelationship    { get; init; } = "Phụ huynh";
 
     // Avatar: handled separately via IFormFile in controller
     public string? AvatarUrl { get; init; }

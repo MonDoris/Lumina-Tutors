@@ -1,0 +1,1700 @@
+@using LuminaTutors.Application.DTOs.Lab
+@model LabSessionDto
+@{
+    Layout = null; // Full-screen immersive 3D experience
+    var isHost    = ViewBag.IsHost as bool? ?? false;
+    var sceneType = Model.SceneType.ToLower();
+    var subject   = Model.SubjectTag.ToLower();
+    string subjectLabel = subject switch
+    {
+        "chemistry" => "Hóa học",
+        "physics"   => "Vật lý",
+        "biology"   => "Sinh học",
+        _           => subject
+    };
+    string sceneLabel = sceneType switch
+    {
+        "titration" => "Chuẩn độ axit-bazơ",
+        "pendulum"  => "Con lắc đơn",
+        "cell"      => "Quan sát tế bào",
+        _           => sceneType
+    };
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@Model.SessionName — Lab 3D · Lumina Tutors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.3/font/bootstrap-icons.css">
+
+    <!-- Three.js via ESM importmap -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --navy: #0f2044;
+            --navy-900: #0a1628;
+            --gold: #c9a96e;
+            --gold-light: #e8c98a;
+            --glass: rgba(15, 32, 68, 0.82);
+            --glass-border: rgba(201, 169, 110, 0.25);
+            --success: #22c55e;
+            --danger: #ef4444;
+            --info: #38bdf8;
+        }
+
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #0a0f1e;
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+        }
+
+        /* ── Canvas ──────────────────────────────────────────────────────────── */
+        #lab-canvas {
+            display: block;
+            width: 100%; height: 100%;
+        }
+
+        /* ── Overlay UI ──────────────────────────────────────────────────────── */
+        #ui-overlay {
+            position: fixed; inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Header bar */
+        #ui-header {
+            pointer-events: all;
+            position: absolute; top: 0; left: 0; right: 0;
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 16px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .ui-brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem; font-weight: 700;
+            color: var(--gold);
+            letter-spacing: .04em;
+        }
+        .ui-sep { width: 1px; height: 20px; background: var(--glass-border); }
+        .ui-session-name { font-size: .85rem; font-weight: 600; color: #f1f5f9; }
+        .ui-session-meta { font-size: .75rem; color: #94a3b8; margin-top: 1px; }
+        .ui-code {
+            margin-left: auto;
+            background: rgba(201,169,110,.12);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 4px 12px;
+            font-size: .8rem; font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: .12em;
+        }
+        .ui-back {
+            pointer-events: all;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255,255,255,.06);
+            color: #e2e8f0;
+            font-size: .8rem; font-weight: 500;
+            text-decoration: none;
+            transition: background .18s;
+        }
+        .ui-back:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+        /* Pulse indicator */
+        .live-dot {
+            display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; background: var(--success);
+            box-shadow: 0 0 0 2px rgba(34,197,94,.25);
+            animation: pulse-live 1.8s ease-in-out infinite;
+        }
+        @@keyframes pulse-live {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 2px rgba(34,197,94,.25); }
+            50% { opacity: .7; box-shadow: 0 0 0 5px rgba(34,197,94,.1); }
+        }
+
+        /* Controls panel */
+        #ui-controls {
+            pointer-events: all;
+            position: absolute; bottom: 24px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px;
+            background: var(--glass);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+        .ctrl-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 7px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255,255,255,.06);
+            color: #e2e8f0;
+            font-size: .8rem; font-weight: 500;
+            cursor: pointer;
+            transition: all .18s;
+        }
+        .ctrl-btn:hover { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(201,169,110,.5); }
+        .ctrl-btn.active { background: rgba(201,169,110,.18); color: var(--gold-light); border-color: var(--gold); }
+        .ctrl-btn.laser-active { background: rgba(239,68,68,.18); color: #fca5a5; border-color: rgba(239,68,68,.6); }
+        .ctrl-sep { width: 1px; height: 22px; background: var(--glass-border); }
+
+        /* Info panel (bottom-right) */
+        #ui-info {
+            pointer-events: all;
+            position: absolute; bottom: 24px; right: 20px;
+            width: 200px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: .78rem;
+        }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .info-label { color: #94a3b8; }
+        .info-value { color: #f1f5f9; font-weight: 600; }
+
+        /* Close session button (host only) */
+        #btn-close-session {
+            background: rgba(239,68,68,.12);
+            border-color: rgba(239,68,68,.35);
+            color: #fca5a5;
+        }
+        #btn-close-session:hover {
+            background: rgba(239,68,68,.25);
+            border-color: rgba(239,68,68,.7);
+            color: #ff6b6b;
+        }
+
+        /* Loading overlay */
+        #loading {
+            position: fixed; inset: 0; z-index: 100;
+            background: #0a0f1e;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 18px;
+            transition: opacity .4s ease;
+        }
+        #loading.hide { opacity: 0; pointer-events: none; }
+        .loading-icon {
+            width: 64px; height: 64px; border-radius: 18px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            color: var(--navy-900); font-size: 2rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 32px rgba(201,169,110,.4);
+            animation: loading-spin 2s ease-in-out infinite;
+        }
+        @@keyframes loading-spin {
+            0%, 100% { box-shadow: 0 0 20px rgba(201,169,110,.3); transform: rotate(-8deg); }
+            50% { box-shadow: 0 0 45px rgba(201,169,110,.6); transform: rotate(8deg); }
+        }
+        .loading-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem; color: #f1f5f9; letter-spacing: .04em;
+        }
+        .loading-sub { font-size: .8rem; color: #64748b; }
+        .loading-bar {
+            width: 180px; height: 3px; background: rgba(255,255,255,.08);
+            border-radius: 99px; overflow: hidden;
+        }
+        .loading-bar-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 99px;
+            animation: bar-fill 1.6s ease forwards;
+        }
+        @@keyframes bar-fill { to { width: 100%; } }
+
+        /* Step overlay */
+        #step-overlay {
+            pointer-events: none;
+            position: absolute; top: 72px; right: 20px;
+            width: 220px;
+            background: var(--glass);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px;
+            font-size: .8rem;
+            display: none;
+        }
+        #step-overlay.show { display: block; }
+        .step-title { font-weight: 700; color: var(--gold-light); margin-bottom: 8px; font-size: .82rem; }
+        .step-desc { color: #94a3b8; line-height: 1.5; }
+        .step-progress { margin-top: 10px; }
+        .step-bar {
+            height: 4px; border-radius: 99px;
+            background: rgba(255,255,255,.1); overflow: hidden;
+        }
+        .step-bar-fill {
+            height: 100%; background: var(--gold);
+            border-radius: 99px;
+            transition: width .6s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* ── Hover tooltip ───────────────────────────────────────────────────── */
+        #hover-tooltip {
+            position: fixed;
+            display: none;
+            background: rgba(10, 22, 40, 0.95);
+            border: 1px solid rgba(201, 169, 110, 0.45);
+            border-radius: 8px;
+            padding: 6px 12px 6px 10px;
+            font-size: .76rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            pointer-events: none;
+            z-index: 50;
+            white-space: nowrap;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 16px rgba(0,0,0,.4);
+        }
+        #hover-tooltip .tt-hint {
+            display: block;
+            font-size: .68rem;
+            color: var(--gold);
+            margin-top: 2px;
+        }
+
+        /* ── Interaction guide (left) ─────────────────────────────────────── */
+        #interaction-guide {
+            pointer-events: none;
+            position: absolute; top: 72px; left: 16px;
+            width: 215px;
+            background: var(--glass);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 13px 14px;
+            font-size: .78rem;
+        }
+        .guide-header {
+            display: flex; align-items: center; gap: 6px;
+            font-weight: 700; font-size: .8rem;
+            color: var(--gold-light); margin-bottom: 10px;
+        }
+        .guide-item {
+            display: flex; align-items: flex-start; gap: 8px;
+            margin-bottom: 7px; color: #94a3b8; line-height: 1.4;
+        }
+        .guide-icon {
+            flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px;
+            background: rgba(201,169,110,.12); border: 1px solid var(--glass-border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .65rem; color: var(--gold);
+        }
+        .guide-text strong { color: #e2e8f0; display: block; font-size: .75rem; }
+
+        /* ── Live data panel ────────────────────────────────────────────────── */
+        #data-panel {
+            pointer-events: none;
+            position: absolute; top: 72px; right: 20px;
+            width: 215px;
+            background: var(--glass);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 13px 14px;
+            font-size: .78rem;
+            display: none;
+        }
+        #data-panel.show { display: block; }
+        .dp-header {
+            display: flex; align-items: center; gap: 6px;
+            font-weight: 700; font-size: .8rem;
+            color: var(--gold-light); margin-bottom: 10px;
+        }
+        .dp-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            margin-bottom: 7px; padding-bottom: 7px;
+            border-bottom: 1px solid rgba(255,255,255,.05);
+        }
+        .dp-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .dp-label { color: #64748b; font-size: .72rem; }
+        .dp-value {
+            color: #f1f5f9; font-weight: 700; font-size: .92rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .dp-unit { color: #64748b; font-size: .68rem; margin-left: 2px; }
+
+        /* Drip rate badge */
+        .drip-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 20px;
+            font-size: .72rem; font-weight: 700;
+        }
+        .drip-badge.off  { background: rgba(100,116,139,.2); color: #94a3b8; }
+        .drip-badge.slow { background: rgba(34,197,94,.15);  color: #4ade80; }
+        .drip-badge.fast { background: rgba(239,68,68,.15);  color: #fca5a5; }
+
+        /* ── Cell info card ─────────────────────────────────────────────────── */
+        #cell-info-card {
+            pointer-events: all;
+            position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%) scale(.92);
+            width: 300px;
+            background: rgba(10, 18, 40, 0.96);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            display: none;
+            z-index: 30;
+            box-shadow: 0 20px 60px rgba(0,0,0,.6);
+            transition: transform .22s cubic-bezier(.34,1.56,.64,1), opacity .18s;
+            opacity: 0;
+        }
+        #cell-info-card.show {
+            display: block;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        .cic-icon { font-size: 2.2rem; margin-bottom: 10px; display: block; }
+        .cic-title { font-weight: 700; font-size: 1rem; color: #f1f5f9; margin-bottom: 6px; }
+        .cic-desc { font-size: .82rem; color: #94a3b8; line-height: 1.6; }
+        .cic-close {
+            position: absolute; top: 12px; right: 12px;
+            width: 26px; height: 26px; border-radius: 50%;
+            background: rgba(255,255,255,.08); border: 1px solid var(--glass-border);
+            color: #94a3b8; font-size: .75rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background .15s;
+        }
+        .cic-close:hover { background: rgba(255,255,255,.18); color: #fff; }
+        .cic-fact {
+            margin-top: 12px; padding: 9px 12px;
+            background: rgba(201,169,110,.08); border-radius: 8px;
+            border-left: 2px solid var(--gold);
+            font-size: .75rem; color: #c9a96e; line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading splash -->
+<div id="loading">
+    <div class="loading-icon"><i class="bi bi-badge-vr-fill"></i></div>
+    <div class="loading-text">Khởi động phòng Lab 3D</div>
+    <div class="loading-sub">Đang tải môi trường @subjectLabel...</div>
+    <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<!-- 3D canvas -->
+<canvas id="lab-canvas"></canvas>
+
+<!-- UI overlay -->
+<div id="ui-overlay">
+
+    <!-- Header -->
+    <div id="ui-header">
+        <a href="/VirtualLab" class="ui-back">
+            <i class="bi bi-arrow-left"></i> Ra khỏi Lab
+        </a>
+        <div class="ui-sep"></div>
+        <div class="ui-brand">L</div>
+        <div>
+            <div class="ui-session-name">@Model.SessionName</div>
+            <div class="ui-session-meta">
+                @subjectLabel · @sceneLabel · GV: @Model.TeacherName
+            </div>
+        </div>
+        <span class="live-dot" style="margin-left:auto;margin-right:4px"></span>
+        <span style="font-size:.78rem;color:#22c55e;margin-right:12px">Đang hoạt động</span>
+        <div class="ui-code">@Model.SessionCode</div>
+    </div>
+
+    <!-- Hover tooltip -->
+    <div id="hover-tooltip">
+        <span id="tt-name"></span>
+        <span class="tt-hint" id="tt-hint"></span>
+    </div>
+
+    <!-- Interaction guide (left side) -->
+    <div id="interaction-guide">
+        <div class="guide-header">
+            <i class="bi bi-hand-index-thumb-fill" style="color:var(--gold)"></i>
+            Tương tác
+        </div>
+        <div id="guide-list">
+            @if (sceneType == "titration")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Van buret</strong>Click để điều chỉnh tốc độ nhỏ giọt</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Bình tam giác</strong>Click để khuấy dung dịch</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Buret</strong>Click để xem thể tích còn lại</div>
+                </div>
+            }
+            else if (sceneType == "pendulum")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-hand-index-fill"></i></div>
+                    <div class="guide-text"><strong>Quả nặng</strong>Kéo trái/phải để đặt góc ban đầu</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-play-fill"></i></div>
+                    <div class="guide-text"><strong>Bắt đầu</strong>Thả quả nặng dao động</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Bảng số liệu</strong>Cập nhật thời gian thực</div>
+                </div>
+            }
+            else
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Nhân tế bào</strong>Click để xem chi tiết</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Ti thể</strong>Click để xem chi tiết</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Không bào / Lạp lục</strong>Click để xem chi tiết</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Live data panel (titration / pendulum) -->
+    <div id="data-panel">
+        <div class="dp-header">
+            <i class="bi bi-bar-chart-line-fill" style="color:var(--gold)"></i>
+            Số liệu thực nghiệm
+        </div>
+        <div id="dp-rows"></div>
+    </div>
+
+    <!-- Cell info card -->
+    <div id="cell-info-card">
+        <div class="cic-close" id="cic-close-btn" onclick="closeCellInfo()">
+            <i class="bi bi-x"></i>
+        </div>
+        <span class="cic-icon" id="cic-icon"></span>
+        <div class="cic-title" id="cic-title"></div>
+        <div class="cic-desc" id="cic-desc"></div>
+        <div class="cic-fact" id="cic-fact"></div>
+    </div>
+
+    <!-- Experiment step overlay -->
+    <div id="step-overlay">
+        <div class="step-title" id="step-title">Bắt đầu thí nghiệm</div>
+        <div class="step-desc" id="step-desc">Nhấn "Bắt đầu" để khởi động thí nghiệm</div>
+        <div class="step-progress">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.72rem;color:#64748b">
+                <span id="step-num">Bước 0/0</span>
+                <span id="step-pct">0%</span>
+            </div>
+            <div class="step-bar"><div class="step-bar-fill" id="step-bar-fill" style="width:0%"></div></div>
+        </div>
+    </div>
+
+    <!-- Info panel (bottom-right) -->
+    <div id="ui-info">
+        <div class="info-row">
+            <span class="info-label">Mã phòng</span>
+            <span class="info-value" style="color:var(--gold-light);letter-spacing:.1em">@Model.SessionCode</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Môn học</span>
+            <span class="info-value">@subjectLabel</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Thí nghiệm</span>
+            <span class="info-value">@sceneLabel</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Sức chứa</span>
+            <span class="info-value">@Model.MaxParticipants HS</span>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div id="ui-controls">
+        <button class="ctrl-btn" id="btn-start" onclick="startExperiment()">
+            <i class="bi bi-play-fill"></i> Bắt đầu
+        </button>
+        <button class="ctrl-btn" id="btn-reset" onclick="resetExperiment()">
+            <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+        </button>
+        <div class="ctrl-sep"></div>
+        <button class="ctrl-btn" id="btn-orbit" onclick="toggleOrbit()" title="Xoay camera">
+            <i class="bi bi-arrow-repeat"></i> Xoay tự do
+        </button>
+        <button class="ctrl-btn" id="btn-focus" onclick="focusCamera()" title="Focus vào thí nghiệm">
+            <i class="bi bi-fullscreen"></i> Focus
+        </button>
+        @if (isHost)
+        {
+            <div class="ctrl-sep"></div>
+            <button class="ctrl-btn" id="btn-laser" onclick="toggleLaser()" title="Con trỏ laser giảng dạy">
+                <i class="bi bi-broadcast-pin"></i> Laser
+            </button>
+            <div class="ctrl-sep"></div>
+            <form asp-action="Close" asp-route-id="@Model.Id" method="post" id="close-form" style="display:inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="ctrl-btn" id="btn-close-session"
+                        onclick="return confirm('Kết thúc phòng lab này?')">
+                    <i class="bi bi-stop-circle-fill"></i> Kết thúc phòng
+                </button>
+            </form>
+        }
+    </div>
+
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Scene Config ──────────────────────────────────────────────────────────────
+const SCENE_TYPE  = '@sceneType';
+const SUBJECT_TAG = '@subject';
+const IS_HOST     = @(isHost ? "true" : "false");
+
+// ── Renderer ──────────────────────────────────────────────────────────────────
+const canvas   = document.getElementById('lab-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+// ── Scene ─────────────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0f1e);
+scene.fog        = new THREE.FogExp2(0x0a0f1e, 0.045);
+
+// ── Camera ────────────────────────────────────────────────────────────────────
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 4, 9);
+camera.lookAt(0, 1.2, 0);
+
+// ── Orbit Controls ────────────────────────────────────────────────────────────
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping    = true;
+controls.dampingFactor    = 0.06;
+controls.target.set(0, 1.2, 0);
+controls.minDistance      = 3;
+controls.maxDistance      = 18;
+controls.maxPolarAngle    = Math.PI / 2.05;
+controls.autoRotate       = false;
+controls.autoRotateSpeed  = 1.2;
+controls.update();
+
+// ── Lighting ──────────────────────────────────────────────────────────────────
+const ambient = new THREE.AmbientLight(0xffffff, 0.35);
+scene.add(ambient);
+
+const keyLight = new THREE.DirectionalLight(0xfff8e7, 1.2);
+keyLight.position.set(5, 10, 6);
+keyLight.castShadow  = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.camera.near = 0.5;
+keyLight.shadow.camera.far  = 40;
+keyLight.shadow.camera.left = keyLight.shadow.camera.bottom = -8;
+keyLight.shadow.camera.right = keyLight.shadow.camera.top   =  8;
+keyLight.shadow.bias = -0.001;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0x4080ff, 0.25);
+fillLight.position.set(-5, 3, -4);
+scene.add(fillLight);
+
+const rimLight = new THREE.PointLight(0xc9a96e, 0.8, 12);
+rimLight.position.set(-3, 4, -5);
+scene.add(rimLight);
+
+// ── Materials ─────────────────────────────────────────────────────────────────
+const matFloor  = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: .9, metalness: .1 });
+const matWall   = new THREE.MeshStandardMaterial({ color: 0x1e2740, roughness: .95, metalness: 0 });
+const matBench  = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: .7, metalness: .15 });
+const matBenchT = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: .5, metalness: .2 });
+const matMetal  = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: .3, metalness: .8 });
+const matGlass  = new THREE.MeshStandardMaterial({ color: 0x93c5fd, roughness: .05, metalness: 0, transparent: true, opacity: .35 });
+const matGold   = new THREE.MeshStandardMaterial({ color: 0xc9a96e, roughness: .2, metalness: .9 });
+
+// ── Lab Room ──────────────────────────────────────────────────────────────────
+function buildRoom() {
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(22, 22), matFloor);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(22, 10), matWall);
+    backWall.position.set(0, 5, -7);
+    backWall.receiveShadow = true;
+    scene.add(backWall);
+
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(14, 10), matWall);
+    leftWall.position.set(-11, 5, 0);
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.receiveShadow = true;
+    scene.add(leftWall);
+
+    const ceiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(22, 22),
+        new THREE.MeshStandardMaterial({ color: 0x0f1629, roughness: 1 })
+    );
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = 9;
+    scene.add(ceiling);
+
+    for (let x = -4; x <= 4; x += 4) {
+        const strip = new THREE.Mesh(
+            new THREE.BoxGeometry(0.2, 0.04, 3),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffeedd, emissiveIntensity: 1.5 })
+        );
+        strip.position.set(x, 8.96, 0);
+        scene.add(strip);
+        const stripLight = new THREE.PointLight(0xfff5e4, 0.5, 8);
+        stripLight.position.set(x, 8.5, 0);
+        scene.add(stripLight);
+    }
+
+    const benchBase = new THREE.Mesh(new THREE.BoxGeometry(5, 0.9, 1.6), matBench);
+    benchBase.position.set(0, 0.45, 0);
+    benchBase.castShadow = benchBase.receiveShadow = true;
+    scene.add(benchBase);
+
+    const benchTop = new THREE.Mesh(new THREE.BoxGeometry(5.1, 0.08, 1.7), matBenchT);
+    benchTop.position.set(0, 0.94, 0);
+    benchTop.castShadow = benchTop.receiveShadow = true;
+    scene.add(benchTop);
+
+    [[-2.35,-2.35],[2.35,-2.35],[-2.35,2.35/2.5],[2.35,2.35/2.5]].forEach(([bx,bz])=>{
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.88,0.08), matMetal);
+        leg.position.set(bx, 0.44, bz * 0.65);
+        scene.add(leg);
+    });
+
+    const cabinet = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.55), matBench);
+    cabinet.position.set(-3.5, 0.8, -1.8);
+    cabinet.castShadow = true;
+    scene.add(cabinet);
+
+    const board = new THREE.Mesh(
+        new THREE.BoxGeometry(3.5, 1.8, 0.04),
+        new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: .95 })
+    );
+    board.position.set(0, 3.5, -6.96);
+    scene.add(board);
+
+    const boardFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(3.7, 2.0, 0.03),
+        new THREE.MeshStandardMaterial({ color: 0x475569, roughness: .5, metalness: .4 })
+    );
+    boardFrame.position.set(0, 3.5, -6.98);
+    scene.add(boardFrame);
+}
+
+buildRoom();
+
+// ── Experiment-specific scenes ────────────────────────────────────────────────
+let experimentData = {};
+let isRunning = false;
+let stepIndex  = 0;
+
+// ─ CHEMISTRY: Titration ──────────────────────────────────────────────────────
+function buildTitrationScene() {
+    const standPole = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,2.2,12), matMetal);
+    standPole.position.set(.3, 2.05, -.2);
+    standPole.castShadow = true;
+    scene.add(standPole);
+
+    const standBase = new THREE.Mesh(new THREE.BoxGeometry(.8,.04,.5), matMetal);
+    standBase.position.set(.3, .96, -.2);
+    scene.add(standBase);
+
+    const ring = new THREE.TorusGeometry(.18,.015,8,24);
+    const ringMesh = new THREE.Mesh(ring, matMetal);
+    ringMesh.rotation.x = Math.PI/2;
+    ringMesh.position.set(.3,2.6,-.2);
+    scene.add(ringMesh);
+
+    const buretMat = matGlass.clone();
+    const buretBody = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,1.6,16), buretMat);
+    buretBody.position.set(.3,2.2,-.2);
+    buretBody.castShadow = true;
+    scene.add(buretBody);
+
+    for (let y = 1.5; y <= 2.9; y += .1) {
+        const mark = new THREE.Mesh(new THREE.BoxGeometry(.01,.002,.04),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, opacity: .6, transparent: true }));
+        mark.position.set(.34,y,-.2);
+        scene.add(mark);
+    }
+
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(.008,.015,.12,8), matMetal);
+    tip.position.set(.3,1.37,-.2);
+    scene.add(tip);
+
+    const cockMat = matMetal.clone();
+    const cock = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.06,16), cockMat);
+    cock.rotation.z = Math.PI/2;
+    cock.position.set(.3,1.45,-.2);
+    scene.add(cock);
+    experimentData.stopcock    = cock;
+    experimentData.stopcockMat = cockMat;
+
+    const flaskMat  = matGlass.clone();
+    const flaskBody = new THREE.Mesh(new THREE.SphereGeometry(.22,24,16,[0,Math.PI*2,0,Math.PI*.55]), flaskMat);
+    flaskBody.position.set(.3,.96+.22,-.2);
+    flaskBody.castShadow = true;
+    scene.add(flaskBody);
+
+    const flaskNeckMat = matGlass.clone();
+    const flaskNeck = new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,.25,16), flaskNeckMat);
+    flaskNeck.position.set(.3,1.46,-.2);
+    scene.add(flaskNeck);
+
+    const flaskRim = new THREE.Mesh(new THREE.TorusGeometry(.05,.008,8,16), matGlass.clone());
+    flaskRim.position.set(.3,1.59,-.2);
+    scene.add(flaskRim);
+
+    const solution = new THREE.Mesh(
+        new THREE.CircleGeometry(.18,32),
+        new THREE.MeshStandardMaterial({ color: 0x93c5fd, transparent: true, opacity: .55, side: THREE.DoubleSide })
+    );
+    solution.rotation.x = -Math.PI/2;
+    solution.position.set(.3,1.01,-.2);
+    scene.add(solution);
+    experimentData.solution    = solution;
+    experimentData.solutionMat = solution.material;
+
+    const beaker = new THREE.Mesh(new THREE.CylinderGeometry(.1,.09,.22,24), matGlass.clone());
+    beaker.position.set(-.5,1.07,-.3);
+    scene.add(beaker);
+
+    const stirPlate = new THREE.Mesh(new THREE.BoxGeometry(.35,.04,.3),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness:.3,metalness:.6 }));
+    stirPlate.position.set(.3,.98,-.2);
+    scene.add(stirPlate);
+
+    const droplet = new THREE.Mesh(new THREE.SphereGeometry(.015,8,8),
+        new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent:true, opacity:0 }));
+    droplet.position.set(.3,1.38,-.2);
+    scene.add(droplet);
+    experimentData.droplet    = droplet;
+    experimentData.dropletMat = droplet.material;
+    experimentData.dropletY   = 1.38;
+
+    // Save refs for interaction
+    experimentData.buretBody  = buretBody;
+    experimentData.buretMat   = buretMat;
+    experimentData.flaskMeshes = [flaskBody, flaskNeck, flaskRim];
+    experimentData.flaskMat   = flaskMat;
+
+    // State
+    experimentData.dripRate   = 'off';   // 'off' | 'slow' | 'fast'
+    experimentData.dripCount  = 0;
+    experimentData.dripTimer  = 0;
+    experimentData.swirling   = false;
+    experimentData.swirlTime  = 0;
+    experimentData.swirlAngle = 0;
+    experimentData.buretVolume = 50.0;   // mL, starts full
+
+    const steps = [
+        { title:'Chuẩn bị',          desc:'Đổ dung dịch HCl vào bình tam giác. Thêm 2-3 giọt chỉ thị phenolphthalein.' },
+        { title:'Nạp buret',          desc:'Đổ dung dịch NaOH chuẩn vào buret. Đuổi hết bọt khí ở đầu van.' },
+        { title:'Chuẩn độ thô',       desc:'Mở khóa buret từ từ. Quan sát màu dung dịch thay đổi cục bộ.' },
+        { title:'Chuẩn độ chính xác', desc:'Nhỏ từng giọt đến khi dung dịch chuyển sang hồng nhạt bền 30 giây.' },
+        { title:'Điểm tương đương',   desc:'Màu hồng bền: đã đạt điểm tương đương! Ghi thể tích NaOH đã dùng.' },
+        { title:'Tính kết quả',       desc:'C(HCl) = C(NaOH) × V(NaOH) / V(HCl). Làm 3 lần và lấy trung bình.' },
+    ];
+    experimentData.steps = steps;
+    experimentData.type  = 'titration';
+}
+
+// ─ PHYSICS: Pendulum ─────────────────────────────────────────────────────────
+function buildPendulumScene() {
+    const vLeft  = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2,.8,12), matMetal);
+    const vRight = vLeft.clone();
+    vLeft.position.set(-.8,1.88,0);
+    vRight.position.set( .8,1.88,0);
+    scene.add(vLeft,vRight);
+
+    const hBar = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.7,12), matMetal);
+    hBar.rotation.z = Math.PI/2;
+    hBar.position.set(0,2.88,0);
+    scene.add(hBar);
+
+    const pivot = new THREE.Mesh(new THREE.SphereGeometry(.04,12,12), matMetal);
+    pivot.position.set(0,2.86,0);
+    scene.add(pivot);
+
+    const stringLen = 1.4;
+    const strMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(.004,.004,stringLen,8),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8 })
+    );
+    strMesh.position.set(0, 2.86 - stringLen/2, 0);
+    scene.add(strMesh);
+    experimentData.stringMesh = strMesh;
+
+    const bobMat = new THREE.MeshStandardMaterial({ color: 0xd4a017, roughness:.15, metalness:.9 });
+    const bob = new THREE.Mesh(new THREE.SphereGeometry(.095,24,16), bobMat);
+    bob.position.set(0, 2.86 - stringLen, 0);
+    bob.castShadow = true;
+    scene.add(bob);
+    experimentData.bob       = bob;
+    experimentData.bobMat    = bobMat;
+    experimentData.stringLen = stringLen;
+    experimentData.pivotY    = 2.86;
+    experimentData.angle     = Math.PI / 6;
+    experimentData.vel       = 0;
+
+    const arcPoints = [];
+    for (let a = -Math.PI/2; a <= Math.PI/2; a += 0.05) {
+        arcPoints.push(new THREE.Vector3(Math.sin(a)*1.2, -Math.cos(a)*1.2, 0));
+    }
+    const arcGeo  = new THREE.BufferGeometry().setFromPoints(arcPoints);
+    const arcLine = new THREE.Line(arcGeo,
+        new THREE.LineBasicMaterial({ color: 0x334155, opacity: .7, transparent: true }));
+    arcLine.position.set(0, 2.86, 0.01);
+    scene.add(arcLine);
+
+    for (let deg = -60; deg <= 60; deg += 10) {
+        const rad = deg * Math.PI / 180;
+        const mk = new THREE.Mesh(new THREE.BoxGeometry(.015,.04,.01),
+            new THREE.MeshStandardMaterial({ color: 0x64748b }));
+        mk.position.set(Math.sin(rad)*1.22 , 2.86 - Math.cos(rad)*1.22, .01);
+        mk.rotation.z = -rad;
+        scene.add(mk);
+    }
+
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPts = new Float32Array(60 * 3).fill(0);
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPts, 3));
+    const trail = new THREE.Points(trailGeo,
+        new THREE.PointsMaterial({ color: 0xc9a96e, size: .04, transparent: true, opacity: .6 }));
+    scene.add(trail);
+    experimentData.trail    = trail;
+    experimentData.trailPts = trailPts;
+    experimentData.trailIdx = 0;
+
+    const ruler = new THREE.Mesh(new THREE.BoxGeometry(.04,.02,1.6),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+    ruler.position.set(.5,0.96,.0);
+    scene.add(ruler);
+
+    // Oscillation counter
+    experimentData.oscCount       = 0;
+    experimentData.lastSign       = 0;
+    experimentData.totalElapsed   = 0;
+
+    const steps = [
+        { title:'Đo chiều dài con lắc', desc:'Đo từ điểm treo đến tâm quả nặng: L = 1.40 m.' },
+        { title:'Kéo lệch góc 30°',     desc:'Kéo quả nặng lệch 30° so với phương thẳng đứng.' },
+        { title:'Thả tự do',            desc:'Thả không có vận tốc ban đầu. Bắt đầu đồng hồ bấm giây.' },
+        { title:'Đo chu kỳ',            desc:'Đo 10 dao động toàn phần. T₁₀ = thời gian / 10.' },
+        { title:'Tính g',               desc:'T = 2π√(L/g) → g = 4π²L/T². So sánh với g = 9.81 m/s².' },
+        { title:'Sai số',               desc:'Tính sai số tuyệt đối và tương đối. Nêu nguồn gây sai số.' },
+    ];
+    experimentData.steps   = steps;
+    experimentData.type    = 'pendulum';
+    experimentData.damping = 0.998;
+}
+
+// ─ BIOLOGY: Cell ─────────────────────────────────────────────────────────────
+function buildCellScene() {
+    const cellMat = new THREE.MeshStandardMaterial({
+        color: 0x4ade80, roughness: .6, metalness: 0,
+        transparent: true, opacity: .22, side: THREE.DoubleSide
+    });
+    const cellMesh = new THREE.Mesh(new THREE.SphereGeometry(.9,32,24), cellMat);
+    cellMesh.position.set(0,1.8,0);
+    cellMesh.castShadow = true;
+    scene.add(cellMesh);
+    experimentData.cell    = cellMesh;
+    experimentData.cellMat = cellMat;
+
+    const nucleusMat = new THREE.MeshStandardMaterial({
+        color: 0x7c3aed, roughness:.4, metalness:.1, transparent:true, opacity:.85
+    });
+    const nucleus = new THREE.Mesh(new THREE.SphereGeometry(.3,24,16), nucleusMat);
+    nucleus.position.set(0,1.8,0);
+    scene.add(nucleus);
+    experimentData.nucleus    = nucleus;
+    experimentData.nucleusMat = nucleusMat;
+
+    const nucleolus = new THREE.Mesh(new THREE.SphereGeometry(.1,16,12),
+        new THREE.MeshStandardMaterial({ color: 0xa78bfa, roughness:.3, emissive:0x4c1d95, emissiveIntensity:.3 }));
+    nucleolus.position.set(0,1.8,0);
+    scene.add(nucleolus);
+
+    const mitoAngles = [0,1.2,2.4,3.6,4.8];
+    const mitoMeshes = mitoAngles.map((a,i) => {
+        const mitoMat = new THREE.MeshStandardMaterial({
+            color: 0xf97316, roughness:.5, metalness:.1, transparent:true, opacity:.9
+        });
+        const mito = new THREE.Mesh(new THREE.CapsuleGeometry(.055,.22,6,12), mitoMat);
+        const r = .62 + (i%2)*.1;
+        mito.position.set(Math.sin(a)*r, 1.8 + Math.sin(a*1.3)*.15, Math.cos(a)*r);
+        mito.rotation.z = a + .4;
+        scene.add(mito);
+        return { mesh:mito, mat:mitoMat, baseAngle:a, r };
+    });
+    experimentData.mito = mitoMeshes;
+
+    const vacData = [{x:.4,y:2.15,z:.3,s:.12},{x:-.45,y:1.6,z:.2,s:.09},{x:.2,y:1.5,z:-.35,s:.1}];
+    const vacMeshes = vacData.map(v => {
+        const vacMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, transparent:true, opacity:.65 });
+        const vac = new THREE.Mesh(new THREE.SphereGeometry(v.s,16,12), vacMat);
+        vac.position.set(v.x,v.y,v.z);
+        scene.add(vac);
+        return { mesh:vac, mat:vacMat };
+    });
+    experimentData.vacuoles = vacMeshes;
+
+    for (let i=0;i<4;i++) {
+        const er = new THREE.Mesh(
+            new THREE.TorusGeometry(.4+i*.05,.012,6,28,[0,Math.PI*.8]),
+            new THREE.MeshStandardMaterial({ color: 0xfde68a, transparent:true, opacity:.55 })
+        );
+        er.rotation.x = i*.4; er.rotation.y = i*.9;
+        er.position.set(0,1.8,0);
+        scene.add(er);
+    }
+
+    const cpMeshes = [-.6,.6].map(x=>{
+        const cpMat = new THREE.MeshStandardMaterial({ color:0x166534,roughness:.6,transparent:true,opacity:.8 });
+        const cp = new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.025,16), cpMat);
+        cp.position.set(x,1.85,-.3);
+        scene.add(cp);
+        return { mesh:cp, mat:cpMat };
+    });
+    experimentData.chloroplasts = cpMeshes;
+
+    const mScope = new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.8,12), matMetal);
+    mScope.position.set(-1.8,1.34,-.3);
+    scene.add(mScope);
+    const mBase = new THREE.Mesh(new THREE.BoxGeometry(.25,.03,.2), matMetal);
+    mBase.position.set(-1.8,.96,-.3);
+    scene.add(mBase);
+    const mHead = new THREE.Mesh(new THREE.BoxGeometry(.1,.2,.12),
+        new THREE.MeshStandardMaterial({color:0x334155,roughness:.3,metalness:.5}));
+    mHead.position.set(-1.8,1.84,-.3);
+    scene.add(mHead);
+
+    const steps = [
+        { title:'Nhận diện tế bào',   desc:'Quan sát màng tế bào (membrane): lớp ngoài cùng bán thấm.' },
+        { title:'Nhân tế bào',         desc:'Nucleus (màu tím): chứa DNA, điều khiển hoạt động tế bào.' },
+        { title:'Ti thể',              desc:'Mitochondria (màu cam): nhà máy ATP — "powerhouse of the cell".' },
+        { title:'Không bào',           desc:'Vacuoles (màu xanh lam): dự trữ nước, muối khoáng, sắc tố.' },
+        { title:'Lạp lục',             desc:'Chloroplasts (màu xanh lá): quang hợp. Chỉ có ở tế bào thực vật.' },
+        { title:'Tổng hợp',            desc:'Hoàn thành sơ đồ tế bào và chú thích đầy đủ 8 bào quan chính.' },
+    ];
+    experimentData.steps     = steps;
+    experimentData.type      = 'cell';
+    experimentData.cellAngle = 0;
+}
+
+// ── Build the scene ───────────────────────────────────────────────────────────
+if (SCENE_TYPE === 'titration')  buildTitrationScene();
+else if (SCENE_TYPE === 'pendulum') buildPendulumScene();
+else buildCellScene();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── Interactive System ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const interactiveObjects = []; // { meshes, name, hint, cursor, onHover, onHoverEnd, onClick }
+
+function registerInteractive(config) {
+    interactiveObjects.push(config);
+}
+
+// ── Raycaster ─────────────────────────────────────────────────────────────────
+const raycaster    = new THREE.Raycaster();
+const mouse        = new THREE.Vector2();
+let   mouseScreen  = { x: 0, y: 0 };
+let   currentHover = null;
+
+const ttEl   = document.getElementById('hover-tooltip');
+const ttName = document.getElementById('tt-name');
+const ttHint = document.getElementById('tt-hint');
+
+function showTooltip(name, hint, x, y) {
+    ttName.textContent = name;
+    ttHint.textContent = hint || '';
+    ttEl.style.display = 'block';
+    ttEl.style.left    = (x + 16) + 'px';
+    ttEl.style.top     = (y - 14) + 'px';
+}
+function hideTooltip() { ttEl.style.display = 'none'; }
+
+// Emissive highlight helpers
+function applyHover(item) {
+    (item.meshes || []).forEach(m => {
+        if (!m.material) return;
+        m.userData._savedEmissive = m.material.emissive
+            ? m.material.emissive.clone()
+            : new THREE.Color(0);
+        m.userData._savedEmissiveIntensity = m.material.emissiveIntensity ?? 0;
+        m.material.emissive          = new THREE.Color(0xc9a96e);
+        m.material.emissiveIntensity = 0.35;
+    });
+}
+function removeHover(item) {
+    (item.meshes || []).forEach(m => {
+        if (!m.material) return;
+        m.material.emissive          = m.userData._savedEmissive ?? new THREE.Color(0);
+        m.material.emissiveIntensity = m.userData._savedEmissiveIntensity ?? 0;
+    });
+}
+
+// Drag state (pendulum bob)
+let isDragging = false;
+let dragActive = false;
+
+canvas.addEventListener('mousemove', e => {
+    mouseScreen = { x: e.clientX, y: e.clientY };
+    const rect = canvas.getBoundingClientRect();
+    mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+    mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+
+    // Pendulum drag — map horizontal mouse position to angle
+    if (dragActive && SCENE_TYPE === 'pendulum') {
+        const nx = (e.clientX - rect.left) / rect.width - 0.5; // −0.5..0.5
+        experimentData.angle = THREE.MathUtils.clamp(nx * Math.PI * 1.4, -Math.PI * 0.65, Math.PI * 0.65);
+        experimentData.vel   = 0;
+        return;
+    }
+
+    // Hover detection
+    raycaster.setFromCamera(mouse, camera);
+    const allMeshes = interactiveObjects.flatMap(o => o.meshes);
+    const hits = raycaster.intersectObjects(allMeshes, false);
+
+    if (hits.length > 0) {
+        const hitMesh = hits[0].object;
+        const item    = interactiveObjects.find(o => o.meshes.includes(hitMesh));
+
+        if (item !== currentHover) {
+            if (currentHover) removeHover(currentHover);
+            currentHover = item;
+            if (item) applyHover(item);
+        }
+        canvas.style.cursor = item?.cursor || 'pointer';
+        showTooltip(item?.name || '', item?.hint || 'Click để tương tác', e.clientX, e.clientY);
+    } else {
+        if (currentHover) { removeHover(currentHover); currentHover = null; }
+        canvas.style.cursor = laserMode ? 'crosshair' : 'default';
+        hideTooltip();
+    }
+});
+
+canvas.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    // Pendulum bob drag
+    if (SCENE_TYPE === 'pendulum' && experimentData.bob) {
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObject(experimentData.bob);
+        if (hits.length > 0) {
+            dragActive       = true;
+            isDragging       = true;
+            isRunning        = false;
+            controls.enabled = false;
+            canvas.style.cursor = 'grabbing';
+        }
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
+    if (dragActive) {
+        dragActive       = false;
+        isDragging       = false;
+        controls.enabled = true;
+        canvas.style.cursor = 'default';
+        // Release → start swinging
+        isRunning = true;
+        const bS = document.getElementById('btn-start');
+        bS.innerHTML = '<i class="bi bi-skip-forward-fill"></i> Bước tiếp';
+        bS.classList.add('active');
+        if (stepIndex === 0) showStep(0);
+    }
+});
+
+canvas.addEventListener('click', () => {
+    if (isDragging || dragActive) return;
+    if (!currentHover) return;
+    if (currentHover.onClick) currentHover.onClick();
+});
+
+// ── Laser pointer ─────────────────────────────────────────────────────────────
+let laserMode   = false;
+const laserDot  = new THREE.Mesh(
+    new THREE.SphereGeometry(.04, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff0000, emissiveIntensity: 1.5, roughness: .1 })
+);
+laserDot.visible = false;
+scene.add(laserDot);
+
+// Collect all scene surfaces for laser intersection
+const laserTargets = [];
+scene.children.forEach(c => {
+    if (c.isMesh && c !== laserDot) laserTargets.push(c);
+});
+
+window.toggleLaser = function() {
+    laserMode = !laserMode;
+    laserDot.visible = laserMode;
+    const btn = document.getElementById('btn-laser');
+    if (btn) btn.classList.toggle('laser-active', laserMode);
+    canvas.style.cursor = laserMode ? 'crosshair' : 'default';
+};
+
+// ── Register interactive objects per scene ────────────────────────────────────
+
+if (SCENE_TYPE === 'titration') {
+    // Stopcock → drip rate control
+    registerInteractive({
+        meshes: [experimentData.stopcock],
+        name:   'Van buret (Stopcock)',
+        hint:   'Click để thay đổi tốc độ nhỏ giọt',
+        cursor: 'pointer',
+        onClick() {
+            const rates = ['off','slow','fast'];
+            const idx   = rates.indexOf(experimentData.dripRate);
+            experimentData.dripRate = rates[(idx + 1) % rates.length];
+            // Visual: rotate stopcock
+            experimentData.stopcockMat.color.set(
+                experimentData.dripRate === 'off'  ? 0x94a3b8 :
+                experimentData.dripRate === 'slow' ? 0x4ade80 : 0xef4444
+            );
+            updateDataPanel();
+        }
+    });
+
+    // Flask → swirl
+    registerInteractive({
+        meshes: experimentData.flaskMeshes,
+        name:   'Bình tam giác (Erlenmeyer Flask)',
+        hint:   'Click để khuấy dung dịch',
+        cursor: 'pointer',
+        onClick() {
+            experimentData.swirling  = true;
+            experimentData.swirlTime = 0;
+        }
+    });
+
+    // Buret → show volume
+    registerInteractive({
+        meshes: [experimentData.buretBody],
+        name:   'Buret',
+        hint:   'Click để xem thể tích còn lại',
+        cursor: 'pointer',
+        onClick() { updateDataPanel(); }
+    });
+
+    // Init data panel
+    initDataPanel();
+
+} else if (SCENE_TYPE === 'pendulum') {
+    registerInteractive({
+        meshes:  [experimentData.bob],
+        name:    'Quả nặng',
+        hint:    'Kéo sang trái/phải để đặt góc ban đầu',
+        cursor:  'grab',
+        onClick() { /* drag handled separately */ }
+    });
+
+    initDataPanel();
+
+} else { // cell
+    registerInteractive({
+        meshes: [experimentData.cell],
+        name:   'Màng tế bào (Cell Membrane)',
+        hint:   'Click để xem chi tiết',
+        cursor: 'pointer',
+        onClick() { showCellInfo('membrane', experimentData.cell.position); }
+    });
+
+    registerInteractive({
+        meshes: [experimentData.nucleus],
+        name:   'Nhân tế bào (Nucleus)',
+        hint:   'Click để xem chi tiết',
+        cursor: 'pointer',
+        onClick() { showCellInfo('nucleus', experimentData.nucleus.position); }
+    });
+
+    (experimentData.mito || []).forEach((m, i) => {
+        registerInteractive({
+            meshes: [m.mesh],
+            name:   `Ti thể #${i+1} (Mitochondria)`,
+            hint:   'Click để xem chi tiết',
+            cursor: 'pointer',
+            onClick() { showCellInfo('mitochondria', m.mesh.position); }
+        });
+    });
+
+    (experimentData.vacuoles || []).forEach((v, i) => {
+        registerInteractive({
+            meshes: [v.mesh],
+            name:   `Không bào #${i+1} (Vacuole)`,
+            hint:   'Click để xem chi tiết',
+            cursor: 'pointer',
+            onClick() { showCellInfo('vacuole', v.mesh.position); }
+        });
+    });
+
+    (experimentData.chloroplasts || []).forEach((c, i) => {
+        registerInteractive({
+            meshes: [c.mesh],
+            name:   `Lạp lục #${i+1} (Chloroplast)`,
+            hint:   'Click để xem chi tiết',
+            cursor: 'pointer',
+            onClick() { showCellInfo('chloroplast', c.mesh.position); }
+        });
+    });
+}
+
+// ── Cell info card ────────────────────────────────────────────────────────────
+const CELL_INFO = {
+    membrane: {
+        icon:  '🟢',
+        title: 'Màng tế bào (Cell Membrane)',
+        desc:  'Lớp ngoài cùng của tế bào, có tính bán thấm chọn lọc. Cấu tạo từ lớp phospholipid kép, điều hòa trao đổi chất giữa tế bào và môi trường xung quanh.',
+        fact:  'Chiều dày màng tế bào chỉ khoảng 7-10 nm — mỏng hơn tờ giấy hàng nghìn lần.'
+    },
+    nucleus: {
+        icon:  '🟣',
+        title: 'Nhân tế bào (Nucleus)',
+        desc:  'Trung tâm điều khiển của tế bào. Chứa DNA (vật chất di truyền) quy định mọi đặc tính sinh học và kiểm soát toàn bộ hoạt động sống của tế bào.',
+        fact:  'Nhân tế bào người chứa khoảng 3 tỷ cặp base DNA, nếu kéo dài sẽ đạt ~2 mét.'
+    },
+    mitochondria: {
+        icon:  '🟠',
+        title: 'Ti thể (Mitochondria)',
+        desc:  '"Nhà máy năng lượng" của tế bào. Tổng hợp ATP qua quá trình hô hấp tế bào. Ti thể có màng kép, DNA và ribosome riêng — bằng chứng cho thuyết nội cộng sinh.',
+        fact:  'Một tế bào gan có thể chứa đến 2.000 ti thể, chiếm 20% thể tích tế bào.'
+    },
+    vacuole: {
+        icon:  '🔵',
+        title: 'Không bào (Vacuole)',
+        desc:  'Bào quan chứa dịch tế bào, dự trữ nước, muối khoáng, sắc tố và chất thải. Ở tế bào thực vật trưởng thành, không bào trung tâm chiếm đến 90% thể tích.',
+        fact:  'Không bào giữ áp suất thẩm thấu giúp tế bào thực vật cứng và đứng thẳng (sức trương).'
+    },
+    chloroplast: {
+        icon:  '🟩',
+        title: 'Lạp lục (Chloroplast)',
+        desc:  'Nơi thực hiện quang hợp — chuyển ánh sáng mặt trời thành năng lượng hóa học (glucose). Chứa diệp lục (chlorophyll) hấp thụ ánh sáng đỏ và xanh tím. Chỉ có ở thực vật và tảo.',
+        fact:  '6CO₂ + 6H₂O + ánh sáng → C₆H₁₂O₆ + 6O₂ — phương trình quang hợp tổng quát.'
+    }
+};
+
+let cellInfoTarget = null;
+let cellInfoOpen   = false;
+
+function showCellInfo(key, pos) {
+    const info = CELL_INFO[key];
+    if (!info) return;
+
+    document.getElementById('cic-icon').textContent  = info.icon;
+    document.getElementById('cic-title').textContent = info.title;
+    document.getElementById('cic-desc').textContent  = info.desc;
+    document.getElementById('cic-fact').textContent  = info.fact;
+
+    const card = document.getElementById('cell-info-card');
+    card.style.display = 'block';
+    setTimeout(() => card.classList.add('show'), 10);
+    cellInfoOpen = true;
+
+    // Zoom camera toward the organelle
+    cellInfoTarget = {
+        pos:  new THREE.Vector3(pos.x * .4, pos.y + .2, pos.z * .4 + 3.5),
+        look: new THREE.Vector3(pos.x * .8, pos.y,       pos.z * .8)
+    };
+    animCam = { pos: cellInfoTarget.pos, look: cellInfoTarget.look, t: 0 };
+}
+
+window.closeCellInfo = function() {
+    const card = document.getElementById('cell-info-card');
+    card.classList.remove('show');
+    cellInfoOpen = false;
+    setTimeout(() => { card.style.display = 'none'; }, 220);
+    // Return camera
+    animCam = {
+        pos:  new THREE.Vector3(0, 4, 9),
+        look: new THREE.Vector3(0, 1.8, 0),
+        t: 0
+    };
+};
+
+// ── Data panel ────────────────────────────────────────────────────────────────
+const dataPanel = document.getElementById('data-panel');
+const dpRows    = document.getElementById('dp-rows');
+
+function initDataPanel() {
+    if (SCENE_TYPE !== 'titration' && SCENE_TYPE !== 'pendulum') return;
+    dataPanel.classList.add('show');
+    updateDataPanel();
+}
+
+function updateDataPanel() {
+    if (SCENE_TYPE === 'titration') {
+        const dropped = experimentData.dripCount * 0.05;
+        const vol     = Math.max(0, experimentData.buretVolume - dropped).toFixed(2);
+        const dripR   = experimentData.dripRate;
+        const badge   = `<span class="drip-badge ${dripR}">${
+            dripR === 'off' ? 'Tắt' : dripR === 'slow' ? 'Chậm' : 'Nhanh'
+        }</span>`;
+        dpRows.innerHTML = `
+            <div class="dp-row">
+                <span class="dp-label">Tốc độ nhỏ giọt</span>
+                <span>${badge}</span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Thể tích đã nhỏ</span>
+                <span class="dp-value">${dropped.toFixed(2)}<span class="dp-unit">mL</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Buret còn lại</span>
+                <span class="dp-value">${vol}<span class="dp-unit">mL</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Số giọt</span>
+                <span class="dp-value">${experimentData.dripCount}</span>
+            </div>
+        `;
+    } else if (SCENE_TYPE === 'pendulum') {
+        const L    = experimentData.stringLen;
+        const g    = 9.81;
+        const T    = 2 * Math.PI * Math.sqrt(L / g);
+        const deg  = (experimentData.angle * 180 / Math.PI).toFixed(1);
+        const v    = Math.abs(experimentData.vel * L).toFixed(3);
+        const osc  = experimentData.oscCount ?? 0;
+        dpRows.innerHTML = `
+            <div class="dp-row">
+                <span class="dp-label">Góc lệch (θ)</span>
+                <span class="dp-value">${deg}<span class="dp-unit">°</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Chu kỳ lý thuyết</span>
+                <span class="dp-value">${T.toFixed(3)}<span class="dp-unit">s</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Vận tốc tức thời</span>
+                <span class="dp-value">${v}<span class="dp-unit">m/s</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Số dao động</span>
+                <span class="dp-value">${osc}</span>
+            </div>
+        `;
+    }
+}
+
+// ── Step HUD helpers ──────────────────────────────────────────────────────────
+const stepOverlay  = document.getElementById('step-overlay');
+const stepTitle    = document.getElementById('step-title');
+const stepDesc     = document.getElementById('step-desc');
+const stepNum      = document.getElementById('step-num');
+const stepPct      = document.getElementById('step-pct');
+const stepBarFill  = document.getElementById('step-bar-fill');
+
+function showStep(idx) {
+    const steps = experimentData.steps || [];
+    if (!steps.length) return;
+    idx = Math.min(idx, steps.length - 1);
+    const s   = steps[idx];
+    const pct = Math.round((idx+1) / steps.length * 100);
+    stepOverlay.classList.add('show');
+    stepTitle.textContent   = s.title;
+    stepDesc.textContent    = s.desc;
+    stepNum.textContent     = `Bước ${idx+1}/${steps.length}`;
+    stepPct.textContent     = `${pct}%`;
+    stepBarFill.style.width = `${pct}%`;
+}
+
+// ── Experiment controls ───────────────────────────────────────────────────────
+window.startExperiment = function() {
+    if (isRunning) {
+        stepIndex = Math.min(stepIndex + 1, (experimentData.steps?.length || 1) - 1);
+        showStep(stepIndex);
+        return;
+    }
+    isRunning = true;
+    stepIndex = 0;
+    document.getElementById('btn-start').innerHTML = '<i class="bi bi-skip-forward-fill"></i> Bước tiếp';
+    document.getElementById('btn-start').classList.add('active');
+    showStep(0);
+};
+
+window.resetExperiment = function() {
+    isRunning = false;
+    stepIndex = 0;
+    stepOverlay.classList.remove('show');
+    document.getElementById('btn-start').innerHTML = '<i class="bi bi-play-fill"></i> Bắt đầu';
+    document.getElementById('btn-start').classList.remove('active');
+
+    if (experimentData.type === 'titration') {
+        experimentData.solutionMat.color.set(0x93c5fd);
+        experimentData.solutionMat.opacity = .55;
+        experimentData.dripRate    = 'off';
+        experimentData.dripCount   = 0;
+        experimentData.dripTimer   = 0;
+        experimentData.buretVolume = 50.0;
+        experimentData.stopcockMat.color.set(0x94a3b8);
+        experimentData.dropletMat.opacity = 0;
+        experimentData.swirling   = false;
+        experimentData.swirlAngle = 0;
+        experimentData.flaskMeshes.forEach(m => { m.rotation.y = 0; });
+        updateDataPanel();
+    }
+    if (experimentData.type === 'pendulum') {
+        experimentData.angle    = Math.PI / 6;
+        experimentData.vel      = 0;
+        experimentData.oscCount = 0;
+        updateDataPanel();
+    }
+    if (experimentData.type === 'cell') {
+        closeCellInfo();
+    }
+};
+
+let orbitFree = false;
+window.toggleOrbit = function() {
+    orbitFree = !orbitFree;
+    controls.autoRotate = orbitFree;
+    document.getElementById('btn-orbit').classList.toggle('active', orbitFree);
+};
+
+window.focusCamera = function() {
+    controls.autoRotate = false;
+    orbitFree = false;
+    document.getElementById('btn-orbit').classList.remove('active');
+    const targetPos  = new THREE.Vector3(0, 4, 9);
+    const targetLook = SCENE_TYPE === 'cell'
+        ? new THREE.Vector3(0, 1.8, 0)
+        : new THREE.Vector3(0, 1.2, 0);
+    animCam = { pos: targetPos, look: targetLook, t: 0 };
+};
+
+let animCam = null;
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+let dataPanelTimer = 0;
+
+// ── Render loop ───────────────────────────────────────────────────────────────
+function animate() {
+    requestAnimationFrame(animate);
+    const dt  = clock.getDelta();
+    const now = clock.getElapsedTime();
+
+    controls.update();
+
+    // Smooth camera animation
+    if (animCam) {
+        animCam.t += dt * 2.5;
+        const t    = Math.min(animCam.t, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        camera.position.lerp(animCam.pos,   ease * dt * 5);
+        controls.target.lerp(animCam.look,  ease * dt * 5);
+        if (t >= 1) animCam = null;
+    }
+
+    // ── Laser pointer update ─────────────────────────────────────────────────
+    if (laserMode) {
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(laserTargets, false);
+        if (hits.length > 0) {
+            laserDot.visible = true;
+            laserDot.position.copy(hits[0].point).addScaledVector(hits[0].face.normal, 0.02);
+            laserDot.material.emissiveIntensity = 1.2 + Math.sin(now * 12) * 0.4;
+        } else {
+            laserDot.visible = false;
+        }
+    }
+
+    // ── Titration animation ──────────────────────────────────────────────────
+    if (SCENE_TYPE === 'titration') {
+        const progress = stepIndex / Math.max(1, (experimentData.steps?.length || 1) - 1);
+
+        // Drip logic
+        if (experimentData.dripRate !== 'off') {
+            const interval = experimentData.dripRate === 'slow' ? 1.5 : 0.42;
+            experimentData.dripTimer += dt;
+            if (experimentData.dripTimer >= interval) {
+                experimentData.dripTimer = 0;
+                experimentData.dripCount++;
+                experimentData.buretVolume = Math.max(0, experimentData.buretVolume - 0.05);
+            }
+        }
+
+        // Droplet visual
+        const d  = experimentData.droplet;
+        const dm = experimentData.dropletMat;
+        if (experimentData.dripRate !== 'off') {
+            const phase = (experimentData.dripTimer / (experimentData.dripRate === 'slow' ? 1.5 : 0.42));
+            dm.opacity       = Math.pow(Math.sin(phase * Math.PI), 1.5) * 0.85;
+            d.position.y     = experimentData.dropletY - phase * 0.35;
+            d.visible        = true;
+        } else {
+            dm.opacity   = 0;
+            d.visible    = false;
+        }
+
+        // Solution color shift: clear blue → pink at equivalence
+        if (isRunning && progress > .4) {
+            const pink = Math.min(1, (progress - .4) * 1.8);
+            experimentData.solutionMat.color.setRGB(
+                .58 + pink * .38,
+                .76 - pink * .36,
+                .99 - pink * .6
+            );
+            experimentData.solutionMat.opacity = .55 + pink * .2;
+        }
+
+        // Stopcock hint rotation when running
+        if (isRunning && stepIndex >= 1 && experimentData.dripRate === 'off') {
+            experimentData.stopcock.rotation.y = Math.sin(now * 2) * .15;
+        }
+
+        // Flask swirl animation
+        if (experimentData.swirling) {
+            experimentData.swirlTime  += dt;
+            experimentData.swirlAngle += dt * 8;
+            const t = experimentData.swirlTime / 1.2;
+            const decay = Math.max(0, 1 - t);
+            experimentData.flaskMeshes.forEach(m => {
+                m.rotation.y = Math.sin(experimentData.swirlAngle) * decay * 0.18;
+            });
+            if (t >= 1) {
+                experimentData.swirling = false;
+                experimentData.flaskMeshes.forEach(m => { m.rotation.y = 0; });
+            }
+        }
+
+        // Data panel throttle
+        dataPanelTimer += dt;
+        if (dataPanelTimer > 0.25) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Pendulum animation ───────────────────────────────────────────────────
+    if (SCENE_TYPE === 'pendulum') {
+        if (!dragActive) {
+            const L = experimentData.stringLen;
+            const g = 9.81;
+            if (isRunning) {
+                const acc = -(g / L) * Math.sin(experimentData.angle);
+                experimentData.vel   += acc * dt;
+                experimentData.vel   *= experimentData.damping;
+                experimentData.angle += experimentData.vel * dt;
+
+                // Count oscillations (zero crossings from positive side)
+                const sign = Math.sign(experimentData.angle);
+                if (experimentData.lastSign === 1 && sign === -1) experimentData.oscCount++;
+                experimentData.lastSign = sign;
+            }
+        }
+
+        const a  = experimentData.angle;
+        const L  = experimentData.stringLen;
+        const px = Math.sin(a) * L;
+        const py = -Math.cos(a) * L;
+
+        const bob = experimentData.bob;
+        bob.position.set(px, experimentData.pivotY + py, 0);
+
+        const sm = experimentData.stringMesh;
+        sm.position.set(px / 2, experimentData.pivotY + py / 2, 0);
+        sm.rotation.z = -a;
+
+        // Trail
+        const tp = experimentData.trailPts;
+        const ti = experimentData.trailIdx;
+        tp[ti*3]   = px; tp[ti*3+1] = experimentData.pivotY + py; tp[ti*3+2] = 0;
+        experimentData.trailIdx = (ti + 1) % 20;
+        experimentData.trail.geometry.attributes.position.needsUpdate = true;
+
+        // Bob glow when dragging
+        if (dragActive) {
+            experimentData.bobMat.emissive          = new THREE.Color(0xc9a96e);
+            experimentData.bobMat.emissiveIntensity  = 0.5;
+        } else {
+            experimentData.bobMat.emissiveIntensity = 0;
+        }
+
+        // Data panel
+        dataPanelTimer += dt;
+        if (dataPanelTimer > 0.08) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Cell animation ───────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'cell') {
+        experimentData.cellAngle += dt * .4;
+        const ca = experimentData.cellAngle;
+
+        const s = 1 + Math.sin(now * .6) * .025;
+        experimentData.cell.scale.set(s, s, s);
+
+        (experimentData.mito || []).forEach((m, i) => {
+            const a = ca + m.baseAngle;
+            m.mesh.position.set(
+                Math.sin(a) * m.r,
+                1.8 + Math.sin(a * 1.3 + i) * .15,
+                Math.cos(a) * m.r
+            );
+            m.mesh.rotation.z = a + .4;
+        });
+    }
+
+    // Rim light pulse
+    rimLight.intensity = .6 + Math.sin(now * .8) * .2;
+
+    renderer.render(scene, camera);
+}
+animate();
+
+// ── Hide loading screen ────────────────────────────────────────────────────────
+setTimeout(() => {
+    document.getElementById('loading').classList.add('hide');
+    setTimeout(() => document.getElementById('loading').remove(), 450);
+}, 1600);
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+    const w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+});
+
+// ── Expose helpers to onclick attributes ─────────────────────────────────────
+window.closeCellInfo = window.closeCellInfo || (() => {});
+
+</script>
+
+</body>
+</html>

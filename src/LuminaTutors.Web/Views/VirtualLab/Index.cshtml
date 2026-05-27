@@ -1,0 +1,307 @@
+@using LuminaTutors.Application.DTOs.Lab
+@model List<LabSessionDto>
+@{
+    ViewData["Title"] = "Phòng Lab 3D";
+    var isTeacher     = ViewBag.IsTeacher as bool? ?? false;
+    var currentUserId = ViewBag.CurrentUserId as int? ?? 0;
+
+    string SubjectLabel(string tag) => tag switch
+    {
+        "chemistry" => "Hóa học",
+        "physics"   => "Vật lý",
+        "biology"   => "Sinh học",
+        _           => tag
+    };
+    string SubjectIcon(string tag) => tag switch
+    {
+        "chemistry" => "bi-droplet-fill",
+        "physics"   => "bi-gear-fill",
+        "biology"   => "bi-activity",
+        _           => "bi-flask"
+    };
+    string SubjectColor(string tag) => tag switch
+    {
+        "chemistry" => "var(--lt-success)",
+        "physics"   => "var(--lt-navy)",
+        "biology"   => "var(--lt-gold)",
+        _           => "var(--lt-navy)"
+    };
+    string SceneLabel(string scene) => scene switch
+    {
+        "titration" => "Chuẩn độ axit-bazơ",
+        "pendulum"  => "Con lắc đơn",
+        "cell"      => "Quan sát tế bào",
+        _           => scene
+    };
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-badge-vr-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Phòng Lab 3D ảo
+        </h1>
+        <p class="lt-page-subtitle">Thực hành thí nghiệm khoa học trong môi trường 3D tương tác</p>
+    </div>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4">
+        <i class="bi bi-check-circle-fill"></i> @ok
+    </div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i> @err
+    </div>
+}
+
+<div class="row g-4">
+
+    <!-- ── LEFT: Active sessions ────────────────────────────────────────────── -->
+    <div class="col-lg-8">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-collection-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Phòng đang hoạt động
+                </h3>
+                <span class="lt-badge lt-badge--navy">@Model.Count phòng</span>
+            </div>
+            <div class="lt-card__body">
+
+                @if (!Model.Any())
+                {
+                    <div class="lt-empty lt-empty--sm">
+                        <i class="bi bi-badge-vr" style="font-size:3rem;color:var(--lt-navy-100)"></i>
+                        <div class="lt-empty__title">Chưa có phòng lab nào đang hoạt động</div>
+                        <div class="lt-empty__sub">
+                            @if (isTeacher) { <span>Tạo phòng mới để bắt đầu thí nghiệm.</span> }
+                            else { <span>Nhập mã phòng từ giáo viên để tham gia.</span> }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var s in Model)
+                        {
+                            <div class="col-md-6">
+                                <div class="lt-card lt-card--hover" style="border:1px solid var(--lt-border);margin:0">
+                                    <div class="lt-card__body" style="padding:1rem">
+                                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                                            <div style="width:40px;height:40px;border-radius:10px;
+                                                        background:@SubjectColor(s.SubjectTag)22;
+                                                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                                <i class="bi @SubjectIcon(s.SubjectTag)"
+                                                   style="font-size:1.2rem;color:@SubjectColor(s.SubjectTag)"></i>
+                                            </div>
+                                            <div style="min-width:0">
+                                                <div style="font-weight:600;font-size:.9rem;
+                                                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                                                    @s.SessionName
+                                                </div>
+                                                <div style="font-size:.78rem;color:var(--lt-text-muted)">
+                                                    @SubjectLabel(s.SubjectTag) — @SceneLabel(s.SceneType)
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex;align-items:center;justify-content:space-between;
+                                                    margin-bottom:10px">
+                                            <div style="display:flex;align-items:center;gap:6px">
+                                                <span class="lt-pulse-dot lt-pulse-dot--success"></span>
+                                                <span style="font-size:.78rem;color:var(--lt-success)">Đang mở</span>
+                                            </div>
+                                            <code style="background:var(--lt-navy-900);color:var(--lt-gold);
+                                                         font-size:.85rem;padding:2px 8px;border-radius:6px;
+                                                         letter-spacing:.1em;font-weight:700">
+                                                @s.SessionCode
+                                            </code>
+                                        </div>
+
+                                        <div style="font-size:.78rem;color:var(--lt-text-muted);margin-bottom:12px">
+                                            <i class="bi bi-person-fill"></i> @s.TeacherName &nbsp;
+                                            <i class="bi bi-clock"></i> @s.CreatedAt.ToString("HH:mm")
+                                        </div>
+
+                                        <a asp-action="Lab" asp-route-id="@s.Id"
+                                           class="lt-btn lt-btn--primary lt-btn--sm"
+                                           style="width:100%;justify-content:center">
+                                            <i class="bi bi-play-circle-fill"></i> Vào phòng
+                                        </a>
+
+                                        @if (isTeacher && s.TeacherId == currentUserId)
+                                        {
+                                            <form asp-action="Close" asp-route-id="@s.Id" method="post" style="margin-top:8px">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                        style="width:100%;justify-content:center;border-color:var(--lt-danger);color:var(--lt-danger)"
+                                                        onclick="return confirm('Đóng phòng lab?')">
+                                                    <i class="bi bi-stop-circle"></i> Đóng phòng
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── RIGHT: Create / Join ──────────────────────────────────────────────── -->
+    <div class="col-lg-4">
+
+        <!-- Join by code -->
+        <div class="lt-card lt-mb-4">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-door-open-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Tham gia phòng
+                </h3>
+            </div>
+            <div class="lt-card__body">
+                @if (Model.Any())
+                {
+                    <!-- Active rooms available — let user pick directly (no manual code entry) -->
+                    <p style="font-size:.8rem;color:var(--lt-text-muted);margin-bottom:12px">
+                        <i class="bi bi-info-circle"></i>
+                        Chọn phòng đang hoạt động bên dưới để tham gia ngay.
+                    </p>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                        @foreach (var s in Model)
+                        {
+                            <form asp-action="Join" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="SessionCode" value="@s.SessionCode"/>
+                                <button type="submit"
+                                        class="lt-btn lt-btn--outline"
+                                        style="width:100%;justify-content:space-between;padding:.6rem 1rem">
+                                    <span style="font-weight:600;font-size:.85rem">@s.SessionName</span>
+                                    <code style="background:var(--lt-navy-900);color:var(--lt-gold);
+                                                 font-size:.8rem;padding:2px 8px;border-radius:6px;
+                                                 letter-spacing:.1em;font-weight:700">
+                                        @s.SessionCode
+                                    </code>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                    <hr style="margin:14px 0;border-color:var(--lt-border)"/>
+                    <p style="font-size:.78rem;color:var(--lt-text-muted);margin-bottom:8px">
+                        Hoặc nhập mã thủ công:
+                    </p>
+                    <form asp-action="Join" method="post" style="display:flex;gap:8px">
+                        @Html.AntiForgeryToken()
+                        <input name="SessionCode" class="lt-input"
+                               placeholder="AB3K7Z" maxlength="6"
+                               style="text-transform:uppercase;letter-spacing:.15em;font-weight:700;font-size:1rem;flex:1"/>
+                        <button type="submit" class="lt-btn lt-btn--primary">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <!-- No active rooms — show manual code input -->
+                    <form asp-action="Join" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="lt-form-group lt-mb-3">
+                            <label class="lt-label">Mã phòng (6 ký tự)</label>
+                            <input name="SessionCode" class="lt-input"
+                                   placeholder="VD: AB3K7Z" maxlength="6"
+                                   style="text-transform:uppercase;letter-spacing:.15em;font-weight:700;font-size:1.1rem"
+                                   required/>
+                            <p class="lt-form-hint">Nhận mã từ giáo viên hướng dẫn thí nghiệm</p>
+                        </div>
+                        <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                            <i class="bi bi-box-arrow-in-right"></i> Vào phòng
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <!-- Create (teacher only) -->
+        @if (isTeacher)
+        {
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-plus-circle-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Mở phòng mới
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="lt-form-group lt-mb-3">
+                            <label class="lt-label">Tên buổi thí nghiệm <span class="lt-text-danger">*</span></label>
+                            <input name="SessionName" class="lt-input"
+                                   placeholder="VD: Thí nghiệm chuẩn độ HCl-NaOH"
+                                   maxlength="100" required/>
+                        </div>
+                        <div class="lt-form-group lt-mb-3">
+                            <label class="lt-label">Môn học <span class="lt-text-danger">*</span></label>
+                            <select name="SubjectTag" class="lt-select" required>
+                                <option value="">— Chọn môn —</option>
+                                <option value="chemistry">⚗️ Hóa học</option>
+                                <option value="physics">⚙️ Vật lý</option>
+                                <option value="biology">🧬 Sinh học</option>
+                            </select>
+                        </div>
+                        <div class="lt-form-group lt-mb-3">
+                            <label class="lt-label">Loại thí nghiệm <span class="lt-text-danger">*</span></label>
+                            <select name="SceneType" class="lt-select" required id="sceneTypeSelect">
+                                <option value="">— Chọn thí nghiệm —</option>
+                                <optgroup label="Hóa học">
+                                    <option value="titration">Chuẩn độ axit-bazơ</option>
+                                </optgroup>
+                                <optgroup label="Vật lý">
+                                    <option value="pendulum">Con lắc đơn</option>
+                                </optgroup>
+                                <optgroup label="Sinh học">
+                                    <option value="cell">Quan sát tế bào</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="lt-form-group lt-mb-4">
+                            <label class="lt-label">Số học sinh tối đa</label>
+                            <input name="MaxParticipants" type="number" class="lt-input"
+                                   value="40" min="1" max="100"/>
+                        </div>
+                        <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                            <i class="bi bi-badge-vr-fill"></i> Mở phòng lab 3D
+                        </button>
+                        <p class="lt-form-hint" style="text-align:center;margin-top:.6rem">
+                            <i class="bi bi-magic"></i>
+                            Hệ thống sẽ tự tạo mã phòng 6 ký tự sau khi mở
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick-start guide -->
+            <div class="lt-card lt-mt-4" style="background:oklch(96% 0.008 240)">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-weight:600;font-size:.85rem;margin-bottom:.5rem;color:var(--lt-navy)">
+                        <i class="bi bi-info-circle-fill"></i> Hướng dẫn nhanh
+                    </div>
+                    <ol style="font-size:.8rem;color:var(--lt-text-muted);padding-left:1.2rem;margin:0">
+                        <li class="lt-mb-1">Chọn môn học và loại thí nghiệm</li>
+                        <li class="lt-mb-1">Nhấn "Mở phòng" → hệ thống tạo mã 6 ký tự</li>
+                        <li class="lt-mb-1">Chia sẻ mã cho học sinh qua bảng/chat</li>
+                        <li>Học sinh nhập mã để vào phòng 3D</li>
+                    </ol>
+                </div>
+            </div>
+        }
+
+    </div>
+</div>

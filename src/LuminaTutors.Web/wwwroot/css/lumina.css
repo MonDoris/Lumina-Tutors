@@ -97,7 +97,7 @@ code, .lt-code {
    ════════════════════════════════════════════════════════════════ */
 .lt-sidebar {
   width: var(--sidebar-width);
-  min-height: 100vh;
+  height: 100vh;
   background: var(--lt-navy);
   display: flex;
   flex-direction: column;
@@ -155,7 +155,9 @@ code, .lt-code {
 .lt-nav {
   flex: 1;
   padding: 10px 0;
+  min-height: 0; /* allow flex child to shrink and scroll */
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,.08) transparent;
 }
@@ -1694,6 +1696,7 @@ code, .lt-code {
 
 .lt-pulse-dot--warning { background: var(--lt-warning); }
 .lt-pulse-dot--danger  { background: var(--lt-danger); }
+.lt-pulse-dot--success { background: var(--lt-success); }
 
 /* ════════════════════════════════════════════════════════════════
    NOTIFICATION LIST (Dashboard/Notifications)

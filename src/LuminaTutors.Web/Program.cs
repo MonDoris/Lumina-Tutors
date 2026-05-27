@@ -52,6 +52,7 @@ try
         options.AddPolicy("FinanceAccess",   p => p.RequireRole("ACCOUNTANT", "ADMIN"));
         options.AddPolicy("SupervisorAccess",p => p.RequireRole("SUPERVISOR", "ADMIN"));
         options.AddPolicy("AnyAuthenticated",p => p.RequireAuthenticatedUser());
+        options.AddPolicy("LabAccess",       p => p.RequireRole("TEACHER", "ADMIN", "STUDENT", "PARENT", "SUPERVISOR", "ACCOUNTANT"));
     });
 
     // ── Session ───────────────────────────────────────────────────────────────

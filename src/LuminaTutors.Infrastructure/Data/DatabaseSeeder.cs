@@ -7,109 +7,117 @@ using Microsoft.Extensions.Logging;
 namespace LuminaTutors.Infrastructure.Data;
 
 /// <summary>
-/// Seeds the database with one demo School + one user per role for development / testing.
-/// Call this from Program.cs in Development:
-///     await DatabaseSeeder.SeedAsync(app.Services);
+/// Applies pending EF migrations, cleans up leftover demo accounts,
+/// and guarantees a default School + Admin user exist for first-run.
 /// </summary>
 public static class DatabaseSeeder
 {
-    // ── Demo credentials ──────────────────────────────────────────────────────
-    //
-    //  Role        | Email                          | Password
-    //  ------------|-------------------------------|------------
-    //  ADMIN       | admin@lumina.edu.vn            | Admin@123
-    //  TEACHER     | teacher@lumina.edu.vn          | Teacher@123
-    //  ACCOUNTANT  | accountant@lumina.edu.vn       | Account@123
-    //  SUPERVISOR  | supervisor@lumina.edu.vn       | Super@123
-    //  STUDENT     | student@lumina.edu.vn          | Student@123
-    //  PARENT      | parent@lumina.edu.vn           | Parent@123
-    //
-    // ─────────────────────────────────────────────────────────────────────────
+    // Non-admin demo emails created by the old seeder — safe to remove.
+    private static readonly string[] DemoEmails =
+    [
+        "teacher@lumina.edu.vn",
+        "student@lumina.edu.vn",
+        "parent@lumina.edu.vn",
+        "supervisor@lumina.edu.vn",
+        "accountant@lumina.edu.vn",
+    ];
+
+    private const string AdminEmail    = "admin@lumina.edu.vn";
+    private const string AdminPassword = "Admin@123";
 
     public static async Task SeedAsync(IServiceProvider services)
     {
         using var scope  = services.CreateScope();
         var db           = scope.ServiceProvider.GetRequiredService<LuminaTutorsDbContext>();
-        var hasher       = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
         var logger       = scope.ServiceProvider.GetRequiredService<ILogger<LuminaTutorsDbContext>>();
+        var hasher       = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
-        // Apply pending migrations first
+        // ── 1. Apply pending migrations ───────────────────────────────────────
         await db.Database.MigrateAsync();
 
-        // ── 1. Seed School ────────────────────────────────────────────────────
-        int schoolId;
-        var existingSchool = await db.Schools.FirstOrDefaultAsync(s => s.SchoolCode == "LT-DEMO-001");
+        // ── 2. Remove non-admin demo accounts from old seeder ─────────────────
+        var demoUsers = await db.Users
+            .Where(u => DemoEmails.Contains(u.Email))
+            .ToListAsync();
 
-        if (existingSchool is null)
+        if (demoUsers.Count > 0)
         {
-            var school = new School
+            var demoIds = demoUsers.Select(u => u.Id).ToList();
+
+            var teacherProfiles    = await db.TeacherProfiles   .Where(p => demoIds.Contains(p.UserId)).ToListAsync();
+            var studentProfiles    = await db.StudentProfiles   .Where(p => demoIds.Contains(p.UserId)).ToListAsync();
+            var parentProfiles     = await db.ParentProfiles    .Where(p => demoIds.Contains(p.UserId)).ToListAsync();
+            var supervisorProfiles = await db.SupervisorProfiles.Where(p => demoIds.Contains(p.UserId)).ToListAsync();
+            var accountantProfiles = await db.AccountantProfiles.Where(p => demoIds.Contains(p.UserId)).ToListAsync();
+            var refreshTokens      = await db.RefreshTokens     .Where(r => demoIds.Contains(r.UserId)).ToListAsync();
+            var inviteLinks        = await db.InviteLinks       .Where(l => demoIds.Contains(l.CreatedByUserId)).ToListAsync();
+
+            db.TeacherProfiles   .RemoveRange(teacherProfiles);
+            db.StudentProfiles   .RemoveRange(studentProfiles);
+            db.ParentProfiles    .RemoveRange(parentProfiles);
+            db.SupervisorProfiles.RemoveRange(supervisorProfiles);
+            db.AccountantProfiles.RemoveRange(accountantProfiles);
+            db.RefreshTokens     .RemoveRange(refreshTokens);
+            db.InviteLinks       .RemoveRange(inviteLinks);
+            db.Users             .RemoveRange(demoUsers);
+
+            await db.SaveChangesAsync();
+
+            logger.LogInformation(
+                "🧹 Removed {Count} demo account(s): {Emails}",
+                demoUsers.Count,
+                string.Join(", ", demoUsers.Select(u => u.Email)));
+        }
+
+        // ── 3. Ensure default School exists ───────────────────────────────────
+        var school = await db.Schools.FirstOrDefaultAsync();
+        if (school is null)
+        {
+            school = new School
             {
-                SchoolCode  = "LT-DEMO-001",
-                SchoolName  = "Trung tâm Lumina Tutors (Demo)",
-                Address     = "123 Nguyễn Văn Linh, Quận 7, TP. Hồ Chí Minh",
-                Province    = "TP. Hồ Chí Minh",
-                PhoneNumber = "028 1234 5678",
-                Email       = "info@lumina.edu.vn",
-                IsActive    = true,
-                CreatedAt   = DateTime.UtcNow,
-                UpdatedAt   = DateTime.UtcNow
+                SchoolCode = "LUMINA001",
+                SchoolName = "Lumina Tutors",
+                Address    = "Việt Nam",
+                IsActive   = true
             };
             db.Schools.Add(school);
             await db.SaveChangesAsync();
-            schoolId = school.Id;
-            logger.LogInformation("✅ Seeded demo school (Id={SchoolId})", schoolId);
+            logger.LogInformation("🏫 Created default school '{Name}' (Id={Id})", school.SchoolName, school.Id);
+        }
+
+        // ── 4. Ensure Admin account exists ────────────────────────────────────
+        var adminExists = await db.Users
+            .AnyAsync(u => u.Email == AdminEmail && u.SchoolId == school.Id);
+
+        if (!adminExists)
+        {
+            var adminRole = await db.Roles.FirstOrDefaultAsync(r => r.RoleCode == "ADMIN");
+            if (adminRole is null)
+            {
+                logger.LogError("ADMIN role not found — cannot seed admin user.");
+                return;
+            }
+
+            var admin = new User
+            {
+                SchoolId        = school.Id,
+                RoleId          = adminRole.Id,
+                Email           = AdminEmail,
+                FullName        = "Quản trị viên",
+                IsActive        = true,
+                IsEmailVerified = true,
+                PasswordHash    = string.Empty
+            };
+            admin.PasswordHash = hasher.HashPassword(admin, AdminPassword);
+
+            db.Users.Add(admin);
+            await db.SaveChangesAsync();
+
+            logger.LogInformation("👤 Created admin account: {Email} / {Password}", AdminEmail, AdminPassword);
         }
         else
         {
-            schoolId = existingSchool.Id;
-            logger.LogInformation("ℹ️  Demo school already exists (Id={SchoolId})", schoolId);
+            logger.LogInformation("ℹ️  Admin account already exists — skipping seed.");
         }
-
-        // ── 2. Seed one user per role ─────────────────────────────────────────
-        var roleMap = new Dictionary<string, (int RoleId, string Email, string FullName, string Password)>
-        {
-            ["ADMIN"]      = (1, "admin@lumina.edu.vn",       "Nguyễn Quản Trị",    "Admin@123"),
-            ["TEACHER"]    = (2, "teacher@lumina.edu.vn",     "Trần Giáo Viên",     "Teacher@123"),
-            ["STUDENT"]    = (3, "student@lumina.edu.vn",     "Lê Học Sinh",        "Student@123"),
-            ["PARENT"]     = (4, "parent@lumina.edu.vn",      "Phạm Phụ Huynh",    "Parent@123"),
-            ["SUPERVISOR"] = (5, "supervisor@lumina.edu.vn",  "Hoàng Giám Thị",    "Super@123"),
-            ["ACCOUNTANT"] = (6, "accountant@lumina.edu.vn",  "Vũ Kế Toán",        "Account@123"),
-        };
-
-        foreach (var (roleCode, (roleId, email, fullName, password)) in roleMap)
-        {
-            var normalizedEmail = email.Trim().ToLowerInvariant();
-            var exists = await db.Users.AnyAsync(
-                u => u.Email == normalizedEmail && u.SchoolId == schoolId);
-
-            if (exists)
-            {
-                logger.LogInformation("ℹ️  User [{Role}] {Email} already exists — skipping", roleCode, email);
-                continue;
-            }
-
-            // Compute hash using the real ASP.NET Identity hasher
-            var dummy = new User();
-            var hash  = hasher.HashPassword(dummy, password);
-
-            var user = new User
-            {
-                SchoolId        = schoolId,
-                RoleId          = roleId,
-                Email           = normalizedEmail,
-                PasswordHash    = hash,
-                FullName        = fullName,
-                IsActive        = true,
-                IsEmailVerified = true,
-                CreatedAt       = DateTime.UtcNow,
-                UpdatedAt       = DateTime.UtcNow
-            };
-
-            db.Users.Add(user);
-            logger.LogInformation("✅ Seeded [{Role}] {Email}", roleCode, email);
-        }
-
-        await db.SaveChangesAsync();
-        logger.LogInformation("🌱 DatabaseSeeder completed.");
     }
 }

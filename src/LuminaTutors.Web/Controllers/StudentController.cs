@@ -72,8 +72,8 @@ public sealed class StudentController : Controller
             return View(model);
         }
 
-        TempData["Success"] = $"Đã thêm học sinh {result.Data!.FullName} thành công.";
-        return RedirectToAction(nameof(Details), new { id = result.Data.UserId });
+        TempData["Success"] = $"Đã thêm học sinh {result.Data!.FullName} thành công. Mã: {result.Data.StudentCode}";
+        return RedirectToAction(nameof(Index));
     }
 
     // ─── GET /Student/Edit/5 ──────────────────────────────────────────────────

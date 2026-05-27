@@ -1,0 +1,174 @@
+@using LuminaTutors.Web.Models
+@model AcademicConfigViewModel
+@{
+    ViewData["Title"] = "Cấu hình học vụ";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Cấu hình học vụ</h1>
+        <p class="lt-page-subtitle">Tạo và quản lý năm học, khối lớp (theo từng trường).</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title"><i class="bi bi-calendar3"></i> Năm học</h3>
+            </div>
+            <div class="lt-card__body">
+                <form asp-action="CreateAcademicYear" method="post" class="lt-mb-4">
+                    @Html.AntiForgeryToken()
+
+                    <div class="lt-form-group">
+                        <label class="lt-label">Tên năm học</label>
+                        <input name="YearName" class="lt-input" value="@Model.NewAcademicYear.YearName" required maxlength="20" placeholder="VD: 2026-2027" />
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label">Ngày bắt đầu</label>
+                                <input name="StartDate" type="date" class="lt-input" value="@Model.NewAcademicYear.StartDate.ToString("yyyy-MM-dd")" required />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label">Ngày kết thúc</label>
+                                <input name="EndDate" type="date" class="lt-input" value="@Model.NewAcademicYear.EndDate.ToString("yyyy-MM-dd")" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lt-form-group">
+                        <label class="lt-label" style="display:flex;align-items:center;gap:10px">
+                            <input name="IsActive" type="checkbox" value="true" />
+                            Đặt làm năm học hiện tại
+                        </label>
+                        <span class="lt-form-hint">Nếu bật, các năm học khác sẽ tự chuyển sang không hoạt động.</span>
+                    </div>
+
+                    <div class="lt-flex-between">
+                        <div></div>
+                        <button type="submit" class="lt-btn lt-btn--primary">
+                            <i class="bi bi-plus-lg"></i> Tạo năm học
+                        </button>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                        <tr>
+                            <th>Tên</th>
+                            <th>Thời gian</th>
+                            <th class="text-end">Trạng thái</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if (Model.AcademicYears.Any())
+                        {
+                            foreach (var ay in Model.AcademicYears)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@ay.YearName</td>
+                                    <td>@ay.StartDate.ToString("dd/MM/yyyy") → @ay.EndDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-end">
+                                        @if (ay.IsActive)
+                                        {
+                                            <span class="badge text-bg-success">Hiện tại</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">Không</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-muted">Chưa có năm học nào.</td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title"><i class="bi bi-layers"></i> Khối lớp</h3>
+            </div>
+            <div class="lt-card__body">
+                <form asp-action="CreateGradeLevel" method="post" class="lt-mb-4">
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-3">
+                        <div class="col-4">
+                            <div class="lt-form-group">
+                                <label class="lt-label">Số khối</label>
+                                <input name="GradeNumber" type="number" class="lt-input" min="1" max="12" value="@Model.NewGradeLevel.GradeNumber" required />
+                            </div>
+                        </div>
+                        <div class="col-8">
+                            <div class="lt-form-group">
+                                <label class="lt-label">Tên khối</label>
+                                <input name="GradeName" class="lt-input" value="@Model.NewGradeLevel.GradeName" required maxlength="20" placeholder="VD: Khối 10" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lt-form-group">
+                        <label class="lt-label">Bậc học</label>
+                        <select name="EducationLevel" class="lt-select" required>
+                            <option value="TieuHoc" selected="@(Model.NewGradeLevel.EducationLevel == "TieuHoc" ? "selected" : null)">Tiểu học</option>
+                            <option value="Thcs" selected="@(Model.NewGradeLevel.EducationLevel == "Thcs" ? "selected" : null)">THCS</option>
+                            <option value="Thpt" selected="@(Model.NewGradeLevel.EducationLevel == "Thpt" ? "selected" : null)">THPT</option>
+                        </select>
+                    </div>
+
+                    <div class="lt-flex-between">
+                        <div></div>
+                        <button type="submit" class="lt-btn lt-btn--primary">
+                            <i class="bi bi-plus-lg"></i> Tạo khối lớp
+                        </button>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                        <tr>
+                            <th>Khối</th>
+                            <th>Tên</th>
+                            <th class="text-end">Bậc học</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @if (Model.GradeLevels.Any())
+                        {
+                            foreach (var gl in Model.GradeLevels)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@gl.GradeNumber</td>
+                                    <td>@gl.GradeName</td>
+                                    <td class="text-end"><span class="badge text-bg-light">@gl.EducationLevel</span></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-muted">Chưa có khối lớp nào.</td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

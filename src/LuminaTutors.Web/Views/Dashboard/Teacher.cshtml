@@ -6,6 +6,15 @@
     var hour      = DateTime.Now.Hour;
     var greeting  = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
     var today     = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
+
+    // Gender-aware title: "Thầy" (Male) | "Cô" (Female/Other/null)
+    var gender    = ViewBag.UserGender as string;
+    var title     = gender == "Male" ? "Thầy" : "Cô";
+
+    // Real data from controller
+    var totalStudents = (int)(ViewBag.TotalStudents ?? 0);
+    var totalClasses  = (int)(ViewBag.TotalClasses  ?? 0);
+    var activeYear    = (string?)(ViewBag.ActiveYearName ?? "");
 }
 
 <!-- Banner -->
@@ -16,7 +25,7 @@
             <i class="bi bi-person-video3"></i>
             GIÁO VIÊN
         </div>
-        <div class="dash-banner__title">@greeting, thầy/cô @firstName 👋</div>
+        <div class="dash-banner__title">@greeting, @title @firstName 👋</div>
         <div class="dash-banner__sub">
             <i class="bi bi-calendar3"></i> @today
             <span style="opacity:.4">·</span>
@@ -33,33 +42,36 @@
     <a href="/Class" class="dstat">
         <div class="dstat__icon dstat__icon--green"><i class="bi bi-building"></i></div>
         <div class="dstat__body">
-            <div class="dstat__value">5</div>
-            <div class="dstat__label">Lớp đang phụ trách</div>
-            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Học kỳ 2</div>
+            <div class="dstat__value">@totalClasses</div>
+            <div class="dstat__label">Lớp trong trường</div>
+            <div class="dstat__trend dstat__trend--neutral">
+                <i class="bi bi-dash"></i>
+                @(string.IsNullOrEmpty(activeYear) ? "Chưa có năm học" : activeYear)
+            </div>
         </div>
     </a>
     <a href="/Student" class="dstat">
         <div class="dstat__icon dstat__icon--blue"><i class="bi bi-people-fill"></i></div>
         <div class="dstat__body">
-            <div class="dstat__value">142</div>
+            <div class="dstat__value">@totalStudents</div>
             <div class="dstat__label">Tổng học sinh</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +8 học sinh mới</div>
+            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Toàn trường</div>
         </div>
     </a>
     <a href="/Attendance" class="dstat">
         <div class="dstat__icon dstat__icon--amber"><i class="bi bi-qr-code-scan"></i></div>
         <div class="dstat__body">
-            <div class="dstat__value">94.2%</div>
+            <div class="dstat__value">—</div>
             <div class="dstat__label">Tỷ lệ chuyên cần TB</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +1.3% tuần này</div>
+            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Chưa có dữ liệu</div>
         </div>
     </a>
     <a href="/Grading" class="dstat">
         <div class="dstat__icon dstat__icon--purple"><i class="bi bi-journal-text"></i></div>
         <div class="dstat__body">
-            <div class="dstat__value">8</div>
+            <div class="dstat__value">—</div>
             <div class="dstat__label">Cột điểm chưa nhập</div>
-            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> Cần cập nhật</div>
+            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Chưa có dữ liệu</div>
         </div>
     </a>
 </div>
@@ -73,33 +85,10 @@
             <a href="/Class" class="dcard__action">Xem tất cả</a>
         </div>
         <div class="dcard__body">
-            <div class="sched-list">
-                @{
-                    var lessons = new[] {
-                        new { Time = "07:30", Name = "Toán 10A",    Room = "Phòng 101", Students = 28, Active = true  },
-                        new { Time = "09:15", Name = "Toán 11B",    Room = "Phòng 203", Students = 31, Active = false },
-                        new { Time = "13:00", Name = "Toán NC 12A", Room = "Phòng 305", Students = 24, Active = false },
-                        new { Time = "14:45", Name = "Toán 10C",    Room = "Phòng 102", Students = 29, Active = false },
-                    };
-                }
-                @foreach (var l in lessons)
-                {
-                    <div class="sched-item @(l.Active ? "active" : "")">
-                        <div class="sched-time">@l.Time</div>
-                        <div class="sched-dot" style="background:@(l.Active ? "#059669" : "#cbd5e1")"></div>
-                        <div style="flex:1">
-                            <div class="sched-name">@l.Name</div>
-                            <div class="sched-room"><i class="bi bi-geo-alt"></i> @l.Room</div>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:6px">
-                            <span style="font-size:.75rem;color:#94a3b8"><i class="bi bi-people"></i> @l.Students</span>
-                            @if (l.Active)
-                            {
-                                <a href="/Attendance" style="font-size:.72rem;font-weight:700;color:#059669;background:#dcfce7;padding:3px 10px;border-radius:99px;text-decoration:none">Điểm danh</a>
-                            }
-                        </div>
-                    </div>
-                }
+            <div class="lt-empty lt-empty--sm" style="padding:2rem 0">
+                <i class="bi bi-calendar2-x" style="font-size:2.2rem;color:#cbd5e1"></i>
+                <div class="lt-empty__title" style="font-size:.9rem;margin-top:.5rem">Chưa có lịch dạy hôm nay</div>
+                <div class="lt-empty__sub" style="font-size:.8rem">Lịch dạy sẽ hiển thị khi được phân công tiết dạy</div>
             </div>
         </div>
     </div>
@@ -109,42 +98,11 @@
             <div class="dcard__title"><i class="bi bi-graph-up-arrow" style="color:#059669"></i> Chuyên cần</div>
         </div>
         <div class="dcard__body">
-            <div class="att-ring-wrap" style="margin-bottom:16px">
-                <div class="att-ring">
-                    <svg viewBox="0 0 100 100" width="100" height="100">
-                        <circle class="att-ring__track" cx="50" cy="50" r="40"/>
-                        <circle class="att-ring__fill" cx="50" cy="50" r="40"
-                                stroke="#059669"
-                                stroke-dasharray="236.6 251.2"
-                                stroke-dashoffset="0"/>
-                    </svg>
-                    <div class="att-ring__label">
-                        <div class="att-ring__pct">94%</div>
-                        <div class="att-ring__sub">trung bình</div>
-                    </div>
-                </div>
-                <div class="att-ring-title">Tỷ lệ chuyên cần</div>
+            <div class="lt-empty lt-empty--sm" style="padding:2rem 0">
+                <i class="bi bi-bar-chart" style="font-size:2.2rem;color:#cbd5e1"></i>
+                <div class="lt-empty__title" style="font-size:.9rem;margin-top:.5rem">Chưa có dữ liệu</div>
+                <div class="lt-empty__sub" style="font-size:.8rem">Dữ liệu chuyên cần sẽ hiển thị sau khi điểm danh</div>
             </div>
-            @{
-                var attByClass = new[] {
-                    new { Cls = "10A", Pct = 97, Color = "#059669" },
-                    new { Cls = "11B", Pct = 93, Color = "#059669" },
-                    new { Cls = "12A", Pct = 89, Color = "#d97706" },
-                    new { Cls = "10C", Pct = 96, Color = "#059669" },
-                };
-            }
-            @foreach (var c in attByClass)
-            {
-                <div style="margin-bottom:10px">
-                    <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px">
-                        <span style="font-weight:600;color:#374151">Lớp @c.Cls</span>
-                        <span style="font-weight:700;color:@c.Color">@c.Pct%</span>
-                    </div>
-                    <div class="dash-progress">
-                        <div class="dash-progress__bar" style="width:@c.Pct%;background:@c.Color"></div>
-                    </div>
-                </div>
-            }
         </div>
     </div>
 
@@ -159,49 +117,11 @@
             <a href="/Grading" class="dcard__action">Cập nhật điểm</a>
         </div>
         <div class="dcard__body">
-            <table class="grade-table">
-                <thead>
-                    <tr>
-                        <th>Lớp</th>
-                        <th>TX1</th>
-                        <th>TX2</th>
-                        <th>Giữa kỳ</th>
-                        <th>Cuối kỳ</th>
-                        <th>ĐTBm</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @{
-                        var grades = new[] {
-                            new { Cls = "10A", TX1 = "✓", TX2 = "✓", GK = "✓",     CK = "–",     DTB = "–",    Badge = "" },
-                            new { Cls = "11B", TX1 = "✓", TX2 = "✓", GK = "✓",     CK = "✓",     DTB = "7.8",  Badge = "b" },
-                            new { Cls = "12A", TX1 = "✓", TX2 = "–", GK = "✓",     CK = "✓",     DTB = "–",    Badge = "" },
-                            new { Cls = "10C", TX1 = "✓", TX2 = "✓", GK = "–",     CK = "–",     DTB = "–",    Badge = "" },
-                            new { Cls = "11D", TX1 = "✓", TX2 = "✓", GK = "✓",     CK = "✓",     DTB = "8.2",  Badge = "a" },
-                        };
-                    }
-                    @foreach (var g in grades)
-                    {
-                        <tr>
-                            <td><strong>@g.Cls</strong></td>
-                            <td style="color:@(g.TX1 == "✓" ? "#059669" : "#dc2626")">@g.TX1</td>
-                            <td style="color:@(g.TX2 == "✓" ? "#059669" : "#dc2626")">@g.TX2</td>
-                            <td style="color:@(g.GK  == "✓" ? "#059669" : "#dc2626")">@g.GK</td>
-                            <td style="color:@(g.CK  == "✓" ? "#059669" : "#dc2626")">@g.CK</td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(g.Badge))
-                                {
-                                    <span class="grade-badge grade-badge--@g.Badge">@g.DTB</span>
-                                }
-                                else
-                                {
-                                    <span style="color:#94a3b8;font-size:.8rem">Chưa có</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="lt-empty lt-empty--sm" style="padding:2rem 0">
+                <i class="bi bi-journal-x" style="font-size:2.2rem;color:#cbd5e1"></i>
+                <div class="lt-empty__title" style="font-size:.9rem;margin-top:.5rem">Chưa có dữ liệu điểm</div>
+                <div class="lt-empty__sub" style="font-size:.8rem">Dữ liệu sẽ hiển thị khi có điểm số được nhập vào hệ thống</div>
+            </div>
         </div>
     </div>
 

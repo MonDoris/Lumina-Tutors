@@ -1,7 +1,9 @@
-@model List<LuminaTutors.Application.DTOs.Class.ClassSummaryDto>
+@using LuminaTutors.Application.DTOs.Class
+@model List<ClassSummaryDto>
 @{
     ViewData["Title"] = "Lớp học";
-    var academicYearId = ViewBag.AcademicYearId as int? ?? 1;
+    var academicYearId = (int)(ViewBag.AcademicYearId ?? 0);
+    var years = ViewBag.AcademicYears as List<AcademicYearSelectDto> ?? new List<AcademicYearSelectDto>();
 }
 
 <div class="lt-page-header">
@@ -23,21 +25,33 @@
 <!-- Filter bar -->
 <div class="lt-card lt-mb-4">
     <div class="lt-card__body" style="padding:14px 24px">
-        <form method="get">
-            <div class="lt-filter-bar">
-                <div class="lt-filter-group">
-                    <label class="lt-label">Năm học (ID)</label>
-                    <input type="number" name="academicYearId" value="@academicYearId"
-                           class="lt-input" style="width:120px"
-                           placeholder="VD: 1" data-testid="input-academic-year"/>
-                </div>
-                <div class="lt-filter-group--auto" style="align-self:flex-end">
-                    <button type="submit" class="lt-btn lt-btn--primary">
-                        <i class="bi bi-funnel"></i> Lọc
-                    </button>
-                </div>
+        @if (!years.Any())
+        {
+            <div style="display:flex;align-items:center;gap:10px;color:#92400e;background:#fef3c7;border-radius:10px;padding:10px 16px;font-size:.875rem">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Chưa có năm học nào trong hệ thống. Vui lòng tạo năm học trước khi tạo lớp.
             </div>
-        </form>
+        }
+        else
+        {
+            <form method="get">
+                <div class="lt-filter-bar">
+                    <div class="lt-filter-group">
+                        <label class="lt-label">Năm học</label>
+                        <select name="academicYearId" class="lt-select" style="min-width:180px"
+                                onchange="this.form.submit()" data-testid="input-academic-year">
+                            @foreach (var ay in years)
+                            {
+                                <option value="@ay.AcademicYearId"
+                                        selected="@(academicYearId == ay.AcademicYearId ? "selected" : null)">
+                                    @ay.YearName @(ay.IsActive ? "✓" : "")
+                                </option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </form>
+        }
     </div>
 </div>
 

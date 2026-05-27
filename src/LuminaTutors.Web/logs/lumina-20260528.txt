@@ -1,0 +1,915 @@
+2026-05-28 00:00:36.810 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[IsActive] = CAST(1 AS bit)
+2026-05-28 00:00:36.851 +07:00 [INF] HTTP GET /VirtualLab responded 200 in 63.9807 ms
+2026-05-28 00:01:43.623 +07:00 [INF] HTTP GET /Grading responded 200 in 14.5931 ms
+2026-05-28 00:01:46.998 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [StudentProfiles] AS [s]
+WHERE [s].[SchoolId] = @__schoolId_0
+2026-05-28 00:01:47.014 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [StudentProfiles] AS [s]
+INNER JOIN [Users] AS [u] ON [s].[UserId] = [u].[UserId]
+WHERE [s].[SchoolId] = @__schoolId_0
+ORDER BY [u].[FullName]
+OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+2026-05-28 00:01:47.148 +07:00 [ERR] HTTP GET /Student responded 500 in 174.4046 ms
+AutoMapper.AutoMapperMappingException: Error mapping types.
+
+Mapping types:
+List`1 -> List`1
+System.Collections.Generic.List`1[[LuminaTutors.Domain.Entities.Profiles.StudentProfile, LuminaTutors.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] -> System.Collections.Generic.List`1[[LuminaTutors.Application.DTOs.Student.StudentSummaryDto, LuminaTutors.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]
+ ---> AutoMapper.AutoMapperMappingException: Missing type map configuration or unsupported mapping.
+
+Mapping types:
+StudentProfile -> StudentSummaryDto
+LuminaTutors.Domain.Entities.Profiles.StudentProfile -> LuminaTutors.Application.DTOs.Student.StudentSummaryDto
+   at lambda_method1290(Closure, StudentProfile, StudentSummaryDto, ResolutionContext)
+   at lambda_method1289(Closure, Object, List`1, ResolutionContext)
+   --- End of inner exception stack trace ---
+   at lambda_method1289(Closure, Object, List`1, ResolutionContext)
+   at LuminaTutors.Application.Services.StudentService.SearchAsync(Int32 schoolId, StudentSearchRequest request, CancellationToken ct) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Application\Services\StudentService.cs:line 67
+   at LuminaTutors.Web.Controllers.StudentController.Index(StudentSearchRequest search, Int32 page) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Web\Controllers\StudentController.cs:line 34
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-05-28 00:01:47.197 +07:00 [ERR] An unhandled exception has occurred while executing the request.
+AutoMapper.AutoMapperMappingException: Error mapping types.
+
+Mapping types:
+List`1 -> List`1
+System.Collections.Generic.List`1[[LuminaTutors.Domain.Entities.Profiles.StudentProfile, LuminaTutors.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] -> System.Collections.Generic.List`1[[LuminaTutors.Application.DTOs.Student.StudentSummaryDto, LuminaTutors.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]
+ ---> AutoMapper.AutoMapperMappingException: Missing type map configuration or unsupported mapping.
+
+Mapping types:
+StudentProfile -> StudentSummaryDto
+LuminaTutors.Domain.Entities.Profiles.StudentProfile -> LuminaTutors.Application.DTOs.Student.StudentSummaryDto
+   at lambda_method1290(Closure, StudentProfile, StudentSummaryDto, ResolutionContext)
+   at lambda_method1289(Closure, Object, List`1, ResolutionContext)
+   --- End of inner exception stack trace ---
+   at lambda_method1289(Closure, Object, List`1, ResolutionContext)
+   at LuminaTutors.Application.Services.StudentService.SearchAsync(Int32 schoolId, StudentSearchRequest request, CancellationToken ct) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Application\Services\StudentService.cs:line 67
+   at LuminaTutors.Web.Controllers.StudentController.Index(StudentSearchRequest search, Int32 page) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Web\Controllers\StudentController.cs:line 34
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2026-05-28 00:02:17.311 +07:00 [INF] HTTP GET /Grading responded 200 in 7.2404 ms
+2026-05-28 00:02:18.357 +07:00 [INF] HTTP GET /Attendance responded 200 in 19.6142 ms
+2026-05-28 00:02:19.144 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [StudentProfiles] AS [s]
+WHERE [s].[SchoolId] = @__schoolId_0
+2026-05-28 00:02:19.152 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [StudentProfiles] AS [s]
+INNER JOIN [Users] AS [u] ON [s].[UserId] = [u].[UserId]
+WHERE [s].[SchoolId] = @__schoolId_0
+ORDER BY [u].[FullName]
+OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+2026-05-28 00:02:19.221 +07:00 [ERR] HTTP GET /Student responded 500 in 84.5764 ms
+AutoMapper.AutoMapperMappingException: Error mapping types.
+
+Mapping types:
+List`1 -> List`1
+System.Collections.Generic.List`1[[LuminaTutors.Domain.Entities.Profiles.StudentProfile, LuminaTutors.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] -> System.Collections.Generic.List`1[[LuminaTutors.Application.DTOs.Student.StudentSummaryDto, LuminaTutors.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]
+ ---> AutoMapper.AutoMapperMappingException: Missing type map configuration or unsupported mapping.
+
+Mapping types:
+StudentProfile -> StudentSummaryDto
+LuminaTutors.Domain.Entities.Profiles.StudentProfile -> LuminaTutors.Application.DTOs.Student.StudentSummaryDto
+   at lambda_method1290(Closure, StudentProfile, StudentSummaryDto, ResolutionContext)
+   at lambda_method1289(Closure, Object, List`1, ResolutionContext)
+   --- End of inner exception stack trace ---
+   at lambda_method1289(Closure, Object, List`1, ResolutionContext)
+   at LuminaTutors.Application.Services.StudentService.SearchAsync(Int32 schoolId, StudentSearchRequest request, CancellationToken ct) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Application\Services\StudentService.cs:line 67
+   at LuminaTutors.Web.Controllers.StudentController.Index(StudentSearchRequest search, Int32 page) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Web\Controllers\StudentController.cs:line 34
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-05-28 00:02:19.234 +07:00 [ERR] An unhandled exception has occurred while executing the request.
+AutoMapper.AutoMapperMappingException: Error mapping types.
+
+Mapping types:
+List`1 -> List`1
+System.Collections.Generic.List`1[[LuminaTutors.Domain.Entities.Profiles.StudentProfile, LuminaTutors.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] -> System.Collections.Generic.List`1[[LuminaTutors.Application.DTOs.Student.StudentSummaryDto, LuminaTutors.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]
+ ---> AutoMapper.AutoMapperMappingException: Missing type map configuration or unsupported mapping.
+
+Mapping types:
+StudentProfile -> StudentSummaryDto
+LuminaTutors.Domain.Entities.Profiles.StudentProfile -> LuminaTutors.Application.DTOs.Student.StudentSummaryDto
+   at lambda_method1290(Closure, StudentProfile, StudentSummaryDto, ResolutionContext)
+   at lambda_method1289(Closure, Object, List`1, ResolutionContext)
+   --- End of inner exception stack trace ---
+   at lambda_method1289(Closure, Object, List`1, ResolutionContext)
+   at LuminaTutors.Application.Services.StudentService.SearchAsync(Int32 schoolId, StudentSearchRequest request, CancellationToken ct) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Application\Services\StudentService.cs:line 67
+   at LuminaTutors.Web.Controllers.StudentController.Index(StudentSearchRequest search, Int32 page) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Web\Controllers\StudentController.cs:line 34
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2026-05-28 00:02:20.292 +07:00 [INF] HTTP GET /Attendance responded 200 in 5.7685 ms
+2026-05-28 00:02:21.331 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__schoolId_0
+2026-05-28 00:02:21.345 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [g].[GradeLevelId], [g].[EducationLevel], [g].[GradeName], [g].[GradeNumber], [g].[SchoolId], [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+INNER JOIN [GradeLevels] AS [g] ON [c].[GradeLevelId] = [g].[GradeLevelId]
+INNER JOIN [AcademicYears] AS [a] ON [c].[AcademicYearId] = [a].[AcademicYearId]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [g].[GradeLevelId], [a].[AcademicYearId], [u].[UserId]
+2026-05-28 00:02:21.381 +07:00 [INF] HTTP GET /Class responded 200 in 62.0450 ms
+2026-05-28 00:02:24.420 +07:00 [WRN] Compiling a query which loads related collections for more than one collection navigation, either via 'Include' or through projection, but no 'QuerySplittingBehavior' has been configured. By default, Entity Framework will use 'QuerySplittingBehavior.SingleQuery', which can potentially result in slow query performance. See https://go.microsoft.com/fwlink/?linkid=2134277 for more information. To identify the query that's triggering this warning call 'ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))'.
+2026-05-28 00:02:24.469 +07:00 [INF] Executed DbCommand (33ms) [Parameters=[@__classId_0='1', @__schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [g].[GradeLevelId], [g].[EducationLevel], [g].[GradeName], [g].[GradeNumber], [g].[SchoolId], [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [t].[AssignmentId], [t].[ClassId], [t].[CreatedAt], [t].[PeriodsPerWeek], [t].[SchoolId], [t].[SemesterId], [t].[SubjectId], [t].[TeacherId], [t].[UpdatedAt], [t].[SubjectId0], [t].[GradeLevelId], [t].[Has3DLab], [t].[IsActive], [t].[SchoolId0], [t].[SubjectCategory], [t].[SubjectCode], [t].[SubjectName], [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt0], [t].[Email], [t].[FullName], [t].[IsActive0], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId1], [t].[UpdatedAt0], [t].[ScheduleId], [t].[CreatedAt1], [t].[DayOfWeek], [t].[EndTime], [t].[IsActive1], [t].[PeriodEnd], [t].[PeriodStart], [t].[RoomOverride], [t].[SchoolId2], [t].[SemesterId0], [t].[StartTime], [t].[SubjectAssignmentId], [t].[UpdatedAt1], [t0].[EnrollmentId], [t0].[ClassId], [t0].[CreatedAt], [t0].[EnrolledDate], [t0].[Status], [t0].[StudentId], [t0].[TransferNote], [t0].[UpdatedAt], [t0].[UserId], [t0].[AvatarUrl], [t0].[CreatedAt0], [t0].[Email], [t0].[FullName], [t0].[IsActive], [t0].[IsEmailVerified], [t0].[LastLoginAt], [t0].[PasswordHash], [t0].[PhoneNumber], [t0].[RoleId], [t0].[SchoolId], [t0].[UpdatedAt0], [t0].[ProfileId], [t0].[AdmissionDate], [t0].[AdmissionType], [t0].[DateOfBirth], [t0].[EthnicGroup], [t0].[Gender], [t0].[PermanentAddress], [t0].[PlaceOfBirth], [t0].[SchoolId0], [t0].[StudentCode], [t0].[UserId0]
+FROM [Classes] AS [c]
+INNER JOIN [GradeLevels] AS [g] ON [c].[GradeLevelId] = [g].[GradeLevelId]
+INNER JOIN [AcademicYears] AS [a] ON [c].[AcademicYearId] = [a].[AcademicYearId]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN (
+    SELECT [s].[AssignmentId], [s].[ClassId], [s].[CreatedAt], [s].[PeriodsPerWeek], [s].[SchoolId], [s].[SemesterId], [s].[SubjectId], [s].[TeacherId], [s].[UpdatedAt], [s0].[SubjectId] AS [SubjectId0], [s0].[GradeLevelId], [s0].[Has3DLab], [s0].[IsActive], [s0].[SchoolId] AS [SchoolId0], [s0].[SubjectCategory], [s0].[SubjectCode], [s0].[SubjectName], [u0].[UserId], [u0].[AvatarUrl], [u0].[CreatedAt] AS [CreatedAt0], [u0].[Email], [u0].[FullName], [u0].[IsActive] AS [IsActive0], [u0].[IsEmailVerified], [u0].[LastLoginAt], [u0].[PasswordHash], [u0].[PhoneNumber], [u0].[RoleId], [u0].[SchoolId] AS [SchoolId1], [u0].[UpdatedAt] AS [UpdatedAt0], [s1].[ScheduleId], [s1].[CreatedAt] AS [CreatedAt1], [s1].[DayOfWeek], [s1].[EndTime], [s1].[IsActive] AS [IsActive1], [s1].[PeriodEnd], [s1].[PeriodStart], [s1].[RoomOverride], [s1].[SchoolId] AS [SchoolId2], [s1].[SemesterId] AS [SemesterId0], [s1].[StartTime], [s1].[SubjectAssignmentId], [s1].[UpdatedAt] AS [UpdatedAt1]
+    FROM [SubjectAssignments] AS [s]
+    INNER JOIN [Subjects] AS [s0] ON [s].[SubjectId] = [s0].[SubjectId]
+    INNER JOIN [Users] AS [u0] ON [s].[TeacherId] = [u0].[UserId]
+    LEFT JOIN [Schedules] AS [s1] ON [s].[AssignmentId] = [s1].[SubjectAssignmentId]
+) AS [t] ON [c].[ClassId] = [t].[ClassId]
+LEFT JOIN (
+    SELECT [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt], [u1].[UserId], [u1].[AvatarUrl], [u1].[CreatedAt] AS [CreatedAt0], [u1].[Email], [u1].[FullName], [u1].[IsActive], [u1].[IsEmailVerified], [u1].[LastLoginAt], [u1].[PasswordHash], [u1].[PhoneNumber], [u1].[RoleId], [u1].[SchoolId], [u1].[UpdatedAt] AS [UpdatedAt0], [s2].[ProfileId], [s2].[AdmissionDate], [s2].[AdmissionType], [s2].[DateOfBirth], [s2].[EthnicGroup], [s2].[Gender], [s2].[PermanentAddress], [s2].[PlaceOfBirth], [s2].[SchoolId] AS [SchoolId0], [s2].[StudentCode], [s2].[UserId] AS [UserId0]
+    FROM [ClassEnrollments] AS [c0]
+    INNER JOIN [Users] AS [u1] ON [c0].[StudentId] = [u1].[UserId]
+    LEFT JOIN [StudentProfiles] AS [s2] ON [u1].[UserId] = [s2].[UserId]
+    WHERE [c0].[Status] = N'Active'
+) AS [t0] ON [c].[ClassId] = [t0].[ClassId]
+WHERE [c].[ClassId] = @__classId_0 AND [c].[SchoolId] = @__schoolId_1
+ORDER BY [c].[ClassId], [g].[GradeLevelId], [a].[AcademicYearId], [u].[UserId], [t].[AssignmentId], [t].[SubjectId0], [t].[UserId], [t].[ScheduleId], [t0].[EnrollmentId], [t0].[UserId]
+2026-05-28 00:02:24.489 +07:00 [INF] HTTP GET /Class/Details/1 responded 200 in 122.5773 ms
+2026-05-28 00:02:32.752 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__userId_0='9'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-28 00:02:32.760 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='STUDENT' (Size = 30)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+2026-05-28 00:02:32.766 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='STUDENT' (Size = 30), @__p_2='0', @__p_3='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt], [t].[Email], [t].[FullName], [t].[IsActive], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId], [t].[UpdatedAt], [t].[RoleId0], [t].[Description], [t].[RoleCode], [t].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t0].[ProfileId], [t0].[BankAccountNumber], [t0].[BankName], [t0].[ContractType], [t0].[DateOfBirth], [t0].[Gender], [t0].[HireDate], [t0].[Qualification], [t0].[SchoolId], [t0].[SpecializationSubject], [t0].[TaxCode], [t0].[TeacherCode], [t0].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM (
+    SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId] AS [RoleId0], [r].[Description], [r].[RoleCode], [r].[RoleName]
+    FROM [Users] AS [u]
+    INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+    WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+    ORDER BY [u].[CreatedAt] DESC
+    OFFSET @__p_2 ROWS FETCH NEXT @__p_3 ROWS ONLY
+) AS [t]
+LEFT JOIN [StudentProfiles] AS [s] ON [t].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t0] ON [t].[UserId] = [t0].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [t].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [t].[UserId] = [p].[UserId]
+ORDER BY [t].[CreatedAt] DESC
+2026-05-28 00:02:32.771 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='TEACHER' (Size = 30)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+2026-05-28 00:02:32.775 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='TEACHER' (Size = 30), @__p_2='0', @__p_3='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt], [t].[Email], [t].[FullName], [t].[IsActive], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId], [t].[UpdatedAt], [t].[RoleId0], [t].[Description], [t].[RoleCode], [t].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t0].[ProfileId], [t0].[BankAccountNumber], [t0].[BankName], [t0].[ContractType], [t0].[DateOfBirth], [t0].[Gender], [t0].[HireDate], [t0].[Qualification], [t0].[SchoolId], [t0].[SpecializationSubject], [t0].[TaxCode], [t0].[TeacherCode], [t0].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM (
+    SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId] AS [RoleId0], [r].[Description], [r].[RoleCode], [r].[RoleName]
+    FROM [Users] AS [u]
+    INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+    WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+    ORDER BY [u].[CreatedAt] DESC
+    OFFSET @__p_2 ROWS FETCH NEXT @__p_3 ROWS ONLY
+) AS [t]
+LEFT JOIN [StudentProfiles] AS [s] ON [t].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t0] ON [t].[UserId] = [t0].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [t].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [t].[UserId] = [p].[UserId]
+ORDER BY [t].[CreatedAt] DESC
+2026-05-28 00:02:32.781 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__schoolId_0
+2026-05-28 00:02:32.784 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [g].[GradeLevelId], [g].[EducationLevel], [g].[GradeName], [g].[GradeNumber], [g].[SchoolId], [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+INNER JOIN [GradeLevels] AS [g] ON [c].[GradeLevelId] = [g].[GradeLevelId]
+INNER JOIN [AcademicYears] AS [a] ON [c].[AcademicYearId] = [a].[AcademicYearId]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [g].[GradeLevelId], [a].[AcademicYearId], [u].[UserId]
+2026-05-28 00:02:32.790 +07:00 [INF] HTTP GET /Dashboard responded 200 in 43.8653 ms
+2026-05-28 00:02:35.251 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__userId_0='9'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0
+2026-05-28 00:02:35.268 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__userId_0='9', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId], [n0].[NotificationId], [n0].[Body], [n0].[Channel], [n0].[CreatedAt], [n0].[IsScheduled], [n0].[NotificationType], [n0].[ScheduledAt], [n0].[SchoolId], [n0].[SentAt], [n0].[SentByUserId], [n0].[TargetAudience], [n0].[TargetClassId], [n0].[TargetGradeLevelId], [n0].[Title], [n0].[UpdatedAt]
+FROM [NotificationRecipients] AS [n]
+INNER JOIN [Notifications] AS [n0] ON [n].[NotificationId] = [n0].[NotificationId]
+WHERE [n].[UserId] = @__userId_0
+ORDER BY [n0].[SentAt] DESC
+OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+2026-05-28 00:02:35.279 +07:00 [ERR] HTTP GET /Dashboard/Notifications responded 500 in 44.0000 ms
+System.InvalidOperationException: The model item passed into the ViewDataDictionary is of type 'System.Collections.Generic.List`1[LuminaTutors.Application.DTOs.Communication.NotificationDto]', but this ViewDataDictionary instance requires a model item of type 'LuminaTutors.Domain.Common.PagedResult`1[LuminaTutors.Application.DTOs.Communication.NotificationDto]'.
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary.EnsureCompatible(Object value)
+   at lambda_method1523(Closure, ViewDataDictionary)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorPagePropertyActivator.Activate(Object page, ViewContext context)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageCoreAsync(IRazorPage page, ViewContext context)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageAsync(IRazorPage page, ViewContext context, Boolean invokeViewStarts)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderAsync(ViewContext context)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ActionContext actionContext, IView view, ViewDataDictionary viewData, ITempDataDictionary tempData, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)
+   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-05-28 00:02:35.287 +07:00 [ERR] An unhandled exception has occurred while executing the request.
+System.InvalidOperationException: The model item passed into the ViewDataDictionary is of type 'System.Collections.Generic.List`1[LuminaTutors.Application.DTOs.Communication.NotificationDto]', but this ViewDataDictionary instance requires a model item of type 'LuminaTutors.Domain.Common.PagedResult`1[LuminaTutors.Application.DTOs.Communication.NotificationDto]'.
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary.EnsureCompatible(Object value)
+   at lambda_method1523(Closure, ViewDataDictionary)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorPagePropertyActivator.Activate(Object page, ViewContext context)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageCoreAsync(IRazorPage page, ViewContext context)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageAsync(IRazorPage page, ViewContext context, Boolean invokeViewStarts)
+   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderAsync(ViewContext context)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ActionContext actionContext, IView view, ViewDataDictionary viewData, ITempDataDictionary tempData, String contentType, Nullable`1 statusCode)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)
+   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResultFilterAsync>g__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2026-05-28 00:10:52.991 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-28 00:10:54.437 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-28 00:10:54.478 +07:00 [INF] Executed DbCommand (22ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-28 00:10:54.484 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-28 00:10:54.487 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-28 00:10:54.503 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-28 00:10:54.702 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [Users] AS [u]
+WHERE [u].[Email] IN (N'teacher@lumina.edu.vn', N'student@lumina.edu.vn', N'parent@lumina.edu.vn', N'supervisor@lumina.edu.vn', N'accountant@lumina.edu.vn')
+2026-05-28 00:10:54.716 +07:00 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-28 00:10:54.726 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+2026-05-28 00:10:54.856 +07:00 [INF] Executed DbCommand (25ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = N'admin@lumina.edu.vn' AND [u].[SchoolId] = @__school_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-28 00:10:54.863 +07:00 [INF] ℹ️  Admin account already exists — skipping seed.
+2026-05-28 00:10:54.983 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-28 00:10:55.801 +07:00 [INF] HTTP GET / responded 200 in 187.2582 ms
+2026-05-28 00:10:56.574 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 5.7430 ms
+2026-05-28 00:10:58.160 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-28 00:10:58.179 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 239.5022 ms
+2026-05-28 00:10:59.982 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 135.5730 ms
+2026-05-28 00:11:00.038 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 4.1197 ms
+2026-05-28 00:11:00.038 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 4.1058 ms
+2026-05-28 00:11:00.038 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 2.5984 ms
+2026-05-28 00:11:08.717 +07:00 [INF] Executed DbCommand (10ms) [Parameters=[@__ToLowerInvariant_0='matthew@lumina.edu.vn' (Size = 150)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+INNER JOIN [Schools] AS [s] ON [u].[SchoolId] = [s].[SchoolId]
+WHERE [u].[Email] = @__ToLowerInvariant_0
+2026-05-28 00:11:08.856 +07:00 [INF] HTTP POST /Auth/Login responded 200 in 294.4668 ms
+2026-05-28 00:11:08.878 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 2.0457 ms
+2026-05-28 00:11:08.883 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.4745 ms
+2026-05-28 00:11:08.883 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.2714 ms
+2026-05-28 00:11:12.460 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 4.2469 ms
+2026-05-28 00:11:13.116 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 5.6793 ms
+2026-05-28 00:11:13.152 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 3.3851 ms
+2026-05-28 00:11:13.153 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 0.3514 ms
+2026-05-28 00:11:13.153 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 0.2751 ms
+2026-05-28 00:11:24.669 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__ToLowerInvariant_0='matthew@lumina.edu.vn' (Size = 150)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+INNER JOIN [Schools] AS [s] ON [u].[SchoolId] = [s].[SchoolId]
+WHERE [u].[Email] = @__ToLowerInvariant_0
+2026-05-28 00:11:24.806 +07:00 [INF] User 9 logged in at "2026-05-27T17:11:24.8066122Z"
+2026-05-28 00:11:24.815 +07:00 [INF] User 9 (matthew@lumina.edu.vn) signed in
+2026-05-28 00:11:24.819 +07:00 [INF] HTTP POST /Auth/Login responded 302 in 228.5480 ms
+2026-05-28 00:11:24.859 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__userId_0='9'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-28 00:11:24.905 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='STUDENT' (Size = 30)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+2026-05-28 00:11:24.967 +07:00 [INF] Executed DbCommand (12ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='STUDENT' (Size = 30), @__p_2='0', @__p_3='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt], [t].[Email], [t].[FullName], [t].[IsActive], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId], [t].[UpdatedAt], [t].[RoleId0], [t].[Description], [t].[RoleCode], [t].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t0].[ProfileId], [t0].[BankAccountNumber], [t0].[BankName], [t0].[ContractType], [t0].[DateOfBirth], [t0].[Gender], [t0].[HireDate], [t0].[Qualification], [t0].[SchoolId], [t0].[SpecializationSubject], [t0].[TaxCode], [t0].[TeacherCode], [t0].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM (
+    SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId] AS [RoleId0], [r].[Description], [r].[RoleCode], [r].[RoleName]
+    FROM [Users] AS [u]
+    INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+    WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+    ORDER BY [u].[CreatedAt] DESC
+    OFFSET @__p_2 ROWS FETCH NEXT @__p_3 ROWS ONLY
+) AS [t]
+LEFT JOIN [StudentProfiles] AS [s] ON [t].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t0] ON [t].[UserId] = [t0].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [t].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [t].[UserId] = [p].[UserId]
+ORDER BY [t].[CreatedAt] DESC
+2026-05-28 00:11:24.985 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='TEACHER' (Size = 30)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+2026-05-28 00:11:24.994 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='TEACHER' (Size = 30), @__p_2='0', @__p_3='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt], [t].[Email], [t].[FullName], [t].[IsActive], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId], [t].[UpdatedAt], [t].[RoleId0], [t].[Description], [t].[RoleCode], [t].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t0].[ProfileId], [t0].[BankAccountNumber], [t0].[BankName], [t0].[ContractType], [t0].[DateOfBirth], [t0].[Gender], [t0].[HireDate], [t0].[Qualification], [t0].[SchoolId], [t0].[SpecializationSubject], [t0].[TaxCode], [t0].[TeacherCode], [t0].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM (
+    SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId] AS [RoleId0], [r].[Description], [r].[RoleCode], [r].[RoleName]
+    FROM [Users] AS [u]
+    INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+    WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+    ORDER BY [u].[CreatedAt] DESC
+    OFFSET @__p_2 ROWS FETCH NEXT @__p_3 ROWS ONLY
+) AS [t]
+LEFT JOIN [StudentProfiles] AS [s] ON [t].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t0] ON [t].[UserId] = [t0].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [t].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [t].[UserId] = [p].[UserId]
+ORDER BY [t].[CreatedAt] DESC
+2026-05-28 00:11:25.018 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__schoolId_0
+2026-05-28 00:11:25.087 +07:00 [INF] Executed DbCommand (15ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [g].[GradeLevelId], [g].[EducationLevel], [g].[GradeName], [g].[GradeNumber], [g].[SchoolId], [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+INNER JOIN [GradeLevels] AS [g] ON [c].[GradeLevelId] = [g].[GradeLevelId]
+INNER JOIN [AcademicYears] AS [a] ON [c].[AcademicYearId] = [a].[AcademicYearId]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [g].[GradeLevelId], [a].[AcademicYearId], [u].[UserId]
+2026-05-28 00:11:25.128 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[@__userId_0='9', @__schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t].[ProfileId], [t].[BankAccountNumber], [t].[BankName], [t].[ContractType], [t].[DateOfBirth], [t].[Gender], [t].[HireDate], [t].[Qualification], [t].[SchoolId], [t].[SpecializationSubject], [t].[TaxCode], [t].[TeacherCode], [t].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+LEFT JOIN [StudentProfiles] AS [s] ON [u].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t] ON [u].[UserId] = [t].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [u].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [u].[UserId] = [p].[UserId]
+WHERE [u].[UserId] = @__userId_0 AND [u].[SchoolId] = @__schoolId_1
+2026-05-28 00:11:25.215 +07:00 [INF] HTTP GET /Dashboard responded 200 in 387.7910 ms
+2026-05-28 00:11:49.268 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__schoolId_0
+2026-05-28 00:11:49.278 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [g].[GradeLevelId], [g].[EducationLevel], [g].[GradeName], [g].[GradeNumber], [g].[SchoolId], [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+INNER JOIN [GradeLevels] AS [g] ON [c].[GradeLevelId] = [g].[GradeLevelId]
+INNER JOIN [AcademicYears] AS [a] ON [c].[AcademicYearId] = [a].[AcademicYearId]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [g].[GradeLevelId], [a].[AcademicYearId], [u].[UserId]
+2026-05-28 00:11:49.299 +07:00 [INF] HTTP GET /Class responded 200 in 53.4312 ms
+2026-05-28 00:11:51.409 +07:00 [INF] HTTP GET /Attendance responded 200 in 17.3730 ms
+2026-05-28 00:11:53.768 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[IsActive] = CAST(1 AS bit)
+2026-05-28 00:11:53.800 +07:00 [INF] HTTP GET /VirtualLab responded 200 in 54.7705 ms
+2026-05-28 00:12:34.565 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__userId_0='9'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0
+2026-05-28 00:12:34.589 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[@__userId_0='9', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[RecipientId], [t].[DeliveredAt], [t].[DeliveryStatus], [t].[IsRead], [t].[NotificationId], [t].[ReadAt], [t].[UserId], [t].[NotificationId0], [t].[Body], [t].[Channel], [t].[CreatedAt], [t].[IsScheduled], [t].[NotificationType], [t].[ScheduledAt], [t].[SchoolId], [t].[SentAt], [t].[SentByUserId], [t].[TargetAudience], [t].[TargetClassId], [t].[TargetGradeLevelId], [t].[Title], [t].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM (
+    SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId], [n0].[NotificationId] AS [NotificationId0], [n0].[Body], [n0].[Channel], [n0].[CreatedAt], [n0].[IsScheduled], [n0].[NotificationType], [n0].[ScheduledAt], [n0].[SchoolId], [n0].[SentAt], [n0].[SentByUserId], [n0].[TargetAudience], [n0].[TargetClassId], [n0].[TargetGradeLevelId], [n0].[Title], [n0].[UpdatedAt]
+    FROM [NotificationRecipients] AS [n]
+    INNER JOIN [Notifications] AS [n0] ON [n].[NotificationId] = [n0].[NotificationId]
+    WHERE [n].[UserId] = @__userId_0
+    ORDER BY [n0].[SentAt] DESC
+    OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+) AS [t]
+LEFT JOIN [Users] AS [u] ON [t].[SentByUserId] = [u].[UserId]
+ORDER BY [t].[SentAt] DESC
+2026-05-28 00:12:34.602 +07:00 [INF] HTTP GET /Dashboard/Notifications responded 200 in 58.5380 ms
+2026-05-28 00:12:36.082 +07:00 [INF] HTTP GET /Attendance responded 200 in 9.0287 ms
+2026-05-28 00:12:36.573 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [StudentProfiles] AS [s]
+WHERE [s].[SchoolId] = @__schoolId_0
+2026-05-28 00:12:36.599 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1', @__p_1='0', @__p_2='20'], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [StudentProfiles] AS [s]
+INNER JOIN [Users] AS [u] ON [s].[UserId] = [u].[UserId]
+WHERE [s].[SchoolId] = @__schoolId_0
+ORDER BY [u].[FullName]
+OFFSET @__p_1 ROWS FETCH NEXT @__p_2 ROWS ONLY
+2026-05-28 00:12:36.716 +07:00 [ERR] HTTP GET /Student responded 500 in 163.4094 ms
+AutoMapper.AutoMapperMappingException: Error mapping types.
+
+Mapping types:
+List`1 -> List`1
+System.Collections.Generic.List`1[[LuminaTutors.Domain.Entities.Profiles.StudentProfile, LuminaTutors.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] -> System.Collections.Generic.List`1[[LuminaTutors.Application.DTOs.Student.StudentSummaryDto, LuminaTutors.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]
+ ---> System.ArgumentException: LuminaTutors.Application.DTOs.Student.StudentSummaryDto needs to have a constructor with 0 args or only optional args. Validate your configuration for details. (Parameter 'type')
+   at lambda_method814(Closure, Object, List`1, ResolutionContext)
+   --- End of inner exception stack trace ---
+   at lambda_method814(Closure, Object, List`1, ResolutionContext)
+   at LuminaTutors.Application.Services.StudentService.SearchAsync(Int32 schoolId, StudentSearchRequest request, CancellationToken ct) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Application\Services\StudentService.cs:line 67
+   at LuminaTutors.Web.Controllers.StudentController.Index(StudentSearchRequest search, Int32 page) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Web\Controllers\StudentController.cs:line 34
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+2026-05-28 00:12:36.756 +07:00 [ERR] An unhandled exception has occurred while executing the request.
+AutoMapper.AutoMapperMappingException: Error mapping types.
+
+Mapping types:
+List`1 -> List`1
+System.Collections.Generic.List`1[[LuminaTutors.Domain.Entities.Profiles.StudentProfile, LuminaTutors.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] -> System.Collections.Generic.List`1[[LuminaTutors.Application.DTOs.Student.StudentSummaryDto, LuminaTutors.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]
+ ---> System.ArgumentException: LuminaTutors.Application.DTOs.Student.StudentSummaryDto needs to have a constructor with 0 args or only optional args. Validate your configuration for details. (Parameter 'type')
+   at lambda_method814(Closure, Object, List`1, ResolutionContext)
+   --- End of inner exception stack trace ---
+   at lambda_method814(Closure, Object, List`1, ResolutionContext)
+   at LuminaTutors.Application.Services.StudentService.SearchAsync(Int32 schoolId, StudentSearchRequest request, CancellationToken ct) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Application\Services\StudentService.cs:line 67
+   at LuminaTutors.Web.Controllers.StudentController.Index(StudentSearchRequest search, Int32 page) in C:\Users\Admin\Documents\Claude\Projects\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\src\LuminaTutors.Web\Controllers\StudentController.cs:line 34
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.TaskOfIActionResultExecutor.Execute(ActionContext actionContext, IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Awaited|12_0(ControllerActionInvoker invoker, ValueTask`1 actionResultValueTask)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeInnerFilterAsync>g__Awaited|13_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeNextResourceFilter>g__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|20_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Session.SessionMiddleware.Invoke(HttpContext context)
+   at Serilog.AspNetCore.RequestLoggingMiddleware.Invoke(HttpContext httpContext)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2026-05-28 00:15:18.989 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-28 00:15:19.669 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-28 00:15:19.716 +07:00 [INF] Executed DbCommand (28ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-28 00:15:19.724 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-28 00:15:19.729 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-28 00:15:19.744 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-28 00:15:19.942 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [Users] AS [u]
+WHERE [u].[Email] IN (N'teacher@lumina.edu.vn', N'student@lumina.edu.vn', N'parent@lumina.edu.vn', N'supervisor@lumina.edu.vn', N'accountant@lumina.edu.vn')
+2026-05-28 00:15:19.955 +07:00 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-28 00:15:19.965 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+2026-05-28 00:15:20.081 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = N'admin@lumina.edu.vn' AND [u].[SchoolId] = @__school_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-28 00:15:20.087 +07:00 [INF] ℹ️  Admin account already exists — skipping seed.
+2026-05-28 00:15:20.220 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-28 00:15:21.386 +07:00 [INF] HTTP GET / responded 200 in 164.8953 ms
+2026-05-28 00:15:22.100 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 3.7799 ms
+2026-05-28 00:15:25.284 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-28 00:15:25.302 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 211.0651 ms
+2026-05-28 00:15:26.291 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 167.0425 ms
+2026-05-28 00:15:26.326 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 3.3936 ms
+2026-05-28 00:15:26.326 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 2.3831 ms
+2026-05-28 00:15:26.326 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 1.9840 ms
+2026-05-28 00:15:34.228 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[@__ToLowerInvariant_0='matthew@lumina.edu.vn' (Size = 150)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+INNER JOIN [Schools] AS [s] ON [u].[SchoolId] = [s].[SchoolId]
+WHERE [u].[Email] = @__ToLowerInvariant_0
+2026-05-28 00:15:34.376 +07:00 [INF] User 9 logged in at "2026-05-27T17:15:34.3762416Z"
+2026-05-28 00:15:34.386 +07:00 [INF] User 9 (matthew@lumina.edu.vn) signed in
+2026-05-28 00:15:34.392 +07:00 [INF] HTTP POST /Auth/Login responded 302 in 276.6599 ms
+2026-05-28 00:15:34.503 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__userId_0='9'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-28 00:15:34.544 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='STUDENT' (Size = 30)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+2026-05-28 00:15:34.612 +07:00 [INF] Executed DbCommand (16ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='STUDENT' (Size = 30), @__p_2='0', @__p_3='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt], [t].[Email], [t].[FullName], [t].[IsActive], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId], [t].[UpdatedAt], [t].[RoleId0], [t].[Description], [t].[RoleCode], [t].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t0].[ProfileId], [t0].[BankAccountNumber], [t0].[BankName], [t0].[ContractType], [t0].[DateOfBirth], [t0].[Gender], [t0].[HireDate], [t0].[Qualification], [t0].[SchoolId], [t0].[SpecializationSubject], [t0].[TaxCode], [t0].[TeacherCode], [t0].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM (
+    SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId] AS [RoleId0], [r].[Description], [r].[RoleCode], [r].[RoleName]
+    FROM [Users] AS [u]
+    INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+    WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+    ORDER BY [u].[CreatedAt] DESC
+    OFFSET @__p_2 ROWS FETCH NEXT @__p_3 ROWS ONLY
+) AS [t]
+LEFT JOIN [StudentProfiles] AS [s] ON [t].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t0] ON [t].[UserId] = [t0].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [t].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [t].[UserId] = [p].[UserId]
+ORDER BY [t].[CreatedAt] DESC
+2026-05-28 00:15:34.627 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='TEACHER' (Size = 30)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+2026-05-28 00:15:34.632 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='TEACHER' (Size = 30), @__p_2='0', @__p_3='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt], [t].[Email], [t].[FullName], [t].[IsActive], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId], [t].[UpdatedAt], [t].[RoleId0], [t].[Description], [t].[RoleCode], [t].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t0].[ProfileId], [t0].[BankAccountNumber], [t0].[BankName], [t0].[ContractType], [t0].[DateOfBirth], [t0].[Gender], [t0].[HireDate], [t0].[Qualification], [t0].[SchoolId], [t0].[SpecializationSubject], [t0].[TaxCode], [t0].[TeacherCode], [t0].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM (
+    SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId] AS [RoleId0], [r].[Description], [r].[RoleCode], [r].[RoleName]
+    FROM [Users] AS [u]
+    INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+    WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+    ORDER BY [u].[CreatedAt] DESC
+    OFFSET @__p_2 ROWS FETCH NEXT @__p_3 ROWS ONLY
+) AS [t]
+LEFT JOIN [StudentProfiles] AS [s] ON [t].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t0] ON [t].[UserId] = [t0].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [t].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [t].[UserId] = [p].[UserId]
+ORDER BY [t].[CreatedAt] DESC
+2026-05-28 00:15:34.645 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__schoolId_0
+2026-05-28 00:15:34.713 +07:00 [INF] Executed DbCommand (10ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [g].[GradeLevelId], [g].[EducationLevel], [g].[GradeName], [g].[GradeNumber], [g].[SchoolId], [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+INNER JOIN [GradeLevels] AS [g] ON [c].[GradeLevelId] = [g].[GradeLevelId]
+INNER JOIN [AcademicYears] AS [a] ON [c].[AcademicYearId] = [a].[AcademicYearId]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [g].[GradeLevelId], [a].[AcademicYearId], [u].[UserId]
+2026-05-28 00:15:34.754 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[@__userId_0='9', @__schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t].[ProfileId], [t].[BankAccountNumber], [t].[BankName], [t].[ContractType], [t].[DateOfBirth], [t].[Gender], [t].[HireDate], [t].[Qualification], [t].[SchoolId], [t].[SpecializationSubject], [t].[TaxCode], [t].[TeacherCode], [t].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+LEFT JOIN [StudentProfiles] AS [s] ON [u].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t] ON [u].[UserId] = [t].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [u].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [u].[UserId] = [p].[UserId]
+WHERE [u].[UserId] = @__userId_0 AND [u].[SchoolId] = @__schoolId_1
+2026-05-28 00:15:34.820 +07:00 [INF] HTTP GET /Dashboard responded 200 in 420.8162 ms
+2026-05-28 00:15:37.576 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[IsActive] = CAST(1 AS bit)
+2026-05-28 00:15:37.606 +07:00 [INF] HTTP GET /VirtualLab responded 200 in 58.4800 ms
+2026-05-28 00:15:48.965 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__schoolId_0
+2026-05-28 00:15:48.973 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [g].[GradeLevelId], [g].[EducationLevel], [g].[GradeName], [g].[GradeNumber], [g].[SchoolId], [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+INNER JOIN [GradeLevels] AS [g] ON [c].[GradeLevelId] = [g].[GradeLevelId]
+INNER JOIN [AcademicYears] AS [a] ON [c].[AcademicYearId] = [a].[AcademicYearId]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [g].[GradeLevelId], [a].[AcademicYearId], [u].[UserId]
+2026-05-28 00:15:48.990 +07:00 [INF] HTTP GET /Class responded 200 in 33.2357 ms
+2026-05-28 00:15:50.698 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[IsActive] = CAST(1 AS bit)
+2026-05-28 00:15:50.707 +07:00 [INF] HTTP GET /VirtualLab responded 200 in 14.5986 ms
+2026-05-28 00:16:20.015 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1', @__code_1='9J6KV9' (Size = 6) (DbType = StringFixedLength)], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [VirtualLabSessions] AS [v]
+        WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[SessionCode] = @__code_1 AND [v].[IsActive] = CAST(1 AS bit)) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-28 00:16:20.118 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[@p0='2026-05-27T17:16:20.0589191Z', @p1='40', @p2='pendulum' (Nullable = false) (Size = 30), @p3='1', @p4='9J6KV9' (Nullable = false) (Size = 6) (DbType = StringFixedLength), @p5='Động Năng' (Nullable = false) (Size = 100), @p6='physics' (Nullable = false) (Size = 30), @p7='9', @p8='2026-05-27T17:16:20.0589191Z'], CommandType='"Text"', CommandTimeout='30']
+SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+INSERT INTO [VirtualLabSessions] ([CreatedAt], [MaxParticipants], [SceneType], [SchoolId], [SessionCode], [SessionName], [SubjectTag], [TeacherId], [UpdatedAt])
+OUTPUT INSERTED.[SessionId], INSERTED.[IsActive]
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
+2026-05-28 00:16:20.155 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[@__id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SessionId] = @__id_0
+2026-05-28 00:16:20.246 +07:00 [INF] VirtualLab session 9J6KV9 created by teacher 9
+2026-05-28 00:16:20.254 +07:00 [INF] HTTP POST /VirtualLab/Create responded 302 in 265.3691 ms
+2026-05-28 00:16:20.272 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SessionId] = @__id_0
+2026-05-28 00:16:20.307 +07:00 [INF] HTTP GET /VirtualLab/Lab/1 responded 200 in 45.4070 ms
+2026-05-28 00:32:48.304 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-28 00:32:49.975 +07:00 [INF] Executed DbCommand (23ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-28 00:32:50.020 +07:00 [INF] Executed DbCommand (27ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-28 00:32:50.025 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-28 00:32:50.028 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-28 00:32:50.045 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-28 00:32:50.288 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [Users] AS [u]
+WHERE [u].[Email] IN (N'teacher@lumina.edu.vn', N'student@lumina.edu.vn', N'parent@lumina.edu.vn', N'supervisor@lumina.edu.vn', N'accountant@lumina.edu.vn')
+2026-05-28 00:32:50.308 +07:00 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-28 00:32:50.322 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+2026-05-28 00:32:50.451 +07:00 [INF] Executed DbCommand (27ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = N'admin@lumina.edu.vn' AND [u].[SchoolId] = @__school_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-28 00:32:50.458 +07:00 [INF] ℹ️  Admin account already exists — skipping seed.
+2026-05-28 00:32:50.584 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-28 00:32:51.671 +07:00 [INF] HTTP GET / responded 200 in 230.0179 ms
+2026-05-28 00:32:52.339 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 5.3131 ms
+2026-05-28 00:32:55.074 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-28 00:32:55.094 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 287.3872 ms
+2026-05-28 00:32:56.286 +07:00 [INF] HTTP GET /Auth/Login responded 200 in 168.8162 ms
+2026-05-28 00:32:56.320 +07:00 [INF] HTTP GET /lib/jquery/dist/jquery.min.js responded 404 in 3.4739 ms
+2026-05-28 00:32:56.320 +07:00 [INF] HTTP GET /lib/jquery-validation/dist/jquery.validate.min.js responded 404 in 3.4615 ms
+2026-05-28 00:32:56.327 +07:00 [INF] HTTP GET /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js responded 404 in 8.2108 ms
+2026-05-28 00:33:10.137 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[@__ToLowerInvariant_0='matthew@lumina.edu.vn' (Size = 150)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+INNER JOIN [Schools] AS [s] ON [u].[SchoolId] = [s].[SchoolId]
+WHERE [u].[Email] = @__ToLowerInvariant_0
+2026-05-28 00:33:10.298 +07:00 [INF] User 9 logged in at "2026-05-27T17:33:10.2976180Z"
+2026-05-28 00:33:10.309 +07:00 [INF] User 9 (matthew@lumina.edu.vn) signed in
+2026-05-28 00:33:10.317 +07:00 [INF] HTTP POST /Auth/Login responded 302 in 281.7293 ms
+2026-05-28 00:33:10.438 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__userId_0='9'], CommandType='"Text"', CommandTimeout='30']
+SELECT [n].[RecipientId], [n].[DeliveredAt], [n].[DeliveryStatus], [n].[IsRead], [n].[NotificationId], [n].[ReadAt], [n].[UserId]
+FROM [NotificationRecipients] AS [n]
+WHERE [n].[UserId] = @__userId_0 AND [n].[IsRead] = CAST(0 AS bit)
+2026-05-28 00:33:10.487 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='STUDENT' (Size = 30)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+2026-05-28 00:33:10.544 +07:00 [INF] Executed DbCommand (14ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='STUDENT' (Size = 30), @__p_2='0', @__p_3='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt], [t].[Email], [t].[FullName], [t].[IsActive], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId], [t].[UpdatedAt], [t].[RoleId0], [t].[Description], [t].[RoleCode], [t].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t0].[ProfileId], [t0].[BankAccountNumber], [t0].[BankName], [t0].[ContractType], [t0].[DateOfBirth], [t0].[Gender], [t0].[HireDate], [t0].[Qualification], [t0].[SchoolId], [t0].[SpecializationSubject], [t0].[TaxCode], [t0].[TeacherCode], [t0].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM (
+    SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId] AS [RoleId0], [r].[Description], [r].[RoleCode], [r].[RoleName]
+    FROM [Users] AS [u]
+    INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+    WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+    ORDER BY [u].[CreatedAt] DESC
+    OFFSET @__p_2 ROWS FETCH NEXT @__p_3 ROWS ONLY
+) AS [t]
+LEFT JOIN [StudentProfiles] AS [s] ON [t].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t0] ON [t].[UserId] = [t0].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [t].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [t].[UserId] = [p].[UserId]
+ORDER BY [t].[CreatedAt] DESC
+2026-05-28 00:33:10.556 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='TEACHER' (Size = 30)], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+2026-05-28 00:33:10.560 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__schoolId_0='1', @__ToUpper_1='TEACHER' (Size = 30), @__p_2='0', @__p_3='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[UserId], [t].[AvatarUrl], [t].[CreatedAt], [t].[Email], [t].[FullName], [t].[IsActive], [t].[IsEmailVerified], [t].[LastLoginAt], [t].[PasswordHash], [t].[PhoneNumber], [t].[RoleId], [t].[SchoolId], [t].[UpdatedAt], [t].[RoleId0], [t].[Description], [t].[RoleCode], [t].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t0].[ProfileId], [t0].[BankAccountNumber], [t0].[BankName], [t0].[ContractType], [t0].[DateOfBirth], [t0].[Gender], [t0].[HireDate], [t0].[Qualification], [t0].[SchoolId], [t0].[SpecializationSubject], [t0].[TaxCode], [t0].[TeacherCode], [t0].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM (
+    SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId] AS [RoleId0], [r].[Description], [r].[RoleCode], [r].[RoleName]
+    FROM [Users] AS [u]
+    INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+    WHERE [u].[SchoolId] = @__schoolId_0 AND [r].[RoleCode] = @__ToUpper_1 AND [r].[RoleCode] IN (N'STUDENT', N'TEACHER', N'SUPERVISOR', N'PARENT')
+    ORDER BY [u].[CreatedAt] DESC
+    OFFSET @__p_2 ROWS FETCH NEXT @__p_3 ROWS ONLY
+) AS [t]
+LEFT JOIN [StudentProfiles] AS [s] ON [t].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t0] ON [t].[UserId] = [t0].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [t].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [t].[UserId] = [p].[UserId]
+ORDER BY [t].[CreatedAt] DESC
+2026-05-28 00:33:10.572 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__schoolId_0
+2026-05-28 00:33:10.627 +07:00 [INF] Executed DbCommand (14ms) [Parameters=[@__schoolId_0='1', @__academicYearId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[ClassId], [c].[AcademicYearId], [c].[ClassName], [c].[CreatedAt], [c].[GradeLevelId], [c].[HomeRoomTeacherId], [c].[IsActive], [c].[MaxStudents], [c].[RoomNumber], [c].[SchoolId], [c].[UpdatedAt], [g].[GradeLevelId], [g].[EducationLevel], [g].[GradeName], [g].[GradeNumber], [g].[SchoolId], [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [c0].[EnrollmentId], [c0].[ClassId], [c0].[CreatedAt], [c0].[EnrolledDate], [c0].[Status], [c0].[StudentId], [c0].[TransferNote], [c0].[UpdatedAt]
+FROM [Classes] AS [c]
+INNER JOIN [GradeLevels] AS [g] ON [c].[GradeLevelId] = [g].[GradeLevelId]
+INNER JOIN [AcademicYears] AS [a] ON [c].[AcademicYearId] = [a].[AcademicYearId]
+LEFT JOIN [Users] AS [u] ON [c].[HomeRoomTeacherId] = [u].[UserId]
+LEFT JOIN [ClassEnrollments] AS [c0] ON [c].[ClassId] = [c0].[ClassId]
+WHERE [c].[SchoolId] = @__schoolId_0 AND [c].[AcademicYearId] = @__academicYearId_1
+ORDER BY [c].[ClassId], [g].[GradeLevelId], [a].[AcademicYearId], [u].[UserId]
+2026-05-28 00:33:10.691 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[@__userId_0='9', @__schoolId_1='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt], [r].[RoleId], [r].[Description], [r].[RoleCode], [r].[RoleName], [s].[ProfileId], [s].[AdmissionDate], [s].[AdmissionType], [s].[DateOfBirth], [s].[EthnicGroup], [s].[Gender], [s].[PermanentAddress], [s].[PlaceOfBirth], [s].[SchoolId], [s].[StudentCode], [s].[UserId], [t].[ProfileId], [t].[BankAccountNumber], [t].[BankName], [t].[ContractType], [t].[DateOfBirth], [t].[Gender], [t].[HireDate], [t].[Qualification], [t].[SchoolId], [t].[SpecializationSubject], [t].[TaxCode], [t].[TeacherCode], [t].[UserId], [s0].[ProfileId], [s0].[DateOfBirth], [s0].[Gender], [s0].[HireDate], [s0].[SchoolId], [s0].[SupervisorCode], [s0].[UserId], [p].[ProfileId], [p].[Occupation], [p].[SchoolId], [p].[UserId], [p].[WorkAddress]
+FROM [Users] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[RoleId]
+LEFT JOIN [StudentProfiles] AS [s] ON [u].[UserId] = [s].[UserId]
+LEFT JOIN [TeacherProfiles] AS [t] ON [u].[UserId] = [t].[UserId]
+LEFT JOIN [SupervisorProfiles] AS [s0] ON [u].[UserId] = [s0].[UserId]
+LEFT JOIN [ParentProfiles] AS [p] ON [u].[UserId] = [p].[UserId]
+WHERE [u].[UserId] = @__userId_0 AND [u].[SchoolId] = @__schoolId_1
+2026-05-28 00:33:10.777 +07:00 [INF] HTTP GET /Dashboard responded 200 in 450.8196 ms
+2026-05-28 00:33:13.291 +07:00 [INF] Executed DbCommand (9ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[IsActive] = CAST(1 AS bit)
+2026-05-28 00:33:13.327 +07:00 [INF] HTTP GET /VirtualLab responded 200 in 74.9378 ms
+2026-05-28 00:33:24.817 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[@__schoolId_0='1', @__code_1='5CTPAV' (Size = 6) (DbType = StringFixedLength)], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [VirtualLabSessions] AS [v]
+        WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[SessionCode] = @__code_1 AND [v].[IsActive] = CAST(1 AS bit)) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-28 00:33:24.977 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[@p0='2026-05-27T17:33:24.8856594Z', @p1='40', @p2='pendulum' (Nullable = false) (Size = 30), @p3='1', @p4='5CTPAV' (Nullable = false) (Size = 6) (DbType = StringFixedLength), @p5='Động Năng' (Nullable = false) (Size = 100), @p6='physics' (Nullable = false) (Size = 30), @p7='9', @p8='2026-05-27T17:33:24.8856594Z'], CommandType='"Text"', CommandTimeout='30']
+SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+INSERT INTO [VirtualLabSessions] ([CreatedAt], [MaxParticipants], [SceneType], [SchoolId], [SessionCode], [SessionName], [SubjectTag], [TeacherId], [UpdatedAt])
+OUTPUT INSERTED.[SessionId], INSERTED.[IsActive]
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8);
+2026-05-28 00:33:25.026 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@__id_0='2'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SessionId] = @__id_0
+2026-05-28 00:33:25.146 +07:00 [INF] VirtualLab session 5CTPAV created by teacher 9
+2026-05-28 00:33:25.152 +07:00 [INF] HTTP POST /VirtualLab/Create responded 302 in 364.0733 ms
+2026-05-28 00:33:25.169 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[@__id_0='2'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SessionId] = @__id_0
+2026-05-28 00:33:25.188 +07:00 [INF] HTTP GET /VirtualLab/Lab/2 responded 200 in 27.4943 ms
+2026-05-28 00:34:52.571 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[IsActive] = CAST(1 AS bit)
+2026-05-28 00:34:52.584 +07:00 [INF] HTTP GET /VirtualLab responded 200 in 18.9200 ms
+2026-05-28 00:35:00.449 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__id_0='2'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SessionId] = @__id_0
+2026-05-28 00:35:00.468 +07:00 [INF] HTTP GET /VirtualLab/Lab/2 responded 200 in 24.3953 ms
+2026-05-28 00:35:07.344 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__schoolId_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SchoolId] = @__schoolId_0 AND [v].[IsActive] = CAST(1 AS bit)
+2026-05-28 00:35:07.354 +07:00 [INF] HTTP GET /VirtualLab responded 200 in 14.8783 ms
+2026-05-28 00:35:08.412 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[@__id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [v].[SessionId], [v].[CreatedAt], [v].[IsActive], [v].[MaxParticipants], [v].[SceneType], [v].[SchoolId], [v].[SessionCode], [v].[SessionName], [v].[SubjectTag], [v].[TeacherId], [v].[UpdatedAt], [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [VirtualLabSessions] AS [v]
+INNER JOIN [Users] AS [u] ON [v].[TeacherId] = [u].[UserId]
+WHERE [v].[SessionId] = @__id_0
+2026-05-28 00:35:08.424 +07:00 [INF] HTTP GET /VirtualLab/Lab/1 responded 200 in 15.3366 ms

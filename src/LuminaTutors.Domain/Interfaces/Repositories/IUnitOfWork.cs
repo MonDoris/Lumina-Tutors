@@ -58,6 +58,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<Assignment>           Assignments           { get; }
     IRepository<AssignmentSubmission> AssignmentSubmissions { get; }
     IRepository<SubmissionFile>       SubmissionFiles       { get; }
+    IRepository<VirtualLabSession>    VirtualLabSessions    { get; }
 
     // ── Grading ───────────────────────────────────────────────────────────────
     IRepository<GradeCategory>           GradeCategories           { get; }
@@ -96,6 +97,13 @@ public interface IUnitOfWork : IDisposable
     Task BeginTransactionAsync(CancellationToken ct = default);
     Task CommitTransactionAsync(CancellationToken ct = default);
     Task RollbackTransactionAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Executes <paramref name="action"/> inside a database transaction that is
+    /// compatible with EF Core's retry execution strategy (EnableRetryOnFailure).
+    /// Commits on success; rolls back and rethrows on failure.
+    /// </summary>
+    Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default);
 
     // ── Stored Procedures ─────────────────────────────────────────────────────
     Task<int> ExecuteStoredProcedureAsync(string spName, object? parameters = null, CancellationToken ct = default);

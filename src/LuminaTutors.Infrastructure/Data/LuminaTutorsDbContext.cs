@@ -65,6 +65,7 @@ public class LuminaTutorsDbContext : DbContext
     public DbSet<Assignment>           Assignments           => Set<Assignment>();
     public DbSet<AssignmentSubmission> AssignmentSubmissions => Set<AssignmentSubmission>();
     public DbSet<SubmissionFile>       SubmissionFiles       => Set<SubmissionFile>();
+    public DbSet<VirtualLabSession>    VirtualLabSessions    => Set<VirtualLabSession>();
 
     // ── Grading ───────────────────────────────────────────────────────────────
     public DbSet<GradeCategory>           GradeCategories          => Set<GradeCategory>();

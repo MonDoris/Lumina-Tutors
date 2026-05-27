@@ -38,6 +38,85 @@
 </head>
 <body>
 
+<!-- ══════════ PAGE TRANSITION SPLASH ══════════ -->
+<div id="lt-splash" aria-hidden="true">
+    <div class="lt-splash__inner">
+        <div class="lt-splash__logo">L</div>
+        <div class="lt-splash__brand">Lumina Tutors</div>
+        <div class="lt-splash__bar"><div class="lt-splash__fill"></div></div>
+    </div>
+</div>
+
+<style>
+#lt-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+}
+#lt-splash.lt-splash--show {
+    opacity: 1;
+    pointer-events: all;
+}
+.lt-splash__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    transform: translateY(6px);
+    transition: transform .22s ease;
+}
+#lt-splash.lt-splash--show .lt-splash__inner {
+    transform: translateY(0);
+}
+.lt-splash__logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #c9a96e 0%, #e8c98a 50%, #c9a96e 100%);
+    color: #0f172a;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 28px rgba(201,169,110,.45);
+    animation: lt-splash-pulse 1.4s ease-in-out infinite;
+}
+@@keyframes lt-splash-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(201,169,110,.35); }
+    50%       { box-shadow: 0 0 40px rgba(201,169,110,.65); }
+}
+.lt-splash__brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: .04em;
+}
+.lt-splash__bar {
+    width: 120px;
+    height: 3px;
+    background: rgba(255,255,255,.1);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.lt-splash__fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #c9a96e, #e8c98a);
+    border-radius: 99px;
+    transition: width .35s ease;
+}
+</style>
+
 @if (isAuth)
 {
 <div class="lt-app">
@@ -97,6 +176,15 @@
                     <span class="lt-nav__icon"><i class="bi bi-journal-text"></i></span>
                     Sổ điểm TT22
                 </a>
+                <a asp-controller="VirtualLab" asp-action="Index" class="@Nav("VirtualLab")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-badge-vr-fill"></i></span>
+                    Lab 3D ảo
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:var(--lt-gold);color:var(--lt-navy);
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
+                </a>
             </div>
             }
 
@@ -144,6 +232,14 @@
                 <a asp-controller="Account" asp-action="Index" asp-route-role="PARENT" class="@Nav("Account")">
                     <span class="lt-nav__icon"><i class="bi bi-house-heart-fill"></i></span>
                     Phụ huynh
+                </a>
+            </div>
+
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Cấu hình</div>
+                <a asp-controller="AcademicConfig" asp-action="Index" class="@Nav("AcademicConfig")">
+                    <span class="lt-nav__icon"><i class="bi bi-sliders"></i></span>
+                    Cấu hình học vụ
                 </a>
             </div>
 
@@ -301,5 +397,79 @@ document.querySelectorAll('.lt-alert').forEach(el => {
 </script>
 
 @await RenderSectionAsync("Scripts", required: false)
+
+<script>
+(function () {
+    var splash = document.getElementById('lt-splash');
+    var fill   = splash ? splash.querySelector('.lt-splash__fill') : null;
+    var timer  = null;
+
+    function showSplash() {
+        if (!splash) return;
+        splash.classList.add('lt-splash--show');
+        // animate progress bar: 0 → 70% quickly, wait, then complete on pageshow
+        if (fill) {
+            fill.style.transition = 'none';
+            fill.style.width = '0%';
+            requestAnimationFrame(function () {
+                fill.style.transition = 'width .55s cubic-bezier(.4,0,.2,1)';
+                fill.style.width = '70%';
+            });
+        }
+        // safety: hide after 6 s if page never loads
+        timer = setTimeout(hideSplash, 6000);
+    }
+
+    function hideSplash() {
+        if (!splash) return;
+        clearTimeout(timer);
+        if (fill) {
+            fill.style.transition = 'width .2s ease';
+            fill.style.width = '100%';
+        }
+        setTimeout(function () {
+            splash.style.transition = 'opacity .25s ease';
+            splash.classList.remove('lt-splash--show');
+        }, 180);
+    }
+
+    // Show on navigation links (not #anchors, not target="_blank", not download)
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href') || '';
+        if (
+            href.startsWith('#') ||
+            href.startsWith('javascript') ||
+            href === '' ||
+            a.target === '_blank' ||
+            a.hasAttribute('download') ||
+            e.ctrlKey || e.metaKey || e.shiftKey
+        ) return;
+        // Only same-origin navigation
+        try {
+            var url = new URL(href, location.origin);
+            if (url.origin !== location.origin) return;
+        } catch (_) { return; }
+        showSplash();
+    });
+
+    // Show on form submissions (POST navigations)
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        // Skip AJAX forms (data-ajax) and forms that open new tabs
+        if (form.dataset.ajax || form.target === '_blank') return;
+        showSplash();
+    });
+
+    // Hide as soon as new page is interactive
+    window.addEventListener('pageshow', hideSplash);
+    if (document.readyState === 'complete') {
+        hideSplash();
+    } else {
+        window.addEventListener('load', hideSplash);
+    }
+})();
+</script>
 </body>
 </html>

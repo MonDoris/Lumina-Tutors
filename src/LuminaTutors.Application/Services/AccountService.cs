@@ -72,8 +72,7 @@ public sealed class AccountService : IAccountService
                 .Include(u => u.StudentProfile)
                 .Include(u => u.TeacherProfile)
                 .Include(u => u.SupervisorProfile)
-                .Include(u => u.ParentProfile)
-                .Include(u => u.StudentRelations).ThenInclude(r => r.Student),
+                .Include(u => u.ParentProfile),
             ct: ct);
 
         var user = users.FirstOrDefault();
@@ -108,120 +107,201 @@ public sealed class AccountService : IAccountService
         if (role is null)
             return Result<AccountDetailDto>.Failure("CONFIG_ERROR", $"Không tìm thấy vai trò {roleCode}.");
 
-        await _uow.BeginTransactionAsync(ct);
+        User? createdUser = null;
         try
         {
-            // 1. Create User
-            var user = new User
+            await _uow.ExecuteInTransactionAsync(async () =>
             {
-                SchoolId        = schoolId,
-                RoleId          = role.Id,
-                Email           = req.Email.Trim().ToLowerInvariant(),
-                FullName        = req.FullName.Trim(),
-                PhoneNumber     = req.PhoneNumber?.Trim(),
-                AvatarUrl       = req.AvatarUrl,
-                IsActive        = true,
-                IsEmailVerified = false,
-                PasswordHash    = string.Empty
-            };
-            user.PasswordHash = _hasher.HashPassword(user, req.Password);
-            await _uow.Users.AddAsync(user, ct);
-            await _uow.SaveChangesAsync(ct);
+                // 1. Create User
+                var user = new User
+                {
+                    SchoolId        = schoolId,
+                    RoleId          = role.Id,
+                    Email           = req.Email.Trim().ToLowerInvariant(),
+                    FullName        = req.FullName.Trim(),
+                    PhoneNumber     = req.PhoneNumber?.Trim(),
+                    AvatarUrl       = req.AvatarUrl,
+                    IsActive        = true,
+                    IsEmailVerified = false,
+                    PasswordHash    = string.Empty
+                };
+                user.PasswordHash = _hasher.HashPassword(user, req.Password);
+                await _uow.Users.AddAsync(user, ct);
+                await _uow.SaveChangesAsync(ct);   // flushes so user.Id is populated
 
-            // 2. Create role-specific profile
-            switch (roleCode)
-            {
-                case "STUDENT":
-                    var code = $"HS{DateTime.UtcNow:yyMM}{user.Id:D4}";
-                    await _uow.StudentProfiles.AddAsync(new StudentProfile
-                    {
-                        UserId      = user.Id,
-                        SchoolId    = schoolId,
-                        StudentCode = code,
-                        DateOfBirth = req.DateOfBirth,
-                        Gender      = req.Gender
-                    }, ct);
-                    await _uow.SaveChangesAsync(ct);
-
-                    // Enroll in class if specified
-                    if (req.ClassId.HasValue)
-                    {
-                        var cls = await _uow.Classes.GetByIdAsync(req.ClassId.Value, ct);
-                        if (cls != null && cls.SchoolId == schoolId)
+                // 2. Create role-specific profile
+                switch (roleCode)
+                {
+                    case "STUDENT":
+                        var code = $"HS{DateTime.UtcNow:yyMM}{user.Id:D4}";
+                        await _uow.StudentProfiles.AddAsync(new StudentProfile
                         {
-                            await _uow.ClassEnrollments.AddAsync(new Domain.Entities.Academic.ClassEnrollment
+                            UserId      = user.Id,
+                            SchoolId    = schoolId,
+                            StudentCode = code,
+                            DateOfBirth = req.DateOfBirth,
+                            Gender      = req.Gender
+                        }, ct);
+                        await _uow.SaveChangesAsync(ct);
+
+                        // Enroll in class if specified
+                        if (req.ClassId.HasValue)
+                        {
+                            var cls = await _uow.Classes.GetByIdAsync(req.ClassId.Value, ct);
+                            if (cls != null && cls.SchoolId == schoolId)
                             {
-                                ClassId   = req.ClassId.Value,
-                                StudentId = user.Id,
-                                EnrolledDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                                Status = EnrollmentStatus.Active
+                                await _uow.ClassEnrollments.AddAsync(new Domain.Entities.Academic.ClassEnrollment
+                                {
+                                    ClassId      = req.ClassId.Value,
+                                    StudentId    = user.Id,
+                                    EnrolledDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                                    Status       = EnrollmentStatus.Active
+                                }, ct);
+                                await _uow.SaveChangesAsync(ct);
+                            }
+                        }
+
+                        // Auto-create linked parent account if requested
+                        if (req.CreateLinkedParent
+                            && !string.IsNullOrWhiteSpace(req.ParentFullName)
+                            && !string.IsNullOrWhiteSpace(req.ParentEmail))
+                        {
+                            var parentEmail = req.ParentEmail.Trim().ToLowerInvariant();
+                            var parentEmailExists = await _uow.Users.AnyAsync(
+                                u => u.SchoolId == schoolId && u.Email == parentEmail, ct);
+
+                            if (!parentEmailExists)
+                            {
+                                var parentRoles = await _uow.Roles.FindAsync(r => r.RoleCode == "PARENT", ct: ct);
+                                var parentRole  = parentRoles.FirstOrDefault();
+                                if (parentRole is not null)
+                                {
+                                    var parentUser = new User
+                                    {
+                                        SchoolId        = schoolId,
+                                        RoleId          = parentRole.Id,
+                                        Email           = parentEmail,
+                                        FullName        = req.ParentFullName.Trim(),
+                                        PhoneNumber     = req.ParentPhoneNumber?.Trim(),
+                                        IsActive        = true,
+                                        IsEmailVerified = false,
+                                        PasswordHash    = string.Empty
+                                    };
+                                    var parentPass = string.IsNullOrWhiteSpace(req.ParentPassword)
+                                        ? "Parent@123" : req.ParentPassword;
+                                    parentUser.PasswordHash = _hasher.HashPassword(parentUser, parentPass);
+
+                                    await _uow.Users.AddAsync(parentUser, ct);
+                                    await _uow.SaveChangesAsync(ct);
+
+                                    await _uow.ParentProfiles.AddAsync(new ParentProfile
+                                    {
+                                        UserId   = parentUser.Id,
+                                        SchoolId = schoolId
+                                    }, ct);
+                                    await _uow.SaveChangesAsync(ct);
+
+                                    await _uow.ParentStudentRelations.AddAsync(new ParentStudentRelation
+                                    {
+                                        ParentUserId     = parentUser.Id,
+                                        StudentUserId    = user.Id,
+                                        Relationship     = req.ParentRelationship ?? "Phụ huynh",
+                                        IsPrimaryContact = true
+                                    }, ct);
+                                    await _uow.SaveChangesAsync(ct);
+
+                                    _logger.LogInformation(
+                                        "Auto-created PARENT account {Email} linked to STUDENT {StudentId}",
+                                        parentEmail, user.Id);
+                                }
+                            }
+                            else
+                            {
+                                // Parent email already exists — just create the relation
+                                var existingParents = await _uow.Users.FindAsync(
+                                    u => u.SchoolId == schoolId && u.Email == parentEmail, ct: ct);
+                                var existingParent = existingParents.FirstOrDefault();
+                                if (existingParent is not null)
+                                {
+                                    var alreadyLinked = await _uow.ParentStudentRelations.AnyAsync(
+                                        r => r.ParentUserId == existingParent.Id && r.StudentUserId == user.Id, ct);
+                                    if (!alreadyLinked)
+                                    {
+                                        await _uow.ParentStudentRelations.AddAsync(new ParentStudentRelation
+                                        {
+                                            ParentUserId     = existingParent.Id,
+                                            StudentUserId    = user.Id,
+                                            Relationship     = req.ParentRelationship ?? "Phụ huynh",
+                                            IsPrimaryContact = true
+                                        }, ct);
+                                        await _uow.SaveChangesAsync(ct);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+
+                    case "TEACHER":
+                        await _uow.TeacherProfiles.AddAsync(new TeacherProfile
+                        {
+                            UserId                = user.Id,
+                            SchoolId              = schoolId,
+                            TeacherCode           = $"GV{DateTime.UtcNow:yyMM}{user.Id:D4}",
+                            DateOfBirth           = req.DateOfBirth,
+                            Gender                = req.Gender,
+                            SpecializationSubject = req.SpecializationSubject?.Trim(),
+                            Qualification         = req.Qualification?.Trim(),
+                            HireDate              = DateOnly.FromDateTime(DateTime.UtcNow)
+                        }, ct);
+                        await _uow.SaveChangesAsync(ct);
+                        break;
+
+                    case "SUPERVISOR":
+                        await _uow.SupervisorProfiles.AddAsync(new SupervisorProfile
+                        {
+                            UserId         = user.Id,
+                            SchoolId       = schoolId,
+                            SupervisorCode = $"GT{DateTime.UtcNow:yyMM}{user.Id:D4}",
+                            DateOfBirth    = req.DateOfBirth,
+                            Gender         = req.Gender,
+                            HireDate       = DateOnly.FromDateTime(DateTime.UtcNow)
+                        }, ct);
+                        await _uow.SaveChangesAsync(ct);
+                        break;
+
+                    case "PARENT":
+                        await _uow.ParentProfiles.AddAsync(new ParentProfile
+                        {
+                            UserId      = user.Id,
+                            SchoolId    = schoolId,
+                            Occupation  = req.Occupation?.Trim(),
+                            WorkAddress = req.WorkAddress?.Trim()
+                        }, ct);
+                        await _uow.SaveChangesAsync(ct);
+
+                        if (req.LinkedStudentUserId.HasValue)
+                        {
+                            await _uow.ParentStudentRelations.AddAsync(new ParentStudentRelation
+                            {
+                                ParentUserId     = user.Id,
+                                StudentUserId    = req.LinkedStudentUserId.Value,
+                                Relationship     = req.Relationship ?? "Phụ huynh",
+                                IsPrimaryContact = true
                             }, ct);
                             await _uow.SaveChangesAsync(ct);
                         }
-                    }
-                    break;
+                        break;
+                }
 
-                case "TEACHER":
-                    await _uow.TeacherProfiles.AddAsync(new TeacherProfile
-                    {
-                        UserId                = user.Id,
-                        SchoolId              = schoolId,
-                        TeacherCode           = $"GV{DateTime.UtcNow:yyMM}{user.Id:D4}",
-                        DateOfBirth           = req.DateOfBirth,
-                        Gender                = req.Gender,
-                        SpecializationSubject = req.SpecializationSubject?.Trim(),
-                        Qualification         = req.Qualification?.Trim(),
-                        HireDate              = DateOnly.FromDateTime(DateTime.UtcNow)
-                    }, ct);
-                    await _uow.SaveChangesAsync(ct);
-                    break;
+                createdUser = user;
+            }, ct);
 
-                case "SUPERVISOR":
-                    await _uow.SupervisorProfiles.AddAsync(new SupervisorProfile
-                    {
-                        UserId         = user.Id,
-                        SchoolId       = schoolId,
-                        SupervisorCode = $"GT{DateTime.UtcNow:yyMM}{user.Id:D4}",
-                        DateOfBirth    = req.DateOfBirth,
-                        Gender         = req.Gender,
-                        HireDate       = DateOnly.FromDateTime(DateTime.UtcNow)
-                    }, ct);
-                    await _uow.SaveChangesAsync(ct);
-                    break;
-
-                case "PARENT":
-                    await _uow.ParentProfiles.AddAsync(new ParentProfile
-                    {
-                        UserId      = user.Id,
-                        SchoolId    = schoolId,
-                        Occupation  = req.Occupation?.Trim(),
-                        WorkAddress = req.WorkAddress?.Trim()
-                    }, ct);
-                    await _uow.SaveChangesAsync(ct);
-
-                    // Link to student
-                    if (req.LinkedStudentUserId.HasValue)
-                    {
-                        await _uow.ParentStudentRelations.AddAsync(new ParentStudentRelation
-                        {
-                            ParentUserId  = user.Id,
-                            StudentUserId = req.LinkedStudentUserId.Value,
-                            Relationship  = req.Relationship ?? "Phụ huynh",
-                            IsPrimaryContact = true
-                        }, ct);
-                        await _uow.SaveChangesAsync(ct);
-                    }
-                    break;
-            }
-
-            await _uow.CommitTransactionAsync(ct);
-            _logger.LogInformation("Created {Role} account UserId={UserId} in school {SchoolId}", roleCode, user.Id, schoolId);
-
-            return await GetAccountByIdAsync(schoolId, user.Id, ct);
+            _logger.LogInformation("Created {Role} account UserId={UserId} in school {SchoolId}",
+                roleCode, createdUser!.Id, schoolId);
+            return await GetAccountByIdAsync(schoolId, createdUser.Id, ct);
         }
         catch (Exception ex)
         {
-            await _uow.RollbackTransactionAsync(ct);
             _logger.LogError(ex, "CreateAccount failed for school {SchoolId}", schoolId);
             return Result<AccountDetailDto>.Failure("INTERNAL_ERROR", "Có lỗi khi tạo tài khoản. Vui lòng thử lại.");
         }
@@ -247,101 +327,98 @@ public sealed class AccountService : IAccountService
         if (user is null)
             return Result<AccountDetailDto>.Failure("NOT_FOUND", "Tài khoản không tồn tại.");
 
-        await _uow.BeginTransactionAsync(ct);
         try
         {
-            // Update base user
-            user.FullName    = req.FullName.Trim();
-            user.PhoneNumber = req.PhoneNumber?.Trim();
-            user.IsActive    = req.IsActive;
-            if (req.AvatarUrl != null) user.AvatarUrl = req.AvatarUrl;
-
-            var roleCode = user.Role.RoleCode;
-
-            switch (roleCode)
+            await _uow.ExecuteInTransactionAsync(async () =>
             {
-                case "STUDENT":
-                    if (user.StudentProfile != null)
-                    {
-                        user.StudentProfile.DateOfBirth = req.DateOfBirth;
-                        user.StudentProfile.Gender      = req.Gender;
-                    }
-                    // Update class enrollment
-                    if (req.ClassId.HasValue)
-                    {
-                        var existing = await _uow.ClassEnrollments.FindAsync(
-                            e => e.StudentId == userId && e.Status == EnrollmentStatus.Active, ct: ct);
-                        foreach (var e in existing) e.Status = EnrollmentStatus.Withdrawn;
-                        await _uow.SaveChangesAsync(ct);
+                // Update base user
+                user.FullName    = req.FullName.Trim();
+                user.PhoneNumber = req.PhoneNumber?.Trim();
+                user.IsActive    = req.IsActive;
+                if (req.AvatarUrl != null) user.AvatarUrl = req.AvatarUrl;
 
-                        var cls = await _uow.Classes.GetByIdAsync(req.ClassId.Value, ct);
-                        if (cls != null && cls.SchoolId == schoolId)
+                var roleCode = user.Role.RoleCode;
+
+                switch (roleCode)
+                {
+                    case "STUDENT":
+                        if (user.StudentProfile != null)
                         {
-                            await _uow.ClassEnrollments.AddAsync(new Domain.Entities.Academic.ClassEnrollment
+                            user.StudentProfile.DateOfBirth = req.DateOfBirth;
+                            user.StudentProfile.Gender      = req.Gender;
+                        }
+                        if (req.ClassId.HasValue)
+                        {
+                            var existing = await _uow.ClassEnrollments.FindAsync(
+                                e => e.StudentId == userId && e.Status == EnrollmentStatus.Active, ct: ct);
+                            foreach (var e in existing) e.Status = EnrollmentStatus.Withdrawn;
+                            await _uow.SaveChangesAsync(ct);
+
+                            var cls = await _uow.Classes.GetByIdAsync(req.ClassId.Value, ct);
+                            if (cls != null && cls.SchoolId == schoolId)
                             {
-                                ClassId   = req.ClassId.Value,
-                                StudentId = userId,
-                                EnrolledDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                                Status = EnrollmentStatus.Active
+                                await _uow.ClassEnrollments.AddAsync(new Domain.Entities.Academic.ClassEnrollment
+                                {
+                                    ClassId      = req.ClassId.Value,
+                                    StudentId    = userId,
+                                    EnrolledDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                                    Status       = EnrollmentStatus.Active
+                                }, ct);
+                            }
+                        }
+                        break;
+
+                    case "TEACHER":
+                        if (user.TeacherProfile != null)
+                        {
+                            user.TeacherProfile.DateOfBirth           = req.DateOfBirth;
+                            user.TeacherProfile.Gender                = req.Gender;
+                            user.TeacherProfile.SpecializationSubject = req.SpecializationSubject?.Trim();
+                            user.TeacherProfile.Qualification         = req.Qualification?.Trim();
+                        }
+                        break;
+
+                    case "SUPERVISOR":
+                        if (user.SupervisorProfile != null)
+                        {
+                            user.SupervisorProfile.DateOfBirth = req.DateOfBirth;
+                            user.SupervisorProfile.Gender      = req.Gender;
+                        }
+                        break;
+
+                    case "PARENT":
+                        if (user.ParentProfile != null)
+                        {
+                            user.ParentProfile.Occupation  = req.Occupation?.Trim();
+                            user.ParentProfile.WorkAddress = req.WorkAddress?.Trim();
+                        }
+                        if (req.LinkedStudentUserId.HasValue)
+                        {
+                            var existing = await _uow.ParentStudentRelations.FindAsync(
+                                r => r.ParentUserId == userId, ct: ct);
+                            foreach (var r in existing)
+                                _uow.ParentStudentRelations.Remove(r);
+                            await _uow.SaveChangesAsync(ct);
+
+                            await _uow.ParentStudentRelations.AddAsync(new ParentStudentRelation
+                            {
+                                ParentUserId     = userId,
+                                StudentUserId    = req.LinkedStudentUserId.Value,
+                                Relationship     = req.Relationship ?? "Phụ huynh",
+                                IsPrimaryContact = true
                             }, ct);
                         }
-                    }
-                    break;
+                        break;
+                }
 
-                case "TEACHER":
-                    if (user.TeacherProfile != null)
-                    {
-                        user.TeacherProfile.DateOfBirth           = req.DateOfBirth;
-                        user.TeacherProfile.Gender                = req.Gender;
-                        user.TeacherProfile.SpecializationSubject = req.SpecializationSubject?.Trim();
-                        user.TeacherProfile.Qualification         = req.Qualification?.Trim();
-                    }
-                    break;
+                await _uow.SaveChangesAsync(ct);
+            }, ct);
 
-                case "SUPERVISOR":
-                    if (user.SupervisorProfile != null)
-                    {
-                        user.SupervisorProfile.DateOfBirth = req.DateOfBirth;
-                        user.SupervisorProfile.Gender      = req.Gender;
-                    }
-                    break;
-
-                case "PARENT":
-                    // Update ParentProfile info
-                    if (user.ParentProfile != null)
-                    {
-                        user.ParentProfile.Occupation  = req.Occupation?.Trim();
-                        user.ParentProfile.WorkAddress = req.WorkAddress?.Trim();
-                    }
-                    // Update student link
-                    if (req.LinkedStudentUserId.HasValue)
-                    {
-                        var existing = await _uow.ParentStudentRelations.FindAsync(
-                            r => r.ParentUserId == userId, ct: ct);
-                        foreach (var r in existing)
-                            _uow.ParentStudentRelations.Remove(r);
-                        await _uow.SaveChangesAsync(ct);
-
-                        await _uow.ParentStudentRelations.AddAsync(new ParentStudentRelation
-                        {
-                            ParentUserId  = userId,
-                            StudentUserId = req.LinkedStudentUserId.Value,
-                            Relationship  = req.Relationship ?? "Phụ huynh",
-                            IsPrimaryContact = true
-                        }, ct);
-                    }
-                    break;
-            }
-
-            await _uow.SaveChangesAsync(ct);
-            await _uow.CommitTransactionAsync(ct);
             _logger.LogInformation("Updated account UserId={UserId}", userId);
-
             return await GetAccountByIdAsync(schoolId, userId, ct);
         }
         catch (Exception ex)
         {
-            await _uow.RollbackTransactionAsync(ct);
             _logger.LogError(ex, "UpdateAccount failed for UserId={UserId}", userId);
             return Result<AccountDetailDto>.Failure("INTERNAL_ERROR", "Có lỗi khi cập nhật tài khoản.");
         }

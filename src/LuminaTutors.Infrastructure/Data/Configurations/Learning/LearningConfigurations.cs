@@ -170,3 +170,29 @@ public class SubmissionFileConfiguration : IEntityTypeConfiguration<SubmissionFi
             .HasForeignKey(x => x.SubmissionId).OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+public class VirtualLabSessionConfiguration : IEntityTypeConfiguration<VirtualLabSession>
+{
+    public void Configure(EntityTypeBuilder<VirtualLabSession> b)
+    {
+        b.ToTable("VirtualLabSessions");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("SessionId").UseIdentityColumn();
+
+        b.Property(x => x.SessionName).IsRequired().HasMaxLength(100);
+        b.Property(x => x.SessionCode).IsRequired().HasMaxLength(6).IsFixedLength();
+        b.Property(x => x.SubjectTag).IsRequired().HasMaxLength(30);
+        b.Property(x => x.SceneType).IsRequired().HasMaxLength(30);
+        b.Property(x => x.MaxParticipants).HasDefaultValue(40);
+        b.Property(x => x.IsActive).HasDefaultValue(true);
+
+        b.HasIndex(x => new { x.SchoolId, x.SessionCode })
+            .HasDatabaseName("IX_VirtualLabSessions_School_Code");
+
+        b.HasOne(x => x.School).WithMany()
+            .HasForeignKey(x => x.SchoolId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(x => x.Teacher).WithMany()
+            .HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
+    }
+}

@@ -49,6 +49,22 @@ public class MappingProfile : Profile
             .ForMember(d => d.ClassName,   o => o.Ignore())
             .ForMember(d => d.GradeName,   o => o.Ignore());
 
+        // StudentService.SearchAsync queries StudentProfile and maps to StudentSummaryDto.
+        // Must use ConstructUsing because StudentSummaryDto is a positional record
+        // (no parameterless constructor), so ForMember + property-setter approach won't work.
+        CreateMap<StudentProfile, StudentSummaryDto>()
+            .ConstructUsing((s, _) => new StudentSummaryDto(
+                UserId:      s.UserId,
+                StudentCode: s.StudentCode,
+                FullName:    s.User != null ? s.User.FullName    : string.Empty,
+                PhoneNumber: s.User?.PhoneNumber,
+                AvatarUrl:   s.User?.AvatarUrl,
+                ClassName:   null,
+                GradeName:   null,
+                IsActive:    s.User != null && s.User.IsActive
+            ))
+            .ForAllMembers(o => o.Ignore()); // all members set via ConstructUsing
+
         CreateMap<ParentStudentRelation, ParentInfoDto>()
             .ForMember(d => d.FullName,    o => o.MapFrom(s => s.Parent.FullName))
             .ForMember(d => d.PhoneNumber, o => o.MapFrom(s => s.Parent.PhoneNumber));

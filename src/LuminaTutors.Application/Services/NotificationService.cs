@@ -111,7 +111,7 @@ public sealed class NotificationService : INotificationService
 
     // ─── GetForUser ───────────────────────────────────────────────────────────
 
-    public async Task<Result<IReadOnlyList<NotificationDto>>> GetForUserAsync(
+    public async Task<Result<PagedResult<NotificationDto>>> GetForUserAsync(
         int userId, int page, int pageSize, CancellationToken ct = default)
     {
         var paged = await _uow.NotificationRecipients.GetPagedAsync(
@@ -119,11 +119,19 @@ public sealed class NotificationService : INotificationService
             pageSize:   pageSize,
             filter:  r => r.UserId == userId,
             orderBy: q => q.OrderByDescending(r => r.Notification.SentAt),
-            include: q => q.Include(r => r.Notification),
+            include: q => q.Include(r => r.Notification)
+                           .ThenInclude(n => n.SentBy),
             ct: ct);
 
-        var dtos = _mapper.Map<List<NotificationDto>>(paged.Items);
-        return Result<IReadOnlyList<NotificationDto>>.Success(dtos);
+        // Map from Notification entity (not NotificationRecipient), then overlay IsRead
+        var dtos = paged.Items.Select(r =>
+        {
+            var dto = _mapper.Map<NotificationDto>(r.Notification);
+            return dto with { IsRead = r.IsRead };
+        }).ToList();
+
+        var result = PagedResult<NotificationDto>.Create(dtos, paged.TotalCount, page, pageSize);
+        return Result<PagedResult<NotificationDto>>.Success(result);
     }
 
     // ─── GetUnreadCount ───────────────────────────────────────────────────────

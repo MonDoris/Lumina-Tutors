@@ -5,12 +5,11 @@
     var teachers      = ViewBag.Teachers      as List<TeacherSummaryDto>      ?? new List<TeacherSummaryDto>();
     var gradeLevels   = ViewBag.GradeLevels   as List<GradeLevelSelectDto>    ?? new List<GradeLevelSelectDto>();
     var academicYears = ViewBag.AcademicYears as List<AcademicYearSelectDto>  ?? new List<AcademicYearSelectDto>();
-    var presetYear    = ViewBag.AcademicYearId as int?;
 }
 
 <div class="lt-page-header">
     <div>
-        <a asp-action="Index" asp-route-academicYearId="@presetYear"
+        <a asp-action="Index" asp-route-academicYearId="@(Model?.AcademicYearId)"
            class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
             <i class="bi bi-arrow-left"></i> Quay lại
         </a>
@@ -54,21 +53,21 @@
 
                     <!-- Năm học -->
                     <div class="lt-form-group">
-                        <label class="lt-label">
+                        <label class="lt-label" asp-for="AcademicYearId">
                             Năm học <span class="lt-text-danger">*</span>
                         </label>
                         @if (academicYears.Any())
                         {
-                            <select name="AcademicYearId" class="lt-select" required>
-                                <option value="">— Chọn năm học —</option>
+                            <select asp-for="AcademicYearId" class="lt-select" required>
+                                <option value="0">— Chọn năm học —</option>
                                 @foreach (var ay in academicYears)
                                 {
-                                    <option value="@ay.AcademicYearId"
-                                            selected="@(presetYear == ay.AcademicYearId || ay.IsActive ? "selected" : null)">
+                                    <option value="@ay.AcademicYearId">
                                         @ay.YearName @(ay.IsActive ? "(Hiện tại)" : "")
                                     </option>
                                 }
                             </select>
+                            <span asp-validation-for="AcademicYearId" class="lt-form-error"></span>
                         }
                         else
                         {
@@ -76,24 +75,25 @@
                                 <i class="bi bi-exclamation-triangle"></i>
                                 Chưa có năm học nào. Vui lòng tạo năm học trước.
                             </div>
-                            <input type="hidden" name="AcademicYearId" value="0"/>
+                            <input asp-for="AcademicYearId" type="hidden" value="0"/>
                         }
                     </div>
 
                     <!-- Khối lớp -->
                     <div class="lt-form-group">
-                        <label class="lt-label">
+                        <label class="lt-label" asp-for="GradeLevelId">
                             Khối lớp <span class="lt-text-danger">*</span>
                         </label>
                         @if (gradeLevels.Any())
                         {
-                            <select name="GradeLevelId" class="lt-select" required>
-                                <option value="">— Chọn khối lớp —</option>
+                            <select asp-for="GradeLevelId" class="lt-select" required>
+                                <option value="0">— Chọn khối lớp —</option>
                                 @foreach (var gl in gradeLevels)
                                 {
                                     <option value="@gl.GradeLevelId">@gl.GradeName</option>
                                 }
                             </select>
+                            <span asp-validation-for="GradeLevelId" class="lt-form-error"></span>
                         }
                         else
                         {
@@ -101,7 +101,7 @@
                                 <i class="bi bi-exclamation-triangle"></i>
                                 Chưa có khối lớp nào. Vui lòng cấu hình hệ thống.
                             </div>
-                            <input type="hidden" name="GradeLevelId" value="0"/>
+                            <input asp-for="GradeLevelId" type="hidden" value="0"/>
                         }
                     </div>
 
@@ -137,7 +137,7 @@
                     </div>
 
                     <div class="lt-flex-between" style="margin-top:24px">
-                        <a asp-action="Index" asp-route-academicYearId="@presetYear"
+                        <a asp-action="Index" asp-route-academicYearId="@(Model?.AcademicYearId)"
                            class="lt-btn lt-btn--outline">Hủy</a>
                         <button type="submit" class="lt-btn lt-btn--primary" data-testid="btn-submit-class">
                             <i class="bi bi-check-lg"></i> Tạo lớp học

@@ -23,4 +23,10 @@ public interface IClassService
     // ── Select lists for Create form ──────────────────────────────────────────
     Task<Result<IReadOnlyList<GradeLevelSelectDto>>>    GetGradeLevelsAsync(int schoolId, CancellationToken ct = default);
     Task<Result<IReadOnlyList<AcademicYearSelectDto>>>  GetAcademicYearsAsync(int schoolId, CancellationToken ct = default);
+
+    // ── Academic configuration (Admin) ────────────────────────────────────────
+    Task<Result<IReadOnlyList<AcademicYearConfigDto>>>  GetAcademicYearsForConfigAsync(int schoolId, CancellationToken ct = default);
+    Task<Result<IReadOnlyList<GradeLevelConfigDto>>>    GetGradeLevelsForConfigAsync(int schoolId, CancellationToken ct = default);
+    Task<Result<AcademicYearConfigDto>>                 CreateAcademicYearAsync(int schoolId, CreateAcademicYearRequest request, CancellationToken ct = default);
+    Task<Result<GradeLevelConfigDto>>                   CreateGradeLevelAsync(int schoolId, CreateGradeLevelRequest request, CancellationToken ct = default);
 }

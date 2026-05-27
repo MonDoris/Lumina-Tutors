@@ -132,3 +132,26 @@ public class SubmissionFile : BaseEntity
 
     public AssignmentSubmission Submission { get; set; } = null!;
 }
+
+// ─── VirtualLabSession ────────────────────────────────────────────────────────
+
+/// <summary>
+/// Represents an active 3D virtual lab session a teacher starts and students
+/// join via a short access code. The Three.js scene is driven by SceneType.
+/// SubjectTag: "chemistry" | "physics" | "biology"
+/// SceneType : "titration" | "pendulum" | "cell"
+/// </summary>
+public class VirtualLabSession : TenantEntity
+{
+    public int    TeacherId       { get; set; }
+    public string SessionName     { get; set; } = string.Empty;
+    public string SessionCode     { get; set; } = string.Empty;  // 6-char uppercase
+    public string SubjectTag      { get; set; } = string.Empty;
+    public string SceneType       { get; set; } = string.Empty;
+    public bool   IsActive        { get; set; } = true;
+    public int    MaxParticipants { get; set; } = 40;
+
+    // Navigation
+    public School School  { get; set; } = null!;
+    public User   Teacher { get; set; } = null!;
+}

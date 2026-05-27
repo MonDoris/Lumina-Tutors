@@ -112,9 +112,9 @@ public sealed class AccountController : Controller
 
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError(string.Empty, result.Error ?? "Có lỗi khi tạo tài khoản.");
-            await LoadSelectListsAsync();
-            return View(model);
+            // Redirect (PRG) so a browser refresh doesn't trigger ERR_CACHE_MISS
+            TempData["Error"] = result.Error ?? "Có lỗi khi tạo tài khoản. Vui lòng thử lại.";
+            return RedirectToAction(nameof(Create), new { role = model.RoleCode });
         }
 
         TempData["Success"] = $"Đã tạo tài khoản {result.Data!.FullName} thành công!";
@@ -183,11 +183,9 @@ public sealed class AccountController : Controller
 
         if (!result.IsSuccess)
         {
-            ModelState.AddModelError(string.Empty, result.Error ?? "Có lỗi khi cập nhật.");
-            var detail = await _accountService.GetAccountByIdAsync(SchoolId, id);
-            ViewBag.AccountDetail = detail.Data;
-            await LoadSelectListsAsync();
-            return View(model);
+            // Redirect (PRG) so a browser refresh doesn't trigger ERR_CACHE_MISS
+            TempData["Error"] = result.Error ?? "Có lỗi khi cập nhật tài khoản. Vui lòng thử lại.";
+            return RedirectToAction(nameof(Edit), new { id });
         }
 
         TempData["Success"] = "Đã cập nhật tài khoản thành công!";
