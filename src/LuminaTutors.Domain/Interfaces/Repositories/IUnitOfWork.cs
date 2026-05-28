@@ -59,6 +59,12 @@ public interface IUnitOfWork : IDisposable
     IRepository<AssignmentSubmission> AssignmentSubmissions { get; }
     IRepository<SubmissionFile>       SubmissionFiles       { get; }
     IRepository<VirtualLabSession>    VirtualLabSessions    { get; }
+    IRepository<QuizExam>             QuizExams             { get; }
+    IRepository<OnlineSession>        OnlineSessions        { get; }
+    IRepository<SessionParticipant>   SessionParticipants   { get; }
+    IRepository<QuizExamQuestion>     QuizExamQuestions     { get; }
+    IRepository<StudentQuizAttempt>   StudentQuizAttempts   { get; }
+    IRepository<StudentQuizAnswer>    StudentQuizAnswers    { get; }
 
     // ── Grading ───────────────────────────────────────────────────────────────
     IRepository<GradeCategory>           GradeCategories           { get; }

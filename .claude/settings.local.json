@@ -35,7 +35,12 @@
       "mcp__Claude_in_Chrome__read_page",
       "mcp__Claude_in_Chrome__form_input",
       "Bash(taskkill /PID 28088 /F)",
-      "Bash(taskkill /F /IM dotnet.exe)"
+      "Bash(taskkill /F /IM dotnet.exe)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\\\\src\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(xargs grep -l \"QuestionType\\\\|DifficultyLevel\")",
+      "Bash(Select-String \"AddQuizSystem\")",
+      "Bash(curl -L -o \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\\\\src\\\\LuminaTutors.Web\\\\wwwroot\\\\js\\\\three\\\\three.module.min.js\" \"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js\")"
     ]
   }
 }

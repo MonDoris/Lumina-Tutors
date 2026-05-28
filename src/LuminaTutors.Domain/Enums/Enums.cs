@@ -325,3 +325,29 @@ public enum AdmissionType
     New      = 1,
     Transfer = 2
 }
+
+// ─── Quiz / Exam ─────────────────────────────────────────────────────────────
+
+public enum QuizExamStatus
+{
+    Draft     = 1,   // teacher editing, not visible to students
+    Published = 2,   // students can take it (open)
+    Closed    = 3    // no more submissions
+}
+
+public enum AttemptStatus
+{
+    InProgress = 1,
+    Submitted  = 2,
+    TimedOut   = 3
+}
+
+// ─── Online Classroom ─────────────────────────────────────────────────────────
+
+public enum OnlineSessionStatus
+{
+    Scheduled = 1,
+    Live      = 2,
+    Ended     = 3,
+    Cancelled = 4
+}

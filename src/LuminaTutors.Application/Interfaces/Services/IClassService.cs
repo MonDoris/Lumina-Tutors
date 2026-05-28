@@ -21,6 +21,7 @@ public interface IClassService
     Task<Result<IReadOnlyList<ClassStudentDto>>>        GetUnassignedStudentsAsync(int schoolId, int classId, CancellationToken ct = default);
 
     // ── Select lists for Create form ──────────────────────────────────────────
+    Task<Result<IReadOnlyList<SubjectSelectDto>>>       GetSubjectsAsync(int schoolId, CancellationToken ct = default);
     Task<Result<IReadOnlyList<GradeLevelSelectDto>>>    GetGradeLevelsAsync(int schoolId, CancellationToken ct = default);
     Task<Result<IReadOnlyList<AcademicYearSelectDto>>>  GetAcademicYearsAsync(int schoolId, CancellationToken ct = default);
 

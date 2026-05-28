@@ -418,6 +418,22 @@ public sealed class ClassService : IClassService
         return Result<IReadOnlyList<ClassStudentDto>>.Success(unassigned);
     }
 
+    // ─── GetSubjects ──────────────────────────────────────────────────────────
+
+    public async Task<Result<IReadOnlyList<SubjectSelectDto>>> GetSubjectsAsync(
+        int schoolId, CancellationToken ct = default)
+    {
+        var subjects = await _uow.Subjects.FindAsync(
+            s => s.SchoolId == schoolId && s.IsActive, ct: ct);
+
+        var dtos = subjects
+            .OrderBy(s => s.SubjectName)
+            .Select(s => new SubjectSelectDto(s.Id, s.SubjectName, s.SubjectCode))
+            .ToList() as IReadOnlyList<SubjectSelectDto>;
+
+        return Result<IReadOnlyList<SubjectSelectDto>>.Success(dtos);
+    }
+
     // ─── GetGradeLevels ───────────────────────────────────────────────────────
 
     public async Task<Result<IReadOnlyList<GradeLevelSelectDto>>> GetGradeLevelsAsync(

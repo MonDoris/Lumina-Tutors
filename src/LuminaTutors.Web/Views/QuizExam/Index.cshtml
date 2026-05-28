@@ -1,0 +1,199 @@
+@using LuminaTutors.Application.DTOs.Quiz
+@using LuminaTutors.Domain.Common
+@model PagedResult<QuizExamDto>
+@{
+    ViewData["Title"] = "Đề thi trắc nghiệm";
+    var role = ViewBag.Role as string ?? "";
+    bool isTeacher = role is "TEACHER" or "ADMIN";
+
+    string StatusLabel(string s) => s switch {
+        "Draft"     => "Nháp",
+        "Published" => "Đang mở",
+        "Closed"    => "Đã đóng",
+        _ => s
+    };
+    string StatusColor(string s) => s switch {
+        "Published" => "var(--lt-success)",
+        "Closed"    => "var(--lt-danger)",
+        _ => "var(--lt-text-muted)"
+    };
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-file-earmark-text-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Đề thi trắc nghiệm
+        </h1>
+        <p class="lt-page-subtitle">
+            @(isTeacher ? "Quản lý đề thi và xem kết quả học sinh" : "Danh sách đề thi đang mở")
+        </p>
+    </div>
+    @if (isTeacher)
+    {
+        <div style="display:flex;gap:10px">
+            <a asp-controller="QuizBank" asp-action="Index" class="lt-btn lt-btn--outline">
+                <i class="bi bi-collection"></i> Ngân hàng câu hỏi
+            </a>
+            <a asp-action="Create" class="lt-btn lt-btn--primary">
+                <i class="bi bi-plus-lg"></i> Tạo đề thi
+            </a>
+        </div>
+    }
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+@if (isTeacher)
+{
+    <!-- Teacher filter tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:1.2rem">
+        @foreach (var (label, val) in new[] { ("Tất cả",""), ("Nháp","Draft"), ("Đang mở","Published"), ("Đã đóng","Closed") })
+        {
+            <a href="?status=@val"
+               class="lt-btn lt-btn--sm @(ViewBag.Status as string == val ? "lt-btn--primary" : "lt-btn--outline")">
+                @label
+            </a>
+        }
+    </div>
+}
+
+@if (Model == null || Model.Items.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <i class="bi bi-file-earmark-text" style="font-size:3rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">
+                    @(isTeacher ? "Chưa có đề thi nào" : "Không có đề thi nào đang mở")
+                </div>
+                @if (isTeacher)
+                {
+                    <a asp-action="Create" class="lt-btn lt-btn--primary lt-mt-3">
+                        <i class="bi bi-plus-lg"></i> Tạo đề thi đầu tiên
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var exam in Model.Items)
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="lt-card lt-card--hover" style="height:100%">
+                    <div class="lt-card__body" style="display:flex;flex-direction:column;gap:0">
+                        <!-- Header -->
+                        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+                            <div style="flex:1;min-width:0">
+                                <div style="font-weight:700;font-size:.95rem;
+                                            overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                                     title="@exam.Title">@exam.Title</div>
+                                <div style="font-size:.78rem;color:var(--lt-text-muted);margin-top:2px">
+                                    @exam.SubjectName
+                                    @if (!string.IsNullOrEmpty(exam.GradeLevelName))
+                                    { <span>· @exam.GradeLevelName</span> }
+                                </div>
+                            </div>
+                            <span class="lt-badge" style="margin-left:8px;flex-shrink:0;
+                                  background:@StatusColor(exam.Status)22;
+                                  color:@StatusColor(exam.Status);border:none;font-size:.72rem">
+                                @StatusLabel(exam.Status)
+                            </span>
+                        </div>
+
+                        <!-- Stats row -->
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+                            <div style="text-align:center;padding:8px 4px;background:var(--lt-bg-subtle);border-radius:8px">
+                                <div style="font-size:1.1rem;font-weight:700;color:var(--lt-navy)">@exam.TotalQuestions</div>
+                                <div style="font-size:.68rem;color:var(--lt-text-muted)">Câu hỏi</div>
+                            </div>
+                            <div style="text-align:center;padding:8px 4px;background:var(--lt-bg-subtle);border-radius:8px">
+                                <div style="font-size:1.1rem;font-weight:700;color:var(--lt-navy)">
+                                    @(exam.TimeLimitMinutes == 0 ? "∞" : exam.TimeLimitMinutes.ToString())
+                                </div>
+                                <div style="font-size:.68rem;color:var(--lt-text-muted)">
+                                    @(exam.TimeLimitMinutes == 0 ? "Không giới hạn" : "Phút")
+                                </div>
+                            </div>
+                            <div style="text-align:center;padding:8px 4px;background:var(--lt-bg-subtle);border-radius:8px">
+                                <div style="font-size:1.1rem;font-weight:700;color:var(--lt-navy)">@exam.TotalPoints</div>
+                                <div style="font-size:.68rem;color:var(--lt-text-muted)">Điểm tối đa</div>
+                            </div>
+                        </div>
+
+                        @if (isTeacher)
+                        {
+                            <div style="font-size:.75rem;color:var(--lt-text-muted);margin-bottom:10px">
+                                <i class="bi bi-people-fill"></i>
+                                @exam.AttemptCount học sinh đã nộp bài
+                                <span style="margin-left:8px">
+                                    <i class="bi bi-person-fill"></i> @exam.TeacherName.Split(' ').Last()
+                                </span>
+                            </div>
+                        }
+
+                        <!-- Actions -->
+                        <div style="margin-top:auto;display:flex;gap:6px;flex-wrap:wrap">
+                            @if (!isTeacher && exam.Status == "Published")
+                            {
+                                <a asp-action="Take" asp-route-id="@exam.ExamId"
+                                   class="lt-btn lt-btn--primary lt-btn--sm" style="flex:1;justify-content:center">
+                                    <i class="bi bi-play-fill"></i> Vào làm bài
+                                </a>
+                            }
+                            else if (isTeacher)
+                            {
+                                <a asp-action="Results" asp-route-id="@exam.ExamId"
+                                   class="lt-btn lt-btn--outline lt-btn--sm" style="flex:1;justify-content:center">
+                                    <i class="bi bi-bar-chart-fill"></i> Kết quả
+                                </a>
+                                @if (exam.Status == "Draft")
+                                {
+                                    <form asp-action="Publish" asp-route-id="@exam.ExamId" method="post" style="flex:1">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--primary lt-btn--sm"
+                                                style="width:100%;justify-content:center">
+                                            <i class="bi bi-broadcast"></i> Mở
+                                        </button>
+                                    </form>
+                                }
+                                else if (exam.Status == "Published")
+                                {
+                                    <form asp-action="Close" asp-route-id="@exam.ExamId" method="post" style="flex:1">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                style="width:100%;justify-content:center;border-color:var(--lt-danger);color:var(--lt-danger)"
+                                                onclick="return confirm('Đóng đề thi?')">
+                                            <i class="bi bi-stop-circle"></i> Đóng
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Delete" asp-route-id="@exam.ExamId" method="post" style="flex:1">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                style="width:100%;justify-content:center;border-color:var(--lt-danger);color:var(--lt-danger)"
+                                                onclick="return confirm('Xóa đề thi này?')">
+                                            <i class="bi bi-trash3"></i> Xóa
+                                        </button>
+                                    </form>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

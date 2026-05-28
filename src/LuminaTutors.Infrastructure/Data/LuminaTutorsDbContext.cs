@@ -64,8 +64,14 @@ public class LuminaTutorsDbContext : DbContext
     public DbSet<QuestionOption>       QuestionOptions       => Set<QuestionOption>();
     public DbSet<Assignment>           Assignments           => Set<Assignment>();
     public DbSet<AssignmentSubmission> AssignmentSubmissions => Set<AssignmentSubmission>();
+    public DbSet<QuizExam>             QuizExams             => Set<QuizExam>();
+    public DbSet<QuizExamQuestion>     QuizExamQuestions     => Set<QuizExamQuestion>();
+    public DbSet<StudentQuizAttempt>   StudentQuizAttempts   => Set<StudentQuizAttempt>();
+    public DbSet<StudentQuizAnswer>    StudentQuizAnswers    => Set<StudentQuizAnswer>();
     public DbSet<SubmissionFile>       SubmissionFiles       => Set<SubmissionFile>();
     public DbSet<VirtualLabSession>    VirtualLabSessions    => Set<VirtualLabSession>();
+    public DbSet<OnlineSession>        OnlineSessions        => Set<OnlineSession>();
+    public DbSet<SessionParticipant>   SessionParticipants   => Set<SessionParticipant>();
 
     // ── Grading ───────────────────────────────────────────────────────────────
     public DbSet<GradeCategory>           GradeCategories          => Set<GradeCategory>();

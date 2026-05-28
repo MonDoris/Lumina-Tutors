@@ -4,6 +4,7 @@ using LuminaTutors.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LuminaTutors.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaTutorsDbContext))]
-    partial class LuminaTutorsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260528162224_AddOnlineClassroom")]
+    partial class AddOnlineClassroom
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

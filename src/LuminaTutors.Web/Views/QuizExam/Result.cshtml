@@ -1,0 +1,201 @@
+@using LuminaTutors.Application.DTOs.Quiz
+@model AttemptResultDto
+@{
+    ViewData["Title"] = "Kết quả — " + Model.ExamTitle;
+    var pct       = Model.TotalQuestions > 0 ? (double)Model.TotalCorrect / Model.TotalQuestions * 100 : 0;
+    var passed    = pct >= 50;
+    var scoreColor = pct >= 80 ? "var(--lt-success)" : pct >= 50 ? "var(--lt-gold)" : "var(--lt-danger)";
+    var duration  = (Model.SubmittedAt - Model.StartedAt);
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-clipboard2-check-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Kết quả bài thi
+        </h1>
+        <p class="lt-page-subtitle">@Model.ExamTitle</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Về danh sách đề thi
+    </a>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div>
+}
+
+<!-- ── Score summary card ── -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body">
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:2rem;align-items:center">
+
+            <!-- Big score circle -->
+            <div style="text-align:center">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--lt-border)" stroke-width="10"/>
+                    <circle cx="60" cy="60" r="50" fill="none"
+                            stroke="@scoreColor" stroke-width="10"
+                            stroke-dasharray="@(314 * pct / 100) 314"
+                            stroke-linecap="round"
+                            transform="rotate(-90 60 60)"/>
+                </svg>
+                <div style="margin-top:-88px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                    <div style="font-size:1.8rem;font-weight:800;color:@scoreColor;line-height:1">
+                        @Model.Score.ToString("F1")
+                    </div>
+                    <div style="font-size:.72rem;color:var(--lt-text-muted)">/ @Model.MaxScore.ToString("F0")</div>
+                </div>
+                <div style="margin-top:52px">
+                    <span class="lt-badge" style="background:@scoreColor;color:#fff;border:none;font-size:.75rem;padding:3px 10px">
+                        @(passed ? "ĐẠT" : "CHƯA ĐẠT")
+                    </span>
+                </div>
+            </div>
+
+            <!-- Stats grid -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                <div style="text-align:center;padding:1rem;background:var(--lt-bg-subtle);border-radius:10px">
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--lt-success)">@Model.TotalCorrect</div>
+                    <div style="font-size:.72rem;color:var(--lt-text-muted)">Câu đúng</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--lt-bg-subtle);border-radius:10px">
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--lt-danger)">@(Model.TotalQuestions - Model.TotalCorrect)</div>
+                    <div style="font-size:.72rem;color:var(--lt-text-muted)">Câu sai</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--lt-bg-subtle);border-radius:10px">
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--lt-navy)">@Model.TotalQuestions</div>
+                    <div style="font-size:.72rem;color:var(--lt-text-muted)">Tổng câu</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--lt-bg-subtle);border-radius:10px">
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--lt-navy)">@pct.ToString("F0")%</div>
+                    <div style="font-size:.72rem;color:var(--lt-text-muted)">Tỉ lệ đúng</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--lt-bg-subtle);border-radius:10px">
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--lt-navy)">
+                        @if (duration.TotalMinutes < 1) { @($"{(int)duration.TotalSeconds}s") }
+                        else { @($"{(int)duration.TotalMinutes}p {duration.Seconds}s") }
+                    </div>
+                    <div style="font-size:.72rem;color:var(--lt-text-muted)">Thời gian làm</div>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--lt-bg-subtle);border-radius:10px">
+                    <div style="font-size:.95rem;font-weight:700;color:var(--lt-gold)">@Model.ExamCode</div>
+                    <div style="font-size:.72rem;color:var(--lt-text-muted)">Mã đề</div>
+                </div>
+            </div>
+
+            <!-- Student info -->
+            <div style="min-width:160px;padding:1rem 1.2rem;background:var(--lt-bg-subtle);border-radius:12px;text-align:center">
+                <div style="width:48px;height:48px;background:var(--lt-navy-900);border-radius:12px;
+                            margin:0 auto 8px;display:flex;align-items:center;justify-content:center;
+                            color:var(--lt-gold);font-weight:800;font-size:1.1rem">
+                    @string.Concat(Model.StudentName.Split(' ').TakeLast(2).Select(p => p.FirstOrDefault()))
+                </div>
+                <div style="font-weight:600;font-size:.85rem">@Model.StudentName</div>
+                <div style="font-size:.75rem;color:var(--lt-text-muted)">@Model.StudentCode</div>
+                <div style="font-size:.72rem;color:var(--lt-text-muted);margin-top:6px">
+                    Nộp lúc @Model.SubmittedAt.ToString("HH:mm dd/MM/yyyy")
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Per-question review ── -->
+<div class="lt-card">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title">
+            <i class="bi bi-list-check" style="color:var(--lt-gold);margin-right:6px"></i>
+            Chi tiết từng câu
+        </h3>
+        <div style="display:flex;gap:8px;font-size:.78rem">
+            <span style="color:var(--lt-success)"><i class="bi bi-check-circle-fill"></i> Đúng</span>
+            <span style="color:var(--lt-danger)"><i class="bi bi-x-circle-fill"></i> Sai</span>
+        </div>
+    </div>
+    <div class="lt-card__body" style="display:flex;flex-direction:column;gap:16px">
+        @foreach (var (rq, idx) in Model.Questions.Select((q, i) => (q, i)))
+        {
+            var isCorrect = rq.IsCorrect;
+            var qColor = isCorrect ? "var(--lt-success)" : "var(--lt-danger)";
+            var qBg    = isCorrect ? "rgba(22,163,74,.05)" : "rgba(220,38,38,.05)";
+
+            <div style="border:1.5px solid @(isCorrect ? "rgba(22,163,74,.25)" : "rgba(220,38,38,.25)");
+                        border-radius:12px;padding:1rem;background:@qBg">
+                <!-- Question header -->
+                <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:.9rem">
+                    <div style="width:28px;height:28px;border-radius:7px;flex-shrink:0;
+                                background:@qColor;color:#fff;
+                                display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem">
+                        @(idx + 1)
+                    </div>
+                    <div style="flex:1">
+                        <div style="font-weight:600;font-size:.88rem;line-height:1.5">@rq.QuestionText</div>
+                    </div>
+                    <div style="font-size:.8rem;font-weight:700;color:@qColor;white-space:nowrap">
+                        @if (isCorrect) { <i class="bi bi-check-circle-fill"></i> } else { <i class="bi bi-x-circle-fill"></i> }
+                        @(isCorrect ? "Đúng" : "Sai")
+                    </div>
+                </div>
+
+                <!-- Options -->
+                <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:@(!string.IsNullOrEmpty(rq.ExplanationText) ? ".9rem" : "0")">
+                    @foreach (var opt in rq.Options)
+                    {
+                        var isSelected = rq.SelectedOptionId == opt.OptionId;
+                        var isRight    = opt.IsCorrect;
+
+                        string optBg, optBorder, optIconHtml;
+                        if (isRight) {
+                            optBg = "rgba(22,163,74,.08)"; optBorder = "rgba(22,163,74,.4)";
+                            optIconHtml = "<i class=\"bi bi-check-circle-fill\" style=\"color:var(--lt-success)\"></i>";
+                        } else if (isSelected && !isRight) {
+                            optBg = "rgba(220,38,38,.07)"; optBorder = "rgba(220,38,38,.35)";
+                            optIconHtml = "<i class=\"bi bi-x-circle-fill\" style=\"color:var(--lt-danger)\"></i>";
+                        } else {
+                            optBg = "transparent"; optBorder = "var(--lt-border)";
+                            optIconHtml = "";
+                        }
+
+                        <div style="display:flex;gap:8px;align-items:center;padding:.5rem .8rem;
+                                    background:@optBg;border:1.5px solid @optBorder;border-radius:8px">
+                            <div style="width:24px;height:24px;border-radius:6px;flex-shrink:0;
+                                        background:var(--lt-navy-900);color:var(--lt-gold);
+                                        font-size:.72rem;font-weight:700;
+                                        display:flex;align-items:center;justify-content:center">
+                                @opt.OptionLabel
+                            </div>
+                            <div style="flex:1;font-size:.83rem">@opt.OptionText</div>
+                            @if (!string.IsNullOrEmpty(optIconHtml)) { @Html.Raw(optIconHtml) }
+                            @if (isSelected && isRight)
+                            {
+                                <span style="font-size:.7rem;color:var(--lt-success);font-weight:600">Bạn chọn · Đúng</span>
+                            }
+                            else if (isSelected && !isRight)
+                            {
+                                <span style="font-size:.7rem;color:var(--lt-danger);font-weight:600">Bạn chọn</span>
+                            }
+                            else if (isRight)
+                            {
+                                <span style="font-size:.7rem;color:var(--lt-success);font-weight:600">Đáp án đúng</span>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(rq.ExplanationText))
+                {
+                    <div style="display:flex;gap:8px;padding:.6rem .8rem;
+                                background:rgba(201,169,110,.08);border-radius:8px;
+                                border-left:3px solid var(--lt-gold)">
+                        <i class="bi bi-lightbulb-fill" style="color:var(--lt-gold);flex-shrink:0;margin-top:2px"></i>
+                        <div style="font-size:.8rem;color:var(--lt-text-muted);line-height:1.5">
+                            <strong style="color:var(--lt-navy)">Giải thích:</strong> @rq.ExplanationText
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

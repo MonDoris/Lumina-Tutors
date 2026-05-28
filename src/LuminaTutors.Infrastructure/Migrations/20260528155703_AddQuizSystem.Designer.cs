@@ -4,6 +4,7 @@ using LuminaTutors.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LuminaTutors.Infrastructure.Migrations
 {
     [DbContext(typeof(LuminaTutorsDbContext))]
-    partial class LuminaTutorsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260528155703_AddQuizSystem")]
+    partial class AddQuizSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2580,71 +2583,6 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.ToTable("LessonMaterials", (string)null);
                 });
 
-            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.OnlineSession", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("SessionId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime?>("EndedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("MaxParticipants")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(50);
-
-                    b.Property<string>("RoomCode")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime?>("ScheduledAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SchoolId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("StartedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<int>("TeacherId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TeacherId");
-
-                    b.HasIndex("SchoolId", "RoomCode")
-                        .IsUnique()
-                        .HasDatabaseName("UQ_OnlineSessions_School_RoomCode");
-
-                    b.ToTable("OnlineSessions", (string)null);
-                });
-
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.QuestionBank", b =>
                 {
                     b.Property<int>("Id")
@@ -2866,37 +2804,6 @@ namespace LuminaTutors.Infrastructure.Migrations
                         .HasDatabaseName("UQ_QuizExamQuestions_Exam_Question");
 
                     b.ToTable("QuizExamQuestions", (string)null);
-                });
-
-            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.SessionParticipant", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ParticipantId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("JoinedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("LeftAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SessionId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("SessionId", "UserId")
-                        .HasDatabaseName("IX_SessionParticipants_Session_User");
-
-                    b.ToTable("SessionParticipants", (string)null);
                 });
 
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.StudentQuizAnswer", b =>
@@ -4520,25 +4427,6 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.Navigation("Lesson");
                 });
 
-            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.OnlineSession", b =>
-                {
-                    b.HasOne("LuminaTutors.Domain.Entities.Identity.School", "School")
-                        .WithMany()
-                        .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("LuminaTutors.Domain.Entities.Identity.User", "Teacher")
-                        .WithMany()
-                        .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("School");
-
-                    b.Navigation("Teacher");
-                });
-
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.QuestionBank", b =>
                 {
                     b.HasOne("LuminaTutors.Domain.Entities.Identity.User", "CreatedByTeacher")
@@ -4635,25 +4523,6 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.Navigation("Exam");
 
                     b.Navigation("Question");
-                });
-
-            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.SessionParticipant", b =>
-                {
-                    b.HasOne("LuminaTutors.Domain.Entities.Learning.OnlineSession", "Session")
-                        .WithMany("Participants")
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("LuminaTutors.Domain.Entities.Identity.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Session");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.StudentQuizAnswer", b =>
@@ -5019,11 +4888,6 @@ namespace LuminaTutors.Infrastructure.Migrations
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.Lesson", b =>
                 {
                     b.Navigation("Materials");
-                });
-
-            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.OnlineSession", b =>
-                {
-                    b.Navigation("Participants");
                 });
 
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.QuestionBank", b =>

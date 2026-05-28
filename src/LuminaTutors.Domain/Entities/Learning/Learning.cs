@@ -133,6 +133,95 @@ public class SubmissionFile : BaseEntity
     public AssignmentSubmission Submission { get; set; } = null!;
 }
 
+// ─── QuizExam ─────────────────────────────────────────────────────────────────
+
+/// <summary>
+/// An online multiple-choice exam created by a teacher.
+/// Each student receives a deterministically shuffled version (different question
+/// and answer order) identified by a unique ExamCode (e.g. "MĐ001").
+/// </summary>
+public class QuizExam : AuditableEntity
+{
+    public int    SchoolId          { get; set; }
+    public int    SubjectId         { get; set; }
+    public int?   GradeLevelId      { get; set; }
+    public int    CreatedByTeacherId{ get; set; }
+    public string Title             { get; set; } = string.Empty;
+    public string? Description      { get; set; }
+    public int    TimeLimitMinutes  { get; set; } = 0;     // 0 = unlimited
+    public int    TotalQuestions    { get; set; } = 0;
+    public decimal PointsPerQuestion{ get; set; } = 1M;   // default 1 pt / question
+    public QuizExamStatus Status    { get; set; } = QuizExamStatus.Draft;
+    public DateTime? StartTime      { get; set; }
+    public DateTime? EndTime        { get; set; }
+    public bool   ShuffleQuestions  { get; set; } = true;
+    public bool   ShuffleOptions    { get; set; } = true;
+    public bool   ShowResultAfter   { get; set; } = true;  // student sees score after submit
+
+    // Navigation
+    public School     School          { get; set; } = null!;
+    public Subject    Subject         { get; set; } = null!;
+    public GradeLevel? GradeLevel     { get; set; }
+    public User       CreatedByTeacher{ get; set; } = null!;
+    public ICollection<QuizExamQuestion>    Questions { get; set; } = [];
+    public ICollection<StudentQuizAttempt> Attempts  { get; set; } = [];
+}
+
+// ─── QuizExamQuestion ─────────────────────────────────────────────────────────
+
+/// <summary>
+/// Junction between QuizExam and QuestionBank.
+/// </summary>
+public class QuizExamQuestion : BaseEntity
+{
+    public int ExamId      { get; set; }
+    public int QuestionId  { get; set; }
+    public int OrderIndex  { get; set; } = 0;
+
+    public QuizExam     Exam     { get; set; } = null!;
+    public QuestionBank Question { get; set; } = null!;
+}
+
+// ─── StudentQuizAttempt ───────────────────────────────────────────────────────
+
+/// <summary>
+/// One student's attempt at a QuizExam.
+/// ShuffleSeed drives the deterministic shuffle of questions and options —
+/// the same seed always produces the same order, so the exam can be reconstructed
+/// for grading and review without storing duplicate question data.
+/// ExamCode ("MĐ001") is a human-readable identifier shown on printouts.
+/// </summary>
+public class StudentQuizAttempt : AuditableEntity
+{
+    public int    ExamId       { get; set; }
+    public int    StudentId    { get; set; }
+    public string ExamCode     { get; set; } = string.Empty;  // e.g. "MĐ001"
+    public int    ShuffleSeed  { get; set; }
+    public DateTime  StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? SubmittedAt{ get; set; }
+    public decimal?  Score     { get; set; }        // null until submitted
+    public int    TotalCorrect { get; set; } = 0;
+    public AttemptStatus Status{ get; set; } = AttemptStatus.InProgress;
+
+    public QuizExam Exam    { get; set; } = null!;
+    public User     Student { get; set; } = null!;
+    public ICollection<StudentQuizAnswer> Answers { get; set; } = [];
+}
+
+// ─── StudentQuizAnswer ────────────────────────────────────────────────────────
+
+public class StudentQuizAnswer : BaseEntity
+{
+    public int  AttemptId        { get; set; }
+    public int  QuestionId       { get; set; }
+    public int? SelectedOptionId { get; set; }   // null = skipped
+    public bool IsCorrect        { get; set; } = false;
+
+    public StudentQuizAttempt Attempt        { get; set; } = null!;
+    public QuestionBank       Question       { get; set; } = null!;
+    public QuestionOption?    SelectedOption { get; set; }
+}
+
 // ─── VirtualLabSession ────────────────────────────────────────────────────────
 
 /// <summary>
@@ -154,4 +243,35 @@ public class VirtualLabSession : TenantEntity
     // Navigation
     public School School  { get; set; } = null!;
     public User   Teacher { get; set; } = null!;
+}
+
+// ─── Online Classroom ──────────────────────────────────────────────────────────
+
+public class OnlineSession : TenantEntity
+{
+    public int     TeacherId       { get; set; }
+    public string  Title           { get; set; } = string.Empty;
+    public string? Description     { get; set; }
+    public string  RoomCode        { get; set; } = string.Empty; // e.g. "LUMINA-A3X9"
+    public OnlineSessionStatus Status { get; set; } = OnlineSessionStatus.Scheduled;
+    public DateTime? ScheduledAt   { get; set; }
+    public DateTime? StartedAt     { get; set; }
+    public DateTime? EndedAt       { get; set; }
+    public int     MaxParticipants { get; set; } = 50;
+
+    // Navigation
+    public School  School   { get; set; } = null!;
+    public User    Teacher  { get; set; } = null!;
+    public ICollection<SessionParticipant> Participants { get; set; } = [];
+}
+
+public class SessionParticipant : BaseEntity
+{
+    public int       SessionId { get; set; }
+    public int       UserId    { get; set; }
+    public DateTime  JoinedAt  { get; set; } = DateTime.UtcNow;
+    public DateTime? LeftAt    { get; set; }
+
+    public OnlineSession Session { get; set; } = null!;
+    public User          User    { get; set; } = null!;
 }

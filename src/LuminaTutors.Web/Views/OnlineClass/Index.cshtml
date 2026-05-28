@@ -1,0 +1,296 @@
+@using LuminaTutors.Application.DTOs.Online
+@model IReadOnlyList<OnlineSessionDto>
+@{
+    ViewData["Title"] = "Phòng học online";
+}
+
+@* If live rooms exist, pre-warm Jitsi connection immediately on this page *@
+@if (Model?.Any(s => s.Status == "Live") == true)
+{
+    @section Styles {
+        <link rel="preconnect" href="https://meet.jit.si" crossorigin>
+        <link rel="preconnect" href="https://8x8.vc" crossorigin>
+    }
+}
+
+@{
+    var role      = ViewBag.Role as string ?? "";
+    bool isTeacher = role is "TEACHER" or "ADMIN";
+
+    var live      = Model?.Where(s => s.Status == "Live").ToList() ?? [];
+    var scheduled = Model?.Where(s => s.Status == "Scheduled").ToList() ?? [];
+    var past      = Model?.Where(s => s.Status is "Ended" or "Cancelled").ToList() ?? [];
+
+    string StatusLabel(string s) => s switch {
+        "Scheduled" => "Sắp diễn ra",
+        "Live"      => "Đang phát",
+        "Ended"     => "Đã kết thúc",
+        "Cancelled" => "Đã hủy",
+        _           => s
+    };
+    string StatusColor(string s) => s switch {
+        "Live"      => "var(--lt-danger)",
+        "Scheduled" => "var(--lt-gold)",
+        "Ended"     => "var(--lt-text-muted)",
+        _           => "var(--lt-text-muted)"
+    };
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-camera-video-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Phòng học online
+        </h1>
+        <p class="lt-page-subtitle">
+            @(isTeacher ? "Quản lý và bắt đầu buổi học trực tuyến" : "Tham gia buổi học đang diễn ra")
+        </p>
+    </div>
+    @if (isTeacher)
+    {
+        <a asp-action="Create" class="lt-btn lt-btn--primary">
+            <i class="bi bi-plus-lg"></i> Tạo phòng học
+        </a>
+    }
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<!-- ── Live sessions (highlighted) ── -->
+@if (live.Count > 0)
+{
+    <div style="margin-bottom:1.5rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.8rem">
+            <span class="lt-pulse-dot" style="background:var(--lt-danger);width:10px;height:10px"></span>
+            <h2 style="font-size:.9rem;font-weight:700;color:var(--lt-danger);margin:0">Đang phát trực tiếp</h2>
+        </div>
+        <div class="row g-3">
+            @foreach (var s in live)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <div class="lt-card lt-card--hover" style="border:2px solid rgba(220,38,38,.3);
+                              background:rgba(220,38,38,.03)">
+                        <div class="lt-card__body">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-weight:700;font-size:.95rem;overflow:hidden;
+                                                text-overflow:ellipsis;white-space:nowrap"
+                                         title="@s.Title">@s.Title</div>
+                                    <div style="font-size:.77rem;color:var(--lt-text-muted);margin-top:2px">
+                                        <i class="bi bi-person-fill"></i> @s.TeacherName
+                                    </div>
+                                </div>
+                                <span class="lt-badge" style="background:rgba(220,38,38,.12);color:var(--lt-danger);
+                                      border:none;font-size:.7rem;margin-left:8px;flex-shrink:0">
+                                    <span class="lt-pulse-dot" style="background:var(--lt-danger);display:inline-block;
+                                          width:7px;height:7px;margin-right:4px;vertical-align:middle"></span>
+                                    LIVE
+                                </span>
+                            </div>
+                            <div style="display:flex;gap:8px;font-size:.76rem;color:var(--lt-text-muted);margin-bottom:12px">
+                                <span><i class="bi bi-people-fill"></i> @s.ParticipantCount người đã tham gia</span>
+                                @if (s.StartedAt.HasValue)
+                                {
+                                    <span><i class="bi bi-clock-fill"></i> @s.StartedAt.Value.ToString("HH:mm")</span>
+                                }
+                            </div>
+                            <div style="display:flex;gap:6px">
+                                <a asp-action="Room" asp-route-id="@s.SessionId"
+                                   class="lt-btn lt-btn--primary lt-btn--sm" style="flex:1;justify-content:center">
+                                    <i class="bi bi-camera-video-fill"></i> Vào phòng học
+                                </a>
+                                @if (isTeacher && s.TeacherId == (int)(ViewBag.UserId ?? 0))
+                                {
+                                    <form asp-action="End" asp-route-id="@s.SessionId" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                style="border-color:var(--lt-danger);color:var(--lt-danger)"
+                                                onclick="return confirm('Kết thúc buổi học?')">
+                                            <i class="bi bi-stop-fill"></i> Kết thúc
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- ── Scheduled ── -->
+@if (scheduled.Count > 0)
+{
+    <div style="margin-bottom:1.5rem">
+        <h2 style="font-size:.85rem;font-weight:700;color:var(--lt-text-muted);margin-bottom:.8rem;
+                   text-transform:uppercase;letter-spacing:.04em">Sắp diễn ra</h2>
+        <div class="row g-3">
+            @foreach (var s in scheduled)
+            {
+                bool isOwner = isTeacher && s.TeacherId == (int)(ViewBag.UserId ?? 0);
+                <div class="col-md-6 col-xl-4">
+                    <div class="lt-card lt-card--hover">
+                        <div class="lt-card__body">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                                <div style="flex:1;min-width:0">
+                                    <div style="font-weight:700;font-size:.92rem;overflow:hidden;
+                                                text-overflow:ellipsis;white-space:nowrap"
+                                         title="@s.Title">@s.Title</div>
+                                    <div style="font-size:.77rem;color:var(--lt-text-muted);margin-top:2px">
+                                        <i class="bi bi-person-fill"></i> @s.TeacherName
+                                    </div>
+                                </div>
+                                <span class="lt-badge" style="background:rgba(201,169,110,.12);color:var(--lt-gold);
+                                      border:none;font-size:.7rem;margin-left:8px;flex-shrink:0">
+                                    <i class="bi bi-clock"></i> Sắp mở
+                                </span>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(s.Description))
+                            {
+                                <p style="font-size:.8rem;color:var(--lt-text-muted);margin-bottom:8px;
+                                          display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+                                    @s.Description
+                                </p>
+                            }
+
+                            <div style="display:flex;gap:12px;font-size:.75rem;color:var(--lt-text-muted);margin-bottom:10px">
+                                @if (s.ScheduledAt.HasValue)
+                                {
+                                    <span><i class="bi bi-calendar-event-fill"></i>
+                                        @s.ScheduledAt.Value.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</span>
+                                }
+                                <span><i class="bi bi-key-fill" style="color:var(--lt-gold)"></i>
+                                    <strong style="font-family:monospace;color:var(--lt-navy)">@s.RoomCode</strong>
+                                </span>
+                            </div>
+
+                            @if (isOwner)
+                            {
+                                <div style="display:flex;gap:6px">
+                                    <form asp-action="Start" asp-route-id="@s.SessionId" method="post" style="flex:1">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--primary lt-btn--sm"
+                                                style="width:100%;justify-content:center">
+                                            <i class="bi bi-broadcast"></i> Bắt đầu ngay
+                                        </button>
+                                    </form>
+                                    <form asp-action="Cancel" asp-route-id="@s.SessionId" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                onclick="return confirm('Hủy buổi học?')">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                            else
+                            {
+                                <div style="font-size:.78rem;color:var(--lt-text-muted);text-align:center;
+                                            padding:.5rem;background:var(--lt-bg-subtle);border-radius:8px">
+                                    <i class="bi bi-hourglass-split"></i> Chờ giáo viên bắt đầu
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- ── Empty state ── -->
+@if (live.Count == 0 && scheduled.Count == 0)
+{
+    <div class="lt-card lt-mb-4">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <i class="bi bi-camera-video" style="font-size:3rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">
+                    @(isTeacher ? "Chưa có phòng học nào" : "Không có buổi học nào đang mở")
+                </div>
+                @if (isTeacher)
+                {
+                    <a asp-action="Create" class="lt-btn lt-btn--primary lt-mt-3">
+                        <i class="bi bi-plus-lg"></i> Tạo phòng học đầu tiên
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Past sessions (teacher only) ── -->
+@if (isTeacher && past.Count > 0)
+{
+    <div style="margin-top:1.5rem">
+        <h2 style="font-size:.85rem;font-weight:700;color:var(--lt-text-muted);margin-bottom:.8rem;
+                   text-transform:uppercase;letter-spacing:.04em">Lịch sử buổi học</h2>
+        <div class="lt-card">
+            <div class="lt-card__body" style="padding:0">
+                <table class="lt-table">
+                    <thead>
+                        <tr>
+                            <th>Tên phòng</th>
+                            <th style="width:90px">Mã phòng</th>
+                            <th style="width:130px">Thời gian</th>
+                            <th style="width:80px">Người tham gia</th>
+                            <th style="width:90px">Trạng thái</th>
+                            <th style="width:60px;text-align:right">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in past)
+                        {
+                            <tr>
+                                <td>
+                                    <div style="font-weight:600;font-size:.85rem">@s.Title</div>
+                                    @if (!string.IsNullOrEmpty(s.Description))
+                                    {
+                                        <div style="font-size:.75rem;color:var(--lt-text-muted)">@s.Description</div>
+                                    }
+                                </td>
+                                <td>
+                                    <span style="font-family:monospace;font-size:.78rem;font-weight:700;
+                                                 color:var(--lt-navy)">@s.RoomCode</span>
+                                </td>
+                                <td style="font-size:.77rem;color:var(--lt-text-muted)">
+                                    @(s.StartedAt.HasValue ? s.StartedAt.Value.ToLocalTime().ToString("HH:mm dd/MM") : "—")
+                                    @if (s.StartedAt.HasValue && s.EndedAt.HasValue)
+                                    {
+                                        var dur = s.EndedAt.Value - s.StartedAt.Value;
+                                        <span> · @($"{(int)dur.TotalMinutes}p")</span>
+                                    }
+                                </td>
+                                <td style="font-size:.8rem;text-align:center">@s.ParticipantCount</td>
+                                <td>
+                                    <span style="font-size:.75rem;color:@StatusColor(s.Status)">
+                                        @StatusLabel(s.Status)
+                                    </span>
+                                </td>
+                                <td style="text-align:right">
+                                    <form asp-action="Delete" asp-route-id="@s.SessionId" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                style="border-color:var(--lt-danger);color:var(--lt-danger)"
+                                                onclick="return confirm('Xóa phòng học này?')">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,396 @@
+@using System.Text.Json
+@using LuminaTutors.Application.DTOs.Quiz
+@model StudentAttemptDto
+@{
+    ViewData["Title"] = Model.ExamTitle;
+    Layout = null;   // full-screen exam — no sidebar
+
+    var savedMap = Model.SavedAnswers.ToDictionary(a => a.QuestionId, a => a.SelectedOptionId);
+    var questionsJson  = JsonSerializer.Serialize(Model.Questions.Select(q => new {
+        id       = q.QuestionId,
+        text     = q.QuestionText,
+        options  = q.Options.Select(o => new { id = o.OptionId, label = o.OptionLabel.ToString(), text = o.OptionText })
+    }));
+    var savedJson = JsonSerializer.Serialize(savedMap);
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@Model.ExamTitle — Lumina Tutors</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --navy:   #0f172a;
+            --gold:   #c9a96e;
+            --bg:     #f8fafc;
+            --card:   #ffffff;
+            --border: #e2e8f0;
+            --text:   #1e293b;
+            --muted:  #64748b;
+            --success:#16a34a;
+            --danger: #dc2626;
+        }
+        body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+        /* ── Top bar ── */
+        .exam-header {
+            background:var(--navy);
+            color:#f1f5f9;
+            padding:.6rem 1.2rem;
+            display:flex;
+            align-items:center;
+            gap:12px;
+            flex-shrink:0;
+            border-bottom:2px solid var(--gold);
+        }
+        .exam-header h1 { font-size:.95rem; font-weight:700; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .exam-code { background:rgba(201,169,110,.18); border:1px solid rgba(201,169,110,.4); color:var(--gold); font-size:.8rem; font-weight:700; padding:3px 10px; border-radius:6px; white-space:nowrap; }
+        .timer { display:flex; align-items:center; gap:5px; font-weight:700; font-size:1rem; white-space:nowrap; }
+        .timer.warn { color:#fbbf24; }
+        .timer.danger { color:#f87171; animation: blink .8s step-end infinite; }
+        @@keyframes blink { 50% { opacity: 0; } }
+
+        /* ── Body layout ── */
+        .exam-body { display:flex; flex:1; overflow:hidden; }
+
+        /* ── Navigator sidebar ── */
+        .exam-nav {
+            width:190px;
+            background:var(--card);
+            border-right:1px solid var(--border);
+            display:flex;
+            flex-direction:column;
+            flex-shrink:0;
+            overflow:hidden;
+        }
+        .exam-nav__header { padding:.7rem .9rem; font-size:.75rem; font-weight:600; color:var(--muted); border-bottom:1px solid var(--border); text-transform:uppercase; letter-spacing:.04em; }
+        .exam-nav__grid { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:.75rem; overflow-y:auto; flex:1; }
+        .nav-btn {
+            aspect-ratio:1;
+            border-radius:7px;
+            border:2px solid var(--border);
+            background:var(--bg);
+            font-size:.78rem;
+            font-weight:600;
+            cursor:pointer;
+            transition:all .15s;
+            color:var(--muted);
+            line-height:1;
+        }
+        .nav-btn.answered  { background:var(--success); border-color:var(--success); color:#fff; }
+        .nav-btn.current   { border-color:var(--gold); color:var(--navy); background:#fff; box-shadow:0 0 0 2px rgba(201,169,110,.3); }
+        .nav-btn.answered.current { background:var(--success); border-color:var(--gold); }
+
+        .exam-nav__legend { padding:.6rem .9rem; display:flex; gap:8px; flex-wrap:wrap; border-top:1px solid var(--border); }
+        .legend-item { display:flex; align-items:center; gap:4px; font-size:.68rem; color:var(--muted); }
+        .legend-dot { width:10px; height:10px; border-radius:3px; border:2px solid var(--border); }
+
+        /* ── Question main area ── */
+        .exam-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        .q-header { padding:.75rem 1.4rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; background:var(--card); flex-shrink:0; }
+        .q-number { font-size:.8rem; color:var(--muted); font-weight:600; }
+        .q-progress { flex:1; height:4px; background:var(--border); border-radius:99px; overflow:hidden; }
+        .q-progress__fill { height:100%; background:var(--gold); border-radius:99px; transition:width .3s; }
+        .q-body { flex:1; overflow-y:auto; padding:1.5rem 1.4rem; }
+        .q-text { font-size:1rem; font-weight:600; line-height:1.6; margin-bottom:1.4rem; color:var(--navy); }
+        .option-item {
+            display:flex;
+            align-items:flex-start;
+            gap:12px;
+            padding:.8rem 1rem;
+            border:2px solid var(--border);
+            border-radius:10px;
+            margin-bottom:.6rem;
+            cursor:pointer;
+            transition:all .15s;
+            user-select:none;
+        }
+        .option-item:hover { border-color:var(--gold); background:rgba(201,169,110,.04); }
+        .option-item.selected { border-color:var(--gold); background:rgba(201,169,110,.09); }
+        .option-label {
+            width:30px;
+            height:30px;
+            border-radius:7px;
+            background:var(--navy);
+            color:var(--gold);
+            font-size:.78rem;
+            font-weight:700;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0;
+        }
+        .option-item.selected .option-label { background:var(--gold); color:var(--navy); }
+        .option-text { font-size:.9rem; line-height:1.5; padding-top:3px; }
+
+        /* ── Footer ── */
+        .exam-footer { padding:.6rem 1.4rem; border-top:1px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-shrink:0; }
+        .nav-btns { display:flex; gap:8px; }
+        .btn { padding:.4rem .9rem; border-radius:8px; font-size:.82rem; font-weight:600; border:2px solid transparent; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:5px; }
+        .btn-outline { background:transparent; border-color:var(--border); color:var(--text); }
+        .btn-outline:hover { border-color:var(--gold); color:var(--navy); }
+        .btn-primary { background:var(--gold); border-color:var(--gold); color:var(--navy); }
+        .btn-primary:hover { background:#b8924a; border-color:#b8924a; }
+        .btn-danger { background:var(--danger); border-color:var(--danger); color:#fff; }
+        .btn-danger:hover { background:#b91c1c; }
+        .btn:disabled { opacity:.4; cursor:not-allowed; }
+
+        /* ── Save indicator ── */
+        #saveStatus { font-size:.72rem; color:var(--muted); display:flex; align-items:center; gap:5px; transition:opacity .3s; }
+
+        /* ── Submit overlay ── */
+        .overlay { position:fixed; inset:0; background:rgba(15,23,42,.6); z-index:100; display:flex; align-items:center; justify-content:center; }
+        .dialog { background:#fff; border-radius:14px; padding:2rem; max-width:400px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+        .dialog h2 { font-size:1.1rem; font-weight:700; margin-bottom:.5rem; }
+        .dialog p  { font-size:.85rem; color:var(--muted); margin-bottom:1.2rem; line-height:1.5; }
+        .dialog-btns { display:flex; gap:10px; justify-content:flex-end; }
+        .hidden { display:none !important; }
+
+        @@media (max-width: 640px) {
+            .exam-nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<header class="exam-header">
+    <h1>
+        <i class="bi bi-file-earmark-text-fill" style="color:var(--gold);margin-right:6px"></i>
+        @Model.ExamTitle
+    </h1>
+    <span class="exam-code">@Model.ExamCode</span>
+    @if (Model.TimeLimitMinutes > 0)
+    {
+        <div class="timer" id="timer">
+            <i class="bi bi-clock-fill"></i>
+            <span id="timerDisplay">--:--</span>
+        </div>
+    }
+    <div id="saveStatus">
+        <i class="bi bi-cloud-check-fill"></i> Đã lưu
+    </div>
+</header>
+
+<!-- ══ Body ══ -->
+<div class="exam-body">
+
+    <!-- Navigator -->
+    <aside class="exam-nav">
+        <div class="exam-nav__header">Điều hướng câu hỏi</div>
+        <div class="exam-nav__grid" id="navGrid"></div>
+        <div class="exam-nav__legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background:var(--success);border-color:var(--success)"></div>
+                Đã trả lời
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot"></div>
+                Chưa trả lời
+            </div>
+        </div>
+    </aside>
+
+    <!-- Question area -->
+    <main class="exam-main">
+        <div class="q-header">
+            <span class="q-number" id="qNumberLabel">Câu 1 / @Model.Questions.Count</span>
+            <div class="q-progress">
+                <div class="q-progress__fill" id="progressFill"></div>
+            </div>
+            <span style="font-size:.75rem;color:var(--muted)" id="answeredLabel">0 / @Model.Questions.Count đã trả lời</span>
+        </div>
+
+        <div class="q-body" id="questionBody">
+            <!-- rendered by JS -->
+        </div>
+
+        <footer class="exam-footer">
+            <div class="nav-btns">
+                <button class="btn btn-outline" id="prevBtn" onclick="navigate(-1)" disabled>
+                    <i class="bi bi-arrow-left"></i> Trước
+                </button>
+                <button class="btn btn-outline" id="nextBtn" onclick="navigate(1)">
+                    Sau <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+            <button class="btn btn-danger" onclick="showSubmitDialog()">
+                <i class="bi bi-send-fill"></i> Nộp bài
+            </button>
+        </footer>
+    </main>
+</div>
+
+<!-- ══ Submit confirmation dialog ══ -->
+<div class="overlay hidden" id="submitOverlay">
+    <div class="dialog">
+        <h2><i class="bi bi-send-fill" style="color:var(--gold);margin-right:8px"></i>Xác nhận nộp bài</h2>
+        <p id="submitMsg">Bạn đã trả lời <strong id="dlgAnswered">0</strong> / <strong>@Model.Questions.Count</strong> câu.
+            Sau khi nộp sẽ không thể sửa đáp án.</p>
+        <div class="dialog-btns">
+            <button class="btn btn-outline" onclick="closeSubmitDialog()">Tiếp tục làm bài</button>
+            <form asp-controller="QuizExam" asp-action="Submit" method="post" style="display:inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="attemptId" value="@Model.AttemptId"/>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-send-fill"></i> Nộp bài ngay
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const ATTEMPT_ID   = @Model.AttemptId;
+const QUESTIONS    = @Html.Raw(questionsJson);
+const TOTAL        = QUESTIONS.length;
+const TIME_LIMIT   = @Model.TimeLimitMinutes;
+const STARTED_AT   = new Date('@Model.StartedAt.ToString("O")');
+const ANTIFORGERY  = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+// State
+let currentIdx = 0;
+const answers  = new Map(Object.entries(@Html.Raw(savedJson)).map(([k,v]) => [parseInt(k), v]));
+
+// ── Timer ─────────────────────────────────────────────────────────────────
+if (TIME_LIMIT > 0) {
+    const endMs = STARTED_AT.getTime() + TIME_LIMIT * 60_000;
+    const timerEl = document.getElementById('timer');
+    const timerDisplay = document.getElementById('timerDisplay');
+
+    function updateTimer() {
+        const remain = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+        const m = Math.floor(remain / 60);
+        const s = remain % 60;
+        timerDisplay.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+        timerEl.className = 'timer' + (remain <= 60 ? ' danger' : remain <= 5*60 ? ' warn' : '');
+
+        if (remain === 0) {
+            // Auto-submit
+            document.querySelector('form[action*="Submit"]').submit();
+        }
+    }
+    updateTimer();
+    setInterval(updateTimer, 1000);
+}
+
+// ── Render question ───────────────────────────────────────────────────────
+function renderQuestion(idx) {
+    const q = QUESTIONS[idx];
+    const selectedOptionId = answers.get(q.id) ?? null;
+
+    const optionsHtml = q.options.map(o => `
+        <div class="option-item ${selectedOptionId === o.id ? 'selected' : ''}"
+             onclick="selectOption(${q.id}, ${o.id})">
+            <div class="option-label">${o.label}</div>
+            <div class="option-text">${escHtml(o.text)}</div>
+        </div>`).join('');
+
+    document.getElementById('questionBody').innerHTML = `
+        <div class="q-text">${escHtml(q.text)}</div>
+        <div id="optionsList">${optionsHtml}</div>`;
+
+    document.getElementById('qNumberLabel').textContent = `Câu ${idx + 1} / ${TOTAL}`;
+    document.getElementById('progressFill').style.width = `${((idx + 1) / TOTAL) * 100}%`;
+    document.getElementById('prevBtn').disabled = idx === 0;
+    document.getElementById('nextBtn').disabled = idx === TOTAL - 1;
+
+    updateStatus();
+    updateNavGrid();
+}
+
+// ── Answer selection ──────────────────────────────────────────────────────
+let saveTimeout = null;
+function selectOption(questionId, optionId) {
+    answers.set(questionId, optionId);
+    renderQuestion(currentIdx);
+    setSaveStatus('saving');
+
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => saveAnswer(questionId, optionId), 600);
+}
+
+async function saveAnswer(questionId, optionId) {
+    try {
+        const resp = await fetch('/QuizExam/SaveAnswer', {
+            method:  'POST',
+            headers: {
+                'Content-Type':         'application/x-www-form-urlencoded',
+                'RequestVerificationToken': ANTIFORGERY
+            },
+            body: `attemptId=${ATTEMPT_ID}&questionId=${questionId}&selectedOptionId=${optionId}`
+        });
+        setSaveStatus(resp.ok ? 'saved' : 'error');
+    } catch {
+        setSaveStatus('error');
+    }
+}
+
+function setSaveStatus(state) {
+    const el = document.getElementById('saveStatus');
+    el.innerHTML = state === 'saving'
+        ? '<i class="bi bi-arrow-repeat" style="animation:spin .8s linear infinite"></i> Đang lưu...'
+        : state === 'error'
+        ? '<i class="bi bi-exclamation-circle-fill" style="color:#f87171"></i> Lưu thất bại'
+        : '<i class="bi bi-cloud-check-fill"></i> Đã lưu';
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function navigate(dir) {
+    const next = currentIdx + dir;
+    if (next < 0 || next >= TOTAL) return;
+    currentIdx = next;
+    renderQuestion(currentIdx);
+}
+
+function goToQuestion(idx) {
+    currentIdx = idx;
+    renderQuestion(idx);
+}
+
+// ── Nav grid ─────────────────────────────────────────────────────────────
+function updateNavGrid() {
+    const grid = document.getElementById('navGrid');
+    grid.innerHTML = QUESTIONS.map((q, i) => {
+        const ans = answers.has(q.id) && answers.get(q.id) !== null;
+        const cur = i === currentIdx;
+        return `<button class="nav-btn ${ans ? 'answered' : ''} ${cur ? 'current' : ''}"
+                        onclick="goToQuestion(${i})" type="button">${i + 1}</button>`;
+    }).join('');
+}
+
+function updateStatus() {
+    const answered = [...answers.values()].filter(v => v !== null).length;
+    document.getElementById('answeredLabel').textContent = `${answered} / ${TOTAL} đã trả lời`;
+    document.getElementById('dlgAnswered').textContent = answered;
+}
+
+// ── Submit dialog ─────────────────────────────────────────────────────────
+function showSubmitDialog() {
+    updateStatus();
+    document.getElementById('submitOverlay').classList.remove('hidden');
+}
+function closeSubmitDialog() {
+    document.getElementById('submitOverlay').classList.add('hidden');
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────
+function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Spin keyframe
+const style = document.createElement('style');
+style.textContent = '@@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(style);
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderQuestion(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+@{
+    ViewData["Title"] = "Tạo phòng học";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-camera-video-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Tạo phòng học online
+        </h1>
+        <p class="lt-page-subtitle">Tạo buổi học trực tuyến cho học sinh tham gia</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<div class="row g-4 justify-content-center">
+    <div class="col-lg-6">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-info-circle-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Thông tin buổi học
+                    </h3>
+                </div>
+                <div class="lt-card__body" style="display:flex;flex-direction:column;gap:14px">
+
+                    <div class="lt-form-group" style="margin:0">
+                        <label class="lt-label">Tên buổi học <span class="lt-text-danger">*</span></label>
+                        <input name="title" class="lt-input" required
+                               placeholder="VD: Ôn tập Toán Đại số Chương 2"/>
+                    </div>
+
+                    <div class="lt-form-group" style="margin:0">
+                        <label class="lt-label">Mô tả</label>
+                        <textarea name="description" class="lt-input" rows="3"
+                                  placeholder="Nội dung sẽ học, yêu cầu chuẩn bị..."
+                                  style="resize:vertical"></textarea>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                        <div class="lt-form-group" style="margin:0">
+                            <label class="lt-label">Thời gian dự kiến</label>
+                            <input name="scheduledAt" type="datetime-local" class="lt-input"
+                                   value="@DateTime.Now.AddMinutes(10).ToString("yyyy-MM-ddTHH:mm")"/>
+                        </div>
+                        <div class="lt-form-group" style="margin:0">
+                            <label class="lt-label">Số học sinh tối đa</label>
+                            <input name="maxParticipants" type="number" class="lt-input"
+                                   value="50" min="2" max="200"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info box -->
+            <div style="padding:1rem 1.2rem;background:rgba(201,169,110,.08);
+                        border-radius:12px;border-left:3px solid var(--lt-gold);margin-bottom:1.2rem">
+                <div style="font-size:.82rem;color:var(--lt-navy);font-weight:600;margin-bottom:6px">
+                    <i class="bi bi-info-circle-fill" style="color:var(--lt-gold)"></i>
+                    Cách hoạt động
+                </div>
+                <ul style="margin:0;padding-left:1.2rem;font-size:.8rem;color:var(--lt-text-muted);line-height:1.8">
+                    <li>Sau khi tạo, bạn sẽ nhận được mã phòng duy nhất</li>
+                    <li>Nhấn <strong>Bắt đầu</strong> để mở phòng cho học sinh vào</li>
+                    <li>Học sinh vào phòng bằng cách click "Vào phòng học" trên trang danh sách</li>
+                    <li>Hệ thống sử dụng Jitsi Meet — không cần cài phần mềm</li>
+                </ul>
+            </div>
+
+            <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                <i class="bi bi-camera-video-fill"></i> Tạo phòng học
+            </button>
+        </form>
+    </div>
+</div>

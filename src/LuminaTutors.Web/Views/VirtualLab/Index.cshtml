@@ -1,5 +1,16 @@
 @using LuminaTutors.Application.DTOs.Lab
 @model List<LabSessionDto>
+
+@*
+    Pre-fetch Three.js + OrbitControls while the user is browsing the lab list.
+    By the time they click "Vào phòng" the modules are already in the browser's
+    module cache, so Lab.cshtml loads in ~1 s instead of 5–8 s.
+*@
+@section Styles {
+    @* Warm the browser module cache while the user reads the lab list *@
+    <link rel="modulepreload" href="/js/three/three.module.js">
+    <link rel="modulepreload" href="/js/three/controls/OrbitControls.js">
+}
 @{
     ViewData["Title"] = "Phòng Lab 3D";
     var isTeacher     = ViewBag.IsTeacher as bool? ?? false;
@@ -305,3 +316,12 @@
 
     </div>
 </div>
+
+@section Scripts {
+    <script>
+    // Register the 3D Service Worker so Three.js is cached after first visit
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw-3d.js').catch(() => {});
+    }
+    </script>
+}

@@ -130,6 +130,7 @@ public record CreateGradeLevelRequest(
 
 public record GradeLevelSelectDto(int GradeLevelId, string GradeName, byte GradeNumber);
 public record AcademicYearSelectDto(int AcademicYearId, string YearName, bool IsActive);
+public record SubjectSelectDto(int SubjectId, string SubjectName, string SubjectCode);
 
 // ─── Teacher DTOs ──────────────────────────────────────────────────────────────
 

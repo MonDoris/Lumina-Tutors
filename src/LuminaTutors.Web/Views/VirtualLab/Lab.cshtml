@@ -30,15 +30,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.3/font/bootstrap-icons.css">
 
-    <!-- Three.js via ESM importmap -->
+    <!--
+        IMPORTMAP must come BEFORE any <link rel="modulepreload">.
+        If a preload appears first, browsers silently discard the importmap
+        and bare specifiers like "three" fail to resolve.
+    -->
     <script type="importmap">
     {
       "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@@0.160.0/examples/jsm/"
+        "three":         "/js/three/three.module.js",
+        "three/addons/": "/js/three/"
       }
     }
     </script>
+
+    <!-- Preload hints — placed AFTER importmap so they resolve correctly -->
+    <link rel="modulepreload" href="/js/three/three.module.js">
+    <link rel="modulepreload" href="/js/three/controls/OrbitControls.js">
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,8 +56,9 @@
             --navy-900: #0a1628;
             --gold: #c9a96e;
             --gold-light: #e8c98a;
-            --glass: rgba(15, 32, 68, 0.82);
-            --glass-border: rgba(201, 169, 110, 0.25);
+            --panel-bg: rgba(10, 16, 30, 0.97);
+            --panel-border: rgba(201, 169, 110, 0.18);
+            --panel-border-subtle: rgba(255, 255, 255, 0.06);
             --success: #22c55e;
             --danger: #ef4444;
             --info: #38bdf8;
@@ -80,50 +89,55 @@
             pointer-events: all;
             position: absolute; top: 0; left: 0; right: 0;
             display: flex; align-items: center; gap: 12px;
-            padding: 10px 16px;
-            background: var(--glass);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--glass-border);
+            padding: 0 16px;
+            height: 52px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--panel-border);
         }
         .ui-brand {
             font-family: 'Playfair Display', serif;
-            font-size: 1rem; font-weight: 700;
+            font-size: 1.05rem; font-weight: 700;
             color: var(--gold);
             letter-spacing: .04em;
+            flex-shrink: 0;
         }
-        .ui-sep { width: 1px; height: 20px; background: var(--glass-border); }
-        .ui-session-name { font-size: .85rem; font-weight: 600; color: #f1f5f9; }
-        .ui-session-meta { font-size: .75rem; color: #94a3b8; margin-top: 1px; }
+        .ui-sep { width: 1px; height: 20px; background: var(--panel-border-subtle); flex-shrink: 0; }
+        .ui-session-name { font-size: .87rem; font-weight: 600; color: #f1f5f9; line-height: 1.2; }
+        .ui-session-meta { font-size: .72rem; color: #475569; margin-top: 2px; line-height: 1; }
         .ui-code {
             margin-left: auto;
-            background: rgba(201,169,110,.12);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
+            background: rgba(201,169,110,.09);
+            border: 1px solid var(--panel-border);
+            border-radius: 7px;
             padding: 4px 12px;
-            font-size: .8rem; font-weight: 700;
+            font-size: .79rem; font-weight: 700;
             color: var(--gold-light);
-            letter-spacing: .12em;
+            letter-spacing: .14em;
+            font-family: monospace;
+            flex-shrink: 0;
         }
         .ui-back {
             pointer-events: all;
             display: inline-flex; align-items: center; gap: 6px;
             padding: 6px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--glass-border);
-            background: rgba(255,255,255,.06);
-            color: #e2e8f0;
-            font-size: .8rem; font-weight: 500;
+            border-radius: 7px;
+            border: 1px solid var(--panel-border-subtle);
+            background: rgba(255,255,255,.03);
+            color: #64748b;
+            font-size: .79rem; font-weight: 500;
             text-decoration: none;
-            transition: background .18s;
+            transition: all .16s;
+            flex-shrink: 0;
         }
-        .ui-back:hover { background: rgba(255,255,255,.12); color: #fff; }
+        .ui-back:hover { background: rgba(255,255,255,.08); color: #e2e8f0; border-color: var(--panel-border); }
 
         /* Pulse indicator */
         .live-dot {
-            display: inline-block; width: 8px; height: 8px;
+            display: inline-block; width: 7px; height: 7px;
             border-radius: 50%; background: var(--success);
-            box-shadow: 0 0 0 2px rgba(34,197,94,.25);
+            box-shadow: 0 0 0 2px rgba(34,197,94,.2);
             animation: pulse-live 1.8s ease-in-out infinite;
+            flex-shrink: 0;
         }
         @@keyframes pulse-live {
             0%, 100% { opacity: 1; box-shadow: 0 0 0 2px rgba(34,197,94,.25); }
@@ -133,57 +147,53 @@
         /* Controls panel */
         #ui-controls {
             pointer-events: all;
-            position: absolute; bottom: 24px; left: 50%;
+            position: absolute; bottom: 20px; left: 50%;
             transform: translateX(-50%);
-            display: flex; align-items: center; gap: 8px;
-            padding: 10px 16px;
-            background: var(--glass);
-            backdrop-filter: blur(14px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
+            display: flex; align-items: center; gap: 4px;
+            padding: 7px 12px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 13px;
         }
         .ctrl-btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            padding: 7px 14px;
-            border-radius: 10px;
-            border: 1px solid var(--glass-border);
-            background: rgba(255,255,255,.06);
-            color: #e2e8f0;
-            font-size: .8rem; font-weight: 500;
+            display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+            padding: 6px 13px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: #64748b;
+            font-size: .78rem; font-weight: 500;
             cursor: pointer;
-            transition: all .18s;
+            transition: all .15s;
+            white-space: nowrap;
         }
-        .ctrl-btn:hover { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(201,169,110,.5); }
-        .ctrl-btn.active { background: rgba(201,169,110,.18); color: var(--gold-light); border-color: var(--gold); }
-        .ctrl-btn.laser-active { background: rgba(239,68,68,.18); color: #fca5a5; border-color: rgba(239,68,68,.6); }
-        .ctrl-sep { width: 1px; height: 22px; background: var(--glass-border); }
+        .ctrl-btn:hover { background: rgba(255,255,255,.06); color: #e2e8f0; border-color: var(--panel-border-subtle); }
+        .ctrl-btn.active { background: rgba(201,169,110,.1); color: var(--gold-light); border-color: rgba(201,169,110,.28); }
+        .ctrl-btn.laser-active { background: rgba(239,68,68,.1); color: #fca5a5; border-color: rgba(239,68,68,.35); }
+        .ctrl-sep { width: 1px; height: 18px; background: var(--panel-border-subtle); margin: 0 2px; }
 
         /* Info panel (bottom-right) */
         #ui-info {
-            pointer-events: all;
-            position: absolute; bottom: 24px; right: 20px;
-            width: 200px;
-            background: var(--glass);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 12px 14px;
-            font-size: .78rem;
+            pointer-events: none;
+            position: absolute; bottom: 20px; right: 16px;
+            width: 190px;
+            background: rgba(10, 16, 30, 0.93);
+            border: 1px solid var(--panel-border-subtle);
+            border-radius: 10px;
+            padding: 10px 13px;
+            font-size: .75rem;
         }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .info-label { color: #94a3b8; }
-        .info-value { color: #f1f5f9; font-weight: 600; }
+        .info-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+        .info-row:last-child { margin-bottom: 0; }
+        .info-label { color: #334155; }
+        .info-value { color: #94a3b8; font-weight: 600; }
 
         /* Close session button (host only) */
-        #btn-close-session {
-            background: rgba(239,68,68,.12);
-            border-color: rgba(239,68,68,.35);
-            color: #fca5a5;
-        }
+        #btn-close-session { color: #f87171; }
         #btn-close-session:hover {
-            background: rgba(239,68,68,.25);
-            border-color: rgba(239,68,68,.7);
-            color: #ff6b6b;
+            background: rgba(239,68,68,.1);
+            border-color: rgba(239,68,68,.4);
+            color: #fca5a5;
         }
 
         /* Loading overlay */
@@ -227,23 +237,22 @@
         /* Step overlay */
         #step-overlay {
             pointer-events: none;
-            position: absolute; top: 72px; right: 20px;
-            width: 220px;
-            background: var(--glass);
-            backdrop-filter: blur(14px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 14px;
-            font-size: .8rem;
+            position: absolute; top: 64px; right: 16px;
+            width: 214px;
+            background: rgba(10, 16, 30, 0.95);
+            border: 1px solid var(--panel-border-subtle);
+            border-radius: 10px;
+            padding: 13px 14px;
+            font-size: .78rem;
             display: none;
         }
         #step-overlay.show { display: block; }
-        .step-title { font-weight: 700; color: var(--gold-light); margin-bottom: 8px; font-size: .82rem; }
-        .step-desc { color: #94a3b8; line-height: 1.5; }
+        .step-title { font-weight: 700; color: var(--gold-light); margin-bottom: 6px; font-size: .8rem; }
+        .step-desc { color: #475569; line-height: 1.55; }
         .step-progress { margin-top: 10px; }
         .step-bar {
-            height: 4px; border-radius: 99px;
-            background: rgba(255,255,255,.1); overflow: hidden;
+            height: 2px; border-radius: 99px;
+            background: rgba(255,255,255,.07); overflow: hidden;
         }
         .step-bar-fill {
             height: 100%; background: var(--gold);
@@ -255,22 +264,21 @@
         #hover-tooltip {
             position: fixed;
             display: none;
-            background: rgba(10, 22, 40, 0.95);
-            border: 1px solid rgba(201, 169, 110, 0.45);
-            border-radius: 8px;
-            padding: 6px 12px 6px 10px;
-            font-size: .76rem;
+            background: rgba(10, 16, 30, 0.97);
+            border: 1px solid var(--panel-border);
+            border-radius: 7px;
+            padding: 6px 11px;
+            font-size: .75rem;
             font-weight: 500;
             color: #e2e8f0;
             pointer-events: none;
             z-index: 50;
             white-space: nowrap;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 4px 16px rgba(0,0,0,.4);
+            box-shadow: 0 4px 16px rgba(0,0,0,.55);
         }
         #hover-tooltip .tt-hint {
             display: block;
-            font-size: .68rem;
+            font-size: .67rem;
             color: var(--gold);
             margin-top: 2px;
         }
@@ -278,88 +286,101 @@
         /* ── Interaction guide (left) ─────────────────────────────────────── */
         #interaction-guide {
             pointer-events: none;
-            position: absolute; top: 72px; left: 16px;
-            width: 215px;
-            background: var(--glass);
-            backdrop-filter: blur(14px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 13px 14px;
-            font-size: .78rem;
+            position: absolute; top: 64px; left: 14px;
+            width: 208px;
+            background: rgba(10, 16, 30, 0.95);
+            border: 1px solid var(--panel-border-subtle);
+            border-radius: 10px;
+            padding: 12px 13px;
+            font-size: .77rem;
         }
         .guide-header {
             display: flex; align-items: center; gap: 6px;
-            font-weight: 700; font-size: .8rem;
-            color: var(--gold-light); margin-bottom: 10px;
+            font-weight: 700; font-size: .72rem;
+            color: #334155; margin-bottom: 9px;
+            text-transform: uppercase; letter-spacing: .06em;
         }
         .guide-item {
             display: flex; align-items: flex-start; gap: 8px;
-            margin-bottom: 7px; color: #94a3b8; line-height: 1.4;
+            margin-bottom: 7px; color: #334155; line-height: 1.45;
         }
+        .guide-item:last-child { margin-bottom: 0; }
         .guide-icon {
             flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px;
-            background: rgba(201,169,110,.12); border: 1px solid var(--glass-border);
+            background: rgba(255,255,255,.03); border: 1px solid var(--panel-border-subtle);
             display: flex; align-items: center; justify-content: center;
-            font-size: .65rem; color: var(--gold);
+            font-size: .63rem; color: #475569;
         }
-        .guide-text strong { color: #e2e8f0; display: block; font-size: .75rem; }
+        .guide-text strong { color: #64748b; display: block; font-size: .74rem; margin-bottom: 1px; }
 
         /* ── Live data panel ────────────────────────────────────────────────── */
         #data-panel {
             pointer-events: none;
-            position: absolute; top: 72px; right: 20px;
-            width: 215px;
-            background: var(--glass);
-            backdrop-filter: blur(14px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 13px 14px;
-            font-size: .78rem;
+            position: absolute; top: 64px; right: 16px;
+            width: 214px;
+            background: rgba(10, 16, 30, 0.95);
+            border: 1px solid var(--panel-border-subtle);
+            border-radius: 10px;
+            padding: 12px 13px;
+            font-size: .77rem;
             display: none;
         }
         #data-panel.show { display: block; }
         .dp-header {
             display: flex; align-items: center; gap: 6px;
-            font-weight: 700; font-size: .8rem;
-            color: var(--gold-light); margin-bottom: 10px;
+            font-weight: 700; font-size: .72rem;
+            color: #334155; margin-bottom: 10px;
+            text-transform: uppercase; letter-spacing: .06em;
         }
         .dp-row {
             display: flex; justify-content: space-between; align-items: baseline;
-            margin-bottom: 7px; padding-bottom: 7px;
-            border-bottom: 1px solid rgba(255,255,255,.05);
+            margin-bottom: 6px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--panel-border-subtle);
         }
         .dp-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .dp-label { color: #64748b; font-size: .72rem; }
+        .dp-label { color: #334155; font-size: .71rem; }
         .dp-value {
-            color: #f1f5f9; font-weight: 700; font-size: .92rem;
+            color: #e2e8f0; font-weight: 700; font-size: .9rem;
             font-variant-numeric: tabular-nums;
         }
-        .dp-unit { color: #64748b; font-size: .68rem; margin-left: 2px; }
+        .dp-unit { color: #334155; font-size: .66rem; margin-left: 2px; }
 
-        /* Drip rate badge */
-        .drip-badge {
-            display: inline-block; padding: 2px 8px; border-radius: 20px;
-            font-size: .72rem; font-weight: 700;
+        /* Drip rate control buttons */
+        .drip-btn {
+            flex: 1; padding: 5px 0; border-radius: 6px;
+            border: 1px solid var(--panel-border-subtle);
+            background: transparent;
+            color: #334155; font-size: .74rem; font-weight: 600;
+            cursor: pointer; transition: all .14s;
         }
-        .drip-badge.off  { background: rgba(100,116,139,.2); color: #94a3b8; }
-        .drip-badge.slow { background: rgba(34,197,94,.15);  color: #4ade80; }
-        .drip-badge.fast { background: rgba(239,68,68,.15);  color: #fca5a5; }
+        .drip-btn:hover { background: rgba(255,255,255,.05); color: #64748b; }
+        .drip-btn.active.drip-btn--off  { background: rgba(100,116,139,.12); color: #94a3b8; border-color: rgba(100,116,139,.35); }
+        .drip-btn.active.drip-btn--slow { background: rgba(34,197,94,.1); color: #4ade80; border-color: rgba(34,197,94,.35); }
+        .drip-btn.active.drip-btn--fast { background: rgba(239,68,68,.1); color: #fca5a5; border-color: rgba(239,68,68,.35); }
+
+        /* Legacy drip rate badge (used in dp-rows) */
+        .drip-badge {
+            display: inline-block; padding: 2px 7px; border-radius: 20px;
+            font-size: .71rem; font-weight: 700;
+        }
+        .drip-badge.off  { background: rgba(100,116,139,.15); color: #64748b; }
+        .drip-badge.slow { background: rgba(34,197,94,.1);  color: #4ade80; }
+        .drip-badge.fast { background: rgba(239,68,68,.1);  color: #fca5a5; }
 
         /* ── Cell info card ─────────────────────────────────────────────────── */
         #cell-info-card {
             pointer-events: all;
             position: absolute; left: 50%; top: 50%;
-            transform: translate(-50%, -50%) scale(.92);
+            transform: translate(-50%, -50%) scale(.93);
             width: 300px;
-            background: rgba(10, 18, 40, 0.96);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
+            background: rgba(10, 15, 28, 0.98);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
             padding: 20px;
             display: none;
             z-index: 30;
-            box-shadow: 0 20px 60px rgba(0,0,0,.6);
-            transition: transform .22s cubic-bezier(.34,1.56,.64,1), opacity .18s;
+            box-shadow: 0 20px 60px rgba(0,0,0,.75);
+            transition: transform .22s cubic-bezier(.34,1.4,.64,1), opacity .18s;
             opacity: 0;
         }
         #cell-info-card.show {
@@ -369,21 +390,22 @@
         }
         .cic-icon { font-size: 2.2rem; margin-bottom: 10px; display: block; }
         .cic-title { font-weight: 700; font-size: 1rem; color: #f1f5f9; margin-bottom: 6px; }
-        .cic-desc { font-size: .82rem; color: #94a3b8; line-height: 1.6; }
+        .cic-desc { font-size: .81rem; color: #475569; line-height: 1.65; }
         .cic-close {
             position: absolute; top: 12px; right: 12px;
             width: 26px; height: 26px; border-radius: 50%;
-            background: rgba(255,255,255,.08); border: 1px solid var(--glass-border);
-            color: #94a3b8; font-size: .75rem;
+            background: rgba(255,255,255,.04); border: 1px solid var(--panel-border-subtle);
+            color: #475569; font-size: .75rem;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: background .15s;
+            cursor: pointer; transition: all .14s;
         }
-        .cic-close:hover { background: rgba(255,255,255,.18); color: #fff; }
+        .cic-close:hover { background: rgba(255,255,255,.1); color: #e2e8f0; }
         .cic-fact {
             margin-top: 12px; padding: 9px 12px;
-            background: rgba(201,169,110,.08); border-radius: 8px;
-            border-left: 2px solid var(--gold);
-            font-size: .75rem; color: #c9a96e; line-height: 1.5;
+            background: rgba(201,169,110,.06);
+            border: 1px solid rgba(201,169,110,.18);
+            border-radius: 8px;
+            font-size: .74rem; color: #8a6f4a; line-height: 1.55;
         }
     </style>
 </head>
@@ -393,9 +415,82 @@
 <div id="loading">
     <div class="loading-icon"><i class="bi bi-badge-vr-fill"></i></div>
     <div class="loading-text">Khởi động phòng Lab 3D</div>
-    <div class="loading-sub">Đang tải môi trường @subjectLabel...</div>
+    <div class="loading-sub" id="loading-sub">Đang tải môi trường @subjectLabel...</div>
     <div class="loading-bar"><div class="loading-bar-fill"></div></div>
 </div>
+
+<!--
+    PLAIN-SCRIPT safety: runs regardless of whether the Three.js module loads.
+    • Dismisses the loading screen after 8 s if the module never finishes.
+    • Shows a visible error bar for any uncaught JS errors (helps diagnose).
+    • Checks WebGL availability upfront.
+-->
+<script>
+(function () {
+    // ── WebGL availability check ─────────────────────────────────────────────
+    function hasWebGL() {
+        try {
+            var c = document.createElement('canvas');
+            return !!(c.getContext('webgl2') || c.getContext('webgl'));
+        } catch (e) { return false; }
+    }
+
+    // ── Visible error bar ────────────────────────────────────────────────────
+    function showError(msg) {
+        var bar = document.getElementById('lab-err-bar');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'lab-err-bar';
+            bar.style.cssText = [
+                'position:fixed','bottom:0','left:0','right:0',
+                'background:rgba(220,38,38,.92)','color:#fff',
+                'font-size:.78rem','font-family:monospace',
+                'padding:8px 14px','z-index:9999',
+                'white-space:pre-wrap','word-break:break-all'
+            ].join(';');
+            document.body.appendChild(bar);
+        }
+        bar.textContent = msg;
+    }
+
+    // ── Loading dismiss helper ───────────────────────────────────────────────
+    var dismissed = false;
+    function safeHide(isError, reason) {
+        if (dismissed) return;
+        dismissed = true;
+        var el = document.getElementById('loading');
+        if (!el) return;
+        if (isError) {
+            document.getElementById('loading-sub').textContent =
+                reason || 'Không tải được môi trường 3D. Hãy thử tải lại trang.';
+        }
+        el.classList.add('hide');
+        setTimeout(function () { if (el && el.parentNode) el.parentNode.removeChild(el); }, 500);
+    }
+
+    // Expose so the module calls this when the scene is ready
+    window.__labLoadingDone = function () { safeHide(false); };
+
+    // ── Immediate WebGL check ────────────────────────────────────────────────
+    if (!hasWebGL()) {
+        safeHide(true, 'Trình duyệt không hỗ trợ WebGL. Dùng Chrome/Firefox/Edge mới nhất.');
+        showError('WebGL không khả dụng trên trình duyệt này.');
+    }
+
+    // ── Hard timeout: dismiss loading screen if module never finishes ────────
+    setTimeout(function () {
+        safeHide(true, 'Three.js chưa khởi động sau 8 giây. Kiểm tra Console (F12) để biết lỗi.');
+    }, 8000);
+
+    // ── Catch runtime errors and show them on screen ─────────────────────────
+    window.addEventListener('error', function (e) {
+        showError('JS Error: ' + e.message + '\n' + (e.filename || '') + ':' + e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+        showError('Promise Error: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+    });
+}());
+</script>
 
 <!-- 3D canvas -->
 <canvas id="lab-canvas"></canvas>
@@ -456,6 +551,10 @@
                     <div class="guide-text"><strong>Quả nặng</strong>Kéo trái/phải để đặt góc ban đầu</div>
                 </div>
                 <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-mouse2"></i></div>
+                    <div class="guide-text"><strong>Cuộn chuột</strong>Thay đổi chiều dài dây (L)</div>
+                </div>
+                <div class="guide-item">
                     <div class="guide-icon"><i class="bi bi-play-fill"></i></div>
                     <div class="guide-text"><strong>Bắt đầu</strong>Thả quả nặng dao động</div>
                 </div>
@@ -485,10 +584,27 @@
     <!-- Live data panel (titration / pendulum) -->
     <div id="data-panel">
         <div class="dp-header">
-            <i class="bi bi-bar-chart-line-fill" style="color:var(--gold)"></i>
+            <i class="bi bi-bar-chart-line-fill"></i>
             Số liệu thực nghiệm
         </div>
         <div id="dp-rows"></div>
+        @if (sceneType == "titration")
+        {
+            <!-- Drip rate control — pointer-events:all lets clicks through the overlay -->
+            <div id="dp-drip-ctrl"
+                 style="pointer-events:all;margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px">
+                <div style="font-size:.69rem;color:#334155;margin-bottom:7px;
+                            text-transform:uppercase;letter-spacing:.06em">Tốc độ nhỏ giọt</div>
+                <div style="display:flex;gap:5px">
+                    <button class="drip-btn drip-btn--off active"
+                            onclick="window.setDripRate('off')" id="drip-off">Tắt</button>
+                    <button class="drip-btn drip-btn--slow"
+                            onclick="window.setDripRate('slow')" id="drip-slow">Chậm</button>
+                    <button class="drip-btn drip-btn--fast"
+                            onclick="window.setDripRate('fast')" id="drip-fast">Nhanh</button>
+                </div>
+            </div>
+        }
     </div>
 
     <!-- Cell info card -->
@@ -590,8 +706,8 @@ renderer.toneMappingExposure = 1.1;
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0f1e);
-scene.fog        = new THREE.FogExp2(0x0a0f1e, 0.045);
+scene.background = new THREE.Color(0x0d1629);   // slightly lighter than before
+scene.fog        = new THREE.FogExp2(0x0d1629, 0.022);  // lighter fog
 
 // ── Camera ────────────────────────────────────────────────────────────────────
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -611,13 +727,13 @@ controls.autoRotateSpeed  = 1.2;
 controls.update();
 
 // ── Lighting ──────────────────────────────────────────────────────────────────
-const ambient = new THREE.AmbientLight(0xffffff, 0.35);
+const ambient = new THREE.AmbientLight(0xffffff, 0.75);   // was 0.35
 scene.add(ambient);
 
-const keyLight = new THREE.DirectionalLight(0xfff8e7, 1.2);
+const keyLight = new THREE.DirectionalLight(0xfff8e7, 1.8);  // was 1.2
 keyLight.position.set(5, 10, 6);
 keyLight.castShadow  = true;
-keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.mapSize.set(1024, 1024);   // lower shadow res = faster first frame
 keyLight.shadow.camera.near = 0.5;
 keyLight.shadow.camera.far  = 40;
 keyLight.shadow.camera.left = keyLight.shadow.camera.bottom = -8;
@@ -625,17 +741,17 @@ keyLight.shadow.camera.right = keyLight.shadow.camera.top   =  8;
 keyLight.shadow.bias = -0.001;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x4080ff, 0.25);
+const fillLight = new THREE.DirectionalLight(0x6090ff, 0.5);  // was 0.25
 fillLight.position.set(-5, 3, -4);
 scene.add(fillLight);
 
-const rimLight = new THREE.PointLight(0xc9a96e, 0.8, 12);
+const rimLight = new THREE.PointLight(0xc9a96e, 1.2, 14);   // was 0.8
 rimLight.position.set(-3, 4, -5);
 scene.add(rimLight);
 
 // ── Materials ─────────────────────────────────────────────────────────────────
-const matFloor  = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: .9, metalness: .1 });
-const matWall   = new THREE.MeshStandardMaterial({ color: 0x1e2740, roughness: .95, metalness: 0 });
+const matFloor  = new THREE.MeshStandardMaterial({ color: 0x2a3f58, roughness: .85, metalness: .1 });  // lighter floor
+const matWall   = new THREE.MeshStandardMaterial({ color: 0x243050, roughness: .90, metalness: 0 });   // lighter walls
 const matBench  = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: .7, metalness: .15 });
 const matBenchT = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: .5, metalness: .2 });
 const matMetal  = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: .3, metalness: .8 });
@@ -799,13 +915,24 @@ function buildTitrationScene() {
     stirPlate.position.set(.3,.98,-.2);
     scene.add(stirPlate);
 
-    const droplet = new THREE.Mesh(new THREE.SphereGeometry(.015,8,8),
-        new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent:true, opacity:0 }));
-    droplet.position.set(.3,1.38,-.2);
+    // Droplet: visible sphere that falls from buret tip to flask
+    const droplet = new THREE.Mesh(new THREE.SphereGeometry(.022, 10, 10),
+        new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0 }));
+    droplet.position.set(.3, 1.38, -.2);
     scene.add(droplet);
     experimentData.droplet    = droplet;
     experimentData.dropletMat = droplet.material;
     experimentData.dropletY   = 1.38;
+
+    // Stream: thin cylinder used only in 'fast' mode to simulate continuous flow
+    const streamMat = new THREE.MeshStandardMaterial({
+        color: 0xbfdbfe, transparent: true, opacity: 0
+    });
+    const streamMesh = new THREE.Mesh(new THREE.CylinderGeometry(.006, .004, .4, 6), streamMat);
+    streamMesh.position.set(.3, 1.18, -.2);  // midpoint between buret tip and flask
+    scene.add(streamMesh);
+    experimentData.streamMesh = streamMesh;
+    experimentData.streamMat  = streamMat;
 
     // Save refs for interaction
     experimentData.buretBody  = buretBody;
@@ -865,9 +992,20 @@ function buildPendulumScene() {
     bob.position.set(0, 2.86 - stringLen, 0);
     bob.castShadow = true;
     scene.add(bob);
+
+    // Invisible larger sphere for reliable hit detection (bob visual is only ~10cm)
+    const hitSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 8, 8),
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    hitSphere.position.copy(bob.position);
+    scene.add(hitSphere);
+
     experimentData.bob       = bob;
     experimentData.bobMat    = bobMat;
+    experimentData.hitSphere = hitSphere;
     experimentData.stringLen = stringLen;
+    experimentData.origStringLen = stringLen;
     experimentData.pivotY    = 2.86;
     experimentData.angle     = Math.PI / 6;
     experimentData.vel       = 0;
@@ -1053,9 +1191,10 @@ function showTooltip(name, hint, x, y) {
 function hideTooltip() { ttEl.style.display = 'none'; }
 
 // Emissive highlight helpers
+// MeshBasicMaterial has no emissive property — guard before accessing it
 function applyHover(item) {
     (item.meshes || []).forEach(m => {
-        if (!m.material) return;
+        if (!m.material || !('emissive' in m.material)) return;
         m.userData._savedEmissive = m.material.emissive
             ? m.material.emissive.clone()
             : new THREE.Color(0);
@@ -1066,7 +1205,7 @@ function applyHover(item) {
 }
 function removeHover(item) {
     (item.meshes || []).forEach(m => {
-        if (!m.material) return;
+        if (!m.material || !('emissive' in m.material)) return;
         m.material.emissive          = m.userData._savedEmissive ?? new THREE.Color(0);
         m.material.emissiveIntensity = m.userData._savedEmissiveIntensity ?? 0;
     });
@@ -1115,10 +1254,11 @@ canvas.addEventListener('mousemove', e => {
 
 canvas.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
-    // Pendulum bob drag
+    // Pendulum bob drag — use hitSphere (invisible, larger) for reliable hit detection
     if (SCENE_TYPE === 'pendulum' && experimentData.bob) {
         raycaster.setFromCamera(mouse, camera);
-        const hits = raycaster.intersectObject(experimentData.bob);
+        const targets = [experimentData.bob, experimentData.hitSphere].filter(Boolean);
+        const hits    = raycaster.intersectObjects(targets);
         if (hits.length > 0) {
             dragActive       = true;
             isDragging       = true;
@@ -1150,6 +1290,34 @@ canvas.addEventListener('click', () => {
     if (currentHover.onClick) currentHover.onClick();
 });
 
+// ── Pendulum: scroll wheel changes string length ──────────────────────────────
+canvas.addEventListener('wheel', e => {
+    if (SCENE_TYPE !== 'pendulum') return;
+    if (isRunning) return; // lock length while swinging
+    e.preventDefault();
+
+    const step   = e.deltaY > 0 ? -0.1 : 0.1;
+    const rawLen = experimentData.stringLen + step;
+    const newLen = Math.round(
+        THREE.MathUtils.clamp(rawLen, 0.4, 2.2) * 10
+    ) / 10; // snap to nearest 0.1 m
+
+    if (newLen === experimentData.stringLen) return;
+    experimentData.stringLen = newLen;
+
+    // Scale the cylinder mesh visually (geometry height = origStringLen = 1.4)
+    experimentData.stringMesh.scale.y = newLen / experimentData.origStringLen;
+
+    // Update bob + hitSphere to new rest position (preserves current angle)
+    const a  = experimentData.angle;
+    const px = Math.sin(a) * newLen;
+    const py = -Math.cos(a) * newLen;
+    experimentData.bob.position.set(px, experimentData.pivotY + py, 0);
+    if (experimentData.hitSphere) experimentData.hitSphere.position.copy(experimentData.bob.position);
+
+    updateDataPanel();
+}, { passive: false });
+
 // ── Laser pointer ─────────────────────────────────────────────────────────────
 let laserMode   = false;
 const laserDot  = new THREE.Mesh(
@@ -1173,25 +1341,39 @@ window.toggleLaser = function() {
     canvas.style.cursor = laserMode ? 'crosshair' : 'default';
 };
 
+// ── Titration: drip rate control (called from HTML buttons and stopcock click) ─
+window.setDripRate = function(rate) {
+    if (!experimentData.stopcockMat) return;
+    experimentData.dripRate = rate;
+    experimentData.stopcockMat.color.set(
+        rate === 'off'  ? 0x94a3b8 :
+        rate === 'slow' ? 0x4ade80 : 0xef4444
+    );
+    // Sync HTML button active states
+    ['off', 'slow', 'fast'].forEach(r => {
+        const btn = document.getElementById('drip-' + r);
+        if (btn) btn.classList.toggle('active', r === rate);
+    });
+    updateDataPanel();
+};
+
+// ── Data panel DOM refs — must be declared before initDataPanel() is called ───
+const dataPanel = document.getElementById('data-panel');
+const dpRows    = document.getElementById('dp-rows');
+
 // ── Register interactive objects per scene ────────────────────────────────────
 
 if (SCENE_TYPE === 'titration') {
-    // Stopcock → drip rate control
+    // Stopcock → drip rate control (also controllable via the HTML buttons panel)
     registerInteractive({
         meshes: [experimentData.stopcock],
         name:   'Van buret (Stopcock)',
         hint:   'Click để thay đổi tốc độ nhỏ giọt',
         cursor: 'pointer',
         onClick() {
-            const rates = ['off','slow','fast'];
+            const rates = ['off', 'slow', 'fast'];
             const idx   = rates.indexOf(experimentData.dripRate);
-            experimentData.dripRate = rates[(idx + 1) % rates.length];
-            // Visual: rotate stopcock
-            experimentData.stopcockMat.color.set(
-                experimentData.dripRate === 'off'  ? 0x94a3b8 :
-                experimentData.dripRate === 'slow' ? 0x4ade80 : 0xef4444
-            );
-            updateDataPanel();
+            window.setDripRate(rates[(idx + 1) % rates.length]);
         }
     });
 
@@ -1220,10 +1402,13 @@ if (SCENE_TYPE === 'titration') {
     initDataPanel();
 
 } else if (SCENE_TYPE === 'pendulum') {
+    // Include hitSphere so hover tooltip fires within the larger invisible sphere
+    const pendulumMeshes = [experimentData.bob];
+    if (experimentData.hitSphere) pendulumMeshes.push(experimentData.hitSphere);
     registerInteractive({
-        meshes:  [experimentData.bob],
+        meshes:  pendulumMeshes,
         name:    'Quả nặng',
-        hint:    'Kéo sang trái/phải để đặt góc ban đầu',
+        hint:    'Kéo trái/phải để đặt góc — cuộn chuột để đổi chiều dài',
         cursor:  'grab',
         onClick() { /* drag handled separately */ }
     });
@@ -1351,9 +1536,6 @@ window.closeCellInfo = function() {
 };
 
 // ── Data panel ────────────────────────────────────────────────────────────────
-const dataPanel = document.getElementById('data-panel');
-const dpRows    = document.getElementById('dp-rows');
-
 function initDataPanel() {
     if (SCENE_TYPE !== 'titration' && SCENE_TYPE !== 'pendulum') return;
     dataPanel.classList.add('show');
@@ -1393,7 +1575,12 @@ function updateDataPanel() {
         const deg  = (experimentData.angle * 180 / Math.PI).toFixed(1);
         const v    = Math.abs(experimentData.vel * L).toFixed(3);
         const osc  = experimentData.oscCount ?? 0;
+        const hint = isRunning ? '' : '<span style="font-size:.66rem;color:#334155;margin-left:4px">(cuộn để đổi)</span>';
         dpRows.innerHTML = `
+            <div class="dp-row">
+                <span class="dp-label">Chiều dài dây (L)${hint}</span>
+                <span class="dp-value">${L.toFixed(2)}<span class="dp-unit">m</span></span>
+            </div>
             <div class="dp-row">
                 <span class="dp-label">Góc lệch (θ)</span>
                 <span class="dp-value">${deg}<span class="dp-unit">°</span></span>
@@ -1460,21 +1647,24 @@ window.resetExperiment = function() {
     if (experimentData.type === 'titration') {
         experimentData.solutionMat.color.set(0x93c5fd);
         experimentData.solutionMat.opacity = .55;
-        experimentData.dripRate    = 'off';
         experimentData.dripCount   = 0;
         experimentData.dripTimer   = 0;
         experimentData.buretVolume = 50.0;
-        experimentData.stopcockMat.color.set(0x94a3b8);
         experimentData.dropletMat.opacity = 0;
+        if (experimentData.streamMat) experimentData.streamMat.opacity = 0;
         experimentData.swirling   = false;
         experimentData.swirlAngle = 0;
         experimentData.flaskMeshes.forEach(m => { m.rotation.y = 0; });
-        updateDataPanel();
+        window.setDripRate('off'); // resets buttons + stopcock color + updateDataPanel
     }
     if (experimentData.type === 'pendulum') {
-        experimentData.angle    = Math.PI / 6;
-        experimentData.vel      = 0;
-        experimentData.oscCount = 0;
+        experimentData.angle     = Math.PI / 6;
+        experimentData.vel       = 0;
+        experimentData.oscCount  = 0;
+        experimentData.lastSign  = 0;
+        // Reset string length to original
+        experimentData.stringLen = experimentData.origStringLen ?? 1.4;
+        if (experimentData.stringMesh) experimentData.stringMesh.scale.y = 1;
         updateDataPanel();
     }
     if (experimentData.type === 'cell') {
@@ -1552,17 +1742,36 @@ function animate() {
             }
         }
 
-        // Droplet visual
-        const d  = experimentData.droplet;
-        const dm = experimentData.dropletMat;
-        if (experimentData.dripRate !== 'off') {
-            const phase = (experimentData.dripTimer / (experimentData.dripRate === 'slow' ? 1.5 : 0.42));
-            dm.opacity       = Math.pow(Math.sin(phase * Math.PI), 1.5) * 0.85;
-            d.position.y     = experimentData.dropletY - phase * 0.35;
-            d.visible        = true;
+        // Droplet + stream visual
+        const d   = experimentData.droplet;
+        const dm  = experimentData.dropletMat;
+        const sm  = experimentData.streamMesh;
+        const smM = experimentData.streamMat;
+        if (experimentData.dripRate === 'slow') {
+            const interval = 1.5;
+            const phase    = experimentData.dripTimer / interval;
+            // Droplet swells, detaches, falls
+            dm.opacity   = Math.pow(Math.sin(phase * Math.PI), 1.2) * 0.88;
+            d.position.y = experimentData.dropletY - phase * 0.38;
+            d.visible    = true;
+            // No stream in slow mode
+            if (smM) smM.opacity = 0;
+        } else if (experimentData.dripRate === 'fast') {
+            // Continuous stream visible, droplet falls fast
+            const interval = 0.42;
+            const phase    = experimentData.dripTimer / interval;
+            dm.opacity     = Math.pow(Math.sin(phase * Math.PI), 1.0) * 0.7;
+            d.position.y   = experimentData.dropletY - phase * 0.4;
+            d.visible      = true;
+            // Show stream
+            if (smM) {
+                smM.opacity = 0.55 + Math.sin(now * 18) * 0.1; // shimmer
+                sm.visible  = true;
+            }
         } else {
-            dm.opacity   = 0;
-            d.visible    = false;
+            dm.opacity  = 0;
+            d.visible   = false;
+            if (smM) smM.opacity = 0;
         }
 
         // Solution color shift: clear blue → pink at equivalence
@@ -1626,6 +1835,8 @@ function animate() {
 
         const bob = experimentData.bob;
         bob.position.set(px, experimentData.pivotY + py, 0);
+        // Keep invisible hit sphere in sync with the visual bob
+        if (experimentData.hitSphere) experimentData.hitSphere.position.copy(bob.position);
 
         const sm = experimentData.stringMesh;
         sm.position.set(px / 2, experimentData.pivotY + py / 2, 0);
@@ -1677,11 +1888,17 @@ function animate() {
 }
 animate();
 
-// ── Hide loading screen ────────────────────────────────────────────────────────
-setTimeout(() => {
-    document.getElementById('loading').classList.add('hide');
-    setTimeout(() => document.getElementById('loading').remove(), 450);
-}, 1600);
+// ── Hide loading screen after first rendered frame ────────────────────────────
+// Calls the plain-script bridge so the overlay is dismissed correctly.
+// The bridge also has its own hard timeout as a backstop.
+function hideLoading() {
+    if (typeof window.__labLoadingDone === 'function') {
+        window.__labLoadingDone();
+        window.__labLoadingDone = null;
+    }
+}
+// Fire after the second animation frame — by then the first pixel is on screen
+requestAnimationFrame(() => requestAnimationFrame(hideLoading));
 
 // ── Resize ────────────────────────────────────────────────────────────────────
 window.addEventListener('resize', () => {

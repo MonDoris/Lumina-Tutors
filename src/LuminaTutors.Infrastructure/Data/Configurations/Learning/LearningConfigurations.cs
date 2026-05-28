@@ -171,6 +171,99 @@ public class SubmissionFileConfiguration : IEntityTypeConfiguration<SubmissionFi
     }
 }
 
+public class QuizExamConfiguration : IEntityTypeConfiguration<QuizExam>
+{
+    public void Configure(EntityTypeBuilder<QuizExam> b)
+    {
+        b.ToTable("QuizExams");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("QuizExamId").UseIdentityColumn();
+
+        b.Property(x => x.Title).IsRequired().HasMaxLength(300);
+        b.Property(x => x.Description).HasMaxLength(2000);
+        b.Property(x => x.TimeLimitMinutes).HasDefaultValue(0);
+        b.Property(x => x.TotalQuestions).HasDefaultValue(0);
+        b.Property(x => x.PointsPerQuestion).HasColumnType("decimal(5,2)").HasDefaultValue(1M);
+        b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.ShuffleQuestions).HasDefaultValue(true);
+        b.Property(x => x.ShuffleOptions).HasDefaultValue(true);
+        b.Property(x => x.ShowResultAfter).HasDefaultValue(true);
+
+        b.HasIndex(x => new { x.SchoolId, x.Status }).HasDatabaseName("IX_QuizExams_School_Status");
+
+        b.HasOne(x => x.School).WithMany()
+            .HasForeignKey(x => x.SchoolId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Subject).WithMany()
+            .HasForeignKey(x => x.SubjectId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.GradeLevel).WithMany()
+            .HasForeignKey(x => x.GradeLevelId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.CreatedByTeacher).WithMany()
+            .HasForeignKey(x => x.CreatedByTeacherId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class QuizExamQuestionConfiguration : IEntityTypeConfiguration<QuizExamQuestion>
+{
+    public void Configure(EntityTypeBuilder<QuizExamQuestion> b)
+    {
+        b.ToTable("QuizExamQuestions");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("QuizExamQuestionId").UseIdentityColumn();
+
+        b.HasIndex(x => new { x.ExamId, x.QuestionId })
+            .IsUnique().HasDatabaseName("UQ_QuizExamQuestions_Exam_Question");
+
+        b.HasOne(x => x.Exam).WithMany(e => e.Questions)
+            .HasForeignKey(x => x.ExamId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Question).WithMany()
+            .HasForeignKey(x => x.QuestionId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class StudentQuizAttemptConfiguration : IEntityTypeConfiguration<StudentQuizAttempt>
+{
+    public void Configure(EntityTypeBuilder<StudentQuizAttempt> b)
+    {
+        b.ToTable("StudentQuizAttempts");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("AttemptId").UseIdentityColumn();
+
+        b.Property(x => x.ExamCode).IsRequired().HasMaxLength(10);
+        b.Property(x => x.Score).HasColumnType("decimal(5,2)");
+        b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+
+        b.HasIndex(x => new { x.ExamId, x.StudentId })
+            .IsUnique().HasDatabaseName("UQ_StudentQuizAttempts_Exam_Student");
+
+        b.HasOne(x => x.Exam).WithMany(e => e.Attempts)
+            .HasForeignKey(x => x.ExamId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Student).WithMany()
+            .HasForeignKey(x => x.StudentId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class StudentQuizAnswerConfiguration : IEntityTypeConfiguration<StudentQuizAnswer>
+{
+    public void Configure(EntityTypeBuilder<StudentQuizAnswer> b)
+    {
+        b.ToTable("StudentQuizAnswers");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("QuizAnswerId").UseIdentityColumn();
+
+        b.Property(x => x.IsCorrect).HasDefaultValue(false);
+
+        b.HasIndex(x => new { x.AttemptId, x.QuestionId })
+            .IsUnique().HasDatabaseName("UQ_StudentQuizAnswers_Attempt_Question");
+
+        b.HasOne(x => x.Attempt).WithMany(a => a.Answers)
+            .HasForeignKey(x => x.AttemptId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Question).WithMany()
+            .HasForeignKey(x => x.QuestionId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.SelectedOption).WithMany()
+            .HasForeignKey(x => x.SelectedOptionId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 public class VirtualLabSessionConfiguration : IEntityTypeConfiguration<VirtualLabSession>
 {
     public void Configure(EntityTypeBuilder<VirtualLabSession> b)
@@ -194,5 +287,49 @@ public class VirtualLabSessionConfiguration : IEntityTypeConfiguration<VirtualLa
 
         b.HasOne(x => x.Teacher).WithMany()
             .HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class OnlineSessionConfiguration : IEntityTypeConfiguration<OnlineSession>
+{
+    public void Configure(EntityTypeBuilder<OnlineSession> b)
+    {
+        b.ToTable("OnlineSessions");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("SessionId").UseIdentityColumn();
+
+        b.Property(x => x.Title).IsRequired().HasMaxLength(200);
+        b.Property(x => x.Description).HasMaxLength(1000);
+        b.Property(x => x.RoomCode).IsRequired().HasMaxLength(20);
+        b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.MaxParticipants).HasDefaultValue(50);
+
+        b.HasIndex(x => new { x.SchoolId, x.RoomCode })
+            .IsUnique().HasDatabaseName("UQ_OnlineSessions_School_RoomCode");
+
+        b.HasOne(x => x.School).WithMany()
+            .HasForeignKey(x => x.SchoolId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Teacher).WithMany()
+            .HasForeignKey(x => x.TeacherId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class SessionParticipantConfiguration : IEntityTypeConfiguration<SessionParticipant>
+{
+    public void Configure(EntityTypeBuilder<SessionParticipant> b)
+    {
+        b.ToTable("SessionParticipants");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("ParticipantId").UseIdentityColumn();
+
+        b.Property(x => x.JoinedAt).IsRequired();
+
+        b.HasIndex(x => new { x.SessionId, x.UserId })
+            .HasDatabaseName("IX_SessionParticipants_Session_User");
+
+        b.HasOne(x => x.Session).WithMany(s => s.Participants)
+            .HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.User).WithMany()
+            .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
     }
 }

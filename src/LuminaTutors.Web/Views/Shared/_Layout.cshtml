@@ -20,6 +20,11 @@
     <meta name="description" content="Lumina Tutors — Hệ thống quản lý giáo dục">
     <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} — Lumina Tutors" : "Lumina Tutors")</title>
 
+    <!-- DNS / TLS warm-up for external services (zero cost if not used) -->
+    <link rel="preconnect" href="https://meet.jit.si" crossorigin>
+    <link rel="dns-prefetch" href="https://meet.jit.si">
+    <link rel="dns-prefetch" href="https://8x8.vc">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -185,6 +190,18 @@
                                  font-size:.6rem;font-weight:800;letter-spacing:.04em;
                                  padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
                 </a>
+                <a asp-controller="OnlineClass" asp-action="Index" class="@Nav("OnlineClass")">
+                    <span class="lt-nav__icon"><i class="bi bi-camera-video-fill"></i></span>
+                    Phòng học online
+                </a>
+                <a asp-controller="QuizExam" asp-action="Index" class="@Nav("QuizExam")">
+                    <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>
+                    Đề thi trắc nghiệm
+                </a>
+                <a asp-controller="QuizBank" asp-action="Index" class="@Nav("QuizBank")">
+                    <span class="lt-nav__icon"><i class="bi bi-collection-fill"></i></span>
+                    Ngân hàng câu hỏi
+                </a>
             </div>
             }
 
@@ -273,6 +290,22 @@
                 <a asp-controller="Supervisor" asp-action="Messages" class="@Nav("Supervisor", "Messages")">
                     <span class="lt-nav__icon"><i class="bi bi-chat-dots-fill"></i></span>
                     Nhắn tin PH
+                </a>
+            </div>
+            }
+
+            <!-- Student learning section -->
+            @if (roleCode == "STUDENT")
+            {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Học tập</div>
+                <a asp-controller="OnlineClass" asp-action="Index" class="@Nav("OnlineClass")">
+                    <span class="lt-nav__icon"><i class="bi bi-camera-video-fill"></i></span>
+                    Phòng học online
+                </a>
+                <a asp-controller="QuizExam" asp-action="Index" class="@Nav("QuizExam")">
+                    <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>
+                    Đề thi trắc nghiệm
                 </a>
             </div>
             }

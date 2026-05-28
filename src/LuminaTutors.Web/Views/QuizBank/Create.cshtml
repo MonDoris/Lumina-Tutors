@@ -1,0 +1,156 @@
+@{
+    ViewData["Title"] = "Thêm câu hỏi";
+    var subjects    = ViewBag.Subjects    as IReadOnlyList<dynamic> ?? new List<dynamic>();
+    var gradeLevels = ViewBag.GradeLevels as IReadOnlyList<dynamic> ?? new List<dynamic>();
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-plus-circle-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Thêm câu hỏi mới
+        </h1>
+        <p class="lt-page-subtitle">Thêm câu hỏi trắc nghiệm vào ngân hàng câu hỏi</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i> @err
+    </div>
+}
+
+<form asp-action="Create" method="post" id="questionForm">
+    @Html.AntiForgeryToken()
+    <div class="row g-4">
+
+        <!-- Left: Question content -->
+        <div class="col-lg-8">
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-question-circle-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Nội dung câu hỏi
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+                    <div class="lt-form-group lt-mb-4">
+                        <label class="lt-label">Câu hỏi <span class="lt-text-danger">*</span></label>
+                        <textarea name="questionText" class="lt-input" rows="4"
+                                  placeholder="Nhập nội dung câu hỏi..."
+                                  required style="resize:vertical;min-height:100px"></textarea>
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Giải thích đáp án</label>
+                        <textarea name="explanationText" class="lt-input" rows="2"
+                                  placeholder="Giải thích tại sao đáp án đúng (tùy chọn)..."
+                                  style="resize:vertical"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Answer options -->
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-list-check" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Các lựa chọn đáp án
+                    </h3>
+                    <span style="font-size:.78rem;color:var(--lt-text-muted)">Chọn 1 đáp án đúng</span>
+                </div>
+                <div class="lt-card__body">
+                    <div id="optionsList">
+                        @foreach (var (label, idx) in new[] { 'A','B','C','D' }.Select((l,i) => (l,i)))
+                        {
+                            <div class="option-row" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                                <div style="width:32px;height:32px;border-radius:8px;
+                                            background:var(--lt-navy-900);
+                                            display:flex;align-items:center;justify-content:center;
+                                            font-weight:700;font-size:.85rem;color:var(--lt-gold);flex-shrink:0">
+                                    @label
+                                </div>
+                                <input type="hidden" name="optionLabel" value="@label"/>
+                                <input type="text" name="optionText" class="lt-input"
+                                       placeholder="Nhập nội dung đáp án @label..."
+                                       required style="flex:1"/>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;
+                                              white-space:nowrap;font-size:.82rem;color:var(--lt-text-muted)">
+                                    <input type="radio" name="correctIndex" value="@idx"
+                                           @(idx == 0 ? "checked" : "")
+                                           style="accent-color:var(--lt-success);width:16px;height:16px"/>
+                                    Đúng
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Metadata -->
+        <div class="col-lg-4">
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-tags-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Phân loại
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Môn học <span class="lt-text-danger">*</span></label>
+                        <select name="subjectId" class="lt-select" required>
+                            <option value="">— Chọn môn học —</option>
+                            @foreach (dynamic s in subjects)
+                            {
+                                <option value="@s.SubjectId">@s.SubjectName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Khối lớp</label>
+                        <select name="gradeLevelId" class="lt-select">
+                            <option value="">— Tất cả khối —</option>
+                            @foreach (dynamic g in gradeLevels)
+                            {
+                                <option value="@g.GradeLevelId">@g.GradeName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Loại câu hỏi <span class="lt-text-danger">*</span></label>
+                        <select name="questionType" class="lt-select" required>
+                            <option value="MultipleChoice">Trắc nghiệm nhiều lựa chọn</option>
+                            <option value="TrueFalse">Đúng / Sai</option>
+                        </select>
+                    </div>
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Độ khó <span class="lt-text-danger">*</span></label>
+                        <select name="difficultyLevel" class="lt-select" required>
+                            <option value="Easy">Dễ</option>
+                            <option value="Medium" selected>Trung bình</option>
+                            <option value="Hard">Khó</option>
+                        </select>
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Chương / Chủ đề</label>
+                        <input name="chapterTag" class="lt-input"
+                               placeholder="VD: Chương 3: Axit - Bazơ"/>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                <i class="bi bi-plus-circle-fill"></i> Thêm vào ngân hàng
+            </button>
+            <p class="lt-form-hint" style="text-align:center;margin-top:.5rem">
+                <i class="bi bi-info-circle"></i>
+                Câu hỏi sẽ cần được duyệt trước khi dùng trong đề thi
+            </p>
+        </div>
+    </div>
+</form>

@@ -34,6 +34,8 @@ public static class ApplicationServiceExtensions
         services.AddScoped<INewsBoardService,    NewsBoardService>();
         services.AddScoped<IAccountService,      AccountService>();
         services.AddScoped<IVirtualLabService,   VirtualLabService>();
+        services.AddScoped<IQuizService,         QuizService>();
+        services.AddScoped<IOnlineClassService,  OnlineClassService>();
 
         return services;
     }
