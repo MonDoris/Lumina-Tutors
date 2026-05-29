@@ -1,212 +1,251 @@
 @using System.Security.Claims
+@using LuminaTutors.Application.DTOs.Account
+@using LuminaTutors.Domain.Entities.Academic
+@using LuminaTutors.Domain.Entities.Learning
 @{
     ViewData["Title"] = "Dashboard";
-    var fullName = User.FindFirstValue(ClaimTypes.Name) ?? "Quản trị viên";
-    var hour = DateTime.Now.Hour;
-    var greeting = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
-    var today = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
-    var firstName = fullName.Split(' ').Last();
+    var fullName   = User.FindFirstValue(ClaimTypes.Name) ?? "Quản trị viên";
+    var firstName  = fullName.Split(' ').Last();
+    var hour       = DateTime.Now.Hour;
+    var greeting   = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    var today      = DateTime.Now.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"));
+
+    var totalStudents  = (int)(ViewBag.TotalStudents  ?? 0);
+    var totalTeachers  = (int)(ViewBag.TotalTeachers  ?? 0);
+    var totalClasses   = (int)(ViewBag.TotalClasses   ?? 0);
+    var totalSubjects  = (int)(ViewBag.TotalSubjects  ?? 0);
+    var activeSubjects = (int)(ViewBag.ActiveSubjects ?? 0);
+    var overdueCount   = (int)(ViewBag.OverdueCount   ?? 0);
+    var totalSessions  = (int)(ViewBag.TotalSessions  ?? 0);
+    var liveSessions   = (int)(ViewBag.LiveSessions   ?? 0);
+    var monthRevenue   = (decimal)(ViewBag.MonthRevenue ?? 0m);
+    var overdueAmount  = (decimal)(ViewBag.OverdueAmount ?? 0m);
+    var collectionRate = (decimal)(ViewBag.CollectionRate ?? 0m);
+    var recentAccounts = ViewBag.RecentAccounts as List<AccountListItemDto> ?? new();
+    var recentSubjects = ViewBag.RecentSubjects as List<Subject> ?? new();
+    var yearName       = ViewBag.ActiveYearName as string ?? "";
 }
+@section Styles {
+<style>
+.px-body{background:#e8edf5;min-height:calc(100vh - 56px);padding:28px 32px}
+.px-tabs{display:flex;gap:0;border-bottom:1px solid rgba(0,0,0,.08);margin-bottom:28px}
+.px-tab{padding:10px 20px;font-size:.83rem;font-weight:500;color:#9ba3af;border:none;background:none;border-bottom:2px solid transparent;cursor:pointer;transition:.15s}
+.px-tab.active{color:#1e293b;border-bottom-color:#1e293b;font-weight:600}
+.px-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.px-left,.px-right{display:flex;flex-direction:column;gap:20px}
+.px-right{gap:16px}
+.gcard{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border-radius:20px;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 24px rgba(0,0,0,.07);overflow:hidden}
+.hero-card{background:linear-gradient(135deg,#1e293b 0%,#334155 60%,#475569 100%);border-radius:20px;padding:32px;position:relative;overflow:hidden;min-height:200px;display:flex;align-items:center;gap:24px}
+.hero-card::before{content:'';position:absolute;top:-60px;right:-40px;width:260px;height:260px;background:radial-gradient(circle,rgba(201,169,110,.35) 0%,transparent 70%);border-radius:50%}
+.hero-orb{width:140px;height:140px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.2),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:3.5rem;position:relative;z-index:1}
+.hero-content{flex:1;position:relative;z-index:1}
+.hero-eyebrow{font-size:.7rem;font-weight:700;color:rgba(201,169,110,.9);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.hero-title{font-size:1.75rem;font-weight:700;color:#fff;line-height:1.2;margin-bottom:8px}
+.hero-sub{font-size:.83rem;color:rgba(255,255,255,.6);margin-bottom:20px}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hero-btn{padding:9px 18px;border-radius:10px;font-size:.82rem;font-weight:600;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.hero-btn--primary{background:#fff;color:#1e293b}
+.hero-btn--outline{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.stat-card{padding:20px 22px}
+.stat-label{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px}
+.stat-value{font-size:1.9rem;font-weight:700;color:#0f172a;line-height:1;margin-bottom:4px}
+.stat-trend{font-size:.75rem;font-weight:500}
+.stat-trend--up{color:#22c55e}.stat-trend--down{color:#ef4444}.stat-trend--neu{color:#94a3b8}
+.stat-icon{float:right;margin-top:-4px}
+.activity-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 12px;border-bottom:1px solid rgba(0,0,0,.06)}
+.activity-title{font-size:.9rem;font-weight:700;color:#0f172a}
+.activity-link{font-size:.78rem;color:#64748b;text-decoration:none;font-weight:500}
+.activity-link:hover{color:#1e293b}
+.activity-row{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid rgba(0,0,0,.04)}
+.activity-row:last-child{border-bottom:none}
+.activity-row:hover{background:rgba(0,0,0,.02)}
+.act-icon{width:38px;height:38px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.act-icon--blue{background:#dbeafe;color:#2563eb}.act-icon--green{background:#dcfce7;color:#16a34a}
+.act-icon--gold{background:#fef9c3;color:#ca8a04}.act-icon--red{background:#fee2e2;color:#dc2626}
+.act-icon--purple{background:#ede9fe;color:#7c3aed}
+.act-body{flex:1;min-width:0}.act-name{font-size:.83rem;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-meta{font-size:.72rem;color:#94a3b8;margin-top:1px}
+.act-right{text-align:right;flex-shrink:0}
+.act-amount{font-size:.85rem;font-weight:600;color:#0f172a}
+.act-status{font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.act-status--ok{color:#22c55e}.act-status--warn{color:#f59e0b}.act-status--neu{color:#94a3b8}
+.mini-stat{padding:18px 20px}
+.mini-stat__label{font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.mini-stat__value{font-size:1.5rem;font-weight:700;color:#0f172a}
+.mini-stat__sub{font-size:.73rem;color:#94a3b8;margin-top:3px}
+.dark-card{background:linear-gradient(145deg,#1e293b,#334155);border-radius:20px;overflow:hidden;position:relative}
+.dark-card-inner{padding:18px 20px}
+.dark-card-label{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.dark-card-value{font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:2px}
+.dark-card-sub{font-size:.72rem;color:rgba(255,255,255,.5)}
+.dark-live{position:absolute;top:14px;right:14px;background:#22c55e;color:#fff;font-size:.65rem;font-weight:700;padding:3px 8px;border-radius:20px;display:flex;align-items:center;gap:4px}
+@@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
+.qa-btn{background:rgba(0,0,0,.03);border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(0,0,0,.06);cursor:pointer;transition:.15s;text-decoration:none}
+.qa-btn:hover{background:#f1f5f9;transform:translateY(-1px)}
+.qa-btn.qa-dark{background:#1e293b;border-color:#1e293b}
+.qa-btn.qa-dark .qa-label{color:#fff}
+.qa-icon{width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:#1e293b}
+.qa-dark .qa-icon{background:rgba(255,255,255,.15);color:#fff}
+.qa-label{font-size:.75rem;font-weight:600;color:#334155;text-align:center}
+.empty-state{padding:32px;text-align:center;color:#94a3b8;font-size:.83rem}
+.empty-state i{font-size:2rem;display:block;margin-bottom:8px;opacity:.4}
+</style>}
+<div class="px-body">
+  <div class="px-tabs">
+    <button class="px-tab active">Tổng quan</button>
+    <button class="px-tab" onclick="location.href='/Finance'">Tài chính</button>
+    <button class="px-tab" onclick="location.href='/Class'">Lớp học</button>
+    <button class="px-tab" onclick="location.href='/Account'">Tài khoản</button>
+  </div>
+  <div class="px-grid">
+    <div class="px-left">
+      <!-- Hero -->
+      <div class="hero-card">
+        <div class="hero-orb">🎓</div>
+        <div class="hero-content">
+          <div class="hero-eyebrow">QUẢN TRỊ HỆ THỐNG</div>
+          <div class="hero-title">@greeting, @firstName 👋</div>
+          <div class="hero-sub">Tổng quan hoạt động trung tâm — @today</div>
+          <div class="hero-actions">
+            <a href="/Student" class="hero-btn hero-btn--primary"><i class="bi bi-people-fill"></i> Học sinh</a>
+            <a href="/Subject" class="hero-btn hero-btn--outline"><i class="bi bi-journals"></i> Môn học</a>
+          </div>
+        </div>
+      </div>
+      <!-- Stats 4 ô -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+        <a href="/Student" class="gcard stat-card" style="text-decoration:none;display:block">
+          <div class="stat-icon"><i class="bi bi-people-fill" style="color:#2563eb"></i></div>
+          <div class="stat-label">Học sinh đang học</div>
+          <div class="stat-value">@totalStudents</div>
+          <div class="stat-trend stat-trend--neu">@(yearName != "" ? yearName : "Hiện tại")</div>
+        </a>
+        <a href="/Class" class="gcard stat-card" style="text-decoration:none;display:block">
+          <div class="stat-icon"><i class="bi bi-building" style="color:#16a34a"></i></div>
+          <div class="stat-label">Lớp đang hoạt động</div>
+          <div class="stat-value">@totalClasses</div>
+          <div class="stat-trend stat-trend--neu">@(yearName != "" ? yearName : "Hiện tại")</div>
+        </a>
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-cash-stack" style="color:#ca8a04"></i></div>
+          <div class="stat-label">Thu trong tháng (VNĐ)</div>
+          <div class="stat-value">@(monthRevenue > 0 ? (monthRevenue / 1_000_000m).ToString("N1") + "tr" : "—")</div>
+          <div class="stat-trend @(collectionRate >= 90 ? "stat-trend--up" : "stat-trend--neu")">
+            @(collectionRate > 0 ? $"Thu: {collectionRate:N0}%" : "Chưa có dữ liệu")
+          </div>
+        </div>
+        <a href="/Finance/OutstandingDebts" class="gcard stat-card" style="text-decoration:none;display:block">
+          <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#dc2626"></i></div>
+          <div class="stat-label">Hóa đơn quá hạn</div>
+          <div class="stat-value">@overdueCount</div>
+          <div class="stat-trend @(overdueCount > 0 ? "stat-trend--down" : "stat-trend--up")">
+            @(overdueCount > 0 ? "Cần xử lý" : "Không có nợ quá hạn")
+          </div>
+        </a>
+      </div>
 
-<!-- Banner -->
-<div class="dash-banner dash-banner--admin">
-    <div class="dash-banner__grid"></div>
-    <div class="dash-banner__left">
-        <div class="dash-banner__eyebrow">
-            <i class="bi bi-shield-fill"></i>
-            QUẢN TRỊ VIÊN
+      <!-- Tài khoản mới nhất -->
+      <div class="gcard">
+        <div class="activity-header">
+          <span class="activity-title">Tài khoản mới nhất</span>
+          <a href="/Account" class="activity-link">Xem tất cả →</a>
         </div>
-        <div class="dash-banner__title">@greeting, @firstName 👋</div>
-        <div class="dash-banner__sub">
-            <i class="bi bi-calendar3"></i> @today
-            <span style="opacity:.4">·</span>
-            <i class="bi bi-circle-fill" style="color:#4ade80;font-size:.5rem"></i> Hệ thống hoạt động bình thường
-        </div>
-    </div>
-    <div class="dash-banner__right">
-        <div class="dash-banner__icon-bg"><i class="bi bi-shield-check"></i></div>
-    </div>
-</div>
-
-<!-- Stats Row -->
-<div class="dash-stats dash-stats-4">
-    <a href="/Student" class="dstat">
-        <div class="dstat__icon dstat__icon--blue"><i class="bi bi-people-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">@(ViewBag.TotalStudents ?? 248)</div>
-            <div class="dstat__label">Học sinh đang học</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +12 tháng này</div>
-        </div>
-    </a>
-    <a href="/Class" class="dstat">
-        <div class="dstat__icon dstat__icon--green"><i class="bi bi-building"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">@(ViewBag.TotalClasses ?? 18)</div>
-            <div class="dstat__label">Lớp học đang hoạt động</div>
-            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Không đổi</div>
-        </div>
-    </a>
-    <a href="/Finance/Invoices" class="dstat">
-        <div class="dstat__icon dstat__icon--gold"><i class="bi bi-cash-stack"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">84.5tr</div>
-            <div class="dstat__label">Thu trong tháng (VNĐ)</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +8.2% tháng trước</div>
-        </div>
-    </a>
-    <a href="/Finance/OutstandingDebts" class="dstat">
-        <div class="dstat__icon dstat__icon--red"><i class="bi bi-exclamation-triangle-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">@(ViewBag.OverdueCount ?? 7)</div>
-            <div class="dstat__label">Hóa đơn quá hạn</div>
-            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> -3 tuần này</div>
-        </div>
-    </a>
-</div>
-
-<!-- Row 1: Finance overview + Quick actions -->
-<div class="dash-row dash-row-7-3">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-bar-chart-fill" style="color:#c9a84c"></i> Tài chính tháng @DateTime.Now.ToString("MM/yyyy")</div>
-            <a href="/Finance" class="dcard__action">Xem chi tiết</a>
-        </div>
-        <div class="dcard__body">
-            <div class="fin-row">
-                <div class="fin-metric">
-                    <div class="fin-metric__val" style="color:#059669">84.5tr</div>
-                    <div class="fin-metric__lbl">Đã thu</div>
-                </div>
-                <div class="fin-metric">
-                    <div class="fin-metric__val" style="color:#dc2626">12.3tr</div>
-                    <div class="fin-metric__lbl">Còn nợ</div>
-                </div>
-                <div class="fin-metric">
-                    <div class="fin-metric__val" style="color:#0f172a">96.8tr</div>
-                    <div class="fin-metric__lbl">Tổng kỳ vọng</div>
-                </div>
-            </div>
-            <div style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-                <span style="font-size:.78rem;font-weight:600;color:#64748b">Tiến độ thu học phí</span>
-                <span style="font-size:.8rem;font-weight:700;color:#059669">87.3%</span>
-            </div>
-            <div class="dash-progress">
-                <div class="dash-progress__bar" style="width:87.3%;background:linear-gradient(90deg,#059669,#34d399)"></div>
-            </div>
-            <div style="margin-top:20px">
-                <div style="font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Top lớp còn công nợ</div>
-                @{
-                    var debts = new[] {
-                        new { Cls = "Toán nâng cao 10A", Amt = "3.2tr", Col = "#dc2626" },
-                        new { Cls = "Văn học 11B",       Amt = "2.8tr", Col = "#d97706" },
-                        new { Cls = "Tiếng Anh 12C",     Amt = "1.9tr", Col = "#d97706" },
-                        new { Cls = "Lý 10D",            Amt = "1.4tr", Col = "#64748b" },
-                    };
-                }
-                @foreach (var d in debts)
-                {
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f8fafc">
-                        <span style="font-size:.83rem;color:#374151">@d.Cls</span>
-                        <span style="font-size:.83rem;font-weight:700;color:@d.Col">@d.Amt</span>
+        @if (recentAccounts.Any())
+        {
+            @foreach (var acc in recentAccounts)
+            {
+                var roleIcon = acc.RoleCode == "STUDENT" ? "bi-mortarboard-fill" :
+                               acc.RoleCode == "TEACHER" ? "bi-person-video3" : "bi-person-fill";
+                var roleColor = acc.RoleCode == "STUDENT" ? "act-icon--blue" :
+                                acc.RoleCode == "TEACHER" ? "act-icon--green" : "act-icon--gold";
+                <div class="activity-row">
+                    <div class="act-icon @roleColor"><i class="bi @roleIcon"></i></div>
+                    <div class="act-body">
+                        <div class="act-name">@acc.FullName</div>
+                        <div class="act-meta">@acc.RoleCode · @acc.Email</div>
                     </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-lightning-fill" style="color:#f59e0b"></i> Thao tác nhanh</div>
-        </div>
-        <div class="dcard__body">
-            <div class="quick-actions">
-                <a href="/Student/Create" class="qa-btn" style="--qa-color:#2563eb;--qa-bg:#eff6ff">
-                    <i class="bi bi-person-plus-fill"></i> Thêm học sinh mới
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Class/Create" class="qa-btn" style="--qa-color:#059669;--qa-bg:#ecfdf5">
-                    <i class="bi bi-plus-circle-fill"></i> Tạo lớp học mới
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Finance/Invoices" class="qa-btn" style="--qa-color:#c9a84c;--qa-bg:#fffbeb">
-                    <i class="bi bi-receipt"></i> Quản lý hóa đơn
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/HR/Teachers" class="qa-btn" style="--qa-color:#7c3aed;--qa-bg:#f5f3ff">
-                    <i class="bi bi-person-badge-fill"></i> Quản lý giáo viên
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Auth/InviteLinks" class="qa-btn" style="--qa-color:#0d9488;--qa-bg:#f0fdfa">
-                    <i class="bi bi-link-45deg"></i> Tạo liên kết mời
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-<!-- Row 2: Today schedule + Activity feed -->
-<div class="dash-row dash-row-5-5">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-calendar-week-fill" style="color:#2563eb"></i> Lịch hôm nay</div>
-            <a href="/Class" class="dcard__action">Xem tất cả</a>
-        </div>
-        <div class="dcard__body">
-            <div class="sched-list">
-                @{
-                    var schedules = new[] {
-                        new { Time = "07:30", Name = "Toán nâng cao 10A", Room = "Phòng 101", Active = true  },
-                        new { Time = "09:00", Name = "Tiếng Anh 11B",     Room = "Phòng 203", Active = false },
-                        new { Time = "13:30", Name = "Vật lý 12A",        Room = "Lab 1",     Active = false },
-                        new { Time = "15:00", Name = "Văn học 10C",       Room = "Phòng 105", Active = false },
-                    };
-                }
-                @foreach (var s in schedules)
-                {
-                    <div class="sched-item @(s.Active ? "active" : "")">
-                        <div class="sched-time">@s.Time</div>
-                        <div class="sched-dot" style="background:@(s.Active ? "#2563eb" : "#cbd5e1")"></div>
-                        <div>
-                            <div class="sched-name">@s.Name</div>
-                            <div class="sched-room"><i class="bi bi-geo-alt"></i> @s.Room</div>
+                    <div class="act-right">
+                        <div class="act-status @(acc.IsActive ? "act-status--ok" : "act-status--neu")">
+                            @(acc.IsActive ? "HOẠT ĐỘNG" : "CHƯA KÍCH HOẠT")
                         </div>
                     </div>
-                }
-            </div>
-        </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state"><i class="bi bi-people"></i>Chưa có tài khoản nào. <a href="/Account/Create">Tạo tài khoản đầu tiên</a></div>
+        }
+      </div>
     </div>
 
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-activity" style="color:#7c3aed"></i> Hoạt động gần đây</div>
-            <a href="/Dashboard/Notifications" class="dcard__action">Tất cả</a>
-        </div>
-        <div class="dcard__body">
-            <div class="activity-list">
-                @{
-                    var activities = new[] {
-                        new { Bg = "#0f1c2e", Init = "NT", Name = "Nguyễn Thị Lan",   Action = "đã nộp học phí tháng 5",              Time = "2 phút trước"  },
-                        new { Bg = "#059669", Init = "TM", Name = "Trần Minh Đức",    Action = "đã điểm danh vào lớp Toán 10A",       Time = "15 phút trước" },
-                        new { Bg = "#2563eb", Init = "PH", Name = "Phạm Hoa",         Action = "đã tạo lớp học mới: Hóa 11A",         Time = "1 giờ trước"   },
-                        new { Bg = "#d97706", Init = "LV", Name = "Lê Văn Tú",        Action = "báo cáo vi phạm kỷ luật mức nhẹ",     Time = "2 giờ trước"   },
-                    };
-                }
-                @foreach (var a in activities)
-                {
-                    <div class="activity-item">
-                        <div class="activity-avatar" style="background:@a.Bg">@a.Init</div>
-                        <div>
-                            <div class="activity-text"><strong>@a.Name</strong> @a.Action</div>
-                            <div class="activity-time"><i class="bi bi-clock"></i> @a.Time</div>
-                        </div>
-                    </div>
-                }
+    <div class="px-right">
+      <!-- Doanh thu -->
+      <div class="gcard mini-stat">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="mini-stat__label">Doanh thu tháng @DateTime.Now.Month</div>
+            <div class="mini-stat__value">@(monthRevenue > 0 ? monthRevenue.ToString("N0") + " ₫" : "—")</div>
+            <div class="mini-stat__sub" style="@(collectionRate>=90?"color:#22c55e":"color:#f59e0b");font-weight:600">
+              @(collectionRate > 0 ? $"Tỉ lệ thu: {collectionRate:N0}%" : "Chưa có dữ liệu tài chính")
             </div>
+          </div>
+          <i class="bi bi-graph-up-arrow" style="font-size:1.4rem;color:#22c55e"></i>
         </div>
-    </div>
+      </div>
 
+      <!-- Phòng học online -->
+      <div class="gcard mini-stat">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="mini-stat__label">Phòng học online</div>
+            <div class="mini-stat__value">@totalSessions tổng</div>
+            <div class="mini-stat__sub">
+              @if (liveSessions > 0)
+              {
+                  <span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:10px;font-weight:600;font-size:.68rem">● @liveSessions đang LIVE</span>
+              }
+              else
+              {
+                  <span style="color:#94a3b8">Không có buổi học trực tiếp</span>
+              }
+            </div>
+          </div>
+          <i class="bi bi-camera-video-fill" style="font-size:1.4rem;color:#7c3aed"></i>
+        </div>
+      </div>
+
+      <!-- Môn học -->
+      <div class="dark-card">
+        <div style="height:110px;background:linear-gradient(135deg,#1e293b,#334155);display:flex;align-items:center;justify-content:center;position:relative">
+          <i class="bi bi-journals" style="font-size:3rem;color:rgba(255,255,255,.1);position:absolute"></i>
+          <div style="position:relative;z-index:1;text-align:center">
+            <div style="font-size:2rem;font-weight:800;color:#fff">@activeSubjects</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.55)">Môn học đang hoạt động</div>
+          </div>
+        </div>
+        @if (totalSessions > 0 || liveSessions > 0)
+        {
+            <div class="dark-live">● TRỰC TIẾP</div>
+        }
+        <div class="dark-card-inner">
+          <div class="dark-card-label">Tổng môn học</div>
+          <div class="dark-card-value">@totalSubjects môn</div>
+          <div class="dark-card-sub">@activeSubjects đang hoạt động / @totalSubjects tổng</div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="gcard">
+        <div style="padding:14px 16px 4px;font-size:.78rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase">Thao tác nhanh</div>
+        <div class="qa-grid">
+          <a href="/Account/Create" class="qa-btn"><div class="qa-icon"><i class="bi bi-person-plus-fill"></i></div><span class="qa-label">Thêm tài khoản</span></a>
+          <a href="/Subject/Create" class="qa-btn"><div class="qa-icon"><i class="bi bi-plus-circle-fill"></i></div><span class="qa-label">Thêm môn học</span></a>
+          <a href="/Subject" class="qa-btn"><div class="qa-icon"><i class="bi bi-journals"></i></div><span class="qa-label">Môn học</span></a>
+          <a href="/OnlineClassroom" class="qa-btn qa-dark"><div class="qa-icon"><i class="bi bi-camera-video-fill"></i></div><span class="qa-label">Phòng học</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

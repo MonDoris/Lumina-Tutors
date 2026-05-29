@@ -1,0 +1,53 @@
+@{
+    ViewData["Title"] = "Tham gia phòng học";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-key-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Tham gia phòng học
+        </h1>
+        <p class="lt-page-subtitle">Nhập mã phòng do giáo viên cung cấp</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+        <div class="lt-card">
+            <div class="lt-card__body" style="padding:2rem">
+                <form asp-action="JoinByCode" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="lt-form-group lt-mb-4">
+                        <label class="lt-label lt-required" style="font-size:.88rem;margin-bottom:.5rem">
+                            Mã phòng học
+                        </label>
+                        <input type="text" name="roomCode" class="lt-input"
+                               placeholder="XXXX-XXXX"
+                               maxlength="9"
+                               autocomplete="off"
+                               autofocus
+                               style="font-size:1.4rem;font-family:monospace;text-align:center;
+                                      letter-spacing:.15em;font-weight:700;text-transform:uppercase"
+                               oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')">
+                        <p style="font-size:.75rem;color:var(--lt-text-muted);margin-top:.4rem;text-align:center">
+                            Định dạng: 4 ký tự – 4 ký tự (Vd: ABCD-1234)
+                        </p>
+                    </div>
+                    <button type="submit" class="lt-btn lt-btn--primary"
+                            style="width:100%;justify-content:center;font-size:.95rem">
+                        <i class="bi bi-camera-video-fill"></i> Tham gia ngay
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -62,9 +62,12 @@ public interface IUnitOfWork : IDisposable
     IRepository<QuizExam>             QuizExams             { get; }
     IRepository<OnlineSession>        OnlineSessions        { get; }
     IRepository<SessionParticipant>   SessionParticipants   { get; }
+    IRepository<OnlineRoomChat>       OnlineRoomChats       { get; }
+    IRepository<OnlineSlide>          OnlineSlides          { get; }
     IRepository<QuizExamQuestion>     QuizExamQuestions     { get; }
     IRepository<StudentQuizAttempt>   StudentQuizAttempts   { get; }
     IRepository<StudentQuizAnswer>    StudentQuizAnswers    { get; }
+    IRepository<QuestionImportJob>    QuestionImportJobs    { get; }
 
     // ── Grading ───────────────────────────────────────────────────────────────
     IRepository<GradeCategory>           GradeCategories           { get; }

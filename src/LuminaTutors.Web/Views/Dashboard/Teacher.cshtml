@@ -1,154 +1,193 @@
 @using System.Security.Claims
+@using LuminaTutors.Domain.Entities.Learning
 @{
     ViewData["Title"] = "Dashboard";
-    var fullName  = User.FindFirstValue(ClaimTypes.Name) ?? "Giáo viên";
-    var firstName = fullName.Split(' ').Last();
-    var hour      = DateTime.Now.Hour;
-    var greeting  = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
-    var today     = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
-
-    // Gender-aware title: "Thầy" (Male) | "Cô" (Female/Other/null)
-    var gender    = ViewBag.UserGender as string;
-    var title     = gender == "Male" ? "Thầy" : "Cô";
-
-    // Real data from controller
+    var fullName     = User.FindFirstValue(ClaimTypes.Name) ?? "Giáo viên";
+    var firstName    = fullName.Split(' ').Last();
+    var hour         = DateTime.Now.Hour;
+    var greeting     = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    var today        = DateTime.Now.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"));
     var totalStudents = (int)(ViewBag.TotalStudents ?? 0);
     var totalClasses  = (int)(ViewBag.TotalClasses  ?? 0);
-    var activeYear    = (string?)(ViewBag.ActiveYearName ?? "");
+    var totalSessions = (int)(ViewBag.TotalSessions ?? 0);
+    var yearName      = ViewBag.ActiveYearName as string ?? "";
+    var recentSessions = ViewBag.RecentSessions as List<OnlineSession> ?? new();
 }
-
-<!-- Banner -->
-<div class="dash-banner dash-banner--teacher">
-    <div class="dash-banner__grid"></div>
-    <div class="dash-banner__left">
-        <div class="dash-banner__eyebrow">
-            <i class="bi bi-person-video3"></i>
-            GIÁO VIÊN
+@section Styles {<style>
+.px-body{background:#e8edf5;min-height:calc(100vh - 56px);padding:28px 32px}
+.px-tabs{display:flex;gap:0;border-bottom:1px solid rgba(0,0,0,.08);margin-bottom:28px}
+.px-tab{padding:10px 20px;font-size:.83rem;font-weight:500;color:#9ba3af;border:none;background:none;border-bottom:2px solid transparent;cursor:pointer}
+.px-tab.active{color:#1e293b;border-bottom-color:#1e293b;font-weight:600}
+.px-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.px-left,.px-right{display:flex;flex-direction:column;gap:16px}
+.gcard{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border-radius:20px;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 24px rgba(0,0,0,.07);overflow:hidden}
+.hero-card{background:linear-gradient(135deg,#064e3b 0%,#047857 100%);border-radius:20px;padding:32px;position:relative;overflow:hidden;min-height:200px;display:flex;align-items:center;gap:24px}
+.hero-card::before{content:'';position:absolute;top:-60px;right:-40px;width:260px;height:260px;background:radial-gradient(circle,rgba(52,211,153,.3) 0%,transparent 70%);border-radius:50%}
+.hero-orb{width:140px;height:140px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.2),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:3.5rem;position:relative;z-index:1}
+.hero-content{flex:1;position:relative;z-index:1}
+.hero-eyebrow{font-size:.7rem;font-weight:700;color:rgba(167,243,208,.9);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.hero-title{font-size:1.75rem;font-weight:700;color:#fff;margin-bottom:8px}
+.hero-sub{font-size:.83rem;color:rgba(255,255,255,.6);margin-bottom:20px}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hero-btn{padding:9px 18px;border-radius:10px;font-size:.82rem;font-weight:600;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.hero-btn--primary{background:#fff;color:#064e3b}.hero-btn--outline{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.stat-card{padding:20px 22px}
+.stat-label{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px}
+.stat-value{font-size:1.9rem;font-weight:700;color:#0f172a;line-height:1;margin-bottom:4px}
+.stat-trend{font-size:.75rem;font-weight:500}
+.stat-trend--up{color:#22c55e}.stat-trend--neu{color:#94a3b8}.stat-icon{float:right;margin-top:-4px}
+.activity-header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 12px;border-bottom:1px solid rgba(0,0,0,.06)}
+.activity-title{font-size:.9rem;font-weight:700;color:#0f172a}
+.activity-link{font-size:.78rem;color:#64748b;text-decoration:none}
+.activity-row{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid rgba(0,0,0,.04)}
+.activity-row:last-child{border-bottom:none}
+.act-icon{width:38px;height:38px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.act-icon--blue{background:#dbeafe;color:#2563eb}.act-icon--green{background:#dcfce7;color:#16a34a}
+.act-icon--gold{background:#fef9c3;color:#ca8a04}.act-icon--purple{background:#ede9fe;color:#7c3aed}
+.act-body{flex:1;min-width:0}.act-name{font-size:.83rem;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-meta{font-size:.72rem;color:#94a3b8;margin-top:1px}
+.act-right{text-align:right;flex-shrink:0}.act-amount{font-size:.85rem;font-weight:600;color:#0f172a}
+.act-status{font-size:.68rem;font-weight:700;text-transform:uppercase}
+.act-status--ok{color:#22c55e}.act-status--warn{color:#f59e0b}.act-status--neu{color:#94a3b8}
+.mini-stat{padding:18px 20px}
+.mini-stat__label{font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.mini-stat__value{font-size:1.5rem;font-weight:700;color:#0f172a}
+.mini-stat__sub{font-size:.73rem;color:#94a3b8;margin-top:3px}
+.dark-card{background:linear-gradient(145deg,#064e3b,#065f46);border-radius:20px;overflow:hidden;position:relative}
+.dark-card-inner{padding:18px 20px}
+.dark-card-label{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.dark-card-value{font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:2px}
+.dark-card-sub{font-size:.72rem;color:rgba(255,255,255,.5)}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
+.qa-btn{background:rgba(0,0,0,.03);border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(0,0,0,.06);text-decoration:none;transition:.15s}
+.qa-btn:hover{background:#f1f5f9;transform:translateY(-1px)}
+.qa-btn.qa-dark{background:#064e3b;border-color:#064e3b}.qa-btn.qa-dark .qa-label{color:#fff}
+.qa-icon{width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:#1e293b}
+.qa-dark .qa-icon{background:rgba(255,255,255,.15);color:#fff}
+.qa-label{font-size:.75rem;font-weight:600;color:#334155;text-align:center}
+.empty-state{padding:28px;text-align:center;color:#94a3b8;font-size:.83rem}
+.empty-state i{font-size:1.8rem;display:block;margin-bottom:6px;opacity:.4}
+</style>}
+<div class="px-body">
+  <div class="px-tabs">
+    <button class="px-tab active">Tổng quan</button>
+    <button class="px-tab" onclick="location.href='/Attendance'">Điểm danh</button>
+    <button class="px-tab" onclick="location.href='/Grading'">Điểm số</button>
+    <button class="px-tab" onclick="location.href='/OnlineClassroom'">Phòng học</button>
+  </div>
+  <div class="px-grid">
+    <div class="px-left">
+      <div class="hero-card">
+        <div class="hero-orb">📖</div>
+        <div class="hero-content">
+          <div class="hero-eyebrow">GIÁO VIÊN</div>
+          <div class="hero-title">@greeting, @firstName 👋</div>
+          <div class="hero-sub">@today — Chúc bạn một ngày dạy học hiệu quả!</div>
+          <div class="hero-actions">
+            <a href="/Attendance" class="hero-btn hero-btn--primary"><i class="bi bi-qr-code-scan"></i> Điểm danh</a>
+            <a href="/OnlineClassroom" class="hero-btn hero-btn--outline"><i class="bi bi-camera-video-fill"></i> Phòng học</a>
+          </div>
         </div>
-        <div class="dash-banner__title">@greeting, @title @firstName 👋</div>
-        <div class="dash-banner__sub">
-            <i class="bi bi-calendar3"></i> @today
-            <span style="opacity:.4">·</span>
-            <i class="bi bi-clock"></i> @DateTime.Now.ToString("HH:mm")
-        </div>
-    </div>
-    <div class="dash-banner__right">
-        <div class="dash-banner__icon-bg"><i class="bi bi-journal-bookmark-fill"></i></div>
-    </div>
-</div>
+      </div>
 
-<!-- Stats Row -->
-<div class="dash-stats dash-stats-4">
-    <a href="/Class" class="dstat">
-        <div class="dstat__icon dstat__icon--green"><i class="bi bi-building"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">@totalClasses</div>
-            <div class="dstat__label">Lớp trong trường</div>
-            <div class="dstat__trend dstat__trend--neutral">
-                <i class="bi bi-dash"></i>
-                @(string.IsNullOrEmpty(activeYear) ? "Chưa có năm học" : activeYear)
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-people-fill" style="color:#2563eb"></i></div>
+          <div class="stat-label">Học sinh trong trường</div>
+          <div class="stat-value">@totalStudents</div>
+          <div class="stat-trend stat-trend--neu">@(yearName != "" ? yearName : "Hiện tại")</div>
+        </div>
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-building" style="color:#16a34a"></i></div>
+          <div class="stat-label">Lớp học</div>
+          <div class="stat-value">@totalClasses</div>
+          <div class="stat-trend stat-trend--neu">@(yearName != "" ? yearName : "Hiện tại")</div>
+        </div>
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-camera-video-fill" style="color:#7c3aed"></i></div>
+          <div class="stat-label">Phòng học của tôi</div>
+          <div class="stat-value">@totalSessions</div>
+          <div class="stat-trend stat-trend--neu">@(totalSessions > 0 ? "Tổng buổi học" : "Chưa tạo phòng nào")</div>
+        </div>
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-calendar-check-fill" style="color:#ca8a04"></i></div>
+          <div class="stat-label">Ngày hôm nay</div>
+          <div class="stat-value">@DateTime.Now.ToString("dd/MM")</div>
+          <div class="stat-trend stat-trend--neu">@DateTime.Now.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"))</div>
+        </div>
+      </div>
+
+      <!-- Phòng học gần đây -->
+      <div class="gcard">
+        <div class="activity-header">
+          <span class="activity-title">Phòng học của tôi</span>
+          <a href="/OnlineClassroom" class="activity-link">Xem tất cả →</a>
+        </div>
+        @if (recentSessions.Any())
+        {
+            @foreach (var s in recentSessions)
+            {
+                var statusClass = s.Status == LuminaTutors.Domain.Enums.OnlineSessionStatus.Live ? "act-status--ok" :
+                                  s.Status == LuminaTutors.Domain.Enums.OnlineSessionStatus.Scheduled ? "act-status--warn" : "act-status--neu";
+                var statusText  = s.Status == LuminaTutors.Domain.Enums.OnlineSessionStatus.Live ? "LIVE" :
+                                  s.Status == LuminaTutors.Domain.Enums.OnlineSessionStatus.Scheduled ? "SẮP MỞ" : "KẾT THÚC";
+                <div class="activity-row">
+                    <div class="act-icon act-icon--purple"><i class="bi bi-camera-video-fill"></i></div>
+                    <div class="act-body">
+                        <div class="act-name">@s.Title</div>
+                        <div class="act-meta">MÃ: @s.RoomCode · @s.Participants.Count người tham gia</div>
+                    </div>
+                    <div class="act-right">
+                        <div class="act-status @statusClass">@statusText</div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-camera-video"></i>
+                Chưa có phòng học nào. <a href="/OnlineClassroom/Create">Tạo phòng học đầu tiên</a>
             </div>
-        </div>
-    </a>
-    <a href="/Student" class="dstat">
-        <div class="dstat__icon dstat__icon--blue"><i class="bi bi-people-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">@totalStudents</div>
-            <div class="dstat__label">Tổng học sinh</div>
-            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Toàn trường</div>
-        </div>
-    </a>
-    <a href="/Attendance" class="dstat">
-        <div class="dstat__icon dstat__icon--amber"><i class="bi bi-qr-code-scan"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">—</div>
-            <div class="dstat__label">Tỷ lệ chuyên cần TB</div>
-            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Chưa có dữ liệu</div>
-        </div>
-    </a>
-    <a href="/Grading" class="dstat">
-        <div class="dstat__icon dstat__icon--purple"><i class="bi bi-journal-text"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">—</div>
-            <div class="dstat__label">Cột điểm chưa nhập</div>
-            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Chưa có dữ liệu</div>
-        </div>
-    </a>
-</div>
-
-<!-- Row 1: Schedule + Attendance Ring -->
-<div class="dash-row dash-row-7-3">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-calendar-week-fill" style="color:#059669"></i> Lịch dạy hôm nay</div>
-            <a href="/Class" class="dcard__action">Xem tất cả</a>
-        </div>
-        <div class="dcard__body">
-            <div class="lt-empty lt-empty--sm" style="padding:2rem 0">
-                <i class="bi bi-calendar2-x" style="font-size:2.2rem;color:#cbd5e1"></i>
-                <div class="lt-empty__title" style="font-size:.9rem;margin-top:.5rem">Chưa có lịch dạy hôm nay</div>
-                <div class="lt-empty__sub" style="font-size:.8rem">Lịch dạy sẽ hiển thị khi được phân công tiết dạy</div>
-            </div>
-        </div>
+        }
+      </div>
     </div>
 
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-graph-up-arrow" style="color:#059669"></i> Chuyên cần</div>
+    <div class="px-right">
+      <div class="gcard mini-stat">
+        <div style="display:flex;justify-content:space-between">
+          <div>
+            <div class="mini-stat__label">Phòng học online</div>
+            <div class="mini-stat__value">@totalSessions phòng</div>
+            <div class="mini-stat__sub">Tổng số phòng đã tạo</div>
+          </div>
+          <i class="bi bi-camera-video-fill" style="font-size:1.4rem;color:#7c3aed"></i>
         </div>
-        <div class="dcard__body">
-            <div class="lt-empty lt-empty--sm" style="padding:2rem 0">
-                <i class="bi bi-bar-chart" style="font-size:2.2rem;color:#cbd5e1"></i>
-                <div class="lt-empty__title" style="font-size:.9rem;margin-top:.5rem">Chưa có dữ liệu</div>
-                <div class="lt-empty__sub" style="font-size:.8rem">Dữ liệu chuyên cần sẽ hiển thị sau khi điểm danh</div>
-            </div>
+      </div>
+
+      <div class="dark-card">
+        <div style="height:120px;background:linear-gradient(135deg,#064e3b,#065f46);display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center">
+            <div style="font-size:2.2rem;font-weight:800;color:#fff">@totalClasses</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.55)">Lớp học đang hoạt động</div>
+          </div>
         </div>
+        <div class="dark-card-inner">
+          <div class="dark-card-label">Năm học</div>
+          <div class="dark-card-value">@(yearName != "" ? yearName : "—")</div>
+          <div class="dark-card-sub">@totalStudents học sinh</div>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <div style="padding:14px 16px 4px;font-size:.78rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase">Thao tác nhanh</div>
+        <div class="qa-grid">
+          <a href="/Attendance" class="qa-btn"><div class="qa-icon"><i class="bi bi-qr-code-scan"></i></div><span class="qa-label">Điểm danh QR</span></a>
+          <a href="/Grading" class="qa-btn"><div class="qa-icon"><i class="bi bi-journal-check"></i></div><span class="qa-label">Chấm bài</span></a>
+          <a href="/OnlineClassroom/Create" class="qa-btn"><div class="qa-icon"><i class="bi bi-camera-video-fill"></i></div><span class="qa-label">Tạo phòng</span></a>
+          <a href="/QuestionBank" class="qa-btn qa-dark"><div class="qa-icon"><i class="bi bi-patch-question-fill"></i></div><span class="qa-label">Ngân hàng đề</span></a>
+        </div>
+      </div>
     </div>
-
-</div>
-
-<!-- Row 2: Grade status + Quick actions -->
-<div class="dash-row dash-row-6-4">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-journal-text" style="color:#7c3aed"></i> Tình trạng sổ điểm TT22</div>
-            <a href="/Grading" class="dcard__action">Cập nhật điểm</a>
-        </div>
-        <div class="dcard__body">
-            <div class="lt-empty lt-empty--sm" style="padding:2rem 0">
-                <i class="bi bi-journal-x" style="font-size:2.2rem;color:#cbd5e1"></i>
-                <div class="lt-empty__title" style="font-size:.9rem;margin-top:.5rem">Chưa có dữ liệu điểm</div>
-                <div class="lt-empty__sub" style="font-size:.8rem">Dữ liệu sẽ hiển thị khi có điểm số được nhập vào hệ thống</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-lightning-fill" style="color:#059669"></i> Thao tác nhanh</div>
-        </div>
-        <div class="dcard__body">
-            <div class="quick-actions">
-                <a href="/Attendance" class="qa-btn" style="--qa-color:#059669;--qa-bg:#ecfdf5">
-                    <i class="bi bi-qr-code-scan"></i> Điểm danh QR
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Grading" class="qa-btn" style="--qa-color:#7c3aed;--qa-bg:#f5f3ff">
-                    <i class="bi bi-pencil-fill"></i> Nhập điểm học sinh
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Student" class="qa-btn" style="--qa-color:#2563eb;--qa-bg:#eff6ff">
-                    <i class="bi bi-person-lines-fill"></i> Danh sách học sinh
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Dashboard/Notifications" class="qa-btn" style="--qa-color:#d97706;--qa-bg:#fffbeb">
-                    <i class="bi bi-bell-fill"></i> Xem thông báo
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
+  </div>
 </div>

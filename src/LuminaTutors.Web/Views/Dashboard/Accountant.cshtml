@@ -1,223 +1,170 @@
 @using System.Security.Claims
 @{
     ViewData["Title"] = "Dashboard";
-    var fullName  = User.FindFirstValue(ClaimTypes.Name) ?? "Kế toán";
-    var firstName = fullName.Split(' ').Last();
-    var hour      = DateTime.Now.Hour;
-    var greeting  = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
-    var today     = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
-    var month     = DateTime.Now.ToString("MM/yyyy");
+    var fullName    = User.FindFirstValue(ClaimTypes.Name) ?? "Kế toán";
+    var firstName   = fullName.Split(' ').Last();
+    var hour        = DateTime.Now.Hour;
+    var greeting    = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    var today       = DateTime.Now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"));
+    var monthRevenue   = (decimal)(ViewBag.MonthRevenue   ?? 0m);
+    var overdueCount   = (int)   (ViewBag.OverdueCount    ?? 0);
+    var overdueAmount  = (decimal)(ViewBag.OverdueAmount  ?? 0m);
+    var paidInvoices   = (int)   (ViewBag.PaidInvoices    ?? 0);
+    var totalInvoices  = (int)   (ViewBag.TotalInvoices   ?? 0);
+    var collectionRate = (decimal)(ViewBag.CollectionRate ?? 0m);
 }
+@section Styles {<style>
+.px-body{background:#e8edf5;min-height:calc(100vh - 56px);padding:28px 32px}
+.px-tabs{display:flex;gap:0;border-bottom:1px solid rgba(0,0,0,.08);margin-bottom:28px}
+.px-tab{padding:10px 20px;font-size:.83rem;font-weight:500;color:#9ba3af;border:none;background:none;border-bottom:2px solid transparent;cursor:pointer}
+.px-tab.active{color:#1e293b;border-bottom-color:#1e293b;font-weight:600}
+.px-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.px-left,.px-right{display:flex;flex-direction:column;gap:16px}
+.gcard{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border-radius:20px;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 24px rgba(0,0,0,.07);overflow:hidden}
+.hero-card{background:linear-gradient(135deg,#0c4a6e 0%,#0369a1 100%);border-radius:20px;padding:32px;position:relative;overflow:hidden;min-height:200px;display:flex;align-items:center;gap:24px}
+.hero-card::before{content:'';position:absolute;top:-60px;right:-40px;width:260px;height:260px;background:radial-gradient(circle,rgba(56,189,248,.3) 0%,transparent 70%);border-radius:50%}
+.hero-orb{width:140px;height:140px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.2),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:3.5rem;position:relative;z-index:1}
+.hero-content{flex:1;position:relative;z-index:1}
+.hero-eyebrow{font-size:.7rem;font-weight:700;color:rgba(125,211,252,.9);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.hero-title{font-size:1.75rem;font-weight:700;color:#fff;margin-bottom:8px}
+.hero-sub{font-size:.83rem;color:rgba(255,255,255,.6);margin-bottom:20px}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hero-btn{padding:9px 18px;border-radius:10px;font-size:.82rem;font-weight:600;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.hero-btn--primary{background:#fff;color:#0c4a6e}.hero-btn--outline{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.stat-card{padding:20px 22px}
+.stat-label{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px}
+.stat-value{font-size:1.9rem;font-weight:700;color:#0f172a;line-height:1;margin-bottom:4px}
+.stat-trend{font-size:.75rem;font-weight:500}
+.stat-trend--up{color:#22c55e}.stat-trend--down{color:#ef4444}.stat-trend--neu{color:#94a3b8}
+.stat-icon{float:right;margin-top:-4px}
+.mini-stat{padding:18px 20px}
+.mini-stat__label{font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.mini-stat__value{font-size:1.5rem;font-weight:700;color:#0f172a}
+.mini-stat__sub{font-size:.73rem;color:#94a3b8;margin-top:3px}
+.dark-card{background:linear-gradient(145deg,#0c4a6e,#075985);border-radius:20px;overflow:hidden;position:relative}
+.dark-card-inner{padding:18px 20px}
+.dark-card-label{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.dark-card-value{font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:2px}
+.dark-card-sub{font-size:.72rem;color:rgba(255,255,255,.5)}
+.progress-track{height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin:8px 0 4px}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(to right,#22c55e,#16a34a)}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
+.qa-btn{background:rgba(0,0,0,.03);border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(0,0,0,.06);text-decoration:none;transition:.15s}
+.qa-btn:hover{background:#f1f5f9;transform:translateY(-1px)}
+.qa-btn.qa-dark{background:#0c4a6e;border-color:#0c4a6e}.qa-btn.qa-dark .qa-label{color:#fff}
+.qa-icon{width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:#1e293b}
+.qa-dark .qa-icon{background:rgba(255,255,255,.15);color:#fff}
+.qa-label{font-size:.75rem;font-weight:600;color:#334155;text-align:center}
+</style>}
+<div class="px-body">
+  <div class="px-tabs">
+    <button class="px-tab active">Tổng quan</button>
+    <button class="px-tab" onclick="location.href='/Finance/Invoices'">Hóa đơn</button>
+    <button class="px-tab" onclick="location.href='/Finance/OutstandingDebts'">Công nợ</button>
+  </div>
+  <div class="px-grid">
+    <div class="px-left">
+      <div class="hero-card">
+        <div class="hero-orb">💰</div>
+        <div class="hero-content">
+          <div class="hero-eyebrow">KẾ TOÁN</div>
+          <div class="hero-title">@greeting, @firstName 👋</div>
+          <div class="hero-sub">Tổng quan tài chính — @today</div>
+          <div class="hero-actions">
+            <a href="/Finance/Invoices" class="hero-btn hero-btn--primary"><i class="bi bi-receipt"></i> Hóa đơn</a>
+            <a href="/Finance/OutstandingDebts" class="hero-btn hero-btn--outline"><i class="bi bi-exclamation-triangle-fill"></i> Công nợ @(overdueCount > 0 ? $"({overdueCount})" : "")</a>
+          </div>
+        </div>
+      </div>
 
-<!-- Banner -->
-<div class="dash-banner dash-banner--accountant">
-    <div class="dash-banner__grid"></div>
-    <div class="dash-banner__left">
-        <div class="dash-banner__eyebrow">
-            <i class="bi bi-calculator-fill"></i>
-            KẾ TOÁN
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-graph-up-arrow" style="color:#22c55e"></i></div>
+          <div class="stat-label">Doanh thu tháng @DateTime.Now.Month</div>
+          <div class="stat-value">@(monthRevenue > 0 ? (monthRevenue/1_000_000m).ToString("N1")+"tr" : "—")</div>
+          <div class="stat-trend @(monthRevenue > 0 ? "stat-trend--up" : "stat-trend--neu")">
+            @(monthRevenue > 0 ? "Đã thu được" : "Chưa có dữ liệu")
+          </div>
         </div>
-        <div class="dash-banner__title">@greeting, @firstName 💼</div>
-        <div class="dash-banner__sub">
-            <i class="bi bi-calendar3"></i> @today
-            <span style="opacity:.4">·</span>
-            <i class="bi bi-currency-dollar"></i> Kỳ thu: Tháng @month
+        <a href="/Finance/OutstandingDebts" class="gcard stat-card" style="text-decoration:none;display:block">
+          <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill" style="color:#dc2626"></i></div>
+          <div class="stat-label">Hóa đơn quá hạn</div>
+          <div class="stat-value">@overdueCount</div>
+          <div class="stat-trend @(overdueCount > 0 ? "stat-trend--down" : "stat-trend--up")">
+            @(overdueCount > 0 ? "Cần xử lý gấp" : "Không có nợ quá hạn")
+          </div>
+        </a>
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-receipt" style="color:#2563eb"></i></div>
+          <div class="stat-label">Hóa đơn đã thanh toán</div>
+          <div class="stat-value">@paidInvoices</div>
+          <div class="stat-trend stat-trend--neu">/ @totalInvoices tổng hóa đơn</div>
         </div>
-    </div>
-    <div class="dash-banner__right">
-        <div class="dash-banner__icon-bg"><i class="bi bi-graph-up-arrow"></i></div>
-    </div>
-</div>
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-percent" style="color:#ca8a04"></i></div>
+          <div class="stat-label">Tỉ lệ thu học phí</div>
+          <div class="stat-value">@(collectionRate > 0 ? $"{collectionRate:N0}%" : "—")</div>
+          <div class="stat-trend @(collectionRate >= 90 ? "stat-trend--up" : collectionRate > 0 ? "stat-trend--neu" : "stat-trend--neu")">
+            @(collectionRate >= 90 ? "Tốt" : collectionRate > 0 ? "Cần cải thiện" : "Chưa có dữ liệu")
+          </div>
+        </div>
+      </div>
 
-<!-- Stats Row -->
-<div class="dash-stats dash-stats-4">
-    <a href="/Finance/Invoices" class="dstat">
-        <div class="dstat__icon dstat__icon--green"><i class="bi bi-cash-stack"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">84.5tr</div>
-            <div class="dstat__label">Đã thu tháng @month</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +8.2% tháng trước</div>
-        </div>
-    </a>
-    <a href="/Finance/OutstandingDebts" class="dstat">
-        <div class="dstat__icon dstat__icon--red"><i class="bi bi-exclamation-triangle-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">12.3tr</div>
-            <div class="dstat__label">Còn nợ chưa thu</div>
-            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> -15% tuần này</div>
-        </div>
-    </a>
-    <a href="/Finance/Invoices" class="dstat">
-        <div class="dstat__icon dstat__icon--amber"><i class="bi bi-receipt"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">7</div>
-            <div class="dstat__label">Hóa đơn quá hạn</div>
-            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> -3 so với tuần trước</div>
-        </div>
-    </a>
-    <div class="dstat">
-        <div class="dstat__icon dstat__icon--teal"><i class="bi bi-percent"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">87.3%</div>
-            <div class="dstat__label">Tỷ lệ thu học phí</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> Mục tiêu: 95%</div>
-        </div>
-    </div>
-</div>
-
-<!-- Row 1: Revenue overview + Quick actions -->
-<div class="dash-row dash-row-7-3">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-bar-chart-fill" style="color:#0d9488"></i> Tổng quan tài chính tháng @month</div>
-            <a href="/Finance" class="dcard__action">Báo cáo đầy đủ</a>
-        </div>
-        <div class="dcard__body">
-            <!-- Summary metrics -->
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
-                <div style="text-align:center;padding:14px;background:#f0fdfa;border-radius:12px;border:1px solid #99f6e4">
-                    <div style="font-size:1.2rem;font-weight:800;color:#0d9488">84.5tr</div>
-                    <div style="font-size:.72rem;color:#64748b;margin-top:3px">Đã thu</div>
-                </div>
-                <div style="text-align:center;padding:14px;background:#fef2f2;border-radius:12px;border:1px solid #fecaca">
-                    <div style="font-size:1.2rem;font-weight:800;color:#dc2626">12.3tr</div>
-                    <div style="font-size:.72rem;color:#64748b;margin-top:3px">Còn nợ</div>
-                </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0">
-                    <div style="font-size:1.2rem;font-weight:800;color:#0f172a">96.8tr</div>
-                    <div style="font-size:.72rem;color:#64748b;margin-top:3px">Kỳ vọng</div>
-                </div>
+      <!-- Tỉ lệ thu -->
+      @if (collectionRate > 0)
+      {
+          <div class="gcard" style="padding:20px 22px">
+            <div style="font-size:.88rem;font-weight:700;color:#0f172a;margin-bottom:12px">Tỉ lệ thu học phí tháng @DateTime.Now.Month</div>
+            <div style="display:flex;justify-content:space-between;font-size:.78rem;color:#94a3b8;margin-bottom:4px">
+              <span>@paidInvoices / @totalInvoices hóa đơn đã thu</span>
+              <span style="font-weight:700;color:@(collectionRate>=90?"#22c55e":"#f59e0b")">@collectionRate.ToString("N0")%</span>
             </div>
-
-            <!-- Progress bar -->
-            <div style="margin-bottom:6px;display:flex;justify-content:space-between">
-                <span style="font-size:.78rem;font-weight:600;color:#64748b">Tiến độ thu học phí tháng @month</span>
-                <span style="font-size:.8rem;font-weight:700;color:#0d9488">87.3%</span>
-            </div>
-            <div class="dash-progress" style="height:10px;margin-bottom:20px">
-                <div class="dash-progress__bar" style="width:87.3%;background:linear-gradient(90deg,#0d9488,#2dd4bf)"></div>
-            </div>
-
-            <!-- By class breakdown -->
-            <div style="font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Chi tiết theo lớp</div>
-            @{
-                var classFinance = new[] {
-                    new { Cls = "10A (28 HS)", Collected = 28, Total = 28, Pct = 100, Color = "#059669" },
-                    new { Cls = "10B (30 HS)", Collected = 27, Total = 30, Pct = 90,  Color = "#059669" },
-                    new { Cls = "11A (32 HS)", Collected = 25, Total = 32, Pct = 78,  Color = "#d97706" },
-                    new { Cls = "12A (24 HS)", Collected = 19, Total = 24, Pct = 79,  Color = "#d97706" },
-                    new { Cls = "12B (26 HS)", Collected = 15, Total = 26, Pct = 58,  Color = "#dc2626" },
-                };
-            }
-            @foreach (var c in classFinance)
+            <div class="progress-track"><div class="progress-fill" style="width:@Math.Min(collectionRate,100)%"></div></div>
+            @if (overdueAmount > 0)
             {
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-                    <span style="font-size:.78rem;font-weight:600;color:#374151;width:120px;flex-shrink:0">@c.Cls</span>
-                    <div style="flex:1">
-                        <div class="dash-progress">
-                            <div class="dash-progress__bar" style="width:@c.Pct%;background:@c.Color"></div>
-                        </div>
-                    </div>
-                    <span style="font-size:.78rem;font-weight:700;color:@c.Color;width:40px;text-align:right;flex-shrink:0">@c.Pct%</span>
-                    <span style="font-size:.72rem;color:#94a3b8;flex-shrink:0">@c.Collected/@c.Total</span>
-                </div>
+                <div style="font-size:.75rem;color:#ef4444;margin-top:6px"><i class="bi bi-exclamation-circle-fill"></i> Còn @overdueAmount.ToString("N0") ₫ chưa thu</div>
             }
-        </div>
+          </div>
+      }
     </div>
 
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-lightning-fill" style="color:#0d9488"></i> Thao tác nhanh</div>
-        </div>
-        <div class="dcard__body">
-            <div class="quick-actions">
-                <a href="/Finance/Invoices/Create" class="qa-btn" style="--qa-color:#0d9488;--qa-bg:#f0fdfa">
-                    <i class="bi bi-receipt"></i> Tạo hóa đơn mới
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Finance/OutstandingDebts" class="qa-btn" style="--qa-color:#dc2626;--qa-bg:#fef2f2">
-                    <i class="bi bi-exclamation-triangle-fill"></i> Xem công nợ
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Finance/Invoices" class="qa-btn" style="--qa-color:#2563eb;--qa-bg:#eff6ff">
-                    <i class="bi bi-list-check"></i> Danh sách hóa đơn
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Finance" class="qa-btn" style="--qa-color:#7c3aed;--qa-bg:#f5f3ff">
-                    <i class="bi bi-graph-up-arrow"></i> Báo cáo tài chính
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
+    <div class="px-right">
+      <div class="gcard mini-stat">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="mini-stat__label">Doanh thu tháng @DateTime.Now.Month</div>
+            <div class="mini-stat__value">@(monthRevenue > 0 ? monthRevenue.ToString("N0") + " ₫" : "Chưa có")</div>
+            <div class="mini-stat__sub" style="@(collectionRate>=90?"color:#22c55e":"color:#f59e0b");font-weight:600">
+              @(collectionRate > 0 ? $"Tỉ lệ thu: {collectionRate:N0}%" : "Chưa có dữ liệu tài chính")
             </div>
+          </div>
+          <i class="bi bi-graph-up-arrow" style="font-size:1.4rem;color:#22c55e"></i>
         </div>
+      </div>
+
+      <div class="dark-card">
+        <div style="height:110px;background:linear-gradient(135deg,#0c4a6e,#0369a1);display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center">
+            <div style="font-size:2rem;font-weight:800;color:@(collectionRate>=90?"#4ade80":"#fbbf24")">@(collectionRate > 0 ? $"{collectionRate:N0}%" : "—")</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.55)">Tỉ lệ thu học phí</div>
+          </div>
+        </div>
+        <div class="dark-card-inner">
+          <div class="dark-card-label">Hóa đơn</div>
+          <div class="dark-card-value">@paidInvoices / @totalInvoices</div>
+          <div class="dark-card-sub">@(overdueCount > 0 ? $"{overdueCount} hóa đơn quá hạn" : "Không có quá hạn")</div>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <div style="padding:14px 16px 4px;font-size:.78rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase">Thao tác nhanh</div>
+        <div class="qa-grid">
+          <a href="/Finance/Invoices" class="qa-btn"><div class="qa-icon"><i class="bi bi-plus-circle-fill"></i></div><span class="qa-label">Tạo hóa đơn</span></a>
+          <a href="/Finance/OutstandingDebts" class="qa-btn"><div class="qa-icon"><i class="bi bi-exclamation-triangle-fill"></i></div><span class="qa-label">Công nợ</span></a>
+          <a href="/Finance" class="qa-btn"><div class="qa-icon"><i class="bi bi-file-earmark-text-fill"></i></div><span class="qa-label">Báo cáo</span></a>
+          <a href="/Finance" class="qa-btn qa-dark"><div class="qa-icon"><i class="bi bi-cash-stack"></i></div><span class="qa-label">Thu học phí</span></a>
+        </div>
+      </div>
     </div>
-
-</div>
-
-<!-- Row 2: Overdue invoices + Recent transactions -->
-<div class="dash-row dash-row-5-5">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-exclamation-triangle-fill" style="color:#dc2626"></i> Hóa đơn quá hạn</div>
-            <a href="/Finance/OutstandingDebts" class="dcard__action">Xem tất cả</a>
-        </div>
-        <div class="dcard__body">
-            @{
-                var overdues = new[] {
-                    new { Student = "Nguyễn Văn An",  Class = "12B", Amount = "2,400,000 đ", Days = 15, Severity = "high"   },
-                    new { Student = "Trần Thị Bình",  Class = "11A", Amount = "2,400,000 đ", Days = 8,  Severity = "medium" },
-                    new { Student = "Lê Hoàng Cường", Class = "12B", Amount = "4,800,000 đ", Days = 32, Severity = "high"   },
-                    new { Student = "Phạm Thị Dung",  Class = "10B", Amount = "2,400,000 đ", Days = 3,  Severity = "low"    },
-                };
-            }
-            <div style="display:flex;flex-direction:column;gap:8px">
-                @foreach (var o in overdues)
-                {
-                    var borderColor = o.Severity == "high" ? "#fecaca" : o.Severity == "medium" ? "#fed7aa" : "#fde68a";
-                    var bgColor     = o.Severity == "high" ? "#fef2f2" : o.Severity == "medium" ? "#fff7ed" : "#fffbeb";
-                    var dayColor    = o.Severity == "high" ? "#dc2626" : o.Severity == "medium" ? "#c2410c" : "#d97706";
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:10px;background:@bgColor;border:1px solid @borderColor">
-                        <div>
-                            <div style="font-size:.83rem;font-weight:700;color:#0f172a">@o.Student</div>
-                            <div style="font-size:.75rem;color:#64748b">Lớp @o.Class · @o.Amount</div>
-                        </div>
-                        <div style="text-align:right">
-                            <div style="font-size:.78rem;font-weight:700;color:@dayColor">Quá @o.Days ngày</div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-clock-history" style="color:#0d9488"></i> Giao dịch gần đây</div>
-        </div>
-        <div class="dcard__body">
-            <div class="activity-list">
-                @{
-                    var txns = new[] {
-                        new { Init = "NL", Bg = "#059669", Name = "Nguyễn Thị Lan",   Amount = "+2,400,000",  Note = "Thu học phí lớp 11A",      Time = "08:12" },
-                        new { Init = "TH", Bg = "#059669", Name = "Trần Văn Hùng",    Amount = "+2,400,000",  Note = "Thu học phí lớp 10B",      Time = "08:35" },
-                        new { Init = "PD", Bg = "#2563eb", Name = "Phạm Minh Đức",    Amount = "+4,800,000",  Note = "Thu 2 tháng lớp 12A",      Time = "09:10" },
-                        new { Init = "LT", Bg = "#d97706", Name = "Lê Thị Thu",       Amount = "–",           Note = "Hoàn học phí (xin thôi học)",Time = "10:05"},
-                    };
-                }
-                @foreach (var t in txns)
-                {
-                    <div class="activity-item">
-                        <div class="activity-avatar" style="background:@t.Bg">@t.Init</div>
-                        <div style="flex:1">
-                            <div class="activity-text"><strong>@t.Name</strong> · @t.Note</div>
-                            <div class="activity-time"><i class="bi bi-clock"></i> @t.Time hôm nay</div>
-                        </div>
-                        <div style="font-size:.83rem;font-weight:700;color:@(t.Amount.StartsWith("+") ? "#059669" : "#dc2626");flex-shrink:0">@t.Amount</div>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
+  </div>
 </div>

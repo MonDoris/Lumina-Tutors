@@ -55,12 +55,39 @@ public class QuestionBank : AuditableEntity
     public string? ChapterTag { get; set; }
     public string? ExplanationText { get; set; }
     public bool IsApproved { get; set; } = false;
+    /// <summary>Correct answer for FillBlank type; essay model answer for Essay type.</summary>
+    public string? CorrectAnswer { get; set; }
+    /// <summary>Source URL if question was imported from the web.</summary>
+    public string? SourceUrl { get; set; }
+    /// <summary>Tags for search, comma-separated.</summary>
+    public string? Tags { get; set; }
 
     public School School { get; set; } = null!;
     public Subject Subject { get; set; } = null!;
     public User CreatedByTeacher { get; set; } = null!;
     public GradeLevel? GradeLevel { get; set; }
     public ICollection<QuestionOption> Options { get; set; } = [];
+}
+
+// ─── QuestionImportJob ────────────────────────────────────────────────────────
+
+/// <summary>
+/// Tracks an async scraping/import job for questions collected from a URL.
+/// </summary>
+public class QuestionImportJob : AuditableEntity
+{
+    public int    SchoolId         { get; set; }
+    public int    RequestedByUserId{ get; set; }
+    public int    TargetSubjectId  { get; set; }
+    public string SourceUrl        { get; set; } = string.Empty;
+    public ImportJobStatus Status  { get; set; } = ImportJobStatus.Pending;
+    public int    ImportedCount    { get; set; } = 0;
+    public string? ErrorMessage    { get; set; }
+    public DateTime? ProcessedAt  { get; set; }
+
+    public School School           { get; set; } = null!;
+    public User   RequestedByUser  { get; set; } = null!;
+    public Subject TargetSubject   { get; set; } = null!;
 }
 
 // ─── QuestionOption ───────────────────────────────────────────────────────────
@@ -245,33 +272,70 @@ public class VirtualLabSession : TenantEntity
     public User   Teacher { get; set; } = null!;
 }
 
-// ─── Online Classroom ──────────────────────────────────────────────────────────
+// ─── OnlineSession ────────────────────────────────────────────────────────────
 
+/// <summary>
+/// A self-hosted online classroom session with WebRTC video, whiteboard, chat,
+/// and slide sharing — no third-party conferencing tool required.
+/// </summary>
 public class OnlineSession : TenantEntity
 {
-    public int     TeacherId       { get; set; }
-    public string  Title           { get; set; } = string.Empty;
-    public string? Description     { get; set; }
-    public string  RoomCode        { get; set; } = string.Empty; // e.g. "LUMINA-A3X9"
+    public int    TeacherId       { get; set; }
+    public string Title           { get; set; } = string.Empty;
+    public string? Description    { get; set; }
+    public string RoomCode        { get; set; } = string.Empty;  // e.g. "ABCD-1234"
     public OnlineSessionStatus Status { get; set; } = OnlineSessionStatus.Scheduled;
-    public DateTime? ScheduledAt   { get; set; }
-    public DateTime? StartedAt     { get; set; }
-    public DateTime? EndedAt       { get; set; }
-    public int     MaxParticipants { get; set; } = 50;
+    public DateTime? ScheduledAt  { get; set; }
+    public DateTime? StartedAt    { get; set; }
+    public DateTime? EndedAt      { get; set; }
+    public int    MaxParticipants { get; set; } = 50;
 
     // Navigation
-    public School  School   { get; set; } = null!;
-    public User    Teacher  { get; set; } = null!;
+    public School   School       { get; set; } = null!;
+    public User     Teacher      { get; set; } = null!;
     public ICollection<SessionParticipant> Participants { get; set; } = [];
+    public ICollection<OnlineRoomChat>     Chats        { get; set; } = [];
+    public ICollection<OnlineSlide>        Slides       { get; set; } = [];
 }
+
+// ─── SessionParticipant ───────────────────────────────────────────────────────
 
 public class SessionParticipant : BaseEntity
 {
-    public int       SessionId { get; set; }
-    public int       UserId    { get; set; }
-    public DateTime  JoinedAt  { get; set; } = DateTime.UtcNow;
-    public DateTime? LeftAt    { get; set; }
+    public int      SessionId   { get; set; }
+    public int      UserId      { get; set; }
+    public DateTime JoinedAt    { get; set; } = DateTime.UtcNow;
+    public DateTime? LeftAt     { get; set; }
+    public bool     IsAttended  { get; set; } = false;
+    public DateTime? AttendedAt { get; set; }
 
     public OnlineSession Session { get; set; } = null!;
     public User          User    { get; set; } = null!;
+}
+
+// ─── OnlineRoomChat ───────────────────────────────────────────────────────────
+
+public class OnlineRoomChat : BaseEntity
+{
+    public int             SessionId   { get; set; }
+    public int             SenderId    { get; set; }
+    public string          Content     { get; set; } = string.Empty;
+    public ChatMessageType MessageType { get; set; } = ChatMessageType.Text;
+    public DateTime        SentAt      { get; set; } = DateTime.UtcNow;
+
+    public OnlineSession Session { get; set; } = null!;
+    public User          Sender  { get; set; } = null!;
+}
+
+// ─── OnlineSlide ──────────────────────────────────────────────────────────────
+
+public class OnlineSlide : BaseEntity
+{
+    public int      SessionId  { get; set; }
+    public string   FileName   { get; set; } = string.Empty;
+    public string   FileUrl    { get; set; } = string.Empty;
+    public int      TotalPages { get; set; } = 1;
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    public OnlineSession Session { get; set; } = null!;
 }

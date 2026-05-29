@@ -333,3 +333,66 @@ public class SessionParticipantConfiguration : IEntityTypeConfiguration<SessionP
             .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public class OnlineRoomChatConfiguration : IEntityTypeConfiguration<OnlineRoomChat>
+{
+    public void Configure(EntityTypeBuilder<OnlineRoomChat> b)
+    {
+        b.ToTable("OnlineRoomChats");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("ChatId").UseIdentityColumn();
+
+        b.Property(x => x.Content).IsRequired().HasMaxLength(2000);
+        b.Property(x => x.MessageType).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.SentAt).IsRequired();
+
+        b.HasIndex(x => x.SessionId).HasDatabaseName("IX_OnlineRoomChats_Session");
+
+        b.HasOne(x => x.Session).WithMany(s => s.Chats)
+            .HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Sender).WithMany()
+            .HasForeignKey(x => x.SenderId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class OnlineSlideConfiguration : IEntityTypeConfiguration<OnlineSlide>
+{
+    public void Configure(EntityTypeBuilder<OnlineSlide> b)
+    {
+        b.ToTable("OnlineSlides");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("SlideId").UseIdentityColumn();
+
+        b.Property(x => x.FileName).IsRequired().HasMaxLength(300);
+        b.Property(x => x.FileUrl).IsRequired().HasMaxLength(1000);
+        b.Property(x => x.TotalPages).HasDefaultValue(1);
+
+        b.HasIndex(x => x.SessionId).HasDatabaseName("IX_OnlineSlides_Session");
+
+        b.HasOne(x => x.Session).WithMany(s => s.Slides)
+            .HasForeignKey(x => x.SessionId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class QuestionImportJobConfiguration : IEntityTypeConfiguration<QuestionImportJob>
+{
+    public void Configure(EntityTypeBuilder<QuestionImportJob> b)
+    {
+        b.ToTable("QuestionImportJobs");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("ImportJobId").UseIdentityColumn();
+
+        b.Property(x => x.SourceUrl).IsRequired().HasMaxLength(2000);
+        b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.ErrorMessage).HasMaxLength(1000);
+
+        b.HasIndex(x => x.SchoolId).HasDatabaseName("IX_QuestionImportJobs_School");
+
+        b.HasOne(x => x.School).WithMany()
+            .HasForeignKey(x => x.SchoolId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.RequestedByUser).WithMany()
+            .HasForeignKey(x => x.RequestedByUserId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.TargetSubject).WithMany()
+            .HasForeignKey(x => x.TargetSubjectId).OnDelete(DeleteBehavior.Restrict);
+    }
+}

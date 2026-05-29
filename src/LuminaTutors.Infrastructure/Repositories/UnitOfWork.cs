@@ -66,10 +66,13 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<VirtualLabSession>?    _virtualLabSessions;
     private IRepository<OnlineSession>?        _onlineSessions;
     private IRepository<SessionParticipant>?   _sessionParticipants;
+    private IRepository<OnlineRoomChat>?       _onlineRoomChats;
+    private IRepository<OnlineSlide>?          _onlineSlides;
     private IRepository<QuizExam>?             _quizExams;
     private IRepository<QuizExamQuestion>?     _quizExamQuestions;
     private IRepository<StudentQuizAttempt>?   _studentQuizAttempts;
     private IRepository<StudentQuizAnswer>?    _studentQuizAnswers;
+    private IRepository<QuestionImportJob>?    _questionImportJobs;
 
     private IRepository<GradeCategory>?           _gradeCategories;
     private IRepository<SubjectGradeRequirement>? _subjectGradeRequirements;
@@ -145,6 +148,9 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<VirtualLabSession>    VirtualLabSessions    => Get(ref _virtualLabSessions);
     public IRepository<OnlineSession>        OnlineSessions        => Get(ref _onlineSessions);
     public IRepository<SessionParticipant>   SessionParticipants   => Get(ref _sessionParticipants);
+    public IRepository<OnlineRoomChat>       OnlineRoomChats       => Get(ref _onlineRoomChats);
+    public IRepository<OnlineSlide>          OnlineSlides          => Get(ref _onlineSlides);
+    public IRepository<QuestionImportJob>    QuestionImportJobs    => Get(ref _questionImportJobs);
     public IRepository<QuizExam>             QuizExams             => Get(ref _quizExams);
     public IRepository<QuizExamQuestion>     QuizExamQuestions     => Get(ref _quizExamQuestions);
     public IRepository<StudentQuizAttempt>   StudentQuizAttempts   => Get(ref _studentQuizAttempts);

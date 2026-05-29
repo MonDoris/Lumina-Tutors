@@ -21,6 +21,7 @@
         "chemistry" => "Hóa học",
         "physics"   => "Vật lý",
         "biology"   => "Sinh học",
+        "math"      => "Toán học",
         _           => tag
     };
     string SubjectIcon(string tag) => tag switch
@@ -28,6 +29,7 @@
         "chemistry" => "bi-droplet-fill",
         "physics"   => "bi-gear-fill",
         "biology"   => "bi-activity",
+        "math"      => "bi-grid-3x3-gap-fill",
         _           => "bi-flask"
     };
     string SubjectColor(string tag) => tag switch
@@ -35,14 +37,27 @@
         "chemistry" => "var(--lt-success)",
         "physics"   => "var(--lt-navy)",
         "biology"   => "var(--lt-gold)",
+        "math"      => "#8b5cf6",
         _           => "var(--lt-navy)"
     };
     string SceneLabel(string scene) => scene switch
     {
-        "titration" => "Chuẩn độ axit-bazơ",
-        "pendulum"  => "Con lắc đơn",
-        "cell"      => "Quan sát tế bào",
-        _           => scene
+        // Chemistry
+        "titration"    => "Chuẩn độ axit-bazơ",
+        "electrolysis" => "Điện phân nước",
+        "distillation" => "Chưng cất đơn giản",
+        // Physics
+        "pendulum"     => "Con lắc đơn",
+        "spring"       => "Con lắc lò xo",
+        "optics"       => "Quang học — khúc xạ ánh sáng",
+        // Biology
+        "cell"         => "Quan sát tế bào",
+        "dna"          => "Cấu trúc DNA",
+        "photosynthesis" => "Quang hợp",
+        // Math
+        "polyhedron"   => "Khám phá đa diện đều",
+        "vectors"      => "Vector 3D & tích có hướng",
+        _              => scene
     };
 }
 
@@ -265,20 +280,31 @@
                                 <option value="chemistry">⚗️ Hóa học</option>
                                 <option value="physics">⚙️ Vật lý</option>
                                 <option value="biology">🧬 Sinh học</option>
+                                <option value="math">📐 Toán học</option>
                             </select>
                         </div>
                         <div class="lt-form-group lt-mb-3">
                             <label class="lt-label">Loại thí nghiệm <span class="lt-text-danger">*</span></label>
                             <select name="SceneType" class="lt-select" required id="sceneTypeSelect">
                                 <option value="">— Chọn thí nghiệm —</option>
-                                <optgroup label="Hóa học">
+                                <optgroup label="⚗️ Hóa học">
                                     <option value="titration">Chuẩn độ axit-bazơ</option>
+                                    <option value="electrolysis">Điện phân nước</option>
+                                    <option value="distillation">Chưng cất đơn giản</option>
                                 </optgroup>
-                                <optgroup label="Vật lý">
+                                <optgroup label="⚙️ Vật lý">
                                     <option value="pendulum">Con lắc đơn</option>
+                                    <option value="spring">Con lắc lò xo</option>
+                                    <option value="optics">Quang học — khúc xạ ánh sáng</option>
                                 </optgroup>
-                                <optgroup label="Sinh học">
+                                <optgroup label="🧬 Sinh học">
                                     <option value="cell">Quan sát tế bào</option>
+                                    <option value="dna">Cấu trúc DNA</option>
+                                    <option value="photosynthesis">Quang hợp</option>
+                                </optgroup>
+                                <optgroup label="📐 Toán học">
+                                    <option value="polyhedron">Khám phá đa diện đều</option>
+                                    <option value="vectors">Vector 3D & tích có hướng</option>
                                 </optgroup>
                             </select>
                         </div>

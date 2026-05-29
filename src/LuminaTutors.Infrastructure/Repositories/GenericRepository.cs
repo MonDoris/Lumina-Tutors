@@ -54,6 +54,17 @@ public class GenericRepository<TEntity> : IRepository<TEntity>
         CancellationToken ct = default)
         => await _dbSet.AsNoTracking().FirstOrDefaultAsync(predicate, ct);
 
+    public virtual async Task<TEntity?> FindOneAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken ct = default)
+        => await _dbSet.FirstOrDefaultAsync(predicate, ct);
+
+    public virtual async Task<TEntity?> FindOneAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        Func<IQueryable<TEntity>, IQueryable<TEntity>> include,
+        CancellationToken ct = default)
+        => await include(_dbSet).FirstOrDefaultAsync(predicate, ct);
+
     public virtual async Task<bool> AnyAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default)

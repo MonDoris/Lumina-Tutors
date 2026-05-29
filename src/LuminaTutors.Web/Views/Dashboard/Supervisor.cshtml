@@ -1,204 +1,162 @@
 @using System.Security.Claims
 @{
     ViewData["Title"] = "Dashboard";
-    var fullName  = User.FindFirstValue(ClaimTypes.Name) ?? "Giám thị";
-    var firstName = fullName.Split(' ').Last();
-    var hour      = DateTime.Now.Hour;
-    var greeting  = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
-    var today     = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
+    var fullName    = User.FindFirstValue(ClaimTypes.Name) ?? "Giám thị";
+    var firstName   = fullName.Split(' ').Last();
+    var hour        = DateTime.Now.Hour;
+    var greeting    = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    var today       = DateTime.Now.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"));
+    var totalClasses  = (int)(ViewBag.TotalClasses  ?? 0);
+    var totalStudents = (int)(ViewBag.TotalStudents ?? 0);
+    var yearName      = ViewBag.ActiveYearName as string ?? "";
 }
+@section Styles {<style>
+.px-body{background:#e8edf5;min-height:calc(100vh - 56px);padding:28px 32px}
+.px-tabs{display:flex;gap:0;border-bottom:1px solid rgba(0,0,0,.08);margin-bottom:28px}
+.px-tab{padding:10px 20px;font-size:.83rem;font-weight:500;color:#9ba3af;border:none;background:none;border-bottom:2px solid transparent;cursor:pointer}
+.px-tab.active{color:#1e293b;border-bottom-color:#1e293b;font-weight:600}
+.px-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.px-left,.px-right{display:flex;flex-direction:column;gap:16px}
+.gcard{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border-radius:20px;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 24px rgba(0,0,0,.07);overflow:hidden}
+.hero-card{background:linear-gradient(135deg,#7f1d1d 0%,#b91c1c 100%);border-radius:20px;padding:32px;position:relative;overflow:hidden;min-height:200px;display:flex;align-items:center;gap:24px}
+.hero-card::before{content:'';position:absolute;top:-60px;right:-40px;width:260px;height:260px;background:radial-gradient(circle,rgba(252,165,165,.3) 0%,transparent 70%);border-radius:50%}
+.hero-orb{width:140px;height:140px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.2),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:3.5rem;position:relative;z-index:1}
+.hero-content{flex:1;position:relative;z-index:1}
+.hero-eyebrow{font-size:.7rem;font-weight:700;color:rgba(254,202,202,.9);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.hero-title{font-size:1.75rem;font-weight:700;color:#fff;margin-bottom:8px}
+.hero-sub{font-size:.83rem;color:rgba(255,255,255,.6);margin-bottom:20px}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hero-btn{padding:9px 18px;border-radius:10px;font-size:.82rem;font-weight:600;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.hero-btn--primary{background:#fff;color:#7f1d1d}.hero-btn--outline{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.stat-card{padding:20px 22px}
+.stat-label{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px}
+.stat-value{font-size:1.9rem;font-weight:700;color:#0f172a;line-height:1;margin-bottom:4px}
+.stat-trend{font-size:.75rem;font-weight:500}
+.stat-trend--up{color:#22c55e}.stat-trend--neu{color:#94a3b8}
+.stat-icon{float:right;margin-top:-4px}
+.mini-stat{padding:18px 20px}
+.mini-stat__label{font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.mini-stat__value{font-size:1.5rem;font-weight:700;color:#0f172a}
+.mini-stat__sub{font-size:.73rem;color:#94a3b8;margin-top:3px}
+.dark-card{background:linear-gradient(145deg,#7f1d1d,#991b1b);border-radius:20px;overflow:hidden;position:relative}
+.dark-card-inner{padding:18px 20px}
+.dark-card-label{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.dark-card-value{font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:2px}
+.dark-card-sub{font-size:.72rem;color:rgba(255,255,255,.5)}
+.info-card{padding:20px 22px}
+.info-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.info-row:last-child{border-bottom:none}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
+.qa-btn{background:rgba(0,0,0,.03);border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(0,0,0,.06);text-decoration:none;transition:.15s}
+.qa-btn:hover{background:#f1f5f9;transform:translateY(-1px)}
+.qa-btn.qa-dark{background:#7f1d1d;border-color:#7f1d1d}.qa-btn.qa-dark .qa-label{color:#fff}
+.qa-icon{width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:#1e293b}
+.qa-dark .qa-icon{background:rgba(255,255,255,.15);color:#fff}
+.qa-label{font-size:.75rem;font-weight:600;color:#334155;text-align:center}
+</style>}
+<div class="px-body">
+  <div class="px-tabs">
+    <button class="px-tab active">Tổng quan</button>
+    <button class="px-tab" onclick="location.href='/Supervisor'">Giám sát</button>
+    <button class="px-tab" onclick="location.href='/Attendance'">Điểm danh</button>
+  </div>
+  <div class="px-grid">
+    <div class="px-left">
+      <div class="hero-card">
+        <div class="hero-orb">🔍</div>
+        <div class="hero-content">
+          <div class="hero-eyebrow">GIÁM THỊ</div>
+          <div class="hero-title">@greeting, @firstName 👋</div>
+          <div class="hero-sub">@today — Giám sát hoạt động giảng dạy và học tập.</div>
+          <div class="hero-actions">
+            <a href="/Supervisor" class="hero-btn hero-btn--primary"><i class="bi bi-eye-fill"></i> Giám sát lớp</a>
+            <a href="/Attendance" class="hero-btn hero-btn--outline"><i class="bi bi-clipboard-data-fill"></i> Điểm danh</a>
+          </div>
+        </div>
+      </div>
 
-<!-- Banner -->
-<div class="dash-banner dash-banner--supervisor">
-    <div class="dash-banner__grid"></div>
-    <div class="dash-banner__left">
-        <div class="dash-banner__eyebrow">
-            <i class="bi bi-shield-fill"></i>
-            GIÁM THỊ
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+        <a href="/Class" class="gcard stat-card" style="text-decoration:none;display:block">
+          <div class="stat-icon"><i class="bi bi-building-fill" style="color:#2563eb"></i></div>
+          <div class="stat-label">Lớp đang hoạt động</div>
+          <div class="stat-value">@totalClasses</div>
+          <div class="stat-trend stat-trend--neu">@(yearName != "" ? yearName : "Hiện tại")</div>
+        </a>
+        <a href="/Student" class="gcard stat-card" style="text-decoration:none;display:block">
+          <div class="stat-icon"><i class="bi bi-people-fill" style="color:#16a34a"></i></div>
+          <div class="stat-label">Tổng học sinh</div>
+          <div class="stat-value">@totalStudents</div>
+          <div class="stat-trend stat-trend--neu">@(yearName != "" ? yearName : "Hiện tại")</div>
+        </a>
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-calendar-check-fill" style="color:#ca8a04"></i></div>
+          <div class="stat-label">Ngày hôm nay</div>
+          <div class="stat-value">@DateTime.Now.ToString("dd/MM")</div>
+          <div class="stat-trend stat-trend--neu">@DateTime.Now.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"))</div>
         </div>
-        <div class="dash-banner__title">@greeting, @firstName 🛡️</div>
-        <div class="dash-banner__sub">
-            <i class="bi bi-calendar3"></i> @today
-            <span style="opacity:.4">·</span>
-            <i class="bi bi-circle-fill" style="color:#4ade80;font-size:.5rem"></i> Đang trực ca sáng
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-clock-fill" style="color:#7c3aed"></i></div>
+          <div class="stat-label">Giờ hiện tại</div>
+          <div class="stat-value">@DateTime.Now.ToString("HH:mm")</div>
+          <div class="stat-trend stat-trend--neu">Đang trong ca làm việc</div>
         </div>
-    </div>
-    <div class="dash-banner__right">
-        <div class="dash-banner__icon-bg"><i class="bi bi-shield-check"></i></div>
-    </div>
-</div>
+      </div>
 
-<!-- Stats Row -->
-<div class="dash-stats dash-stats-4">
-    <a href="/Supervisor/Records" class="dstat">
-        <div class="dstat__icon dstat__icon--red"><i class="bi bi-file-earmark-x-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">@(ViewBag.TotalViolations ?? 3)</div>
-            <div class="dstat__label">Vi phạm hôm nay</div>
-            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> -2 so với hôm qua</div>
+      <div class="gcard info-card">
+        <div style="font-size:.9rem;font-weight:700;color:#0f172a;margin-bottom:12px">Chức năng giám sát</div>
+        <div class="info-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:#fee2e2;color:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-eye-fill"></i></div>
+          <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Giám sát lớp học</div><div style="font-size:.73rem;color:#94a3b8">Theo dõi hoạt động giảng dạy</div></div>
+          <a href="/Supervisor" style="margin-left:auto;font-size:.75rem;color:#dc2626;text-decoration:none">Xem →</a>
         </div>
-    </a>
-    <div class="dstat">
-        <div class="dstat__icon dstat__icon--amber"><i class="bi bi-door-open-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">12</div>
-            <div class="dstat__label">Vào/ra cổng hôm nay</div>
-            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Bình thường</div>
+        <div class="info-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-clipboard-data-fill"></i></div>
+          <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Báo cáo điểm danh</div><div style="font-size:.73rem;color:#94a3b8">Tổng hợp @totalClasses lớp học</div></div>
+          <a href="/Attendance" style="margin-left:auto;font-size:.75rem;color:#2563eb;text-decoration:none">Xem →</a>
         </div>
-    </div>
-    <a href="/Supervisor/Messages" class="dstat">
-        <div class="dstat__icon dstat__icon--blue"><i class="bi bi-chat-dots-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">@(ViewBag.UnreadMessages ?? 5)</div>
-            <div class="dstat__label">Tin nhắn phụ huynh chưa đọc</div>
-            <div class="dstat__trend dstat__trend--down"><i class="bi bi-arrow-down-short"></i> Cần phản hồi</div>
+        <div class="info-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-people-fill"></i></div>
+          <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Danh sách học sinh</div><div style="font-size:.73rem;color:#94a3b8">@totalStudents học sinh trong hệ thống</div></div>
+          <a href="/Student" style="margin-left:auto;font-size:.75rem;color:#16a34a;text-decoration:none">Xem →</a>
         </div>
-    </a>
-    <div class="dstat">
-        <div class="dstat__icon dstat__icon--green"><i class="bi bi-people-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">231</div>
-            <div class="dstat__label">Học sinh có mặt</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-check-circle"></i> / 248 tổng</div>
-        </div>
-    </div>
-</div>
-
-<!-- Row 1: Recent violations + Quick actions -->
-<div class="dash-row dash-row-7-3">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-file-earmark-text-fill" style="color:#c2410c"></i> Vi phạm gần đây</div>
-            <a href="/Supervisor/Records" class="dcard__action">Xem tất cả</a>
-        </div>
-        <div class="dcard__body">
-            @{
-                var violations = new[] {
-                    new { Student = "Nguyễn Văn An",  Class = "10A", Type = "Nói chuyện trong lớp",    Severity = "minor",    Time = "07:45",  Teacher = "Cô Lan" },
-                    new { Student = "Trần Thị Bình",  Class = "11B", Type = "Đi học muộn 15 phút",     Severity = "minor",    Time = "08:02",  Teacher = "Thầy Minh" },
-                    new { Student = "Lê Hoàng Cường", Class = "12A", Type = "Bỏ tiết học không phép",  Severity = "moderate", Time = "09:30",  Teacher = "Cô Hoa" },
-                    new { Student = "Phạm Thị Dung",  Class = "10C", Type = "Sử dụng điện thoại",      Severity = "minor",    Time = "10:15",  Teacher = "Thầy Đức" },
-                    new { Student = "Vũ Minh Đức",    Class = "11D", Type = "Đánh nhau trong sân trường",Severity = "severe", Time = "11:00",  Teacher = "Cô Ngân" },
-                };
-            }
-            <div style="display:flex;flex-direction:column;gap:10px">
-                @foreach (var v in violations)
-                {
-                    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:#fafafa;border:1px solid #f1f5f9">
-                        <div style="width:36px;height:36px;border-radius:10px;background:@(v.Severity == "severe" ? "#fef2f2" : v.Severity == "moderate" ? "#fff7ed" : "#fffbeb");display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                            <i class="bi bi-exclamation-triangle-fill" style="color:@(v.Severity == "severe" ? "#dc2626" : v.Severity == "moderate" ? "#c2410c" : "#d97706")"></i>
-                        </div>
-                        <div style="flex:1;min-width:0">
-                            <div style="font-size:.85rem;font-weight:700;color:#0f172a">@v.Student <span style="font-weight:400;color:#94a3b8">· @v.Class</span></div>
-                            <div style="font-size:.78rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@v.Type</div>
-                        </div>
-                        <div style="text-align:right;flex-shrink:0">
-                            <div><span class="vio-badge vio-badge--@v.Severity">@(v.Severity == "severe" ? "Nghiêm trọng" : v.Severity == "moderate" ? "Trung bình" : "Nhẹ")</span></div>
-                            <div style="font-size:.72rem;color:#94a3b8;margin-top:4px">@v.Time</div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-lightning-fill" style="color:#c2410c"></i> Thao tác nhanh</div>
-        </div>
-        <div class="dcard__body">
-            <div class="quick-actions">
-                <a href="/Supervisor/Records/Create" class="qa-btn" style="--qa-color:#dc2626;--qa-bg:#fef2f2">
-                    <i class="bi bi-file-earmark-plus-fill"></i> Ghi nhận vi phạm
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Supervisor/Messages" class="qa-btn" style="--qa-color:#2563eb;--qa-bg:#eff6ff">
-                    <i class="bi bi-chat-left-dots-fill"></i> Nhắn tin phụ huynh
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Supervisor/Records" class="qa-btn" style="--qa-color:#c2410c;--qa-bg:#fff7ed">
-                    <i class="bi bi-clipboard-data-fill"></i> Hồ sơ kỷ luật
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-                <a href="/Dashboard/Notifications" class="qa-btn" style="--qa-color:#7c3aed;--qa-bg:#f5f3ff">
-                    <i class="bi bi-bell-fill"></i> Thông báo hệ thống
-                    <i class="bi bi-chevron-right qa-arrow"></i>
-                </a>
-            </div>
-        </div>
+      </div>
     </div>
 
-</div>
-
-<!-- Row 2: Messages + Attendance -->
-<div class="dash-row dash-row-5-5">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-chat-dots-fill" style="color:#2563eb"></i> Tin nhắn phụ huynh</div>
-            <a href="/Supervisor/Messages" class="dcard__action">Xem tất cả</a>
+    <div class="px-right">
+      <div class="gcard mini-stat">
+        <div style="display:flex;justify-content:space-between">
+          <div>
+            <div class="mini-stat__label">Tổng quan trường</div>
+            <div class="mini-stat__value">@totalClasses lớp</div>
+            <div class="mini-stat__sub">@totalStudents học sinh đang học</div>
+          </div>
+          <i class="bi bi-building-fill" style="font-size:1.4rem;color:#2563eb"></i>
         </div>
-        <div class="dcard__body">
-            <div class="msg-list">
-                @{
-                    var msgs = new[] {
-                        new { Init = "NM", Bg = "#7c3aed", Name = "Nguyễn Thị Mai (PH)",  Preview = "Hỏi về việc con bị ghi vi phạm...", Time = "08:30", Unread = true  },
-                        new { Init = "TH", Bg = "#2563eb", Name = "Trần Văn Hùng (PH)",   Preview = "Xin phép cho con nghỉ học ngày mai", Time = "07:15", Unread = true  },
-                        new { Init = "PL", Bg = "#059669", Name = "Phạm Thị Lan (PH)",    Preview = "Cảm ơn thầy đã thông báo kịp thời", Time = "Hôm qua",  Unread = false },
-                        new { Init = "LT", Bg = "#d97706", Name = "Lê Quốc Toàn (PH)",    Preview = "Con tôi đã về nhà an toàn rồi ạ",   Time = "Hôm qua",  Unread = false },
-                    };
-                }
-                @foreach (var m in msgs)
-                {
-                    <div class="msg-item @(m.Unread ? "unread" : "")">
-                        <div class="msg-avatar" style="background:@m.Bg">@m.Init</div>
-                        <div style="flex:1;min-width:0">
-                            <div class="msg-name">@m.Name</div>
-                            <div class="msg-preview">@m.Preview</div>
-                        </div>
-                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-                            <div class="msg-time">@m.Time</div>
-                            @if (m.Unread) { <div class="msg-unread-dot"></div> }
-                        </div>
-                    </div>
-                }
-            </div>
+      </div>
+
+      <div class="dark-card">
+        <div style="height:110px;background:linear-gradient(135deg,#7f1d1d,#b91c1c);display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center">
+            <div style="font-size:2rem;font-weight:800;color:#fff">@totalClasses</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.55)">Lớp học đang hoạt động</div>
+          </div>
         </div>
+        <div class="dark-card-inner">
+          <div class="dark-card-label">Năm học</div>
+          <div class="dark-card-value">@(yearName != "" ? yearName : "—")</div>
+          <div class="dark-card-sub">@totalStudents học sinh</div>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <div style="padding:14px 16px 4px;font-size:.78rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase">Thao tác nhanh</div>
+        <div class="qa-grid">
+          <a href="/Supervisor" class="qa-btn"><div class="qa-icon"><i class="bi bi-eye-fill"></i></div><span class="qa-label">Giám sát lớp</span></a>
+          <a href="/Attendance" class="qa-btn"><div class="qa-icon"><i class="bi bi-clipboard-data-fill"></i></div><span class="qa-label">Điểm danh</span></a>
+          <a href="/Student" class="qa-btn"><div class="qa-icon"><i class="bi bi-people-fill"></i></div><span class="qa-label">Học sinh</span></a>
+          <a href="/Supervisor" class="qa-btn qa-dark"><div class="qa-icon"><i class="bi bi-shield-fill"></i></div><span class="qa-label">Kỷ luật</span></a>
+        </div>
+      </div>
     </div>
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-bar-chart-fill" style="color:#c2410c"></i> Thống kê vi phạm tuần này</div>
-        </div>
-        <div class="dcard__body">
-            <div style="display:flex;flex-direction:column;gap:14px">
-                @{
-                    var stats = new[] {
-                        new { Label = "Vi phạm nhẹ",        Count = 12, Total = 20, Color = "#d97706" },
-                        new { Label = "Vi phạm trung bình",  Count = 5,  Total = 20, Color = "#c2410c" },
-                        new { Label = "Vi phạm nghiêm trọng",Count = 1,  Total = 20, Color = "#dc2626" },
-                    };
-                }
-                @foreach (var s in stats)
-                {
-                    var pct = (int)((double)s.Count / s.Total * 100);
-                    <div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                            <span style="font-size:.82rem;font-weight:600;color:#374151">@s.Label</span>
-                            <span style="font-size:.85rem;font-weight:800;color:@s.Color">@s.Count</span>
-                        </div>
-                        <div class="dash-progress">
-                            <div class="dash-progress__bar" style="width:@pct%;background:@s.Color"></div>
-                        </div>
-                    </div>
-                }
-                <div style="margin-top:8px;padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;text-align:center">
-                    <div style="font-size:1.5rem;font-weight:800;color:#c2410c">18</div>
-                    <div style="font-size:.75rem;color:#92400e;margin-top:2px">Tổng vi phạm tuần này</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+  </div>
 </div>

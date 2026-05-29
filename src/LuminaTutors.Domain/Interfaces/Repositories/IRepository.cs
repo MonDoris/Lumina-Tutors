@@ -32,6 +32,15 @@ public interface IRepository<TEntity> where TEntity : BaseEntity
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default);
 
+    Task<TEntity?> FindOneAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken ct = default);
+
+    Task<TEntity?> FindOneAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        Func<IQueryable<TEntity>, IQueryable<TEntity>> include,
+        CancellationToken ct = default);
+
     Task<bool> AnyAsync(
         Expression<Func<TEntity, bool>> predicate,
         CancellationToken ct = default);

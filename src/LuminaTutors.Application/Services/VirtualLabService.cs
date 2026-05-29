@@ -16,10 +16,20 @@ public sealed class VirtualLabService : IVirtualLabService
 
     // Valid subject/scene combinations
     private static readonly HashSet<string> ValidSubjects =
-        new(StringComparer.OrdinalIgnoreCase) { "chemistry", "physics", "biology" };
+        new(StringComparer.OrdinalIgnoreCase) { "chemistry", "physics", "biology", "math" };
 
     private static readonly HashSet<string> ValidScenes =
-        new(StringComparer.OrdinalIgnoreCase) { "titration", "pendulum", "cell" };
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Chemistry
+            "titration", "electrolysis", "distillation",
+            // Physics
+            "pendulum", "spring", "optics",
+            // Biology
+            "cell", "dna", "photosynthesis",
+            // Math
+            "polyhedron", "vectors"
+        };
 
     public VirtualLabService(IUnitOfWork uow, ILogger<VirtualLabService> logger)
     {
@@ -51,10 +61,10 @@ public sealed class VirtualLabService : IVirtualLabService
         int schoolId, int teacherId, CreateLabSessionRequest req, CancellationToken ct = default)
     {
         if (!ValidSubjects.Contains(req.SubjectTag))
-            return Result<LabSessionDto>.Failure("Môn học không hợp lệ. Chọn: chemistry, physics, biology.");
+            return Result<LabSessionDto>.Failure("Môn học không hợp lệ. Chọn: chemistry, physics, biology, math.");
 
         if (!ValidScenes.Contains(req.SceneType))
-            return Result<LabSessionDto>.Failure("Loại thí nghiệm không hợp lệ. Chọn: titration, pendulum, cell.");
+            return Result<LabSessionDto>.Failure("Loại thí nghiệm không hợp lệ.");
 
         // Generate unique 6-char code
         string code;

@@ -2645,6 +2645,140 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.ToTable("OnlineSessions", (string)null);
                 });
 
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.OnlineRoomChat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ChatId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Text");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SenderId");
+
+                    b.HasIndex("SessionId", "SentAt")
+                        .HasDatabaseName("IX_OnlineRoomChats_SessionId_SentAt");
+
+                    b.ToTable("OnlineRoomChats", (string)null);
+                });
+
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.OnlineSlide", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("SlideId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalPages")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.ToTable("OnlineSlides", (string)null);
+                });
+
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.QuestionImportJob", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ImportJobId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("ImportedCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RequestedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SchoolId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<int>("TargetSubjectId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("SchoolId");
+
+                    b.HasIndex("TargetSubjectId");
+
+                    b.ToTable("QuestionImportJobs", (string)null);
+                });
+
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.QuestionBank", b =>
                 {
                     b.Property<int>("Id")
@@ -2657,6 +2791,9 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.Property<string>("ChapterTag")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("CorrectAnswer")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -2693,8 +2830,16 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.Property<int>("SchoolId")
                         .HasColumnType("int");
 
+                    b.Property<string>("SourceUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<int>("SubjectId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -2876,6 +3021,14 @@ namespace LuminaTutors.Infrastructure.Migrations
                         .HasColumnName("ParticipantId");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AttendedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsAttended")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<DateTime>("JoinedAt")
                         .HasColumnType("datetime2");
@@ -4539,6 +4692,63 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.Navigation("Teacher");
                 });
 
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.OnlineRoomChat", b =>
+                {
+                    b.HasOne("LuminaTutors.Domain.Entities.Learning.OnlineSession", "Session")
+                        .WithMany("Chats")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LuminaTutors.Domain.Entities.Identity.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Sender");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.OnlineSlide", b =>
+                {
+                    b.HasOne("LuminaTutors.Domain.Entities.Learning.OnlineSession", "Session")
+                        .WithMany("Slides")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.QuestionImportJob", b =>
+                {
+                    b.HasOne("LuminaTutors.Domain.Entities.Identity.School", "School")
+                        .WithMany()
+                        .HasForeignKey("SchoolId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LuminaTutors.Domain.Entities.Identity.User", "RequestedByUser")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LuminaTutors.Domain.Entities.Academic.Subject", "TargetSubject")
+                        .WithMany()
+                        .HasForeignKey("TargetSubjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RequestedByUser");
+
+                    b.Navigation("School");
+
+                    b.Navigation("TargetSubject");
+                });
+
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.QuestionBank", b =>
                 {
                     b.HasOne("LuminaTutors.Domain.Entities.Identity.User", "CreatedByTeacher")
@@ -4861,6 +5071,15 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.Navigation("School");
 
                     b.Navigation("UpdatedBy");
+                });
+
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Learning.OnlineSession", b =>
+                {
+                    b.Navigation("Chats");
+
+                    b.Navigation("Participants");
+
+                    b.Navigation("Slides");
                 });
 
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Academic.AcademicYear", b =>

@@ -1,0 +1,291 @@
+@using LuminaTutors.Application.DTOs.QuestionBank
+@using LuminaTutors.Domain.Common
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Ngân hàng câu hỏi";
+    var paged  = ViewBag.Paged  as PagedResult<QuestionListItemDto>;
+    var stats  = ViewBag.Stats  as QuestionBankStatsDto;
+    var filter = ViewBag.Filter as QuestionFilterRequest ?? new QuestionFilterRequest();
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-collection-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Ngân hàng câu hỏi
+        </h1>
+        <p class="lt-page-subtitle">Quản lý câu hỏi theo môn học, dạng bài và độ khó</p>
+    </div>
+    <div style="display:flex;gap:8px">
+        <a asp-action="Import" class="lt-btn lt-btn--outline">
+            <i class="bi bi-cloud-download-fill"></i> Import
+        </a>
+        <a asp-action="Create" class="lt-btn lt-btn--primary">
+            <i class="bi bi-plus-lg"></i> Thêm câu hỏi
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+@* ── Stats ── *@
+@if (stats != null)
+{
+    <div class="row g-3 lt-mb-4">
+        <div class="col-6 col-md-3">
+            <div class="lt-card">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-size:.72rem;color:var(--lt-text-muted);margin-bottom:4px">Tổng câu hỏi</div>
+                    <div style="font-size:1.6rem;font-weight:700;color:var(--lt-gold)">@stats.TotalQuestions</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-card">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-size:.72rem;color:var(--lt-text-muted);margin-bottom:4px">Đã duyệt</div>
+                    <div style="font-size:1.6rem;font-weight:700;color:#22c55e">@stats.ApprovedQuestions</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-card">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-size:.72rem;color:var(--lt-text-muted);margin-bottom:4px">Chờ duyệt</div>
+                    <div style="font-size:1.6rem;font-weight:700;color:var(--lt-gold)">@stats.PendingApproval</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-card">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-size:.72rem;color:var(--lt-text-muted);margin-bottom:4px">Số môn học</div>
+                    <div style="font-size:1.6rem;font-weight:700;color:var(--lt-navy)">@stats.BySubject.Count</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Filter ── *@
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body">
+        <form asp-action="Index" method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="lt-label" style="font-size:.75rem">Từ khóa</label>
+                <input type="text" name="Keyword" class="lt-input lt-input--sm"
+                       placeholder="Tìm câu hỏi..." value="@filter.Keyword">
+            </div>
+            <div class="col-md-2">
+                <label class="lt-label" style="font-size:.75rem">Dạng câu hỏi</label>
+                <select name="QuestionType" class="lt-input lt-input--sm">
+                    <option value="">-- Tất cả --</option>
+                    @foreach (var t in Enum.GetValues<QuestionType>())
+                    {
+                        <option value="@((int)t)" selected="@(filter.QuestionType == t)">
+                            @(t switch { QuestionType.MultipleChoice=>"Trắc nghiệm", QuestionType.TrueFalse=>"Đúng/Sai", QuestionType.ShortAnswer=>"Điền vào chỗ trống", QuestionType.Essay=>"Tự luận", _=>t.ToString() })
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="lt-label" style="font-size:.75rem">Độ khó</label>
+                <select name="Difficulty" class="lt-input lt-input--sm">
+                    <option value="">-- Tất cả --</option>
+                    @foreach (var d in Enum.GetValues<DifficultyLevel>())
+                    {
+                        <option value="@((int)d)" selected="@(filter.Difficulty == d)">
+                            @(d switch { DifficultyLevel.Easy=>"Dễ", DifficultyLevel.Medium=>"Trung bình", DifficultyLevel.Hard=>"Khó", _=>d.ToString() })
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="lt-label" style="font-size:.75rem">Trạng thái</label>
+                <select name="IsApproved" class="lt-input lt-input--sm">
+                    <option value="">-- Tất cả --</option>
+                    <option value="true"  selected="@(filter.IsApproved == true)">Đã duyệt</option>
+                    <option value="false" selected="@(filter.IsApproved == false)">Chờ duyệt</option>
+                </select>
+            </div>
+            <div class="col-md-3" style="display:flex;gap:6px">
+                <button type="submit" class="lt-btn lt-btn--primary lt-btn--sm">
+                    <i class="bi bi-search"></i> Tìm
+                </button>
+                <a asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm">
+                    <i class="bi bi-arrow-counterclockwise"></i> Xóa lọc
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ── Table ── *@
+<div class="lt-card">
+    <div class="lt-card__body" style="padding:0">
+        @if (paged == null || paged.Items.Count == 0)
+        {
+            <div class="lt-empty" style="padding:3rem">
+                <i class="bi bi-collection" style="font-size:2.5rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">Không tìm thấy câu hỏi nào</div>
+                <a asp-action="Create" class="lt-btn lt-btn--primary lt-mt-3">
+                    <i class="bi bi-plus-lg"></i> Thêm câu hỏi đầu tiên
+                </a>
+            </div>
+        }
+        else
+        {
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th style="width:50%">Câu hỏi</th>
+                        <th style="width:90px">Dạng</th>
+                        <th style="width:80px">Độ khó</th>
+                        <th style="width:70px">Chương</th>
+                        <th style="width:80px">Trạng thái</th>
+                        <th style="width:90px;text-align:right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var q in paged.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div style="font-size:.84rem;display:-webkit-box;-webkit-line-clamp:2;
+                                            -webkit-box-orient:vertical;overflow:hidden;line-height:1.4">
+                                    @q.QuestionText
+                                </div>
+                                <div style="font-size:.72rem;color:var(--lt-text-muted);margin-top:2px">
+                                    @q.SubjectName
+                                    @if (!string.IsNullOrEmpty(q.ChapterTag))
+                                    {
+                                        <span> · @q.ChapterTag</span>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                @{
+                                    var typeLabel = q.QuestionType switch {
+                                        QuestionType.MultipleChoice => "Trắc nghiệm",
+                                        QuestionType.TrueFalse      => "Đúng/Sai",
+                                        QuestionType.ShortAnswer      => "Điền chỗ trống",
+                                        QuestionType.Essay          => "Tự luận",
+                                        _                           => q.QuestionType.ToString()
+                                    };
+                                    var typeColor = q.QuestionType switch {
+                                        QuestionType.MultipleChoice => "rgba(59,130,246,.15)",
+                                        QuestionType.TrueFalse      => "rgba(16,185,129,.15)",
+                                        QuestionType.ShortAnswer      => "rgba(245,158,11,.15)",
+                                        QuestionType.Essay          => "rgba(139,92,246,.15)",
+                                        _                           => "rgba(100,116,139,.15)"
+                                    };
+                                }
+                                <span class="lt-badge" style="background:@typeColor;border:none;font-size:.7rem">
+                                    @typeLabel
+                                </span>
+                            </td>
+                            <td>
+                                @{
+                                    var diffLabel = q.Difficulty switch {
+                                        DifficultyLevel.Easy   => "Dễ",
+                                        DifficultyLevel.Medium => "TB",
+                                        DifficultyLevel.Hard   => "Khó",
+                                        _                      => q.Difficulty.ToString()
+                                    };
+                                    var diffColor = q.Difficulty switch {
+                                        DifficultyLevel.Easy   => "#22c55e",
+                                        DifficultyLevel.Medium => "var(--lt-gold)",
+                                        DifficultyLevel.Hard   => "var(--lt-danger)",
+                                        _                      => "var(--lt-text-muted)"
+                                    };
+                                }
+                                <span style="font-size:.78rem;font-weight:600;color:@diffColor">@diffLabel</span>
+                            </td>
+                            <td style="font-size:.76rem;color:var(--lt-text-muted)">
+                                @(q.ChapterTag ?? "—")
+                            </td>
+                            <td>
+                                @if (q.IsApproved)
+                                {
+                                    <span class="lt-badge lt-badge--success" style="font-size:.7rem">
+                                        <i class="bi bi-check-circle-fill"></i> Đã duyệt
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="lt-badge" style="background:rgba(201,169,110,.12);color:var(--lt-gold);
+                                          border:none;font-size:.7rem">
+                                        <i class="bi bi-clock"></i> Chờ duyệt
+                                    </span>
+                                }
+                            </td>
+                            <td style="text-align:right">
+                                <div style="display:flex;gap:4px;justify-content:flex-end">
+                                    <a asp-action="Details" asp-route-id="@q.Id"
+                                       class="lt-btn lt-btn--sm lt-btn--outline" title="Xem chi tiết">
+                                        <i class="bi bi-eye-fill"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@q.Id"
+                                       class="lt-btn lt-btn--sm lt-btn--outline" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </a>
+                                    @if (!q.IsApproved && User.IsInRole("ADMIN"))
+                                    {
+                                        <form asp-action="Approve" asp-route-id="@q.Id" method="post" style="display:inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                    title="Duyệt câu hỏi"
+                                                    style="border-color:rgba(22,163,74,.5);color:#22c55e">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    <form asp-action="Delete" asp-route-id="@q.Id" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                style="border-color:var(--lt-danger);color:var(--lt-danger)"
+                                                onclick="return confirm('Xóa câu hỏi này?')">
+                                            <i class="bi bi-trash3-fill"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @* Pagination *@
+            @if (paged.TotalPages > 1)
+            {
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                            padding:.75rem 1rem;border-top:1px solid var(--lt-border)">
+                    <div style="font-size:.78rem;color:var(--lt-text-muted)">
+                        Hiển thị @((paged.PageNumber - 1) * paged.PageSize + 1)–@Math.Min(paged.PageNumber * paged.PageSize, paged.TotalCount)
+                        / @paged.TotalCount câu hỏi
+                    </div>
+                    <div style="display:flex;gap:4px">
+                        @for (int p = 1; p <= paged.TotalPages; p++)
+                        {
+                            <a asp-action="Index"
+                               asp-route-Page="@p"
+                               asp-route-Keyword="@filter.Keyword"
+                               asp-route-QuestionType="@filter.QuestionType"
+                               asp-route-Difficulty="@filter.Difficulty"
+                               asp-route-IsApproved="@filter.IsApproved"
+                               class="lt-btn lt-btn--sm @(p == paged.PageNumber ? "lt-btn--primary" : "lt-btn--outline")">
+                                @p
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

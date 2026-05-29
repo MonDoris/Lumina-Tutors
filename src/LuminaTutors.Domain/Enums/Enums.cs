@@ -351,3 +351,20 @@ public enum OnlineSessionStatus
     Ended     = 3,
     Cancelled = 4
 }
+
+public enum ChatMessageType
+{
+    Text   = 1,
+    System = 2,
+    File   = 3,
+    Emoji  = 4
+}
+
+public enum ImportJobStatus
+{
+    Pending    = 1,
+    Processing = 2,
+    Completed  = 3,
+    Failed     = 4
+}
+

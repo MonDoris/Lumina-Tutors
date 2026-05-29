@@ -190,17 +190,27 @@
                                  font-size:.6rem;font-weight:800;letter-spacing:.04em;
                                  padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
                 </a>
-                <a asp-controller="OnlineClass" asp-action="Index" class="@Nav("OnlineClass")">
+                <a asp-controller="OnlineClassroom" asp-action="Index" class="@Nav("OnlineClassroom")"
+                   style="position:relative">
                     <span class="lt-nav__icon"><i class="bi bi-camera-video-fill"></i></span>
-                    Phòng học online
+                    Phòng học Online
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:var(--lt-danger);color:#fff;
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">WebRTC</span>
                 </a>
                 <a asp-controller="QuizExam" asp-action="Index" class="@Nav("QuizExam")">
                     <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>
                     Đề thi trắc nghiệm
                 </a>
-                <a asp-controller="QuizBank" asp-action="Index" class="@Nav("QuizBank")">
+                <a asp-controller="QuestionBank" asp-action="Index" class="@Nav("QuestionBank")"
+                   style="position:relative">
                     <span class="lt-nav__icon"><i class="bi bi-collection-fill"></i></span>
                     Ngân hàng câu hỏi
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:var(--lt-gold);color:var(--lt-navy);
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
                 </a>
             </div>
             }
@@ -260,6 +270,15 @@
                 </a>
             </div>
 
+            <!-- Subjects (Admin only) -->
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Chương trình học</div>
+                <a asp-controller="Subject" asp-action="Index" class="@Nav("Subject")">
+                    <span class="lt-nav__icon"><i class="bi bi-journals"></i></span>
+                    Môn học
+                </a>
+            </div>
+
             <!-- HR (Admin only) -->
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Nhân sự</div>
@@ -299,9 +318,9 @@
             {
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Học tập</div>
-                <a asp-controller="OnlineClass" asp-action="Index" class="@Nav("OnlineClass")">
+                <a asp-controller="OnlineClassroom" asp-action="Index" class="@Nav("OnlineClassroom")">
                     <span class="lt-nav__icon"><i class="bi bi-camera-video-fill"></i></span>
-                    Phòng học online
+                    Phòng học Online
                 </a>
                 <a asp-controller="QuizExam" asp-action="Index" class="@Nav("QuizExam")">
                     <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>

@@ -4,220 +4,146 @@
     var fullName  = User.FindFirstValue(ClaimTypes.Name) ?? "Học sinh";
     var firstName = fullName.Split(' ').Last();
     var hour      = DateTime.Now.Hour;
-    var greeting  = hour < 12 ? "Chào buổi sáng" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
-    var today     = DateTime.Now.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"));
+    var greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    var today     = DateTime.Now.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"));
+    var notifCount = (int)(ViewBag.StudentNotifications ?? 0);
 }
+@section Styles {<style>
+.px-body{background:#e8edf5;min-height:calc(100vh - 56px);padding:28px 32px}
+.px-tabs{display:flex;gap:0;border-bottom:1px solid rgba(0,0,0,.08);margin-bottom:28px}
+.px-tab{padding:10px 20px;font-size:.83rem;font-weight:500;color:#9ba3af;border:none;background:none;border-bottom:2px solid transparent;cursor:pointer}
+.px-tab.active{color:#1e293b;border-bottom-color:#1e293b;font-weight:600}
+.px-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.px-left,.px-right{display:flex;flex-direction:column;gap:16px}
+.gcard{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border-radius:20px;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 24px rgba(0,0,0,.07);overflow:hidden}
+.hero-card{background:linear-gradient(135deg,#1e40af 0%,#2563eb 100%);border-radius:20px;padding:32px;position:relative;overflow:hidden;min-height:200px;display:flex;align-items:center;gap:24px}
+.hero-card::before{content:'';position:absolute;top:-60px;right:-40px;width:260px;height:260px;background:radial-gradient(circle,rgba(96,165,250,.35) 0%,transparent 70%);border-radius:50%}
+.hero-orb{width:140px;height:140px;border-radius:50%;flex-shrink:0;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.2),rgba(255,255,255,.05));border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:3.5rem;position:relative;z-index:1}
+.hero-content{flex:1;position:relative;z-index:1}
+.hero-eyebrow{font-size:.7rem;font-weight:700;color:rgba(147,197,253,.9);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.hero-title{font-size:1.75rem;font-weight:700;color:#fff;margin-bottom:8px}
+.hero-sub{font-size:.83rem;color:rgba(255,255,255,.6);margin-bottom:20px}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hero-btn{padding:9px 18px;border-radius:10px;font-size:.82rem;font-weight:600;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.hero-btn--primary{background:#fff;color:#1e40af}.hero-btn--outline{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.stat-card{padding:20px 22px}
+.stat-label{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px}
+.stat-value{font-size:1.9rem;font-weight:700;color:#0f172a;line-height:1;margin-bottom:4px}
+.stat-trend{font-size:.75rem;font-weight:500}
+.stat-trend--neu{color:#94a3b8}.stat-icon{float:right;margin-top:-4px}
+.mini-stat{padding:18px 20px}
+.mini-stat__label{font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.mini-stat__value{font-size:1.5rem;font-weight:700;color:#0f172a}
+.mini-stat__sub{font-size:.73rem;color:#94a3b8;margin-top:3px}
+.dark-card{background:linear-gradient(145deg,#1e40af,#2563eb);border-radius:20px;overflow:hidden;position:relative}
+.dark-card-inner{padding:18px 20px}
+.dark-card-label{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.dark-card-value{font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:2px}
+.dark-card-sub{font-size:.72rem;color:rgba(255,255,255,.5)}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
+.qa-btn{background:rgba(0,0,0,.03);border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;border:1px solid rgba(0,0,0,.06);text-decoration:none;transition:.15s}
+.qa-btn:hover{background:#f1f5f9;transform:translateY(-1px)}
+.qa-btn.qa-dark{background:#1e40af;border-color:#1e40af}.qa-btn.qa-dark .qa-label{color:#fff}
+.qa-icon{width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;font-size:.95rem;color:#1e293b}
+.qa-dark .qa-icon{background:rgba(255,255,255,.15);color:#fff}
+.qa-label{font-size:.75rem;font-weight:600;color:#334155;text-align:center}
+.info-card{padding:20px 22px}
+.info-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.info-row:last-child{border-bottom:none}
+</style>}
+<div class="px-body">
+  <div class="px-tabs">
+    <button class="px-tab active">Tổng quan</button>
+    <button class="px-tab" onclick="location.href='/Grading'">Điểm số</button>
+    <button class="px-tab" onclick="location.href='/Attendance'">Điểm danh</button>
+    <button class="px-tab" onclick="location.href='/OnlineClassroom/Join'">Vào lớp</button>
+  </div>
+  <div class="px-grid">
+    <div class="px-left">
+      <div class="hero-card">
+        <div class="hero-orb">🎒</div>
+        <div class="hero-content">
+          <div class="hero-eyebrow">HỌC SINH</div>
+          <div class="hero-title">@greeting, @firstName 👋</div>
+          <div class="hero-sub">@today — Tiếp tục hành trình học tập của bạn!</div>
+          <div class="hero-actions">
+            <a href="/OnlineClassroom/Join" class="hero-btn hero-btn--primary"><i class="bi bi-play-circle-fill"></i> Vào lớp học</a>
+            <a href="/Grading" class="hero-btn hero-btn--outline"><i class="bi bi-bar-chart-fill"></i> Xem điểm</a>
+          </div>
+        </div>
+      </div>
 
-<!-- Banner -->
-<div class="dash-banner dash-banner--student">
-    <div class="dash-banner__grid"></div>
-    <div class="dash-banner__left">
-        <div class="dash-banner__eyebrow">
-            <i class="bi bi-mortarboard-fill"></i>
-            HỌC SINH
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-calendar-check-fill" style="color:#2563eb"></i></div>
+          <div class="stat-label">Ngày hôm nay</div>
+          <div class="stat-value">@DateTime.Now.ToString("dd/MM")</div>
+          <div class="stat-trend stat-trend--neu">@DateTime.Now.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"))</div>
         </div>
-        <div class="dash-banner__title">@greeting, @firstName! 📚</div>
-        <div class="dash-banner__sub">
-            <i class="bi bi-calendar3"></i> @today
-            <span style="opacity:.4">·</span>
-            <i class="bi bi-building"></i> Lớp 11A2
+        <div class="gcard stat-card">
+          <div class="stat-icon"><i class="bi bi-bell-fill" style="color:#ca8a04"></i></div>
+          <div class="stat-label">Thông báo chưa đọc</div>
+          <div class="stat-value">@notifCount</div>
+          <div class="stat-trend stat-trend--neu">@(notifCount > 0 ? "Có thông báo mới" : "Không có thông báo")</div>
         </div>
-    </div>
-    <div class="dash-banner__right">
-        <div class="dash-banner__icon-bg"><i class="bi bi-mortarboard"></i></div>
-    </div>
-</div>
+      </div>
 
-<!-- Stats Row -->
-<div class="dash-stats dash-stats-4">
-    <div class="dstat">
-        <div class="dstat__icon dstat__icon--blue"><i class="bi bi-journal-text"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">7.9</div>
-            <div class="dstat__label">Điểm trung bình HK2</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> +0.4 so với HK1</div>
+      <!-- Hướng dẫn sử dụng -->
+      <div class="gcard info-card">
+        <div style="font-size:.9rem;font-weight:700;color:#0f172a;margin-bottom:12px">Tính năng dành cho bạn</div>
+        <div class="info-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-play-circle-fill"></i></div>
+          <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Lớp học trực tuyến</div><div style="font-size:.73rem;color:#94a3b8">Nhập mã phòng để tham gia</div></div>
+          <a href="/OnlineClassroom/Join" style="margin-left:auto;font-size:.75rem;color:#2563eb;text-decoration:none">Vào →</a>
         </div>
-    </div>
-    <div class="dstat">
-        <div class="dstat__icon dstat__icon--green"><i class="bi bi-check-circle-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">96%</div>
-            <div class="dstat__label">Tỷ lệ chuyên cần</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-arrow-up-short"></i> Tốt</div>
+        <div class="info-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-bar-chart-fill"></i></div>
+          <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Kết quả học tập</div><div style="font-size:.73rem;color:#94a3b8">Xem điểm và nhận xét</div></div>
+          <a href="/Grading" style="margin-left:auto;font-size:.75rem;color:#16a34a;text-decoration:none">Xem →</a>
         </div>
-    </div>
-    <div class="dstat">
-        <div class="dstat__icon dstat__icon--amber"><i class="bi bi-clock-history"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">4</div>
-            <div class="dstat__label">Tiết học hôm nay</div>
-            <div class="dstat__trend dstat__trend--neutral"><i class="bi bi-dash"></i> Lịch bình thường</div>
+        <div class="info-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:#fef9c3;color:#ca8a04;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-calendar-check"></i></div>
+          <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Điểm danh</div><div style="font-size:.73rem;color:#94a3b8">Lịch sử điểm danh của bạn</div></div>
+          <a href="/Attendance" style="margin-left:auto;font-size:.75rem;color:#ca8a04;text-decoration:none">Xem →</a>
         </div>
-    </div>
-    <div class="dstat">
-        <div class="dstat__icon dstat__icon--purple"><i class="bi bi-trophy-fill"></i></div>
-        <div class="dstat__body">
-            <div class="dstat__value">Giỏi</div>
-            <div class="dstat__label">Xếp loại học lực</div>
-            <div class="dstat__trend dstat__trend--up"><i class="bi bi-star-fill"></i> Học kỳ 2</div>
+        <div class="info-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:#ede9fe;color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-bell-fill"></i></div>
+          <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Thông báo</div><div style="font-size:.73rem;color:#94a3b8">Tin tức và thông báo từ trường</div></div>
+          <a href="/Dashboard/Notifications" style="margin-left:auto;font-size:.75rem;color:#7c3aed;text-decoration:none">Xem →</a>
         </div>
-    </div>
-</div>
-
-<!-- Row 1: Today schedule + Attendance ring -->
-<div class="dash-row dash-row-7-3">
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-calendar-week-fill" style="color:#2563eb"></i> Thời khóa biểu hôm nay</div>
-        </div>
-        <div class="dcard__body">
-            <div class="sched-list">
-                @{
-                    var periods = new[] {
-                        new { Time = "07:00", Subject = "Toán",          Teacher = "Cô Nguyễn Lan",  Room = "101", Done = true,  Active = false },
-                        new { Time = "08:45", Subject = "Ngữ văn",       Teacher = "Thầy Trần Minh", Room = "203", Done = false, Active = true  },
-                        new { Time = "10:30", Subject = "Tiếng Anh",     Teacher = "Cô Mai Hương",   Room = "Lab", Done = false, Active = false },
-                        new { Time = "13:00", Subject = "Vật lý",        Teacher = "Thầy Lê Hùng",   Room = "305", Done = false, Active = false },
-                    };
-                }
-                @foreach (var p in periods)
-                {
-                    <div class="sched-item @(p.Active ? "active" : "")">
-                        <div class="sched-time">@p.Time</div>
-                        <div class="sched-dot" style="background:@(p.Done ? "#10b981" : p.Active ? "#2563eb" : "#cbd5e1")"></div>
-                        <div style="flex:1">
-                            <div class="sched-name">@p.Subject</div>
-                            <div class="sched-room"><i class="bi bi-person"></i> @p.Teacher &nbsp;·&nbsp; <i class="bi bi-geo-alt"></i> P.@p.Room</div>
-                        </div>
-                        @if (p.Done)
-                        {
-                            <span style="font-size:.72rem;font-weight:700;color:#059669;background:#dcfce7;padding:3px 10px;border-radius:99px">Đã học</span>
-                        }
-                        else if (p.Active)
-                        {
-                            <span style="font-size:.72rem;font-weight:700;color:#2563eb;background:#dbeafe;padding:3px 10px;border-radius:99px">Đang học</span>
-                        }
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-pie-chart-fill" style="color:#2563eb"></i> Chuyên cần</div>
-        </div>
-        <div class="dcard__body">
-            <div class="att-ring-wrap" style="margin-bottom:20px">
-                <div class="att-ring">
-                    <svg viewBox="0 0 100 100" width="100" height="100">
-                        <circle class="att-ring__track" cx="50" cy="50" r="40"/>
-                        <circle class="att-ring__fill" cx="50" cy="50" r="40"
-                                stroke="#2563eb"
-                                stroke-dasharray="241.5 251.2"
-                                stroke-dashoffset="0"/>
-                    </svg>
-                    <div class="att-ring__label">
-                        <div class="att-ring__pct">96%</div>
-                        <div class="att-ring__sub">học kỳ 2</div>
-                    </div>
-                </div>
-                <div class="att-ring-title">Tỷ lệ điểm danh</div>
-            </div>
-            <div style="display:flex;justify-content:space-around;text-align:center;padding-top:4px;border-top:1px solid #f1f5f9">
-                <div>
-                    <div style="font-size:1.1rem;font-weight:800;color:#059669">82</div>
-                    <div style="font-size:.72rem;color:#94a3b8">Có mặt</div>
-                </div>
-                <div>
-                    <div style="font-size:1.1rem;font-weight:800;color:#f59e0b">2</div>
-                    <div style="font-size:.72rem;color:#94a3b8">Có phép</div>
-                </div>
-                <div>
-                    <div style="font-size:1.1rem;font-weight:800;color:#dc2626">2</div>
-                    <div style="font-size:.72rem;color:#94a3b8">Vắng</div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
 
-</div>
+    <div class="px-right">
+      <div class="gcard mini-stat">
+        <div class="mini-stat__label">Xin chào, @fullName</div>
+        <div class="mini-stat__value" style="font-size:1rem;font-weight:600;color:#334155">Học sinh Lumina Tutors</div>
+        <div class="mini-stat__sub">Chúc bạn học tốt hôm nay!</div>
+      </div>
 
-<!-- Row 2: Grades + Notifications -->
-<div class="dash-row dash-row-6-4">
+      <div class="dark-card">
+        <div style="height:110px;background:linear-gradient(135deg,#1e40af,#2563eb);display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center">
+            <div style="font-size:2rem;font-weight:800;color:#fff">@DateTime.Now.ToString("HH:mm")</div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.55)">Thời gian hiện tại</div>
+          </div>
+        </div>
+        <div class="dark-card-inner">
+          <div class="dark-card-label">Ngày học</div>
+          <div class="dark-card-value">@DateTime.Now.ToString("dd/MM/yyyy")</div>
+          <div class="dark-card-sub">@DateTime.Now.ToString("dddd", new System.Globalization.CultureInfo("vi-VN"))</div>
+        </div>
+      </div>
 
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-bar-chart-fill" style="color:#7c3aed"></i> Điểm số học kỳ 2</div>
+      <div class="gcard">
+        <div style="padding:14px 16px 4px;font-size:.78rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase">Thao tác nhanh</div>
+        <div class="qa-grid">
+          <a href="/OnlineClassroom/Join" class="qa-btn"><div class="qa-icon"><i class="bi bi-play-circle-fill"></i></div><span class="qa-label">Vào lớp online</span></a>
+          <a href="/Grading" class="qa-btn"><div class="qa-icon"><i class="bi bi-bar-chart-fill"></i></div><span class="qa-label">Xem điểm</span></a>
+          <a href="/Attendance" class="qa-btn"><div class="qa-icon"><i class="bi bi-calendar-check"></i></div><span class="qa-label">Điểm danh</span></a>
+          <a href="/Dashboard/Notifications" class="qa-btn qa-dark"><div class="qa-icon"><i class="bi bi-bell-fill"></i></div><span class="qa-label">Thông báo</span></a>
         </div>
-        <div class="dcard__body">
-            <table class="grade-table">
-                <thead>
-                    <tr>
-                        <th>Môn học</th>
-                        <th>TX1</th>
-                        <th>TX2</th>
-                        <th>Giữa kỳ</th>
-                        <th>Cuối kỳ</th>
-                        <th>ĐTBm</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @{
-                        var myGrades = new[] {
-                            new { Sub = "Toán",      TX1 = 8.5, TX2 = 7.5, GK = 8.0, CK = 8.5, DTB = 8.2, Badge = "a" },
-                            new { Sub = "Văn",       TX1 = 7.0, TX2 = 8.0, GK = 7.5, CK = 7.0, DTB = 7.3, Badge = "b" },
-                            new { Sub = "Tiếng Anh", TX1 = 9.0, TX2 = 8.5, GK = 9.0, CK = 9.5, DTB = 9.1, Badge = "a" },
-                            new { Sub = "Vật lý",    TX1 = 7.5, TX2 = 8.0, GK = 7.0, CK = 7.5, DTB = 7.5, Badge = "b" },
-                            new { Sub = "Hóa học",   TX1 = 6.5, TX2 = 7.0, GK = 6.5, CK = 7.0, DTB = 6.8, Badge = "c" },
-                        };
-                    }
-                    @foreach (var g in myGrades)
-                    {
-                        <tr>
-                            <td><strong>@g.Sub</strong></td>
-                            <td>@g.TX1</td>
-                            <td>@g.TX2</td>
-                            <td>@g.GK</td>
-                            <td>@g.CK</td>
-                            <td><span class="grade-badge grade-badge--@g.Badge">@g.DTB</span></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+      </div>
     </div>
-
-    <div class="dcard">
-        <div class="dcard__head">
-            <div class="dcard__title"><i class="bi bi-bell-fill" style="color:#d97706"></i> Thông báo</div>
-            <a href="/Dashboard/Notifications" class="dcard__action">Tất cả</a>
-        </div>
-        <div class="dcard__body">
-            <div class="activity-list">
-                @{
-                    var notifs = new[] {
-                        new { Icon = "bi-journal-plus",       Color = "#7c3aed", Text = "Thầy Lê vừa nhập điểm Cuối kỳ môn Vật lý",        Time = "30 phút trước" },
-                        new { Icon = "bi-calendar-x",        Color = "#dc2626", Text = "Lịch thi lại Hóa học: Thứ 6, 07/06/2026",          Time = "2 giờ trước"   },
-                        new { Icon = "bi-megaphone-fill",    Color = "#2563eb", Text = "Thông báo nghỉ học ngày 01/06 (Quốc tế thiếu nhi)", Time = "Hôm qua"       },
-                        new { Icon = "bi-patch-check-fill",  Color = "#059669", Text = "Kết quả học kỳ 1 đã được xác nhận",                Time = "3 ngày trước"  },
-                    };
-                }
-                @foreach (var n in notifs)
-                {
-                    <div class="activity-item">
-                        <div class="activity-avatar" style="background:@n.Color;font-size:.9rem">
-                            <i class="bi @n.Icon"></i>
-                        </div>
-                        <div>
-                            <div class="activity-text">@n.Text</div>
-                            <div class="activity-time"><i class="bi bi-clock"></i> @n.Time</div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
+  </div>
 </div>

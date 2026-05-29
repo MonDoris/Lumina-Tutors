@@ -1,0 +1,402 @@
+@using LuminaTutors.Application.DTOs.QuestionBank
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Import câu hỏi";
+    var jobs     = ViewBag.Jobs     as List<ImportJobDto>     ?? new();
+    var subjects = ViewBag.Subjects as List<SubjectOptionDto> ?? new();
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-cloud-download-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Import câu hỏi
+        </h1>
+        <p class="lt-page-subtitle">Thu thập câu hỏi từ URL, Excel hoặc Word</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<!-- ── Tabs ── -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body" style="padding:0">
+        <div style="display:flex;border-bottom:1px solid var(--lt-border)">
+            <button class="import-tab active" onclick="switchImportTab('url',this)">
+                <i class="bi bi-globe2"></i> Từ URL
+            </button>
+            <button class="import-tab" onclick="switchImportTab('excel',this)">
+                <i class="bi bi-file-earmark-excel-fill" style="color:#22c55e"></i> Excel (.xlsx)
+            </button>
+            <button class="import-tab" onclick="switchImportTab('word',this)">
+                <i class="bi bi-file-earmark-word-fill" style="color:#3b82f6"></i> Word (.docx)
+            </button>
+            <button class="import-tab" onclick="switchImportTab('pdf',this)">
+                <i class="bi bi-file-earmark-pdf-fill" style="color:#ef4444"></i> PDF
+            </button>
+        </div>
+
+        <!-- URL tab -->
+        <div id="tab-url" class="import-panel" style="padding:1.5rem">
+            <p style="font-size:.83rem;color:var(--lt-text-muted);margin-bottom:1rem;line-height:1.6">
+                Nhập URL trang web chứa câu hỏi (forum, Google Forms, trang ôn thi, ...).
+                Hệ thống sẽ tự động thu thập và phân tích nội dung.
+            </p>
+            <form asp-action="ImportFromUrl" method="post" id="url-form">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="lt-label lt-required">URL trang web</label>
+                        <input type="url" name="SourceUrl" id="import-url" class="lt-input"
+                               placeholder="https://..." required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="lt-label lt-required">Môn học</label>
+                        <select name="TargetSubjectId" class="lt-input" required>
+                            <option value="">-- Chọn môn học --</option>
+                            @foreach (var s in subjects) { <option value="@s.Id">@s.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="lt-label">Độ khó mặc định</label>
+                        <select name="DefaultDifficulty" class="lt-input">
+                            <option value="1">Dễ</option>
+                            <option value="2" selected>Trung bình</option>
+                            <option value="3">Khó</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Preview area -->
+                <div id="preview-area" style="display:none;margin-top:1rem">
+                    <div style="border:1px solid var(--lt-border);border-radius:8px;padding:1rem;
+                                background:var(--lt-bg-subtle);max-height:300px;overflow-y:auto">
+                        <div style="font-size:.8rem;font-weight:600;margin-bottom:.5rem;color:var(--lt-navy)">
+                            Xem trước <span id="preview-count">0</span> câu hỏi đầu tiên:
+                        </div>
+                        <div id="preview-list"></div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:1rem">
+                    <button type="button" onclick="previewUrl()" class="lt-btn lt-btn--outline" id="preview-btn">
+                        <i class="bi bi-eye-fill"></i> Xem trước
+                    </button>
+                    <button type="submit" class="lt-btn lt-btn--primary" id="import-url-btn">
+                        <i class="bi bi-cloud-download-fill"></i> Import ngay
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Excel tab -->
+        <div id="tab-excel" class="import-panel" style="display:none;padding:1.5rem">
+            <p style="font-size:.83rem;color:var(--lt-text-muted);margin-bottom:1rem;line-height:1.6">
+                Upload file Excel (.xlsx). Mỗi hàng là một câu hỏi.
+                Cột: <strong>A</strong> = Nội dung, <strong>B</strong> = ĐA đúng,
+                <strong>C</strong> = ĐA A, <strong>D</strong> = ĐA B, <strong>E</strong> = ĐA C, <strong>F</strong> = ĐA D
+            </p>
+            <form asp-action="ImportExcel" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="lt-label lt-required">Môn học</label>
+                        <select name="subjectId" class="lt-input" required>
+                            <option value="">-- Chọn môn học --</option>
+                            @foreach (var s in subjects) { <option value="@s.Id">@s.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="lt-label lt-required">File Excel (.xlsx)</label>
+                        <input type="file" name="file" class="lt-input" accept=".xlsx" required>
+                    </div>
+                </div>
+                <div class="lt-mt-4">
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-file-earmark-excel-fill"></i> Import từ Excel
+                    </button>
+                </div>
+            </form>
+
+            <div class="lt-mt-4" style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);
+                                          border-radius:8px;padding:1rem">
+                <div style="font-size:.8rem;font-weight:700;margin-bottom:.5rem;color:#16a34a">
+                    <i class="bi bi-table"></i> Định dạng cột Excel
+                </div>
+                <table style="font-size:.76rem;border-collapse:collapse;width:100%">
+                    <thead>
+                        <tr style="border-bottom:1px solid rgba(34,197,94,.2)">
+                            <th style="padding:3px 8px;text-align:left">A</th>
+                            <th style="padding:3px 8px;text-align:left">B</th>
+                            <th style="padding:3px 8px;text-align:left">C</th>
+                            <th style="padding:3px 8px;text-align:left">D</th>
+                            <th style="padding:3px 8px;text-align:left">E</th>
+                            <th style="padding:3px 8px;text-align:left">F</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding:3px 8px;color:var(--lt-text-muted)">Nội dung câu hỏi</td>
+                            <td style="padding:3px 8px;color:var(--lt-text-muted)">Đáp án đúng (A/B/C/D)</td>
+                            <td style="padding:3px 8px;color:var(--lt-text-muted)">Lựa chọn A</td>
+                            <td style="padding:3px 8px;color:var(--lt-text-muted)">Lựa chọn B</td>
+                            <td style="padding:3px 8px;color:var(--lt-text-muted)">Lựa chọn C</td>
+                            <td style="padding:3px 8px;color:var(--lt-text-muted)">Lựa chọn D</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Word tab -->
+        <div id="tab-word" class="import-panel" style="display:none;padding:1.5rem">
+            <p style="font-size:.83rem;color:var(--lt-text-muted);margin-bottom:1rem;line-height:1.6">
+                Upload file Word (.docx) theo định dạng chuẩn.
+                Hệ thống nhận dạng câu hỏi theo pattern <code>Câu X:</code> và các đáp án <code>A.</code> / <code>B.</code> / ...
+            </p>
+            <form asp-action="ImportWord" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="lt-label lt-required">Môn học</label>
+                        <select name="subjectId" class="lt-input" required>
+                            <option value="">-- Chọn môn học --</option>
+                            @foreach (var s in subjects) { <option value="@s.Id">@s.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="lt-label lt-required">File Word (.docx)</label>
+                        <input type="file" name="file" class="lt-input" accept=".docx" required>
+                    </div>
+                </div>
+                <div class="lt-mt-4">
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-file-earmark-word-fill"></i> Import từ Word
+                    </button>
+                </div>
+            </form>
+
+            <div class="lt-mt-4" style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);
+                                          border-radius:8px;padding:1rem">
+                <div style="font-size:.8rem;font-weight:700;margin-bottom:.5rem;color:#2563eb">
+                    <i class="bi bi-file-text"></i> Định dạng Word chuẩn
+                </div>
+                <pre style="font-size:.76rem;color:var(--lt-text-muted);white-space:pre-wrap;font-family:monospace">Câu 1: Phát biểu nào sau đây đúng với định luật Ohm?
+A. U = I/R
+B. I = U/R
+C. R = U × I
+Đáp án: B
+
+Câu 2: ...
+</pre>
+            </div>
+        </div>
+
+        <!-- PDF tab -->
+        <div id="tab-pdf" class="import-panel" style="display:none;padding:1.5rem">
+            <p style="font-size:.83rem;color:var(--lt-text-muted);margin-bottom:1rem;line-height:1.6">
+                Upload file PDF chứa câu hỏi. Hệ thống tự extract text và nhận dạng câu hỏi theo pattern
+                <code>Câu X:</code> và đáp án <code>A.</code> / <code>B.</code> / ...
+                <br><strong style="color:var(--lt-danger)">⚠ Lưu ý:</strong> PDF phải chứa text (không phải ảnh scan).
+            </p>
+            <form asp-action="ImportPdf" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="lt-label lt-required">Môn học</label>
+                        <select name="subjectId" class="lt-input" required>
+                            <option value="">-- Chọn môn học --</option>
+                            @foreach (var s in subjects) { <option value="@s.Id">@s.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="lt-label lt-required">File PDF</label>
+                        <input type="file" name="file" class="lt-input" accept=".pdf" required>
+                    </div>
+                </div>
+                <div class="lt-mt-4">
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-file-earmark-pdf-fill"></i> Import từ PDF
+                    </button>
+                </div>
+            </form>
+            <div class="lt-mt-4" style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);
+                                          border-radius:8px;padding:1rem">
+                <div style="font-size:.8rem;font-weight:700;margin-bottom:.5rem;color:#dc2626">
+                    <i class="bi bi-file-earmark-pdf-fill"></i> Định dạng PDF chuẩn
+                </div>
+                <pre style="font-size:.76rem;color:var(--lt-text-muted);white-space:pre-wrap;font-family:monospace">Câu 1: Phát biểu nào sau đây đúng với định luật Ohm?
+A. U = I/R
+B. I = U/R
+C. R = U × I
+Đáp án: B
+
+Câu 2: ...</pre>
+                <div style="font-size:.75rem;color:var(--lt-text-muted);margin-top:.6rem">
+                    💡 PDF tạo từ Word/Google Docs hoạt động tốt nhất. PDF scan (ảnh) sẽ không extract được text.
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Import History ── -->
+@if (jobs.Count > 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__header">
+            <h3 class="lt-card__title">Lịch sử import</h3>
+        </div>
+        <div class="lt-card__body" style="padding:0">
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th>URL nguồn</th>
+                        <th style="width:80px">Môn</th>
+                        <th style="width:80px">Trạng thái</th>
+                        <th style="width:70px;text-align:center">Đã import</th>
+                        <th style="width:110px">Thời gian</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var j in jobs)
+                    {
+                        <tr>
+                            <td>
+                                <a href="@j.SourceUrl" target="_blank" rel="noopener"
+                                   style="font-size:.8rem;color:var(--lt-gold)">
+                                    @(j.SourceUrl.Length > 60 ? j.SourceUrl[..60] + "…" : j.SourceUrl)
+                                    <i class="bi bi-box-arrow-up-right" style="font-size:.7rem"></i>
+                                </a>
+                                @if (!string.IsNullOrEmpty(j.ErrorMessage))
+                                {
+                                    <div style="font-size:.72rem;color:var(--lt-danger);margin-top:2px">@j.ErrorMessage</div>
+                                }
+                            </td>
+                            <td style="font-size:.8rem">@j.SubjectName</td>
+                            <td>
+                                @{
+                                    var (statusLabel, statusColor) = j.Status switch {
+                                        ImportJobStatus.Completed  => ("Hoàn thành", "#22c55e"),
+                                        ImportJobStatus.Failed     => ("Thất bại",   "var(--lt-danger)"),
+                                        ImportJobStatus.Processing => ("Đang xử lý", "var(--lt-gold)"),
+                                        _                          => ("Chờ",         "var(--lt-text-muted)")
+                                    };
+                                }
+                                <span style="font-size:.76rem;font-weight:600;color:@statusColor">@statusLabel</span>
+                            </td>
+                            <td style="text-align:center;font-size:.82rem">@j.ImportedCount</td>
+                            <td style="font-size:.75rem;color:var(--lt-text-muted)">
+                                @j.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Styles {
+    <style>
+        .import-tab {
+            padding: .7rem 1.25rem;
+            border: none;
+            background: none;
+            font-size: .83rem;
+            font-weight: 600;
+            color: var(--lt-text-muted);
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: .15s;
+        }
+        .import-tab.active {
+            color: var(--lt-navy);
+            border-bottom-color: var(--lt-gold);
+        }
+        .import-tab:hover:not(.active) { color: var(--lt-navy); }
+    </style>
+}
+
+@section Scripts {
+<script>
+function switchImportTab(name, btn) {
+    document.querySelectorAll('.import-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.import-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).style.display = 'block';
+    btn.classList.add('active');
+}
+
+async function previewUrl() {
+    const url       = document.getElementById('import-url').value.trim();
+    const subjectId = document.querySelector('[name="TargetSubjectId"]').value;
+    const difficulty= document.querySelector('[name="DefaultDifficulty"]').value;
+
+    if (!url) { alert('Vui lòng nhập URL'); return; }
+
+    const btn = document.getElementById('preview-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang phân tích...';
+
+    try {
+        const fd = new FormData();
+        fd.append('SourceUrl', url);
+        fd.append('TargetSubjectId', subjectId);
+        fd.append('DefaultDifficulty', difficulty);
+
+        const token = document.querySelector('[name=__RequestVerificationToken]')?.value ?? '';
+        const resp  = await fetch('@Url.Action("PreviewUrl","QuestionBank")', {
+            method: 'POST',
+            headers: { 'RequestVerificationToken': token },
+            body: fd
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json();
+            alert('Lỗi: ' + (err.error ?? 'Không thể phân tích URL'));
+            return;
+        }
+
+        const data = await resp.json();
+        const area = document.getElementById('preview-area');
+        const list = document.getElementById('preview-list');
+        document.getElementById('preview-count').textContent = data.parsedCount;
+        list.innerHTML = '';
+
+        data.preview?.forEach((q, i) => {
+            const div = document.createElement('div');
+            div.style.cssText = 'margin-bottom:.6rem;padding:.6rem;background:#fff;border-radius:6px;border:1px solid var(--lt-border)';
+            div.innerHTML = `
+              <div style="font-size:.8rem;font-weight:600;color:var(--lt-navy);margin-bottom:3px">
+                  Câu ${i+1}: ${q.questionText?.slice(0,120) ?? ''}${(q.questionText?.length > 120 ? '...' : '')}
+              </div>
+              ${(q.options ?? []).map(o => `
+                <div style="font-size:.75rem;padding:1px 0;color:${o.isCorrect ? '#16a34a' : 'var(--lt-text-muted)'}">
+                    ${o.optionLabel}. ${o.optionText} ${o.isCorrect ? '✓' : ''}
+                </div>`).join('')}
+            `;
+            list.append(div);
+        });
+
+        area.style.display = 'block';
+    } catch(e) {
+        alert('Lỗi kết nối: ' + e.message);
+    } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-eye-fill"></i> Xem trước';
+    }
+}
+</script>
+}

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Serilog;
 using LuminaTutors.Application.Extensions;
 using LuminaTutors.Infrastructure.Extensions;
+using LuminaTutors.Web.Hubs;
 
 // ── Bootstrap Serilog ─────────────────────────────────────────────────────────
 Log.Logger = new LoggerConfiguration()
@@ -66,6 +67,12 @@ try
     builder.Services.AddMemoryCache();
     builder.Services.AddHttpContextAccessor();
 
+    // ── SignalR (Online Classroom real-time) ──────────────────────────────────
+    builder.Services.AddSignalR();
+
+    // ── HttpClient (URL scraping for Question Bank import) ────────────────────
+    builder.Services.AddHttpClient();
+
     var app = builder.Build();
 
     // ── Dev Seeder ────────────────────────────────────────────────────────────
@@ -101,6 +108,9 @@ try
     app.MapControllerRoute(
         name: "default",
         pattern: "{controller=Home}/{action=Index}/{id?}");
+
+    // ── SignalR Hub Route ─────────────────────────────────────────────────────
+    app.MapHub<OnlineClassHub>("/hubs/online-class");
 
     Log.Information("🌟 Lumina Tutors starting on {Environment}", app.Environment.EnvironmentName);
     app.Run();

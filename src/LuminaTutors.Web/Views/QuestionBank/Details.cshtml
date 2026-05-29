@@ -1,0 +1,190 @@
+@using LuminaTutors.Application.DTOs.QuestionBank
+@using LuminaTutors.Domain.Enums
+@model QuestionDto
+@{
+    ViewData["Title"] = "Chi tiết câu hỏi";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-question-circle-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Chi tiết câu hỏi
+        </h1>
+    </div>
+    <div style="display:flex;gap:8px">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="lt-btn lt-btn--outline">
+            <i class="bi bi-pencil-fill"></i> Chỉnh sửa
+        </a>
+        <a asp-action="Index" class="lt-btn lt-btn--outline">
+            <i class="bi bi-arrow-left"></i> Danh sách
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="lt-card lt-mb-4">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">Nội dung câu hỏi</h3>
+                <div style="display:flex;gap:6px">
+                    @{
+                        var typeLabel = Model.QuestionType switch {
+                            QuestionType.MultipleChoice => "Trắc nghiệm",
+                            QuestionType.TrueFalse      => "Đúng/Sai",
+                            QuestionType.ShortAnswer      => "Điền chỗ trống",
+                            QuestionType.Essay          => "Tự luận",
+                            _                           => Model.QuestionType.ToString()
+                        };
+                        var diffLabel = Model.Difficulty switch {
+                            DifficultyLevel.Easy   => "Dễ",
+                            DifficultyLevel.Medium => "Trung bình",
+                            DifficultyLevel.Hard   => "Khó",
+                            _                      => Model.Difficulty.ToString()
+                        };
+                        var diffColor = Model.Difficulty switch {
+                            DifficultyLevel.Easy   => "#22c55e",
+                            DifficultyLevel.Medium => "var(--lt-gold)",
+                            DifficultyLevel.Hard   => "var(--lt-danger)",
+                            _                      => "var(--lt-text-muted)"
+                        };
+                    }
+                    <span class="lt-badge" style="border:none;background:rgba(59,130,246,.12);font-size:.75rem">@typeLabel</span>
+                    <span class="lt-badge" style="border:none;background:var(--lt-bg-subtle);color:@diffColor;font-size:.75rem">@diffLabel</span>
+                    @if (Model.IsApproved)
+                    {
+                        <span class="lt-badge lt-badge--success" style="font-size:.75rem">
+                            <i class="bi bi-check-circle-fill"></i> Đã duyệt
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="lt-badge" style="background:rgba(201,169,110,.12);color:var(--lt-gold);border:none;font-size:.75rem">
+                            Chờ duyệt
+                        </span>
+                    }
+                </div>
+            </div>
+            <div class="lt-card__body">
+                <div style="font-size:.95rem;font-weight:500;line-height:1.6;margin-bottom:1.25rem;color:var(--lt-navy)">
+                    @Model.QuestionText
+                </div>
+
+                @if (Model.Options.Count > 0)
+                {
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                        @foreach (var opt in Model.Options)
+                        {
+                            var isCorrect = opt.IsCorrect;
+                            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;
+                                        border-radius:8px;border:1px solid @(isCorrect ? "rgba(22,163,74,.3)" : "var(--lt-border)");
+                                        background:@(isCorrect ? "rgba(22,163,74,.06)" : "var(--lt-bg-subtle)")">
+                                <span style="width:26px;height:26px;border-radius:50%;
+                                             background:@(isCorrect ? "#16a34a" : "var(--lt-border)");
+                                             display:flex;align-items:center;justify-content:center;
+                                             font-size:.75rem;font-weight:700;color:@(isCorrect ? "#fff" : "var(--lt-text-muted)");
+                                             flex-shrink:0">
+                                    @opt.OptionLabel
+                                </span>
+                                <span style="flex:1;font-size:.86rem;color:@(isCorrect ? "var(--lt-navy)" : "var(--lt-text-muted)")">
+                                    @opt.OptionText
+                                </span>
+                                @if (isCorrect)
+                                {
+                                    <i class="bi bi-check-circle-fill" style="color:#16a34a;font-size:.9rem"></i>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.CorrectAnswer))
+                {
+                    <div class="lt-mt-3" style="padding:10px 14px;background:rgba(22,163,74,.06);
+                                                border-left:3px solid #16a34a;border-radius:0 6px 6px 0">
+                        <div style="font-size:.76rem;font-weight:700;color:#16a34a;margin-bottom:2px">ĐÁP ÁN ĐÚNG</div>
+                        <div style="font-size:.85rem">@Model.CorrectAnswer</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.ExplanationText))
+                {
+                    <div class="lt-mt-3" style="padding:10px 14px;background:rgba(59,130,246,.06);
+                                                border-left:3px solid #3b82f6;border-radius:0 6px 6px 0">
+                        <div style="font-size:.76rem;font-weight:700;color:#3b82f6;margin-bottom:2px">GIẢI THÍCH</div>
+                        <div style="font-size:.84rem;line-height:1.5">@Model.ExplanationText</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="lt-card">
+            <div class="lt-card__header"><h3 class="lt-card__title">Thông tin</h3></div>
+            <div class="lt-card__body">
+                <table style="font-size:.82rem;width:100%;border-collapse:collapse">
+                    <tr style="border-bottom:1px solid var(--lt-border)">
+                        <td style="padding:7px 0;color:var(--lt-text-muted);width:45%">Môn học</td>
+                        <td style="padding:7px 0;font-weight:600">@Model.SubjectName</td>
+                    </tr>
+                    @if (!string.IsNullOrEmpty(Model.ChapterTag))
+                    {
+                        <tr style="border-bottom:1px solid var(--lt-border)">
+                            <td style="padding:7px 0;color:var(--lt-text-muted)">Chương</td>
+                            <td style="padding:7px 0">@Model.ChapterTag</td>
+                        </tr>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Tags))
+                    {
+                        <tr style="border-bottom:1px solid var(--lt-border)">
+                            <td style="padding:7px 0;color:var(--lt-text-muted)">Tags</td>
+                            <td style="padding:7px 0">@Model.Tags</td>
+                        </tr>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.SourceUrl))
+                    {
+                        <tr style="border-bottom:1px solid var(--lt-border)">
+                            <td style="padding:7px 0;color:var(--lt-text-muted)">Nguồn</td>
+                            <td style="padding:7px 0">
+                                <a href="@Model.SourceUrl" target="_blank" rel="noopener"
+                                   style="color:var(--lt-gold);font-size:.78rem">
+                                    Xem nguồn <i class="bi bi-box-arrow-up-right" style="font-size:.65rem"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    <tr style="border-bottom:1px solid var(--lt-border)">
+                        <td style="padding:7px 0;color:var(--lt-text-muted)">Tạo bởi</td>
+                        <td style="padding:7px 0">@Model.CreatedByTeacherName</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:7px 0;color:var(--lt-text-muted)">Ngày tạo</td>
+                        <td style="padding:7px 0">@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        @if (!Model.IsApproved && User.IsInRole("ADMIN"))
+        {
+            <form asp-action="Approve" asp-route-id="@Model.Id" method="post" class="lt-mt-3">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="lt-btn lt-btn--primary"
+                        style="width:100%;justify-content:center;
+                               background:rgba(22,163,74,.9);border-color:transparent">
+                    <i class="bi bi-check-circle-fill"></i> Duyệt câu hỏi
+                </button>
+            </form>
+        }
+
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="lt-mt-2">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="lt-btn lt-btn--outline lt-btn--sm"
+                    style="width:100%;justify-content:center;border-color:var(--lt-danger);color:var(--lt-danger)"
+                    onclick="return confirm('Xóa câu hỏi này khỏi ngân hàng?')">
+                <i class="bi bi-trash3-fill"></i> Xóa câu hỏi
+            </button>
+        </form>
+    </div>
+</div>

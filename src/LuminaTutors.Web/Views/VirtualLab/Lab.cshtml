@@ -10,14 +10,23 @@
         "chemistry" => "Hóa học",
         "physics"   => "Vật lý",
         "biology"   => "Sinh học",
+        "math"      => "Toán học",
         _           => subject
     };
     string sceneLabel = sceneType switch
     {
-        "titration" => "Chuẩn độ axit-bazơ",
-        "pendulum"  => "Con lắc đơn",
-        "cell"      => "Quan sát tế bào",
-        _           => sceneType
+        "titration"      => "Chuẩn độ axit-bazơ",
+        "electrolysis"   => "Điện phân nước",
+        "distillation"   => "Chưng cất đơn giản",
+        "pendulum"       => "Con lắc đơn",
+        "spring"         => "Con lắc lò xo",
+        "optics"         => "Quang học — khúc xạ",
+        "cell"           => "Quan sát tế bào",
+        "dna"            => "Cấu trúc DNA",
+        "photosynthesis" => "Quang hợp",
+        "polyhedron"     => "Đa diện đều",
+        "vectors"        => "Vector 3D",
+        _                => sceneType
     };
 }
 <!DOCTYPE html>
@@ -56,9 +65,10 @@
             --navy-900: #0a1628;
             --gold: #c9a96e;
             --gold-light: #e8c98a;
-            --panel-bg: rgba(10, 16, 30, 0.97);
-            --panel-border: rgba(201, 169, 110, 0.18);
-            --panel-border-subtle: rgba(255, 255, 255, 0.06);
+            /* Instrument panel: very dark teal — like scientific readout displays */
+            --panel-bg: rgba(6, 18, 22, 0.97);
+            --panel-border: rgba(56, 189, 248, 0.2);
+            --panel-border-subtle: rgba(56, 189, 248, 0.08);
             --success: #22c55e;
             --danger: #ef4444;
             --info: #38bdf8;
@@ -103,7 +113,7 @@
         }
         .ui-sep { width: 1px; height: 20px; background: var(--panel-border-subtle); flex-shrink: 0; }
         .ui-session-name { font-size: .87rem; font-weight: 600; color: #f1f5f9; line-height: 1.2; }
-        .ui-session-meta { font-size: .72rem; color: #475569; margin-top: 2px; line-height: 1; }
+        .ui-session-meta { font-size: .72rem; color: #4a7d8a; margin-top: 2px; line-height: 1; }
         .ui-code {
             margin-left: auto;
             background: rgba(201,169,110,.09);
@@ -161,14 +171,14 @@
             border-radius: 8px;
             border: 1px solid transparent;
             background: transparent;
-            color: #64748b;
+            color: #2d7a8a;
             font-size: .78rem; font-weight: 500;
             cursor: pointer;
             transition: all .15s;
             white-space: nowrap;
         }
-        .ctrl-btn:hover { background: rgba(255,255,255,.06); color: #e2e8f0; border-color: var(--panel-border-subtle); }
-        .ctrl-btn.active { background: rgba(201,169,110,.1); color: var(--gold-light); border-color: rgba(201,169,110,.28); }
+        .ctrl-btn:hover { background: rgba(56,189,248,.07); color: #a8d8e8; border-color: var(--panel-border-subtle); }
+        .ctrl-btn.active { background: rgba(56,189,248,.14); color: #38bdf8; border-color: rgba(56,189,248,.3); }
         .ctrl-btn.laser-active { background: rgba(239,68,68,.1); color: #fca5a5; border-color: rgba(239,68,68,.35); }
         .ctrl-sep { width: 1px; height: 18px; background: var(--panel-border-subtle); margin: 0 2px; }
 
@@ -185,8 +195,8 @@
         }
         .info-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
         .info-row:last-child { margin-bottom: 0; }
-        .info-label { color: #334155; }
-        .info-value { color: #94a3b8; font-weight: 600; }
+        .info-label { color: #1a4550; }
+        .info-value { color: #5ba8bc; font-weight: 600; }
 
         /* Close session button (host only) */
         #btn-close-session { color: #f87171; }
@@ -247,15 +257,15 @@
             display: none;
         }
         #step-overlay.show { display: block; }
-        .step-title { font-weight: 700; color: var(--gold-light); margin-bottom: 6px; font-size: .8rem; }
-        .step-desc { color: #475569; line-height: 1.55; }
+        .step-title { font-weight: 700; color: #5ba8bc; margin-bottom: 6px; font-size: .8rem; }
+        .step-desc { color: #2d5e68; line-height: 1.55; }
         .step-progress { margin-top: 10px; }
         .step-bar {
             height: 2px; border-radius: 99px;
             background: rgba(255,255,255,.07); overflow: hidden;
         }
         .step-bar-fill {
-            height: 100%; background: var(--gold);
+            height: 100%; background: #38bdf8;
             border-radius: 99px;
             transition: width .6s cubic-bezier(.4,0,.2,1);
         }
@@ -296,22 +306,22 @@
         }
         .guide-header {
             display: flex; align-items: center; gap: 6px;
-            font-weight: 700; font-size: .72rem;
-            color: #334155; margin-bottom: 9px;
-            text-transform: uppercase; letter-spacing: .06em;
+            font-weight: 700; font-size: .7rem;
+            color: #2d7a8a; margin-bottom: 9px;
+            text-transform: uppercase; letter-spacing: .07em;
         }
         .guide-item {
             display: flex; align-items: flex-start; gap: 8px;
-            margin-bottom: 7px; color: #334155; line-height: 1.45;
+            margin-bottom: 7px; color: #2d5e68; line-height: 1.45;
         }
         .guide-item:last-child { margin-bottom: 0; }
         .guide-icon {
             flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px;
-            background: rgba(255,255,255,.03); border: 1px solid var(--panel-border-subtle);
+            background: rgba(56,189,248,.06); border: 1px solid var(--panel-border-subtle);
             display: flex; align-items: center; justify-content: center;
-            font-size: .63rem; color: #475569;
+            font-size: .63rem; color: #2d7a8a;
         }
-        .guide-text strong { color: #64748b; display: block; font-size: .74rem; margin-bottom: 1px; }
+        .guide-text strong { color: #5ba8bc; display: block; font-size: .74rem; margin-bottom: 1px; }
 
         /* ── Live data panel ────────────────────────────────────────────────── */
         #data-panel {
@@ -328,9 +338,9 @@
         #data-panel.show { display: block; }
         .dp-header {
             display: flex; align-items: center; gap: 6px;
-            font-weight: 700; font-size: .72rem;
-            color: #334155; margin-bottom: 10px;
-            text-transform: uppercase; letter-spacing: .06em;
+            font-weight: 700; font-size: .7rem;
+            color: #2d7a8a; margin-bottom: 10px;
+            text-transform: uppercase; letter-spacing: .07em;
         }
         .dp-row {
             display: flex; justify-content: space-between; align-items: baseline;
@@ -338,12 +348,12 @@
             border-bottom: 1px solid var(--panel-border-subtle);
         }
         .dp-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .dp-label { color: #334155; font-size: .71rem; }
+        .dp-label { color: #2d5e68; font-size: .7rem; }
         .dp-value {
-            color: #e2e8f0; font-weight: 700; font-size: .9rem;
+            color: #a8d8e8; font-weight: 700; font-size: .9rem;
             font-variant-numeric: tabular-nums;
         }
-        .dp-unit { color: #334155; font-size: .66rem; margin-left: 2px; }
+        .dp-unit { color: #2d7a8a; font-size: .65rem; margin-left: 2px; }
 
         /* Drip rate control buttons */
         .drip-btn {
@@ -563,7 +573,51 @@
                     <div class="guide-text"><strong>Bảng số liệu</strong>Cập nhật thời gian thực</div>
                 </div>
             }
-            else
+            else if (sceneType == "electrolysis")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Công tắc</strong>Click để đóng/mở mạch điện</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Bảng số liệu</strong>Theo dõi thời gian & khí thoát ra</div>
+                </div>
+            }
+            else if (sceneType == "distillation")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Ngọn lửa</strong>Click để bật/tắt nguồn nhiệt</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-thermometer-half"></i></div>
+                    <div class="guide-text"><strong>Nhiệt kế</strong>Theo dõi nhiệt độ trong bảng số liệu</div>
+                </div>
+            }
+            else if (sceneType == "spring")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-hand-index-fill"></i></div>
+                    <div class="guide-text"><strong>Quả nặng</strong>Kéo lên/xuống để đặt biên độ ban đầu</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-play-fill"></i></div>
+                    <div class="guide-text"><strong>Bắt đầu</strong>Thả vật — lò xo dao động điều hòa</div>
+                </div>
+            }
+            else if (sceneType == "optics")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Lăng kính</strong>Click & kéo để xoay lăng kính</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-rainbow"></i></div>
+                    <div class="guide-text"><strong>Cầu vồng</strong>Quan sát tán sắc ánh sáng trắng</div>
+                </div>
+            }
+            else if (sceneType == "cell")
             {
                 <div class="guide-item">
                     <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
@@ -576,6 +630,61 @@
                 <div class="guide-item">
                     <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
                     <div class="guide-text"><strong>Không bào / Lạp lục</strong>Click để xem chi tiết</div>
+                </div>
+            }
+            else if (sceneType == "dna")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="guide-text"><strong>Xoắn kép</strong>Xoay tự động — quan sát cấu trúc 3D</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Cặp base</strong>Màu sắc: đỏ/vàng = A-T, xanh = G-C</div>
+                </div>
+            }
+            else if (sceneType == "photosynthesis")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-brightness-high-fill"></i></div>
+                    <div class="guide-text"><strong>Ánh sáng</strong>Tia sáng vàng → lạp lục xanh trong lá</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Bảng số liệu</strong>CO₂ hấp thụ & O₂ thải ra theo thời gian</div>
+                </div>
+            }
+            else if (sceneType == "polyhedron")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Click khối</strong>Chuyển sang đa diện tiếp theo</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="guide-text"><strong>Xoay tự do</strong>Kéo để xem từ mọi góc độ</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Euler</strong>V − E + F = 2 hiển thị trong bảng số liệu</div>
+                </div>
+            }
+            else if (sceneType == "vectors")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="guide-text"><strong>Vector</strong>Đỏ = u⃗, Xanh lá = v⃗, Vàng = u⃗×v⃗</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Bảng số liệu</strong>Góc giữa hai vector, tích vô hướng</div>
+                </div>
+            }
+            else
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Tương tác</strong>Click vào đối tượng 3D để khám phá</div>
                 </div>
             }
         </div>
@@ -706,8 +815,8 @@ renderer.toneMappingExposure = 1.1;
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0d1629);   // slightly lighter than before
-scene.fog        = new THREE.FogExp2(0x0d1629, 0.022);  // lighter fog
+scene.background = new THREE.Color(0x1a2a3d);   // medium blue-gray — well-lit lab
+scene.fog        = new THREE.FogExp2(0x1a2a3d, 0.012);  // gentle fog
 
 // ── Camera ────────────────────────────────────────────────────────────────────
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -726,14 +835,14 @@ controls.autoRotate       = false;
 controls.autoRotateSpeed  = 1.2;
 controls.update();
 
-// ── Lighting ──────────────────────────────────────────────────────────────────
-const ambient = new THREE.AmbientLight(0xffffff, 0.75);   // was 0.35
+// ── Lighting — bright, clinical lab atmosphere ────────────────────────────────
+const ambient = new THREE.AmbientLight(0xf0f4ff, 1.1);   // cool white ambient
 scene.add(ambient);
 
-const keyLight = new THREE.DirectionalLight(0xfff8e7, 1.8);  // was 1.2
+const keyLight = new THREE.DirectionalLight(0xfff8f0, 2.0);  // warm main key
 keyLight.position.set(5, 10, 6);
 keyLight.castShadow  = true;
-keyLight.shadow.mapSize.set(1024, 1024);   // lower shadow res = faster first frame
+keyLight.shadow.mapSize.set(1024, 1024);
 keyLight.shadow.camera.near = 0.5;
 keyLight.shadow.camera.far  = 40;
 keyLight.shadow.camera.left = keyLight.shadow.camera.bottom = -8;
@@ -741,19 +850,19 @@ keyLight.shadow.camera.right = keyLight.shadow.camera.top   =  8;
 keyLight.shadow.bias = -0.001;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x6090ff, 0.5);  // was 0.25
+const fillLight = new THREE.DirectionalLight(0xb8d4ff, 0.7);  // cool blue fill
 fillLight.position.set(-5, 3, -4);
 scene.add(fillLight);
 
-const rimLight = new THREE.PointLight(0xc9a96e, 1.2, 14);   // was 0.8
+const rimLight = new THREE.PointLight(0xc9a96e, 0.9, 16);   // warm gold rim
 rimLight.position.set(-3, 4, -5);
 scene.add(rimLight);
 
 // ── Materials ─────────────────────────────────────────────────────────────────
-const matFloor  = new THREE.MeshStandardMaterial({ color: 0x2a3f58, roughness: .85, metalness: .1 });  // lighter floor
-const matWall   = new THREE.MeshStandardMaterial({ color: 0x243050, roughness: .90, metalness: 0 });   // lighter walls
-const matBench  = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: .7, metalness: .15 });
-const matBenchT = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: .5, metalness: .2 });
+const matFloor  = new THREE.MeshStandardMaterial({ color: 0x3a5068, roughness: .8,  metalness: .05 }); // lighter floor
+const matWall   = new THREE.MeshStandardMaterial({ color: 0x4a6080, roughness: .88, metalness: 0   }); // lighter walls
+const matBench  = new THREE.MeshStandardMaterial({ color: 0x455a6e, roughness: .65, metalness: .18 }); // lighter bench
+const matBenchT = new THREE.MeshStandardMaterial({ color: 0x1e3248, roughness: .45, metalness: .22 }); // bench top
 const matMetal  = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: .3, metalness: .8 });
 const matGlass  = new THREE.MeshStandardMaterial({ color: 0x93c5fd, roughness: .05, metalness: 0, transparent: true, opacity: .35 });
 const matGold   = new THREE.MeshStandardMaterial({ color: 0xc9a96e, roughness: .2, metalness: .9 });
@@ -778,20 +887,21 @@ function buildRoom() {
 
     const ceiling = new THREE.Mesh(
         new THREE.PlaneGeometry(22, 22),
-        new THREE.MeshStandardMaterial({ color: 0x0f1629, roughness: 1 })
+        new THREE.MeshStandardMaterial({ color: 0x2a3a4e, roughness: 1 })
     );
     ceiling.rotation.x = Math.PI / 2;
     ceiling.position.y = 9;
     scene.add(ceiling);
 
+    // Fluorescent strips — bright clinical lab lighting
     for (let x = -4; x <= 4; x += 4) {
         const strip = new THREE.Mesh(
-            new THREE.BoxGeometry(0.2, 0.04, 3),
-            new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffeedd, emissiveIntensity: 1.5 })
+            new THREE.BoxGeometry(0.22, 0.05, 3.2),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xf0f8ff, emissiveIntensity: 2.5 })
         );
-        strip.position.set(x, 8.96, 0);
+        strip.position.set(x, 8.97, 0);
         scene.add(strip);
-        const stripLight = new THREE.PointLight(0xfff5e4, 0.5, 8);
+        const stripLight = new THREE.PointLight(0xf0f8ff, 1.2, 10);
         stripLight.position.set(x, 8.5, 0);
         scene.add(stripLight);
     }
@@ -1156,9 +1266,547 @@ function buildCellScene() {
     experimentData.cellAngle = 0;
 }
 
+// ─ CHEMISTRY: Electrolysis ───────────────────────────────────────────────────
+function buildElectrolysisScene() {
+    // Tank of water
+    const tankMat = matGlass.clone(); tankMat.opacity = .18;
+    const tank    = new THREE.Mesh(new THREE.BoxGeometry(1.2, .8, .8), tankMat);
+    tank.position.set(0, 1.34, -.1);
+    scene.add(tank);
+    const waterMat = new THREE.MeshStandardMaterial({ color: 0x60a5fa, transparent: true, opacity: .25, side: THREE.DoubleSide });
+    const water    = new THREE.Mesh(new THREE.BoxGeometry(1.16, .72, .76), waterMat);
+    water.position.set(0, 1.34, -.1);
+    scene.add(water);
+
+    // Two electrodes (carbon rods)
+    const elMat1 = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness:.3, metalness:.7 });
+    const elMat2 = elMat1.clone();
+    const rod1   = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.55,12), elMat1);
+    const rod2   = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.55,12), elMat2);
+    rod1.position.set(-.32, 1.38, -.1);
+    rod2.position.set( .32, 1.38, -.1);
+    rod1.castShadow = rod2.castShadow = true;
+    scene.add(rod1, rod2);
+    experimentData.cathode = rod1; experimentData.anode = rod2;
+
+    // Wires to battery
+    const wireMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness:.8 });
+    const wireMat2 = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness:.8 });
+    const wire1 = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.6,6), wireMat2);
+    wire1.position.set(-.32, 1.74, -.1); scene.add(wire1);
+    const wire2 = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.6,6), wireMat);
+    wire2.position.set( .32, 1.74, -.1); scene.add(wire2);
+
+    // Battery
+    const battery = new THREE.Mesh(new THREE.BoxGeometry(.5,.25,.25),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness:.4, metalness:.4 }));
+    battery.position.set(0, 2.08, -.1); scene.add(battery);
+    const battLabel = new THREE.Mesh(new THREE.BoxGeometry(.48,.23,.01),
+        new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness:.8 }));
+    battLabel.position.set(0, 2.08, .04); scene.add(battLabel);
+
+    // Switch (toggle)
+    const switchBase = new THREE.Mesh(new THREE.BoxGeometry(.15,.06,.08),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness:.4, metalness:.5 }));
+    switchBase.position.set(.7, 2.08, -.1); scene.add(switchBase);
+    const switchMat   = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness:.3, metalness:.7 });
+    const switchLever = new THREE.Mesh(new THREE.BoxGeometry(.035,.12,.035,4), switchMat);
+    switchLever.position.set(.7, 2.14, -.1); scene.add(switchLever);
+    experimentData.switchLever = switchLever;
+    experimentData.switchMat   = switchMat;
+
+    // Bubble pool (particles near electrodes)
+    const bubbles = [];
+    for (let i = 0; i < 24; i++) {
+        const bMat = new THREE.MeshStandardMaterial({
+            color: 0xbfdbfe, transparent: true, opacity: 0, roughness:.1
+        });
+        const b = new THREE.Mesh(new THREE.SphereGeometry(.012,6,6), bMat);
+        const side = (i < 12) ? -.32 : .32;
+        b.userData.side  = side;
+        b.userData.age   = Math.random();
+        b.userData.spd   = .004 + Math.random() * .006;
+        b.userData.rx    = (Math.random()-.5) * .06;
+        b.position.set(side + b.userData.rx, 1.0 + Math.random()*.4, -.1 + (Math.random()-.5)*.06);
+        scene.add(b);
+        bubbles.push({ mesh: b, mat: bMat });
+    }
+    experimentData.bubbles = bubbles;
+
+    // State
+    experimentData.powered     = false;
+    experimentData.powerTimer  = 0;
+    experimentData.type        = 'electrolysis';
+    experimentData.steps       = [
+        { title:'Chuẩn bị',         desc:'Đổ dung dịch H₂SO₄ loãng vào bình điện phân. Cắm hai điện cực carbon.' },
+        { title:'Đóng mạch điện',   desc:'Nhấn công tắc để kết nối nguồn điện một chiều (DC) 6–12V.' },
+        { title:'Phân ly nước',     desc:'2H₂O → 2H₂↑ (catod −) + O₂↑ (anod +). Bọt khí xuất hiện ở cả hai điện cực.' },
+        { title:'Thu khí',          desc:'Tỉ lệ thể tích H₂ : O₂ = 2:1 theo đúng tỉ lệ mol. Thu vào ống nghiệm úp ngược.' },
+        { title:'Nhận biết khí',    desc:'H₂ làm bùng cháy que diêm tàn; O₂ làm que đỏ rực bùng lại.' },
+        { title:'Tính hiệu suất',   desc:'Áp dụng định luật Faraday: m = (M × I × t) / (n × F).' },
+    ];
+}
+
+// ─ CHEMISTRY: Distillation ───────────────────────────────────────────────────
+function buildDistillationScene() {
+    // Round-bottom flask on tripod with alcohol mixture
+    const rbfMat = matGlass.clone(); rbfMat.opacity = .32;
+    const rbf    = new THREE.Mesh(new THREE.SphereGeometry(.22,24,16), rbfMat);
+    rbf.position.set(-.5, 1.34, 0);
+    scene.add(rbf);
+    const liquidMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, transparent:true, opacity:.5 });
+    const liquid    = new THREE.Mesh(new THREE.SphereGeometry(.17,16,12,[0,Math.PI*2,0,Math.PI*.6]), liquidMat);
+    liquid.position.copy(rbf.position);
+    scene.add(liquid);
+    experimentData.rbfLiquid = liquid; experimentData.rbfLiquidMat = liquidMat;
+
+    // Neck going up to condenser
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(.04,.06,.35,12), rbfMat.clone());
+    neck.position.set(-.32, 1.69, 0); neck.rotation.z = -.4; scene.add(neck);
+    // Condenser tube (slanted down)
+    const condMat = matGlass.clone(); condMat.opacity = .3;
+    const cond    = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.9,12), condMat);
+    cond.position.set(.1, 1.55, 0); cond.rotation.z = Math.PI/3.5; scene.add(cond);
+    // Water jacket around condenser
+    const jacketMat = matGlass.clone(); jacketMat.opacity = .13;
+    const jacket    = new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.9,16), jacketMat);
+    jacket.position.copy(cond.position); jacket.rotation.copy(cond.rotation); scene.add(jacket);
+    // Collection flask
+    const colMat = matGlass.clone(); colMat.opacity = .28;
+    const col    = new THREE.Mesh(new THREE.SphereGeometry(.14,20,14), colMat);
+    col.position.set(.55, 1.18, 0); scene.add(col);
+    const colNeck= new THREE.Mesh(new THREE.CylinderGeometry(.03,.05,.18,12), colMat.clone());
+    colNeck.position.set(.55, 1.37, 0); scene.add(colNeck);
+    // Collection liquid (grows over time)
+    const colLiqMat = new THREE.MeshStandardMaterial({ color: 0xf0f9ff, transparent:true, opacity:.4 });
+    const colLiq    = new THREE.Mesh(new THREE.SphereGeometry(.01,8,8), colLiqMat);
+    colLiq.position.set(.55, 1.13, 0); scene.add(colLiq);
+    experimentData.colLiq = colLiq; experimentData.colLiqMat = colLiqMat;
+
+    // Bunsen burner / hotplate under flask
+    const burnerMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness:.3, metalness:.6 });
+    const burner    = new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,.1,16), burnerMat);
+    burner.position.set(-.5, 1.0, 0); scene.add(burner);
+    // Flame
+    const flameMat = new THREE.MeshStandardMaterial({ color: 0xf97316, emissive:0xf97316, emissiveIntensity:.8, transparent:true, opacity:.7 });
+    const flame    = new THREE.Mesh(new THREE.ConeGeometry(.06,.14,12), flameMat);
+    flame.position.set(-.5, 1.12, 0);
+    scene.add(flame);
+    experimentData.flame = flame; experimentData.flameMat = flameMat;
+
+    // Thermometer in flask neck
+    const thermoBody = new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.4,8),
+        new THREE.MeshStandardMaterial({ color: 0x93c5fd, transparent:true, opacity:.6 }));
+    thermoBody.position.set(-.45, 1.76, 0); thermoBody.rotation.z = -.4; scene.add(thermoBody);
+    const thermoBulb = new THREE.Mesh(new THREE.SphereGeometry(.012,8,8),
+        new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+    thermoBulb.position.set(-.35, 1.53, 0); scene.add(thermoBulb);
+
+    // Tripod
+    [-1,0,1].forEach(d => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.3,6), matMetal);
+        leg.rotation.z = (d * .25);
+        leg.position.set(-.5 + d*.08, 0.85, d*.1); scene.add(leg);
+    });
+
+    experimentData.heating  = false;
+    experimentData.heatTime = 0;
+    experimentData.temp     = 20;
+    experimentData.type     = 'distillation';
+    experimentData.steps    = [
+        { title:'Lắp dụng cụ',   desc:'Lắp bình đáy tròn, ống sinh hàn, bình hứng. Kiểm tra kín khít.' },
+        { title:'Đổ hỗn hợp',   desc:'Đổ hỗn hợp ethanol-nước (thể tích ≤ 2/3 bình) vào bình đáy tròn.' },
+        { title:'Đun nóng',      desc:'Nhấn để bật ngọn lửa. Nhiệt độ tăng dần — chú ý nhiệt kế.' },
+        { title:'Thu cất',       desc:'Khi T ≈ 78°C, hơi ethanol ngưng tụ qua ống sinh hàn, nhỏ vào bình hứng.' },
+        { title:'Kết thúc',      desc:'Tắt đèn cồn khi nhiệt kế vượt 82°C. Tháo thu phần cất được.' },
+        { title:'Kiểm tra',      desc:'Thử lửa: ethanol thuần bốc cháy với ngọn lửa màu xanh nhạt.' },
+    ];
+}
+
+// ─ PHYSICS: Spring ───────────────────────────────────────────────────────────
+function buildSpringScene() {
+    // Ceiling mount
+    const mount = new THREE.Mesh(new THREE.BoxGeometry(.25,.06,.25), matMetal);
+    mount.position.set(0, 3.0, -.1); scene.add(mount);
+    const screw = new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.12,8), matMetal);
+    screw.position.set(0, 2.94, -.1); scene.add(screw);
+
+    // Spring (made from torus rings stacked)
+    const springCoils = [];
+    const springMat   = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness:.2, metalness:.9 });
+    const nCoils = 14;
+    const naturalLen = 1.2;
+    for (let i = 0; i < nCoils; i++) {
+        const coil = new THREE.Mesh(new THREE.TorusGeometry(.07, .012, 8, 24), springMat);
+        coil.rotation.x = Math.PI / 2;
+        coil.position.set(0, 2.88 - (i / (nCoils-1)) * naturalLen, -.1);
+        scene.add(coil);
+        springCoils.push(coil);
+    }
+    experimentData.springCoils   = springCoils;
+    experimentData.springNatural = naturalLen;
+    experimentData.springTopY    = 2.88;
+
+    // Mass block
+    const blockMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness:.3, metalness:.3 });
+    const block    = new THREE.Mesh(new THREE.BoxGeometry(.2,.15,.2), blockMat);
+    block.position.set(0, 2.88 - naturalLen - .075, -.1);
+    block.castShadow = true;
+    scene.add(block);
+    experimentData.block    = block;
+    experimentData.blockMat = blockMat;
+
+    // Hit sphere for drag
+    const springHit = new THREE.Mesh(
+        new THREE.SphereGeometry(.2, 8, 8),
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    springHit.position.copy(block.position);
+    scene.add(springHit);
+    experimentData.springHit    = springHit;
+    experimentData.springDragY  = 0;
+    experimentData.springDragOn = false;
+
+    // Reference ruler on side
+    const ruler = new THREE.Mesh(new THREE.BoxGeometry(.03, naturalLen * 1.6, .02),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+    ruler.position.set(.28, 2.88 - naturalLen * .8, -.1); scene.add(ruler);
+
+    // State
+    const k = 12; // N/m spring constant
+    const m = .5;  // kg mass
+    experimentData.springK      = k;
+    experimentData.springM      = m;
+    experimentData.springDisp   = -0.2; // initial displacement (stretched)
+    experimentData.springVel    = 0;
+    experimentData.springDamping= 0.998;
+    experimentData.type         = 'spring';
+    experimentData.origStringLen = naturalLen; // reuse reset logic
+    experimentData.steps        = [
+        { title:'Đo hệ số lò xo',  desc:'Đo độ giãn x khi treo vật m: k = mg/x. Đây là hệ số đàn hồi.' },
+        { title:'Kéo vật xuống',   desc:'Kéo quả nặng xuống thêm A cm rồi thả — vật dao động điều hòa.' },
+        { title:'Đo chu kỳ',       desc:'T = 2π√(m/k). Đo thực tế bằng đồng hồ — so sánh với lý thuyết.' },
+        { title:'Năng lượng',      desc:'E = ½kx² + ½mv² = hằng số (bảo toàn năng lượng cơ học).' },
+        { title:'Ảnh hưởng m',     desc:'Tăng m → T tăng. Thay vật nặng hơn và quan sát sự thay đổi.' },
+        { title:'Sai số',          desc:'Ma sát không khí và tính phi tuyến của lò xo gây tắt dần — phân tích sai số.' },
+    ];
+}
+
+// ─ PHYSICS: Optics ───────────────────────────────────────────────────────────
+function buildOpticsScene() {
+    // Glass prism
+    const prismGeo = new THREE.CylinderGeometry(.01,.35,.5,3); // triangular prism
+    const prismMat = new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness:.02, metalness:0, transparent:true, opacity:.55 });
+    const prism    = new THREE.Mesh(prismGeo, prismMat);
+    prism.position.set(0, 1.24, 0);
+    prism.rotation.y = Math.PI / 6;
+    prism.castShadow = true;
+    scene.add(prism);
+    experimentData.prism    = prism;
+    experimentData.prismMat = prismMat;
+
+    // Incoming white light ray
+    const rayMat  = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2 });
+    const inRay   = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,1.2,6), rayMat);
+    inRay.rotation.z = Math.PI / 2;
+    inRay.position.set(-1.0, 1.34, 0);
+    scene.add(inRay);
+
+    // Refracted rainbow rays emerging from prism
+    const rayColors = [0xff3333, 0xff8800, 0xffee00, 0x44ff44, 0x3399ff, 0x8833ff];
+    const outRays   = rayColors.map((col, i) => {
+        const rMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.5, transparent:true, opacity:.9 });
+        const ray  = new THREE.Mesh(new THREE.CylinderGeometry(.005,.005,.8,4), rMat);
+        const spread = (i - 2.5) * .055;
+        ray.rotation.z = Math.PI / 2 + spread * .18;
+        ray.position.set(.55 + .3 * i * .15 + spread * .2, 1.2 + spread, 0);
+        scene.add(ray);
+        return ray;
+    });
+    experimentData.outRays = outRays;
+    experimentData.inRay   = inRay;
+
+    // Rotatable prism angle — mouse drag rotates prism
+    experimentData.prismAngle = Math.PI / 6;
+    experimentData.type       = 'optics';
+    experimentData.steps      = [
+        { title:'Chiếu sáng',    desc:'Ánh sáng trắng đi vào lăng kính — bị khúc xạ khi đổi môi trường.' },
+        { title:'Tán sắc',       desc:'Mỗi màu có bước sóng khác nhau → chỉ số khúc xạ khác → lệch góc khác.' },
+        { title:'Màu sắc',       desc:'Đỏ (λ≈700nm) lệch ít nhất — Tím (λ≈400nm) lệch nhiều nhất.' },
+        { title:'Định luật Snell',desc:'n₁sinθ₁ = n₂sinθ₂. Cho thủy tinh: n ≈ 1.5 (đỏ) đến 1.53 (tím).' },
+        { title:'Cầu vồng',      desc:'Cầu vồng hình thành bởi hàng triệu giọt nước — mỗi giọt là một lăng kính nhỏ.' },
+        { title:'Quang phổ',     desc:'Quang phổ liên tục: ánh sáng trắng cho đầy đủ 7 màu ROYGBIV.' },
+    ];
+}
+
+// ─ BIOLOGY: DNA ──────────────────────────────────────────────────────────────
+function buildDnaScene() {
+    const helixPts = [];
+    const nSteps   = 30;
+    const helixR   = .35;
+    const helixPitch = .18;
+    const basePairColors = [
+        [0xef4444, 0xfde047], // A-T: red/yellow
+        [0x22d3ee, 0x34d399], // G-C: cyan/green
+        [0xfde047, 0xef4444],
+        [0x34d399, 0x22d3ee],
+    ];
+
+    const strand1Pts = [];
+    const strand2Pts = [];
+    const basePairs  = [];
+
+    for (let i = 0; i < nSteps; i++) {
+        const t    = i / (nSteps - 1);
+        const y    = -1.2 + t * 2.4;
+        const ang  = t * Math.PI * 4; // 2 full turns
+
+        const x1 = Math.cos(ang) * helixR;
+        const z1 = Math.sin(ang) * helixR;
+        const x2 = Math.cos(ang + Math.PI) * helixR;
+        const z2 = Math.sin(ang + Math.PI) * helixR;
+
+        strand1Pts.push(new THREE.Vector3(x1, y + 1.8, z1));
+        strand2Pts.push(new THREE.Vector3(x2, y + 1.8, z2));
+
+        if (i % 3 === 0) {
+            const pair = basePairColors[Math.floor(i / 3) % 4];
+            const b1Mat = new THREE.MeshStandardMaterial({ color: pair[0], roughness:.4 });
+            const b2Mat = new THREE.MeshStandardMaterial({ color: pair[1], roughness:.4 });
+            const b1 = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.35,8), b1Mat);
+            const b2 = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.35,8), b2Mat);
+            const midX = (x1+x2)/2, midZ = (z1+z2)/2;
+            b1.rotation.z = Math.PI/2; b1.rotation.y = ang;
+            b2.rotation.z = Math.PI/2; b2.rotation.y = ang;
+            b1.position.set(x1*.5, y+1.8, z1*.5);
+            b2.position.set(x2*.5, y+1.8, z2*.5);
+            scene.add(b1, b2);
+            basePairs.push({ b1, b2, b1Mat, b2Mat, ang });
+        }
+    }
+
+    // Backbone strands as tube paths
+    const strandMat1 = new THREE.MeshStandardMaterial({ color: 0xc9a96e, roughness:.3, metalness:.3 });
+    const strandMat2 = new THREE.MeshStandardMaterial({ color: 0x60a5fa, roughness:.3, metalness:.3 });
+
+    const geo1 = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(strand1Pts), nSteps*3, .022, 6, false);
+    const geo2 = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(strand2Pts), nSteps*3, .022, 6, false);
+    const tube1 = new THREE.Mesh(geo1, strandMat1);
+    const tube2 = new THREE.Mesh(geo2, strandMat2);
+    tube1.castShadow = tube2.castShadow = true;
+    scene.add(tube1, tube2);
+
+    experimentData.dnaTube1    = tube1;
+    experimentData.dnaTube2    = tube2;
+    experimentData.dnaBasePairs= basePairs;
+    experimentData.dnaAngle    = 0;
+    experimentData.type        = 'dna';
+    experimentData.steps       = [
+        { title:'Cấu trúc xoắn kép',  desc:'DNA gồm 2 chuỗi polynucleotide xoắn quanh nhau theo chiều ngược chiều kim đồng hồ.' },
+        { title:'Nucleotide',         desc:'Mỗi nucleotide: đường deoxyribose + nhóm phosphate + base nitơ (A, T, G, C).' },
+        { title:'Liên kết bổ sung',   desc:'A-T: 2 liên kết hydro (đỏ-vàng). G-C: 3 liên kết hydro (xanh-lục).' },
+        { title:'Chiều đọc',          desc:'Hai chuỗi ngược chiều (antiparallel): một chuỗi 5\'→3\', chuỗi còn lại 3\'→5\'.' },
+        { title:'Sao chép',           desc:'Nguyên tắc bổ sung đảm bảo sao chép chính xác: A→T, G→C, T→A, C→G.' },
+        { title:'Thông tin di truyền',desc:'3 tỷ cặp base mã hóa khoảng 25.000 gene trong bộ gen người (haploid).' },
+    ];
+}
+
+// ─ BIOLOGY: Photosynthesis ───────────────────────────────────────────────────
+function buildPhotosynthesisScene() {
+    // Stylized leaf cross-section
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness:.7, metalness:0, transparent:true, opacity:.8 });
+    const leaf    = new THREE.Mesh(new THREE.BoxGeometry(2.2,.06,1.0), leafMat);
+    leaf.position.set(0, 1.5, 0); scene.add(leaf);
+
+    // Chloroplasts inside leaf
+    const cpPositions = [
+        [-.7,1.53,-.15],[-.3,1.53,.2],[.1,1.53,-.1],[.5,1.53,.15],[-.5,1.53,.3],[.3,1.53,-.25]
+    ];
+    const cpMeshes = cpPositions.map(([x,y,z]) => {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness:.5, metalness:0 });
+        const cp  = new THREE.Mesh(new THREE.CapsuleGeometry(.07,.14,6,8), mat);
+        cp.position.set(x,y,z); cp.rotation.z = Math.random() * .4 - .2;
+        scene.add(cp);
+        return { mesh: cp, mat };
+    });
+    experimentData.cpMeshes = cpMeshes;
+
+    // Sun light rays from above
+    const sunColors = [0xfde047, 0xfbbf24, 0xfcd34d];
+    const sunRays   = [];
+    for (let i = 0; i < 6; i++) {
+        const rMat = new THREE.MeshStandardMaterial({ color: sunColors[i%3], emissive: sunColors[i%3], emissiveIntensity:1.5, transparent:true, opacity:.5 });
+        const r    = new THREE.Mesh(new THREE.CylinderGeometry(.018,.005,.6,4), rMat);
+        r.position.set(-1.0 + i*.4, 1.92, (Math.random()-.5)*.3);
+        scene.add(r);
+        sunRays.push({ mesh: r, mat: rMat });
+    }
+    experimentData.sunRays = sunRays;
+
+    // CO2 molecules (small balls) drifting in
+    const co2Meshes = [];
+    for (let i = 0; i < 6; i++) {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent:true, opacity:.8 });
+        const m   = new THREE.Mesh(new THREE.SphereGeometry(.035,8,8), mat);
+        m.position.set(-1.2 + Math.random()*.4, 1.7 + Math.random()*.3, (Math.random()-.5)*.4);
+        m.userData.targetX = -.5 + Math.random()*.8;
+        m.userData.speed   = .15 + Math.random()*.1;
+        m.userData.done    = false;
+        scene.add(m);
+        co2Meshes.push({ mesh:m, mat });
+    }
+    experimentData.co2Meshes = co2Meshes;
+
+    // O2 + glucose rising up
+    const o2Meshes = [];
+    for (let i = 0; i < 4; i++) {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, transparent:true, opacity:0 });
+        const m   = new THREE.Mesh(new THREE.SphereGeometry(.03,8,8), mat);
+        m.position.set(-.5 + i*.3, 1.56, (Math.random()-.5)*.2);
+        m.userData.startY = 1.56;
+        scene.add(m);
+        o2Meshes.push({ mesh:m, mat });
+    }
+    experimentData.o2Meshes = o2Meshes;
+
+    experimentData.psAngle = 0;
+    experimentData.type    = 'photosynthesis';
+    experimentData.steps   = [
+        { title:'Nguyên liệu',     desc:'6CO₂ + 6H₂O + năng lượng ánh sáng → C₆H₁₂O₆ + 6O₂.' },
+        { title:'Lục lạp',        desc:'Chloroplast hấp thụ ánh sáng — diệp lục hấp thụ mạnh đỏ & tím-xanh.' },
+        { title:'Pha sáng',       desc:'Quang phân ly nước, tổng hợp ATP và NADPH, giải phóng O₂.' },
+        { title:'Pha tối (Calvin)',desc:'ATP + NADPH + CO₂ → G3P → glucose (chu trình Calvin-Benson).' },
+        { title:'Sản phẩm',       desc:'Glucose là nguyên liệu cho hô hấp và tổng hợp tinh bột, cellulose.' },
+        { title:'Ý nghĩa',        desc:'Quang hợp cung cấp O₂ và tích lũy năng lượng cho toàn bộ sự sống trên Trái Đất.' },
+    ];
+}
+
+// ─ MATH: Polyhedra ───────────────────────────────────────────────────────────
+function buildPolyhedronScene() {
+    const solidMat = new THREE.MeshStandardMaterial({
+        color: 0xc9a96e, roughness:.15, metalness:.7, wireframe: false
+    });
+    const wireMat  = new THREE.MeshStandardMaterial({
+        color: 0xfde047, roughness:1, wireframe: true
+    });
+
+    const solids = [
+        { name:'Tứ diện đều (Tetrahedron)',   V:4, E:6,  F:4,  geo: new THREE.TetrahedronGeometry(.55) },
+        { name:'Lập phương (Cube)',            V:8, E:12, F:6,  geo: new THREE.BoxGeometry(.75,.75,.75) },
+        { name:'Bát diện đều (Octahedron)',   V:6, E:12, F:8,  geo: new THREE.OctahedronGeometry(.55) },
+        { name:'Mười hai mặt (Dodecahedron)', V:20,E:30, F:12, geo: new THREE.DodecahedronGeometry(.5) },
+        { name:'Hai mươi mặt (Icosahedron)',  V:12,E:30, F:20, geo: new THREE.IcosahedronGeometry(.55) },
+    ];
+
+    const solidMeshes  = [];
+    const wireMeshes   = [];
+    solids.forEach((s, i) => {
+        const mesh = new THREE.Mesh(s.geo, solidMat.clone());
+        const wire = new THREE.Mesh(s.geo, wireMat.clone());
+        mesh.position.set(0, 1.8, 0);
+        wire.position.set(0, 1.8, 0);
+        mesh.visible = i === 0;
+        wire.visible = i === 0;
+        mesh.castShadow = true;
+        scene.add(mesh, wire);
+        solidMeshes.push(mesh);
+        wireMeshes.push(wire);
+    });
+
+    experimentData.polyMeshes  = solidMeshes;
+    experimentData.polyWires   = wireMeshes;
+    experimentData.polySolids  = solids;
+    experimentData.polyIndex   = 0;
+    experimentData.polyAngle   = 0;
+    experimentData.type        = 'polyhedron';
+    experimentData.steps       = [
+        { title:'Đa diện đều',     desc:'Gồm 5 khối Platonic: tứ diện, lập phương, bát diện, mười hai mặt, hai mươi mặt.' },
+        { title:'Định lý Euler',   desc:'V − E + F = 2 (đúng với mọi đa diện lồi). Kiểm chứng với từng khối!' },
+        { title:'Tứ diện (T)',     desc:'4 mặt tam giác đều. V=4, E=6, F=4 → 4−6+4=2 ✓' },
+        { title:'Lập phương (C)',  desc:'6 mặt vuông. V=8, E=12, F=6 → 8−12+6=2 ✓' },
+        { title:'Nhị thập diện',  desc:'20 mặt tam giác đều — xấp xỉ mặt cầu tốt nhất trong 5 khối Platonic.' },
+        { title:'Ứng dụng',       desc:'Virus có vỏ protein dạng icosahedron. Kim cương: carbon lập phương tâm mặt.' },
+    ];
+}
+
+// ─ MATH: Vectors ─────────────────────────────────────────────────────────────
+function buildVectorsScene() {
+    // Coordinate axes
+    const axisLen = 1.5;
+    const makeAxis = (dir, col) => {
+        const mat = new THREE.MeshStandardMaterial({ color: col, roughness:.3, emissive: col, emissiveIntensity:.3 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,axisLen,8), mat);
+        const tip  = new THREE.Mesh(new THREE.ConeGeometry(.04,.12,8), mat);
+        const end  = dir.clone().multiplyScalar(axisLen/2);
+        body.position.copy(dir.clone().multiplyScalar(axisLen/2)).add(new THREE.Vector3(0,1.8,0));
+        body.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+        tip.position.copy(dir.clone().multiplyScalar(axisLen)).add(new THREE.Vector3(0,1.8,0));
+        tip.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+        scene.add(body, tip);
+        return { body, tip, mat };
+    };
+    makeAxis(new THREE.Vector3(1,0,0), 0xef4444);
+    makeAxis(new THREE.Vector3(0,1,0), 0x22c55e);
+    makeAxis(new THREE.Vector3(0,0,1), 0x3b82f6);
+
+    // Grid plane at y=1.8
+    const gridHelper = new THREE.GridHelper(3, 6, 0x334155, 0x1e293b);
+    gridHelper.position.set(0, 1.8, 0);
+    scene.add(gridHelper);
+
+    // Vector U (red)
+    const makeVector = (col, start, end) => {
+        const dir = end.clone().sub(start);
+        const len = dir.length();
+        const mat = new THREE.MeshStandardMaterial({ color: col, roughness:.2, metalness:.3, emissive:col, emissiveIntensity:.4 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,len,8), mat);
+        const tip  = new THREE.Mesh(new THREE.ConeGeometry(.05,.15,8), mat);
+        const mid  = start.clone().add(end).multiplyScalar(.5);
+        body.position.copy(mid);
+        body.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+        tip.position.copy(end);
+        tip.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+        scene.add(body, tip);
+        return { body, tip, mat, start: start.clone(), end: end.clone() };
+    };
+
+    const O  = new THREE.Vector3(0, 1.8, 0);
+    const vU = makeVector(0xef4444, O, new THREE.Vector3(.8, 2.6, .3));
+    const vV = makeVector(0x22c55e, O, new THREE.Vector3(-.5, 2.3, .9));
+    // Cross product W = U × V
+    const uVec = vU.end.clone().sub(O);
+    const vVec = vV.end.clone().sub(O);
+    const wVec = new THREE.Vector3().crossVectors(uVec, vVec).normalize().multiplyScalar(.7);
+    const vW   = makeVector(0xfbbf24, O, O.clone().add(wVec));
+
+    experimentData.vecU  = vU;
+    experimentData.vecV  = vV;
+    experimentData.vecW  = vW;
+    experimentData.vecO  = O;
+    experimentData.vecAngle = 0;
+    experimentData.type  = 'vectors';
+    experimentData.steps = [
+        { title:'Vector trong 3D',     desc:'Vector u⃗, v⃗ được biểu diễn bởi mũi tên từ gốc O. Độ dài = modulus |u⃗|.' },
+        { title:'Tích vô hướng',      desc:'u⃗·v⃗ = |u⃗||v⃗|cosθ. Bằng 0 khi hai vector vuông góc nhau.' },
+        { title:'Tích có hướng',      desc:'u⃗×v⃗ (màu vàng) vuông góc với cả u⃗ và v⃗. |u⃗×v⃗| = |u⃗||v⃗|sinθ.' },
+        { title:'Quy tắc bàn tay phải',desc:'Nắm bàn tay phải từ u⃗ xoay sang v⃗ — ngón cái chỉ chiều u⃗×v⃗.' },
+        { title:'Diện tích hình bình hành',desc:'|u⃗×v⃗| chính là diện tích hình bình hành tạo bởi u⃗ và v⃗.' },
+        { title:'Ứng dụng',           desc:'Lực Lorentz: F⃗=qv⃗×B⃗. Moment lực: M⃗=r⃗×F⃗. Tính pháp tuyến mặt phẳng.' },
+    ];
+}
+
 // ── Build the scene ───────────────────────────────────────────────────────────
-if (SCENE_TYPE === 'titration')  buildTitrationScene();
-else if (SCENE_TYPE === 'pendulum') buildPendulumScene();
+if      (SCENE_TYPE === 'titration')      buildTitrationScene();
+else if (SCENE_TYPE === 'electrolysis')   buildElectrolysisScene();
+else if (SCENE_TYPE === 'distillation')   buildDistillationScene();
+else if (SCENE_TYPE === 'pendulum')       buildPendulumScene();
+else if (SCENE_TYPE === 'spring')         buildSpringScene();
+else if (SCENE_TYPE === 'optics')         buildOpticsScene();
+else if (SCENE_TYPE === 'cell')           buildCellScene();
+else if (SCENE_TYPE === 'dna')            buildDnaScene();
+else if (SCENE_TYPE === 'photosynthesis') buildPhotosynthesisScene();
+else if (SCENE_TYPE === 'polyhedron')     buildPolyhedronScene();
+else if (SCENE_TYPE === 'vectors')        buildVectorsScene();
 else buildCellScene();
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1223,9 +1871,18 @@ canvas.addEventListener('mousemove', e => {
 
     // Pendulum drag — map horizontal mouse position to angle
     if (dragActive && SCENE_TYPE === 'pendulum') {
-        const nx = (e.clientX - rect.left) / rect.width - 0.5; // −0.5..0.5
+        const nx = (e.clientX - rect.left) / rect.width - 0.5;
         experimentData.angle = THREE.MathUtils.clamp(nx * Math.PI * 1.4, -Math.PI * 0.65, Math.PI * 0.65);
         experimentData.vel   = 0;
+        return;
+    }
+    // Spring drag — map vertical mouse position to displacement
+    if (dragActive && SCENE_TYPE === 'spring') {
+        const ny = (e.clientY - rect.top) / rect.height; // 0=top,1=bottom
+        // map to −0.5..0.5 displacement range
+        const disp = THREE.MathUtils.clamp((ny - 0.35) * 1.6, -0.55, 0.55);
+        experimentData.springDisp = disp;
+        experimentData.springVel  = 0;
         return;
     }
 
@@ -1254,17 +1911,24 @@ canvas.addEventListener('mousemove', e => {
 
 canvas.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
-    // Pendulum bob drag — use hitSphere (invisible, larger) for reliable hit detection
+    // Pendulum bob drag
     if (SCENE_TYPE === 'pendulum' && experimentData.bob) {
         raycaster.setFromCamera(mouse, camera);
         const targets = [experimentData.bob, experimentData.hitSphere].filter(Boolean);
         const hits    = raycaster.intersectObjects(targets);
         if (hits.length > 0) {
-            dragActive       = true;
-            isDragging       = true;
-            isRunning        = false;
-            controls.enabled = false;
-            canvas.style.cursor = 'grabbing';
+            dragActive = isDragging = true; isRunning = false;
+            controls.enabled = false; canvas.style.cursor = 'grabbing';
+        }
+    }
+    // Spring block drag
+    if (SCENE_TYPE === 'spring' && experimentData.block) {
+        raycaster.setFromCamera(mouse, camera);
+        const targets = [experimentData.block, experimentData.springHit].filter(Boolean);
+        const hits    = raycaster.intersectObjects(targets);
+        if (hits.length > 0) {
+            dragActive = isDragging = true; isRunning = false;
+            controls.enabled = false; canvas.style.cursor = 'grabbing';
         }
     }
 });
@@ -1358,8 +2022,13 @@ window.setDripRate = function(rate) {
 };
 
 // ── Data panel DOM refs — must be declared before initDataPanel() is called ───
-const dataPanel = document.getElementById('data-panel');
-const dpRows    = document.getElementById('dp-rows');
+const dataPanel        = document.getElementById('data-panel');
+const dpRows           = document.getElementById('dp-rows');
+const DATA_PANEL_SCENES = new Set([
+    'titration','electrolysis','distillation',
+    'pendulum','spring',
+    'polyhedron','vectors'
+]);
 
 // ── Register interactive objects per scene ────────────────────────────────────
 
@@ -1415,7 +2084,7 @@ if (SCENE_TYPE === 'titration') {
 
     initDataPanel();
 
-} else { // cell
+} else if (SCENE_TYPE === 'cell') {
     registerInteractive({
         meshes: [experimentData.cell],
         name:   'Màng tế bào (Cell Membrane)',
@@ -1462,6 +2131,78 @@ if (SCENE_TYPE === 'titration') {
         });
     });
 }
+
+// Electrolysis interactions
+if (SCENE_TYPE === 'electrolysis' && experimentData.switchLever) {
+    registerInteractive({
+        meshes: [experimentData.switchLever],
+        name:   'Công tắc điện',
+        hint:   'Click để đóng / mở mạch',
+        cursor: 'pointer',
+        onClick() {
+            experimentData.powered = !experimentData.powered;
+            experimentData.switchLever.rotation.z = experimentData.powered ? .4 : 0;
+            experimentData.switchMat.color.set(experimentData.powered ? 0x4ade80 : 0x94a3b8);
+            updateDataPanel();
+        }
+    });
+    initDataPanel();
+}
+
+// Distillation interactions
+if (SCENE_TYPE === 'distillation' && experimentData.flame) {
+    registerInteractive({
+        meshes: [experimentData.flame],
+        name:   'Ngọn lửa (Bunsen Burner)',
+        hint:   'Click để bật / tắt nguồn nhiệt',
+        cursor: 'pointer',
+        onClick() {
+            experimentData.heating = !experimentData.heating;
+            experimentData.flameMat.emissiveIntensity = experimentData.heating ? .8 : 0;
+            experimentData.flameMat.opacity           = experimentData.heating ? .7 : .15;
+            updateDataPanel();
+        }
+    });
+    initDataPanel();
+}
+
+// Spring interactions (drag handled in mousedown/mousemove — register for hover)
+if (SCENE_TYPE === 'spring' && experimentData.block) {
+    const springTargets = [experimentData.block];
+    if (experimentData.springHit) springTargets.push(experimentData.springHit);
+    registerInteractive({
+        meshes: springTargets,
+        name:   'Quả nặng (Mass)',
+        hint:   'Kéo lên/xuống để đặt biên độ ban đầu',
+        cursor: 'grab',
+        onClick() {}
+    });
+    initDataPanel();
+}
+
+// Polyhedron interaction
+if (SCENE_TYPE === 'polyhedron') {
+    (experimentData.polyMeshes || []).forEach(m => {
+        registerInteractive({
+            meshes: [m],
+            name:   'Đa diện',
+            hint:   'Click để chuyển sang đa diện tiếp theo',
+            cursor: 'pointer',
+            onClick() {
+                const n = experimentData.polySolids.length;
+                const prev = experimentData.polyIndex;
+                experimentData.polyIndex = (prev + 1) % n;
+                experimentData.polyMeshes.forEach((pm, i) => { pm.visible = i === experimentData.polyIndex; });
+                experimentData.polyWires.forEach((pw, i)  => { pw.visible = i === experimentData.polyIndex; });
+                updateDataPanel();
+            }
+        });
+    });
+    initDataPanel();
+}
+
+// Vectors — data panel only (no click interaction)
+if (SCENE_TYPE === 'vectors') { initDataPanel(); }
 
 // ── Cell info card ────────────────────────────────────────────────────────────
 const CELL_INFO = {
@@ -1536,14 +2277,94 @@ window.closeCellInfo = function() {
 };
 
 // ── Data panel ────────────────────────────────────────────────────────────────
+
 function initDataPanel() {
-    if (SCENE_TYPE !== 'titration' && SCENE_TYPE !== 'pendulum') return;
+    if (!DATA_PANEL_SCENES.has(SCENE_TYPE)) return;
     dataPanel.classList.add('show');
     updateDataPanel();
 }
 
 function updateDataPanel() {
-    if (SCENE_TYPE === 'titration') {
+    if (SCENE_TYPE === 'electrolysis') {
+        const t   = (experimentData.powerTimer || 0).toFixed(1);
+        const h2  = (experimentData.powerTimer * 0.0037).toFixed(3);
+        const o2  = (experimentData.powerTimer * 0.00185).toFixed(3);
+        dpRows.innerHTML = `
+            <div class="dp-row"><span class="dp-label">Trạng thái mạch</span>
+              <span class="dp-value" style="color:${experimentData.powered?'#4ade80':'#64748b'}">${experimentData.powered?'Đóng':'Mở'}</span></div>
+            <div class="dp-row"><span class="dp-label">Thời gian (t)</span>
+              <span class="dp-value">${t}<span class="dp-unit">s</span></span></div>
+            <div class="dp-row"><span class="dp-label">Khí H₂ (catod)</span>
+              <span class="dp-value">${h2}<span class="dp-unit">mL</span></span></div>
+            <div class="dp-row"><span class="dp-label">Khí O₂ (anod)</span>
+              <span class="dp-value">${o2}<span class="dp-unit">mL</span></span></div>`;
+    } else if (SCENE_TYPE === 'distillation') {
+        const T = (experimentData.temp || 20).toFixed(1);
+        const collected = Math.min(100, (experimentData.heatTime || 0) * 2).toFixed(0);
+        dpRows.innerHTML = `
+            <div class="dp-row"><span class="dp-label">Nhiệt độ (T)</span>
+              <span class="dp-value" style="color:${T>77?'#ef4444':'#e2e8f0'}">${T}<span class="dp-unit">°C</span></span></div>
+            <div class="dp-row"><span class="dp-label">Trạng thái đun</span>
+              <span class="dp-value" style="color:${experimentData.heating?'#f97316':'#64748b'}">${experimentData.heating?'Đang đun':'Tắt'}</span></div>
+            <div class="dp-row"><span class="dp-label">Đã thu được</span>
+              <span class="dp-value">${collected}<span class="dp-unit">%</span></span></div>`;
+    } else if (SCENE_TYPE === 'spring') {
+        const k   = experimentData.springK;
+        const m   = experimentData.springM;
+        const T   = (2 * Math.PI * Math.sqrt(m / k)).toFixed(3);
+        const x   = (experimentData.springDisp * 100).toFixed(1);
+        const v   = Math.abs((experimentData.springVel || 0) * 100).toFixed(2);
+        const E   = (.5 * k * experimentData.springDisp ** 2).toFixed(4);
+        dpRows.innerHTML = `
+            <div class="dp-row"><span class="dp-label">k = hệ số lò xo</span>
+              <span class="dp-value">${k}<span class="dp-unit">N/m</span></span></div>
+            <div class="dp-row"><span class="dp-label">Ly độ x</span>
+              <span class="dp-value">${x}<span class="dp-unit">cm</span></span></div>
+            <div class="dp-row"><span class="dp-label">Chu kỳ lý thuyết</span>
+              <span class="dp-value">${T}<span class="dp-unit">s</span></span></div>
+            <div class="dp-row"><span class="dp-label">Thế năng đàn hồi</span>
+              <span class="dp-value">${E}<span class="dp-unit">J</span></span></div>`;
+    } else if (SCENE_TYPE === 'polyhedron') {
+        const idx = experimentData.polyIndex ?? 0;
+        const s   = experimentData.polySolids?.[idx];
+        if (s) {
+            const euler = s.V - s.E + s.F;
+            dpRows.innerHTML = `
+                <div class="dp-row"><span class="dp-label">Tên</span>
+                  <span class="dp-value" style="font-size:.75rem">${s.name.split('(')[0].trim()}</span></div>
+                <div class="dp-row"><span class="dp-label">Đỉnh V</span>
+                  <span class="dp-value">${s.V}</span></div>
+                <div class="dp-row"><span class="dp-label">Cạnh E</span>
+                  <span class="dp-value">${s.E}</span></div>
+                <div class="dp-row"><span class="dp-label">Mặt F</span>
+                  <span class="dp-value">${s.F}</span></div>
+                <div class="dp-row"><span class="dp-label">V−E+F (Euler)</span>
+                  <span class="dp-value" style="color:#4ade80">${euler}</span></div>`;
+        }
+    } else if (SCENE_TYPE === 'vectors') {
+        const O  = experimentData.vecO;
+        const uE = experimentData.vecU?.end;
+        const vE = experimentData.vecV?.end;
+        if (uE && vE && O) {
+            const u  = uE.clone().sub(O);
+            const v  = vE.clone().sub(O);
+            const dot  = u.dot(v).toFixed(3);
+            const cosT = (u.dot(v) / (u.length() * v.length()));
+            const ang  = (Math.acos(THREE.MathUtils.clamp(cosT,-1,1)) * 180 / Math.PI).toFixed(1);
+            const cross = new THREE.Vector3().crossVectors(u, v);
+            dpRows.innerHTML = `
+                <div class="dp-row"><span class="dp-label">|u⃗|</span>
+                  <span class="dp-value">${u.length().toFixed(3)}</span></div>
+                <div class="dp-row"><span class="dp-label">|v⃗|</span>
+                  <span class="dp-value">${v.length().toFixed(3)}</span></div>
+                <div class="dp-row"><span class="dp-label">u⃗·v⃗ (tích vô hướng)</span>
+                  <span class="dp-value">${dot}</span></div>
+                <div class="dp-row"><span class="dp-label">Góc (θ)</span>
+                  <span class="dp-value">${ang}<span class="dp-unit">°</span></span></div>
+                <div class="dp-row"><span class="dp-label">|u⃗×v⃗|</span>
+                  <span class="dp-value">${cross.length().toFixed(3)}</span></div>`;
+        }
+    } else if (SCENE_TYPE === 'titration') {
         const dropped = experimentData.dripCount * 0.05;
         const vol     = Math.max(0, experimentData.buretVolume - dropped).toFixed(2);
         const dripR   = experimentData.dripRate;
@@ -1669,6 +2490,33 @@ window.resetExperiment = function() {
     }
     if (experimentData.type === 'cell') {
         closeCellInfo();
+    }
+    if (experimentData.type === 'electrolysis') {
+        experimentData.powered     = false;
+        experimentData.powerTimer  = 0;
+        if (experimentData.switchLever) experimentData.switchLever.rotation.z = 0;
+        if (experimentData.switchMat)   experimentData.switchMat.color.set(0x94a3b8);
+        updateDataPanel();
+    }
+    if (experimentData.type === 'distillation') {
+        experimentData.heating  = false;
+        experimentData.heatTime = 0;
+        experimentData.temp     = 20;
+        if (experimentData.flameMat) { experimentData.flameMat.emissiveIntensity = 0; experimentData.flameMat.opacity = .15; }
+        if (experimentData.colLiq)   experimentData.colLiq.scale.setScalar(.01);
+        updateDataPanel();
+    }
+    if (experimentData.type === 'spring') {
+        experimentData.springDisp = -0.2;
+        experimentData.springVel  = 0;
+        updateDataPanel();
+    }
+    if (experimentData.type === 'polyhedron') {
+        experimentData.polyIndex = 0;
+        experimentData.polyAngle = 0;
+        experimentData.polyMeshes?.forEach((m, i) => { m.visible = i === 0; });
+        experimentData.polyWires?.forEach((w, i)  => { w.visible = i === 0; });
+        updateDataPanel();
     }
 };
 
@@ -1881,8 +2729,153 @@ function animate() {
         });
     }
 
+    // ── Electrolysis animation ───────────────────────────────────────────────
+    if (SCENE_TYPE === 'electrolysis') {
+        if (experimentData.powered) {
+            experimentData.powerTimer = (experimentData.powerTimer || 0) + dt;
+        }
+        (experimentData.bubbles || []).forEach(b => {
+            if (!experimentData.powered) { b.mat.opacity = 0; return; }
+            b.userData.age += dt * b.userData.spd * 10;
+            if (b.userData.age > 1) {
+                b.userData.age = 0;
+                b.mesh.position.set(b.userData.side + b.userData.rx, 1.02, -.1 + (Math.random()-.5)*.06);
+                b.userData.rx = (Math.random()-.5) * .06;
+            }
+            b.mesh.position.y += dt * .12;
+            b.mat.opacity = Math.sin(b.userData.age * Math.PI) * .85;
+        });
+        dataPanelTimer += dt;
+        if (dataPanelTimer > .5) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Distillation animation ───────────────────────────────────────────────
+    if (SCENE_TYPE === 'distillation') {
+        if (experimentData.heating) {
+            experimentData.heatTime = (experimentData.heatTime || 0) + dt;
+            experimentData.temp = Math.min(82, 20 + experimentData.heatTime * 8);
+            // Flame flicker
+            experimentData.flame.scale.y = 0.9 + Math.sin(now * 18) * .15;
+            // Collection liquid grows
+            const scale = Math.min(1, experimentData.heatTime * .05);
+            if (experimentData.colLiq) experimentData.colLiq.scale.setScalar(Math.max(.01, scale));
+            if (experimentData.colLiqMat) experimentData.colLiqMat.opacity = .4 + scale * .3;
+        }
+        dataPanelTimer += dt;
+        if (dataPanelTimer > .5) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Spring animation ─────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'spring') {
+        if (!dragActive) {
+            if (isRunning) {
+                const k   = experimentData.springK;
+                const m   = experimentData.springM;
+                const acc = -(k / m) * experimentData.springDisp;
+                experimentData.springVel  += acc * dt;
+                experimentData.springVel  *= experimentData.springDamping;
+                experimentData.springDisp += experimentData.springVel * dt;
+            }
+        }
+        const topY  = experimentData.springTopY;
+        const natL  = experimentData.springNatural;
+        const disp  = experimentData.springDisp;
+        const blockY = topY - natL - .075 + disp;
+        experimentData.block.position.y = blockY;
+        if (experimentData.springHit) experimentData.springHit.position.y = blockY;
+
+        // Update spring coil positions to match extension
+        const nCoils = experimentData.springCoils?.length ?? 0;
+        const stretch = natL + disp;
+        (experimentData.springCoils || []).forEach((coil, i) => {
+            coil.position.y = topY - (i / (nCoils-1)) * stretch;
+        });
+
+        dataPanelTimer += dt;
+        if (dataPanelTimer > .06) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Optics animation ─────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'optics') {
+        // Gentle rotation hint
+        if (experimentData.prism) {
+            experimentData.prism.rotation.y += dt * .3;
+            // Rainbow rays flutter slightly
+            (experimentData.outRays || []).forEach((r, i) => {
+                r.material.emissiveIntensity = 1.2 + Math.sin(now * 3 + i) * .4;
+            });
+        }
+    }
+
+    // ── DNA animation ────────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'dna') {
+        experimentData.dnaAngle = (experimentData.dnaAngle || 0) + dt * .5;
+        if (experimentData.dnaTube1) {
+            experimentData.dnaTube1.rotation.y = experimentData.dnaAngle;
+            experimentData.dnaTube2.rotation.y = experimentData.dnaAngle;
+        }
+        (experimentData.dnaBasePairs || []).forEach((bp, i) => {
+            bp.b1.rotation.y = experimentData.dnaAngle;
+            bp.b2.rotation.y = experimentData.dnaAngle;
+        });
+    }
+
+    // ── Photosynthesis animation ─────────────────────────────────────────────
+    if (SCENE_TYPE === 'photosynthesis') {
+        experimentData.psAngle = (experimentData.psAngle || 0) + dt;
+        // Sun rays pulse
+        (experimentData.sunRays || []).forEach((r, i) => {
+            r.mat.opacity = .4 + Math.sin(experimentData.psAngle * 2 + i) * .2;
+        });
+        // CO2 molecules drift toward leaf
+        (experimentData.co2Meshes || []).forEach(c => {
+            if (!c.mesh.userData.done) {
+                c.mesh.position.x += (c.mesh.userData.targetX - c.mesh.position.x) * dt * .4;
+                if (Math.abs(c.mesh.position.x - c.mesh.userData.targetX) < .05) {
+                    c.mesh.userData.done = true;
+                    c.mat.opacity = 0;
+                }
+            }
+        });
+        // O2 bubbles rise
+        (experimentData.o2Meshes || []).forEach((o, i) => {
+            o.mesh.position.y += dt * .08;
+            const relY = o.mesh.position.y - o.mesh.userData.startY;
+            o.mat.opacity = Math.max(0, .8 - relY * 1.2);
+            if (o.mesh.position.y > 2.5) {
+                o.mesh.position.y = o.mesh.userData.startY;
+                o.mat.opacity     = 0;
+            }
+        });
+        // Chloroplasts breathe
+        (experimentData.cpMeshes || []).forEach((c, i) => {
+            const s = 1 + Math.sin(experimentData.psAngle * 1.5 + i) * .05;
+            c.mesh.scale.set(s, s, s);
+        });
+    }
+
+    // ── Polyhedron animation ─────────────────────────────────────────────────
+    if (SCENE_TYPE === 'polyhedron') {
+        experimentData.polyAngle = (experimentData.polyAngle || 0) + dt * .6;
+        const idx = experimentData.polyIndex ?? 0;
+        const m   = experimentData.polyMeshes?.[idx];
+        const w   = experimentData.polyWires?.[idx];
+        if (m) { m.rotation.x = experimentData.polyAngle * .5; m.rotation.y = experimentData.polyAngle; }
+        if (w) { w.rotation.copy(m.rotation); }
+    }
+
+    // ── Vectors animation ────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'vectors') {
+        experimentData.vecAngle = (experimentData.vecAngle || 0) + dt * .5;
+        // Slow auto-rotate vectors for visual exploration
+        const a  = experimentData.vecAngle;
+        const O  = experimentData.vecO;
+        dataPanelTimer += dt;
+        if (dataPanelTimer > .3) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
     // Rim light pulse
-    rimLight.intensity = .6 + Math.sin(now * .8) * .2;
+    rimLight.intensity = .5 + Math.sin(now * .8) * .15;
 
     renderer.render(scene, camera);
 }
