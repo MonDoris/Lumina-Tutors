@@ -107,8 +107,8 @@ public sealed class AccountController : Controller
             avatarUrl = uploadResult;
         }
 
-        var request = model with { AvatarUrl = avatarUrl };
-        var result  = await _accountService.CreateAccountAsync(SchoolId, request);
+        model.AvatarUrl = avatarUrl;
+        var result  = await _accountService.CreateAccountAsync(SchoolId, model);
 
         if (!result.IsSuccess)
         {
@@ -142,6 +142,7 @@ public sealed class AccountController : Controller
             Gender                = dto.Gender,
             IsActive              = dto.IsActive,
             SpecializationSubject = dto.SpecializationSubject,
+            PrimarySubjectId      = dto.PrimarySubjectId,
             Qualification         = dto.Qualification,
             ClassId               = dto.CurrentClassId,
             LinkedStudentUserId   = dto.LinkedStudentId
@@ -178,8 +179,8 @@ public sealed class AccountController : Controller
             }
         }
 
-        var request = model with { AvatarUrl = avatarUrl };
-        var result  = await _accountService.UpdateAccountAsync(SchoolId, id, request);
+        model.AvatarUrl = avatarUrl;
+        var result  = await _accountService.UpdateAccountAsync(SchoolId, id, model);
 
         if (!result.IsSuccess)
         {
@@ -262,8 +263,10 @@ public sealed class AccountController : Controller
     {
         var students = await _accountService.GetStudentSelectListAsync(SchoolId);
         var classes  = await _accountService.GetClassSelectListAsync(SchoolId);
-        ViewBag.StudentList = students.IsSuccess ? students.Data : new List<(int, string, string?)>();
-        ViewBag.ClassList   = classes.IsSuccess  ? classes.Data  : new List<(int, string)>();
+        var subjects = await _accountService.GetSubjectSelectListAsync(SchoolId);
+        ViewBag.StudentList  = students.IsSuccess ? students.Data : new List<(int, string, string?)>();
+        ViewBag.ClassList    = classes.IsSuccess  ? classes.Data  : new List<(int, string)>();
+        ViewBag.SubjectList  = subjects.IsSuccess ? subjects.Data : new List<(int, string, string)>();
     }
 
     private async Task<string?> SaveAvatarAsync(IFormFile file)

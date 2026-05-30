@@ -122,7 +122,22 @@ public class Assignment : AuditableEntity
     public School School { get; set; } = null!;
     public SubjectAssignment SubjectAssignment { get; set; } = null!;
     public GradeCategory? GradeCategory { get; set; }
-    public ICollection<AssignmentSubmission> Submissions { get; set; } = [];
+    public ICollection<AssignmentSubmission>  Submissions  { get; set; } = [];
+    public ICollection<AssignmentAttachment>  Attachments  { get; set; } = [];
+}
+
+// ─── AssignmentAttachment (file giáo viên đính kèm) ──────────────────────────
+
+public class AssignmentAttachment : BaseEntity
+{
+    public int    AssignmentId { get; set; }
+    public string FileName     { get; set; } = string.Empty;
+    public string FileUrl      { get; set; } = string.Empty;
+    public string FileType     { get; set; } = string.Empty;
+    public int?   FileSizeKB   { get; set; }
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    public Assignment Assignment { get; set; } = null!;
 }
 
 // ─── AssignmentSubmission ─────────────────────────────────────────────────────

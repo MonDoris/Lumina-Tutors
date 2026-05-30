@@ -1,0 +1,178 @@
+@using LuminaTutors.Application.DTOs.Homework
+@{
+    ViewData["Title"] = "Bài tập của tôi";
+    var courses = ViewBag.Courses as IReadOnlyList<StudentCourseDto> ?? [];
+    var subjectColors = new[] { "#1e40af","#065f46","#7e22ce","#9a3412","#0c4a6e","#4c1d95","#134e4a","#7f1d1d" };
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-journal-bookmark-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Bài tập của tôi
+        </h1>
+        <p class="lt-page-subtitle">Xem và nộp bài tập theo từng môn học</p>
+    </div>
+</div>
+
+@if (!courses.Any())
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <i class="bi bi-journal-x" style="font-size:3rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">Chưa có bài tập nào</div>
+                <div class="lt-empty__sub">Khi giáo viên giao bài, chúng sẽ xuất hiện ở đây.</div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    @* ── Summary strip ─────────────────────────────────────────────────── *@
+    var totalPending = courses.Sum(c => c.PendingCount);
+    var totalOverdue = courses.Sum(c => c.OverdueCount);
+
+    @if (totalOverdue > 0)
+    {
+        <div class="lt-alert lt-alert--danger lt-mb-4">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            Bạn có <strong>@totalOverdue bài tập quá hạn</strong> chưa nộp — hãy liên hệ giáo viên ngay!
+        </div>
+    }
+    else if (totalPending > 0)
+    {
+        <div class="lt-alert lt-alert--success lt-mb-4">
+            <i class="bi bi-bell-fill"></i>
+            Bạn có <strong>@totalPending bài tập</strong> đang chờ nộp.
+        </div>
+    }
+
+    @* ── Course folder grid ─────────────────────────────────────────────── *@
+    <div class="row g-4">
+        @foreach (var c in courses)
+        {
+            var colorIdx  = Math.Abs(c.SubjectName.GetHashCode()) % subjectColors.Length;
+            var cardColor = subjectColors[colorIdx];
+            var pct       = c.TotalAssignments > 0
+                ? (int)Math.Round((double)c.SubmittedCount / c.TotalAssignments * 100)
+                : 0;
+
+            <div class="col-md-6 col-xl-4">
+                <a asp-action="Course" asp-route-id="@c.SubjectAssignmentId" class="hw-folder-card" style="--fc:@cardColor">
+                    <!-- Header band -->
+                    <div class="hw-fc__header">
+                        <div class="hw-fc__pattern"></div>
+                        <div class="hw-fc__top">
+                            <div>
+                                <div class="hw-fc__subject">@c.SubjectName</div>
+                                <div class="hw-fc__class">@c.ClassName</div>
+                            </div>
+                            <div class="hw-fc__avatar">@c.SubjectName[0]</div>
+                        </div>
+                        <!-- Status badges -->
+                        <div class="hw-fc__badges">
+                            @if (c.OverdueCount > 0)
+                            {
+                                <span class="hw-fc__badge hw-fc__badge--danger">
+                                    <i class="bi bi-exclamation-circle-fill"></i> @c.OverdueCount quá hạn
+                                </span>
+                            }
+                            @if (c.PendingCount > 0)
+                            {
+                                <span class="hw-fc__badge hw-fc__badge--warn">
+                                    <i class="bi bi-clock-fill"></i> @c.PendingCount chờ nộp
+                                </span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="hw-fc__body">
+                        <div class="hw-fc__teacher">
+                            <i class="bi bi-person-fill" style="margin-right:4px"></i>@c.TeacherName
+                        </div>
+                        <div class="hw-fc__progress-row">
+                            <span class="hw-fc__progress-label">
+                                Đã nộp @c.SubmittedCount/@c.TotalAssignments bài
+                            </span>
+                            <span class="hw-fc__progress-pct">@pct%</span>
+                        </div>
+                        <div class="hw-fc__progress-bar">
+                            <div class="hw-fc__progress-fill" style="width:@pct%"></div>
+                        </div>
+                        <div class="hw-fc__cta">
+                            Vào khóa học <i class="bi bi-arrow-right-circle-fill"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}
+
+@section Styles {
+<style>
+/* ── Folder card ──────────────────────────────────────────────────────── */
+.hw-folder-card {
+    display: block; border-radius: 16px; overflow: hidden;
+    border: 1px solid rgba(0,0,0,.07);
+    box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    text-decoration: none; color: inherit;
+    background: #fff;
+    transition: transform .18s, box-shadow .18s;
+}
+.hw-folder-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px rgba(0,0,0,.12);
+    text-decoration: none; color: inherit;
+}
+.hw-fc__header {
+    background: var(--fc); position: relative; overflow: hidden; padding-bottom: 10px;
+}
+.hw-fc__pattern {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 55%);
+}
+.hw-fc__top {
+    position: relative; z-index: 1;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 18px 18px 6px;
+}
+.hw-fc__subject { font-size: 1.1rem; font-weight: 800; color: #fff; }
+.hw-fc__class   { font-size: .78rem; color: rgba(255,255,255,.78); margin-top: 2px; }
+.hw-fc__avatar  {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(255,255,255,.22); border: 2px solid rgba(255,255,255,.38);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.hw-fc__badges  {
+    position: relative; z-index: 1;
+    display: flex; gap: 6px; padding: 0 18px 14px; flex-wrap: wrap;
+}
+.hw-fc__badge {
+    padding: 3px 9px; border-radius: 20px; font-size: .72rem; font-weight: 700;
+}
+.hw-fc__badge--danger { background: rgba(239,68,68,.25); color: #fff; }
+.hw-fc__badge--warn   { background: rgba(255,255,255,.2); color: #fff; }
+
+.hw-fc__body    { padding: 16px 18px; }
+.hw-fc__teacher { font-size: .78rem; color: var(--lt-text-muted); margin-bottom: 12px; }
+.hw-fc__progress-row {
+    display: flex; justify-content: space-between;
+    font-size: .76rem; color: var(--lt-text-muted); margin-bottom: 5px;
+}
+.hw-fc__progress-pct { font-weight: 700; color: var(--lt-navy); }
+.hw-fc__progress-bar {
+    height: 6px; background: var(--lt-bg-subtle); border-radius: 99px; overflow: hidden; margin-bottom: 14px;
+}
+.hw-fc__progress-fill {
+    height: 100%; background: var(--fc); border-radius: 99px; transition: width .4s;
+}
+.hw-fc__cta {
+    font-size: .8rem; font-weight: 700; color: var(--fc);
+    display: flex; align-items: center; gap: 6px;
+}
+</style>
+}

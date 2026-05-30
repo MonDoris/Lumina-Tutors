@@ -41,6 +41,8 @@ public record AccountDetailDto(
     Gender?  Gender,
     // Teacher-specific
     string?  SpecializationSubject,
+    int?     PrimarySubjectId,
+    string?  PrimarySubjectName,
     string?  Qualification,
     // Student-specific
     int?     CurrentClassId,
@@ -54,90 +56,92 @@ public record AccountDetailDto(
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
-public record CreateAccountRequest
+public class CreateAccountRequest
 {
     [Required(ErrorMessage = "Vui lòng nhập họ tên")]
     [MaxLength(150, ErrorMessage = "Họ tên tối đa 150 ký tự")]
-    public string FullName { get; init; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập email")]
     [EmailAddress(ErrorMessage = "Email không hợp lệ")]
     [MaxLength(150)]
-    public string Email { get; init; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng chọn vai trò")]
-    public string RoleCode { get; init; } = string.Empty; // STUDENT | TEACHER | SUPERVISOR | PARENT
+    public string RoleCode { get; set; } = string.Empty;
 
     [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
     [MaxLength(20)]
-    public string? PhoneNumber { get; init; }
+    public string? PhoneNumber { get; set; }
 
-    public DateOnly? DateOfBirth { get; init; }
+    public DateOnly? DateOfBirth { get; set; }
 
-    public Gender? Gender { get; init; }
+    public Gender? Gender { get; set; }
 
     [Required(ErrorMessage = "Vui lòng đặt mật khẩu")]
     [MinLength(8, ErrorMessage = "Mật khẩu tối thiểu 8 ký tự")]
-    public string Password { get; init; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
 
     // Teacher-specific
-    public string? SpecializationSubject { get; init; }
-    public string? Qualification { get; init; }
+    public string? SpecializationSubject { get; set; }
+    public int?    PrimarySubjectId      { get; set; }
+    public string? Qualification         { get; set; }
 
     // Student-specific
-    public int? ClassId { get; init; }
+    public int? ClassId { get; set; }
 
-    // Parent-specific (standalone parent account)
-    public int? LinkedStudentUserId { get; init; }
-    public string? Relationship { get; init; } // Cha | Mẹ | Người giám hộ
-    public string? Occupation { get; init; }
-    public string? WorkAddress { get; init; }
+    // Parent-specific
+    public int? LinkedStudentUserId { get; set; }
+    public string? Relationship { get; set; }
+    public string? Occupation { get; set; }
+    public string? WorkAddress { get; set; }
 
     // Auto-create linked parent when creating STUDENT
-    public bool    CreateLinkedParent    { get; init; } = false;
-    public string? ParentFullName        { get; init; }
-    public string? ParentPhoneNumber     { get; init; }
-    public string? ParentEmail           { get; init; }
-    public string? ParentPassword        { get; init; }
-    public string? ParentRelationship    { get; init; } = "Phụ huynh";
+    public bool    CreateLinkedParent    { get; set; } = false;
+    public string? ParentFullName        { get; set; }
+    public string? ParentPhoneNumber     { get; set; }
+    public string? ParentEmail           { get; set; }
+    public string? ParentPassword        { get; set; }
+    public string? ParentRelationship    { get; set; } = "Phụ huynh";
 
     // Avatar: handled separately via IFormFile in controller
-    public string? AvatarUrl { get; init; }
+    public string? AvatarUrl { get; set; }
 }
 
 // ─── Update ───────────────────────────────────────────────────────────────────
 
-public record UpdateAccountRequest
+public class UpdateAccountRequest
 {
     [Required(ErrorMessage = "Vui lòng nhập họ tên")]
     [MaxLength(150)]
-    public string FullName { get; init; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
 
     [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
     [MaxLength(20)]
-    public string? PhoneNumber { get; init; }
+    public string? PhoneNumber { get; set; }
 
-    public DateOnly? DateOfBirth { get; init; }
+    public DateOnly? DateOfBirth { get; set; }
 
-    public Gender? Gender { get; init; }
+    public Gender? Gender { get; set; }
 
-    public bool IsActive { get; init; } = true;
+    public bool IsActive { get; set; } = true;
 
     // Teacher-specific
-    public string? SpecializationSubject { get; init; }
-    public string? Qualification { get; init; }
+    public string? SpecializationSubject { get; set; }
+    public int?    PrimarySubjectId      { get; set; }
+    public string? Qualification         { get; set; }
 
     // Student: reassign class
-    public int? ClassId { get; init; }
+    public int? ClassId { get; set; }
 
     // Parent: relink student + profile
-    public int? LinkedStudentUserId { get; init; }
-    public string? Relationship { get; init; }
-    public string? Occupation { get; init; }
-    public string? WorkAddress { get; init; }
+    public int? LinkedStudentUserId { get; set; }
+    public string? Relationship { get; set; }
+    public string? Occupation { get; set; }
+    public string? WorkAddress { get; set; }
 
     // Avatar: handled separately via IFormFile in controller
-    public string? AvatarUrl { get; init; }
+    public string? AvatarUrl { get; set; }
 }
 
 // ─── Reset Password ───────────────────────────────────────────────────────────

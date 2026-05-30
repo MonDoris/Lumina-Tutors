@@ -38,6 +38,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lt-confirm.css">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
@@ -309,5 +310,6 @@ window.addEventListener('beforeunload', recordLeave);
 
 <!-- Hidden AF token for JS beacon -->
 <form style="display:none">@Html.AntiForgeryToken()</form>
+<script src="/js/lt-confirm.js"></script>
 </body>
 </html>

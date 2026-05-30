@@ -3,6 +3,7 @@ using LuminaTutors.Application.DTOs.Lab;
 using LuminaTutors.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -10,12 +11,36 @@ namespace LuminaTutors.Web.Controllers;
 public sealed class VirtualLabController : Controller
 {
     private readonly IVirtualLabService _labService;
+    private readonly IAccountService   _accountService;
     private readonly ILogger<VirtualLabController> _logger;
 
-    public VirtualLabController(IVirtualLabService labService, ILogger<VirtualLabController> logger)
+    public VirtualLabController(
+        IVirtualLabService labService,
+        IAccountService accountService,
+        ILogger<VirtualLabController> logger)
     {
-        _labService = labService;
-        _logger     = logger;
+        _labService     = labService;
+        _accountService = accountService;
+        _logger         = logger;
+    }
+
+    // Mapping: Subject name keywords → SubjectTag used in 3D Lab
+    private static readonly (string[] Keywords, string Tag)[] SubjectTagMap =
+    [
+        (["hóa", "hoá", "chemistry"], "chemistry"),
+        (["vật lý", "vat ly", "physics"], "physics"),
+        (["sinh", "biology"], "biology"),
+        (["toán", "toan", "math"], "math"),
+    ];
+
+    private static string? GuessSubjectTag(string? subjectName)
+    {
+        if (string.IsNullOrEmpty(subjectName)) return null;
+        var lower = subjectName.ToLowerInvariant();
+        foreach (var (keywords, tag) in SubjectTagMap)
+            if (keywords.Any(k => lower.Contains(k)))
+                return tag;
+        return null;
     }
 
     // ─── GET /VirtualLab ──────────────────────────────────────────────────────
@@ -26,8 +51,20 @@ public sealed class VirtualLabController : Controller
         if (!result.IsSuccess)
             return StatusCode(500);
 
-        ViewBag.IsTeacher    = IsTeacher();
+        ViewBag.IsTeacher     = IsTeacher();
         ViewBag.CurrentUserId = GetCurrentUserId();
+
+        // Auto-detect teacher's primary subject for the "Open room" form
+        if (IsTeacher())
+        {
+            var profile = await _accountService.GetAccountByIdAsync(GetCurrentSchoolId(), GetCurrentUserId());
+            if (profile.IsSuccess)
+            {
+                var subjectName = profile.Data!.PrimarySubjectName ?? profile.Data.SpecializationSubject;
+                ViewBag.DefaultSubjectTag = GuessSubjectTag(subjectName);
+            }
+        }
+
         return View(result.Data);
     }
 

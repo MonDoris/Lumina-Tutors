@@ -38,6 +38,7 @@
     <!-- Lumina Luxury Theme -->
     <link rel="stylesheet" href="~/css/lumina.css" asp-append-version="true"/>
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/lt-confirm.css" asp-append-version="true"/>
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -199,6 +200,10 @@
                                  font-size:.6rem;font-weight:800;letter-spacing:.04em;
                                  padding:1px 5px;border-radius:4px;line-height:1.4">WebRTC</span>
                 </a>
+                <a asp-controller="Homework" asp-action="Teacher" class="@Nav("Homework")">
+                    <span class="lt-nav__icon"><i class="bi bi-journal-bookmark-fill"></i></span>
+                    Bài tập
+                </a>
                 <a asp-controller="QuizExam" asp-action="Index" class="@Nav("QuizExam")">
                     <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>
                     Đề thi trắc nghiệm
@@ -318,6 +323,10 @@
             {
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Học tập</div>
+                <a asp-controller="Homework" asp-action="Index" class="@Nav("Homework")">
+                    <span class="lt-nav__icon"><i class="bi bi-journal-bookmark-fill"></i></span>
+                    Bài tập
+                </a>
                 <a asp-controller="OnlineClassroom" asp-action="Index" class="@Nav("OnlineClassroom")">
                     <span class="lt-nav__icon"><i class="bi bi-camera-video-fill"></i></span>
                     Phòng học Online
@@ -521,6 +530,280 @@ document.querySelectorAll('.lt-alert').forEach(el => {
     } else {
         window.addEventListener('load', hideSplash);
     }
+})();
+</script>
+<!-- ══ Lumina Confirm Dialog — replaces native confirm() everywhere ══ -->
+<div id="lt-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="lt-cd-title">
+    <div id="lt-confirm-dialog">
+        <div class="lt-cd__icon-wrap" id="lt-cd-icon-wrap">
+            <i class="bi lt-cd__icon" id="lt-cd-icon"></i>
+        </div>
+        <div class="lt-cd__body">
+            <h3 class="lt-cd__title" id="lt-cd-title">Xác nhận</h3>
+            <p  class="lt-cd__msg"   id="lt-cd-msg"></p>
+        </div>
+        <div class="lt-cd__actions">
+            <button class="lt-cd__btn lt-cd__btn-cancel" id="lt-cd-cancel" type="button">
+                <i class="bi bi-x-lg"></i> Hủy
+            </button>
+            <button class="lt-cd__btn lt-cd__btn-ok" id="lt-cd-ok" type="button">
+                <i class="bi bi-check-lg" id="lt-cd-ok-icon"></i>
+                <span id="lt-cd-ok-label">Xác nhận</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
+#lt-confirm-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(10, 18, 40, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .18s ease;
+    backdrop-filter: blur(3px);
+}
+#lt-confirm-overlay.lt-cd--show {
+    opacity: 1; pointer-events: all;
+}
+
+/* ── Dialog card ─────────────────────────────────────────────────────────── */
+#lt-confirm-dialog {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(10, 18, 40, 0.22), 0 4px 16px rgba(10, 18, 40, 0.12);
+    width: 100%; max-width: 380px;
+    padding: 32px 28px 24px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    transform: scale(.88) translateY(14px);
+    transition: transform .22s cubic-bezier(.34,1.3,.64,1), opacity .18s ease;
+    opacity: 0;
+}
+#lt-confirm-overlay.lt-cd--show #lt-confirm-dialog {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* ── Icon bubble ─────────────────────────────────────────────────────────── */
+.lt-cd__icon-wrap {
+    width: 62px; height: 62px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px; flex-shrink: 0;
+    transition: background .15s;
+}
+.lt-cd__icon { font-size: 1.6rem; }
+
+/* Icon themes */
+.lt-cd__icon-wrap--danger  { background: #fee2e2; }
+.lt-cd__icon-wrap--danger .lt-cd__icon { color: #dc2626; }
+.lt-cd__icon-wrap--warning { background: #fef9c3; }
+.lt-cd__icon-wrap--warning .lt-cd__icon { color: #ca8a04; }
+.lt-cd__icon-wrap--safe    { background: #dcfce7; }
+.lt-cd__icon-wrap--safe .lt-cd__icon { color: #16a34a; }
+.lt-cd__icon-wrap--info    { background: #ede9fe; }
+.lt-cd__icon-wrap--info .lt-cd__icon { color: #7c3aed; }
+
+/* ── Text ────────────────────────────────────────────────────────────────── */
+.lt-cd__body { margin-bottom: 22px; }
+.lt-cd__title {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    color: #0f172a; margin-bottom: 6px;
+}
+.lt-cd__msg {
+    font-size: .88rem; color: #475569;
+    line-height: 1.55; margin: 0;
+    white-space: pre-line; /* support \n in messages */
+}
+
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+.lt-cd__actions {
+    display: flex; gap: 10px; width: 100%;
+}
+.lt-cd__btn {
+    flex: 1; padding: 10px 16px; border-radius: 11px;
+    font-size: .87rem; font-weight: 600;
+    border: none; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all .15s;
+}
+.lt-cd__btn-cancel {
+    background: #f1f5f9; color: #64748b;
+}
+.lt-cd__btn-cancel:hover { background: #e2e8f0; color: #334155; }
+
+/* OK variants */
+.lt-cd__btn-ok              { background: #0f2044; color: #fff; }
+.lt-cd__btn-ok:hover        { background: #1a3060; }
+.lt-cd__btn-ok--danger      { background: #dc2626; color: #fff; }
+.lt-cd__btn-ok--danger:hover{ background: #b91c1c; }
+.lt-cd__btn-ok--warning     { background: #d97706; color: #fff; }
+.lt-cd__btn-ok--warning:hover{ background: #b45309; }
+.lt-cd__btn-ok--safe        { background: #16a34a; color: #fff; }
+.lt-cd__btn-ok--safe:hover  { background: #15803d; }
+.lt-cd__btn-ok--info        { background: #7c3aed; color: #fff; }
+.lt-cd__btn-ok--info:hover  { background: #6d28d9; }
+</style>
+
+<script>
+(function () {
+    const overlay  = document.getElementById('lt-confirm-overlay');
+    const dialog   = document.getElementById('lt-confirm-dialog');
+    const msgEl    = document.getElementById('lt-cd-msg');
+    const iconWrap = document.getElementById('lt-cd-icon-wrap');
+    const iconEl   = document.getElementById('lt-cd-icon');
+    const okBtn    = document.getElementById('lt-cd-ok');
+    const okIcon   = document.getElementById('lt-cd-ok-icon');
+    const okLabel  = document.getElementById('lt-cd-ok-label');
+    const cancelBtn= document.getElementById('lt-cd-cancel');
+
+    if (!overlay) return; // guard: auth pages without sidebar
+
+    let pendingAction = null;
+
+    // ── Type detection ────────────────────────────────────────────────────────
+    const TYPES = {
+        danger : {
+            iconClass : 'bi-trash3-fill',
+            wrapClass : 'lt-cd__icon-wrap--danger',
+            btnClass  : 'lt-cd__btn-ok--danger',
+            btnLabel  : 'Xóa',
+            btnIcon   : 'bi-trash3',
+            title     : 'Xác nhận xóa',
+            keywords  : ['xóa', 'xoá', 'thu hồi', 'vô hiệu']
+        },
+        warning : {
+            iconClass : 'bi-exclamation-triangle-fill',
+            wrapClass : 'lt-cd__icon-wrap--warning',
+            btnClass  : 'lt-cd__btn-ok--warning',
+            btnLabel  : 'Xác nhận',
+            btnIcon   : 'bi-check-lg',
+            title     : 'Xác nhận',
+            keywords  : ['kết thúc', 'đóng phòng', 'đóng phiên', 'đóng đề', 'khóa sổ', 'hủy buổi', 'hủy liên kết', 'xếp phòng']
+        },
+        safe   : {
+            iconClass : 'bi-send-fill',
+            wrapClass : 'lt-cd__icon-wrap--safe',
+            btnClass  : 'lt-cd__btn-ok--safe',
+            btnLabel  : 'Nộp bài',
+            btnIcon   : 'bi-send-fill',
+            title     : 'Xác nhận nộp bài',
+            keywords  : ['nộp bài', 'nộp lại']
+        },
+        info   : {
+            iconClass : 'bi-info-circle-fill',
+            wrapClass : 'lt-cd__icon-wrap--info',
+            btnClass  : 'lt-cd__btn-ok--info',
+            btnLabel  : 'Xác nhận',
+            btnIcon   : 'bi-check-lg',
+            title     : 'Xác nhận',
+            keywords  : ['phát sinh', 'tính điểm', 'tính đtb', 'xếp phòng ngẫu nhiên']
+        },
+    };
+
+    function detectType(msg) {
+        const lower = msg.toLowerCase();
+        for (const [key, cfg] of Object.entries(TYPES))
+            if (cfg.keywords.some(k => lower.includes(k)))
+                return cfg;
+        return TYPES.warning; // default
+    }
+
+    // ── Show / hide ───────────────────────────────────────────────────────────
+    function show(msg, onOk) {
+        const cfg = detectType(msg);
+
+        // Reset icon classes
+        iconWrap.className = 'lt-cd__icon-wrap ' + cfg.wrapClass;
+        iconEl.className   = 'bi lt-cd__icon ' + cfg.iconClass;
+        okBtn.className    = 'lt-cd__btn lt-cd__btn-ok ' + cfg.btnClass;
+        okIcon.className   = 'bi ' + cfg.btnIcon;
+        okLabel.textContent= cfg.btnLabel;
+        document.getElementById('lt-cd-title').textContent = cfg.title;
+        msgEl.textContent  = msg;
+
+        pendingAction = onOk;
+        overlay.setAttribute('aria-hidden', 'false');
+        overlay.classList.add('lt-cd--show');
+
+        // Trap focus
+        requestAnimationFrame(() => okBtn.focus());
+    }
+
+    function hide() {
+        overlay.classList.remove('lt-cd--show');
+        overlay.setAttribute('aria-hidden', 'true');
+        pendingAction = null;
+    }
+
+    // ── Button events ─────────────────────────────────────────────────────────
+    okBtn.addEventListener('click', () => {
+        const action = pendingAction;
+        hide();
+        if (action) action();
+    });
+    cancelBtn.addEventListener('click', hide);
+    overlay.addEventListener('click', e => { if (e.target === overlay) hide(); });
+
+    // Keyboard
+    overlay.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { hide(); }
+        if (e.key === 'Enter')  { const a = pendingAction; hide(); if (a) a(); }
+        // Tab trap
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            (document.activeElement === okBtn ? cancelBtn : okBtn).focus();
+        }
+    });
+
+    // ── Global interceptor: capture phase ─────────────────────────────────────
+    // Matches any button whose onclick contains `return confirm('...')` or confirm("...")
+    const RE_CONFIRM = /\bconfirm\s*\(\s*(['"])([\s\S]*?)\1\s*\)/;
+
+    document.addEventListener('click', function (e) {
+        // Walk up to find a button/submit with onclick confirm
+        let el = e.target;
+        while (el && el !== document.body) {
+            const oc = el.getAttribute && el.getAttribute('onclick');
+            if (oc) {
+                const m = RE_CONFIRM.exec(oc);
+                if (m) {
+                    // Already flagged as confirmed? Let it run.
+                    if (el.dataset.ltOk === '1') {
+                        delete el.dataset.ltOk;
+                        return; // proceed normally
+                    }
+
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+
+                    const msg  = m[2].replace(/\\n/g, '\n').replace(/\\'/g, "'").replace(/\\"/g, '"');
+                    const form = el.closest('form');
+
+                    show(msg, () => {
+                        if (form) {
+                            // Submit the form directly — no need to re-fire onclick
+                            form.submit();
+                        } else {
+                            // Non-form action (anchor, js, etc.)
+                            el.dataset.ltOk = '1';
+                            el.click();
+                        }
+                    });
+                    return;
+                }
+            }
+            el = el.parentElement;
+        }
+    }, true /* capture phase — fires before onclick */);
+
+    // ── Expose for manual use: window.ltConfirm(msg, callback) ───────────────
+    window.ltConfirm = function (msg, callback) {
+        show(msg, callback);
+    };
 })();
 </script>
 </body>

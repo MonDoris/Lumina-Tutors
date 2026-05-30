@@ -33,7 +33,10 @@ public class TeacherProfile : BaseEntity
     public DateOnly? DateOfBirth { get; set; }
     public Gender? Gender { get; set; }
     public string? Qualification { get; set; }
+    /// <summary>Free-text label kept for display (e.g. "Toán học"). PrimarySubjectId is the authoritative FK.</summary>
     public string? SpecializationSubject { get; set; }
+    /// <summary>FK → Subject. Drives auto-population of subject pickers in Lab / Quiz / Homework forms.</summary>
+    public int? PrimarySubjectId { get; set; }
     public DateOnly? HireDate { get; set; }
     public ContractType? ContractType { get; set; }
     public string? TaxCode { get; set; }
@@ -42,6 +45,7 @@ public class TeacherProfile : BaseEntity
 
     public User User { get; set; } = null!;
     public School School { get; set; } = null!;
+    public LuminaTutors.Domain.Entities.Academic.Subject? PrimarySubject { get; set; }
 }
 
 // ─── Parent Profile ───────────────────────────────────────────────────────────

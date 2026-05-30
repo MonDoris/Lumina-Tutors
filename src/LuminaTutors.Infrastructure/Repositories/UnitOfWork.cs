@@ -63,6 +63,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Assignment>?           _assignments;
     private IRepository<AssignmentSubmission>? _assignmentSubmissions;
     private IRepository<SubmissionFile>?       _submissionFiles;
+    private IRepository<AssignmentAttachment>? _assignmentAttachments;
     private IRepository<VirtualLabSession>?    _virtualLabSessions;
     private IRepository<OnlineSession>?        _onlineSessions;
     private IRepository<SessionParticipant>?   _sessionParticipants;
@@ -145,6 +146,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Assignment>           Assignments           => Get(ref _assignments);
     public IRepository<AssignmentSubmission> AssignmentSubmissions => Get(ref _assignmentSubmissions);
     public IRepository<SubmissionFile>       SubmissionFiles       => Get(ref _submissionFiles);
+    public IRepository<AssignmentAttachment> AssignmentAttachments => Get(ref _assignmentAttachments);
     public IRepository<VirtualLabSession>    VirtualLabSessions    => Get(ref _virtualLabSessions);
     public IRepository<OnlineSession>        OnlineSessions        => Get(ref _onlineSessions);
     public IRepository<SessionParticipant>   SessionParticipants   => Get(ref _sessionParticipants);

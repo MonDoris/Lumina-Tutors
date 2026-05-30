@@ -153,7 +153,7 @@
                         <div class="dcard__title"><i class="bi bi-book-fill" style="color:#059669"></i> Thông tin giảng dạy</div>
                     </div>
                     <div class="dcard__body">
-                        @{ InfoRow("bi-book", "Bộ môn giảng dạy", Model.SpecializationSubject); }
+                        @{ InfoRow("bi-book", "Bộ môn giảng dạy", Model.PrimarySubjectName ?? Model.SpecializationSubject); }
                         @{ InfoRow("bi-award-fill", "Trình độ", Model.Qualification); }
                     </div>
                 </div>

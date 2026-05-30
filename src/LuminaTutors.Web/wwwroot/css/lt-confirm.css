@@ -1,0 +1,74 @@
+/* Lumina Tutors — Confirm Dialog Styles */
+#lt-confirm-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(10, 18, 40, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .18s ease;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+#lt-confirm-overlay.lt-cd--show {
+    opacity: 1; pointer-events: all;
+}
+#lt-confirm-dialog {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(10, 18, 40, 0.22), 0 4px 16px rgba(10, 18, 40, 0.12);
+    width: 100%; max-width: 380px;
+    padding: 32px 28px 24px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    transform: scale(.88) translateY(14px);
+    transition: transform .22s cubic-bezier(.34, 1.3, .64, 1), opacity .18s ease;
+    opacity: 0;
+}
+#lt-confirm-overlay.lt-cd--show #lt-confirm-dialog {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+.lt-cd__icon-wrap {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px; flex-shrink: 0;
+}
+.lt-cd__icon { font-size: 1.65rem; }
+.lt-cd__icon-wrap--danger  { background: #fee2e2; }
+.lt-cd__icon-wrap--danger .lt-cd__icon { color: #dc2626; }
+.lt-cd__icon-wrap--warning { background: #fef9c3; }
+.lt-cd__icon-wrap--warning .lt-cd__icon { color: #ca8a04; }
+.lt-cd__icon-wrap--safe    { background: #dcfce7; }
+.lt-cd__icon-wrap--safe .lt-cd__icon { color: #16a34a; }
+.lt-cd__icon-wrap--info    { background: #ede9fe; }
+.lt-cd__icon-wrap--info .lt-cd__icon { color: #7c3aed; }
+.lt-cd__body { margin-bottom: 22px; }
+.lt-cd__title {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    color: #0f172a; margin: 0 0 7px;
+}
+.lt-cd__msg {
+    font-size: .88rem; color: #475569;
+    line-height: 1.6; margin: 0;
+    white-space: pre-line;
+}
+.lt-cd__actions { display: flex; gap: 10px; width: 100%; }
+.lt-cd__btn {
+    flex: 1; padding: 10px 14px; border-radius: 11px;
+    font-size: .87rem; font-weight: 600; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all .15s; font-family: inherit;
+}
+.lt-cd__btn-cancel { background: #f1f5f9; color: #64748b; }
+.lt-cd__btn-cancel:hover { background: #e2e8f0; color: #334155; }
+.lt-cd__btn-ok              { background: #0f2044; color: #fff; }
+.lt-cd__btn-ok:hover        { background: #1a3060; }
+.lt-cd__btn-ok--danger      { background: #dc2626; }
+.lt-cd__btn-ok--danger:hover{ background: #b91c1c; }
+.lt-cd__btn-ok--warning     { background: #d97706; }
+.lt-cd__btn-ok--warning:hover{ background: #b45309; }
+.lt-cd__btn-ok--safe        { background: #16a34a; }
+.lt-cd__btn-ok--safe:hover  { background: #15803d; }
+.lt-cd__btn-ok--info        { background: #7c3aed; }
+.lt-cd__btn-ok--info:hover  { background: #6d28d9; }

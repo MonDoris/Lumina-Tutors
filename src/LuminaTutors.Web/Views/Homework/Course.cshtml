@@ -1,0 +1,278 @@
+@using LuminaTutors.Application.DTOs.Homework
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Bài tập môn học";
+    var course      = ViewBag.Course as StudentCourseDto;
+    var assignments = ViewBag.Assignments as IReadOnlyList<StudentAssignmentDto> ?? [];
+    var now         = DateTime.UtcNow;
+
+    string TypeLabel(AssignmentType t) => t switch {
+        AssignmentType.Homework => "Bài về nhà",
+        AssignmentType.Quiz     => "Kiểm tra",
+        AssignmentType.Midterm  => "Giữa kỳ",
+        AssignmentType.Final    => "Cuối kỳ",
+        AssignmentType.Project  => "Dự án",
+        _ => t.ToString()
+    };
+    var subjectColors = new[] { "#1e40af","#065f46","#7e22ce","#9a3412","#0c4a6e","#4c1d95","#134e4a","#7f1d1d" };
+    var cardColor = course != null
+        ? subjectColors[Math.Abs(course.SubjectName.GetHashCode()) % subjectColors.Length]
+        : "#1e40af";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-journal-bookmark-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            @(course?.SubjectName ?? "Môn học")
+        </h1>
+        <p class="lt-page-subtitle">
+            @course?.ClassName &nbsp;·&nbsp; GV: @course?.TeacherName
+        </p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Tất cả môn học
+    </a>
+</div>
+
+@if (TempData["Success"] is string ok)
+{ <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div> }
+
+@* ── Course summary card ─────────────────────────────────────────────────── *@
+@if (course != null)
+{
+    <div class="hw-course-banner lt-mb-4" style="--cc:@cardColor">
+        <div class="hw-course-banner__pattern"></div>
+        <div class="hw-course-banner__content">
+            <div class="hw-course-banner__stats">
+                <div class="hw-course-banner__stat">
+                    <span class="hw-course-banner__num">@course.TotalAssignments</span>
+                    <span class="hw-course-banner__lbl">Bài tập</span>
+                </div>
+                <div class="hw-course-banner__stat">
+                    <span class="hw-course-banner__num" style="color:#4ade80">@course.SubmittedCount</span>
+                    <span class="hw-course-banner__lbl">Đã nộp</span>
+                </div>
+                <div class="hw-course-banner__stat">
+                    <span class="hw-course-banner__num" style="color:#fbbf24">@course.PendingCount</span>
+                    <span class="hw-course-banner__lbl">Chờ nộp</span>
+                </div>
+                @if (course.OverdueCount > 0)
+                {
+                    <div class="hw-course-banner__stat">
+                        <span class="hw-course-banner__num" style="color:#fca5a5">@course.OverdueCount</span>
+                        <span class="hw-course-banner__lbl">Quá hạn</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Filter tabs ─────────────────────────────────────────────────────────── *@
+<ul class="nav nav-tabs lt-mb-3" id="filterTabs">
+    <li class="nav-item">
+        <button class="nav-link active" data-filter="all">
+            Tất cả <span class="lt-badge lt-badge--navy" style="margin-left:4px">@assignments.Count</span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-filter="pending">
+            Chờ nộp
+            <span class="lt-badge" style="margin-left:4px">
+                @assignments.Count(a => a.MySubmission == null || a.MySubmission.Status < SubmissionStatus.Submitted)
+            </span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-filter="submitted">
+            Đã nộp
+            <span class="lt-badge lt-badge--success" style="margin-left:4px">
+                @assignments.Count(a => a.MySubmission?.Status >= SubmissionStatus.Submitted)
+            </span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-filter="overdue" style="color:var(--lt-danger)">
+            Quá hạn
+            <span class="lt-badge lt-badge--danger" style="margin-left:4px">
+                @assignments.Count(a => a.DueDate.HasValue && a.DueDate.Value < now
+                    && (a.MySubmission == null || a.MySubmission.Status < SubmissionStatus.Submitted))
+            </span>
+        </button>
+    </li>
+</ul>
+
+@* ── Assignment cards ────────────────────────────────────────────────────── *@
+@if (!assignments.Any())
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <i class="bi bi-clipboard2-x" style="font-size:3rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">Chưa có bài tập nào trong môn này</div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div id="assignment-list" class="row g-3">
+        @foreach (var a in assignments)
+        {
+            var isOverdue  = a.DueDate.HasValue && a.DueDate.Value < now;
+            var submitted  = a.MySubmission?.Status >= SubmissionStatus.Submitted;
+            var graded     = a.MySubmission?.Status == SubmissionStatus.Graded;
+            var filterData = submitted ? "submitted" : (isOverdue ? "overdue" : "pending");
+
+            string statusBadge, statusColor;
+            if (graded)       { statusBadge = "Đã chấm điểm"; statusColor = "var(--lt-success)"; }
+            else if (submitted){ statusBadge = "Đã nộp";       statusColor = "#3b82f6"; }
+            else if (isOverdue){ statusBadge = "Quá hạn";      statusColor = "var(--lt-danger)"; }
+            else              { statusBadge = "Chờ nộp";       statusColor = "#f59e0b"; }
+
+            <div class="col-12 hw-asgn-card-wrap" data-filter="@filterData">
+                <div class="lt-card hw-asgn-card @(isOverdue && !submitted ? "hw-asgn-card--overdue" : "")">
+                    <div class="hw-asgn-card__inner">
+                        <!-- Left: Icon + info -->
+                        <div class="hw-asgn-card__left">
+                            <div class="hw-asgn-card__icon" style="background:@(cardColor + "22");color:@cardColor">
+                                @switch (a.AssignmentType)
+                                {
+                                    case AssignmentType.Quiz:    <i class="bi bi-pencil-square"></i>    break;
+                                    case AssignmentType.Project: <i class="bi bi-diagram-3-fill"></i>   break;
+                                    case AssignmentType.Midterm:
+                                    case AssignmentType.Final:   <i class="bi bi-mortarboard-fill"></i> break;
+                                    default:                     <i class="bi bi-journal-text"></i>      break;
+                                }
+                            </div>
+                            <div class="hw-asgn-card__info">
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                                    <span style="font-size:.7rem;font-weight:700;
+                                                 background:@(cardColor + "22");color:@cardColor;
+                                                 padding:2px 8px;border-radius:20px">
+                                        @TypeLabel(a.AssignmentType)
+                                    </span>
+                                    <span class="lt-badge" style="background:@(statusColor + "22");color:@statusColor;border:none;font-size:.7rem">
+                                        @statusBadge
+                                    </span>
+                                    @if (a.MySubmission?.IsLate == true)
+                                    {
+                                        <span class="lt-badge lt-badge--danger" style="font-size:.68rem">Nộp muộn</span>
+                                    }
+                                </div>
+                                <div class="hw-asgn-card__title">@a.Title</div>
+                                <div class="hw-asgn-card__meta">
+                                    @if (a.DueDate.HasValue)
+                                    {
+                                        <span style="color:@(isOverdue && !submitted?"var(--lt-danger)":"var(--lt-text-muted)")">
+                                            <i class="bi bi-clock"></i>
+                                            Hạn: @a.DueDate.Value.ToLocalTime().ToString("HH:mm dd/MM/yyyy")
+                                        </span>
+                                    }
+                                    <span><i class="bi bi-star"></i> @a.MaxScore điểm</span>
+                                    @if (a.Attachments.Any())
+                                    {
+                                        <span><i class="bi bi-paperclip"></i> @a.Attachments.Count file đính kèm</span>
+                                    }
+                                </div>
+                                @if (graded && a.MySubmission!.Score.HasValue)
+                                {
+                                    <div style="margin-top:6px">
+                                        <span style="font-size:1.05rem;font-weight:800;color:var(--lt-navy)">
+                                            @a.MySubmission.Score / @a.MaxScore
+                                        </span>
+                                        <span style="font-size:.75rem;color:var(--lt-text-muted);margin-left:6px">điểm của bạn</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Right: CTA -->
+                        <div class="hw-asgn-card__right">
+                            <a asp-action="Detail" asp-route-id="@a.Id"
+                               class="lt-btn @(submitted ? "lt-btn--outline" : "lt-btn--primary") lt-btn--sm"
+                               style="white-space:nowrap">
+                                @if (submitted)
+                                {
+                                    <i class="bi bi-eye-fill"></i> <span>Xem bài</span>
+                                }
+                                else if (isOverdue && !a.AllowLateSubmission)
+                                {
+                                    <i class="bi bi-lock-fill"></i> <span>Xem bài</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-upload"></i> <span>Nộp bài</span>
+                                }
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Styles {
+<style>
+/* Banner */
+.hw-course-banner {
+    border-radius: 14px; overflow: hidden;
+    background: var(--cc); position: relative; padding: 20px 24px;
+}
+.hw-course-banner__pattern {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 60%);
+}
+.hw-course-banner__content { position: relative; z-index: 1; }
+.hw-course-banner__stats   { display: flex; gap: 32px; flex-wrap: wrap; }
+.hw-course-banner__stat    { display: flex; flex-direction: column; align-items: center; }
+.hw-course-banner__num     { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1; }
+.hw-course-banner__lbl     { font-size: .72rem; color: rgba(255,255,255,.8); margin-top: 2px; }
+
+/* Assignment cards */
+.hw-asgn-card { transition: box-shadow .16s; }
+.hw-asgn-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,.1); }
+.hw-asgn-card--overdue { border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.02); }
+
+.hw-asgn-card__inner {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 18px;
+}
+.hw-asgn-card__left {
+    display: flex; align-items: flex-start; gap: 14px; flex: 1; min-width: 0;
+}
+.hw-asgn-card__icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+}
+.hw-asgn-card__info  { flex: 1; min-width: 0; }
+.hw-asgn-card__title {
+    font-size: .92rem; font-weight: 700; color: var(--lt-navy);
+    margin: 5px 0 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hw-asgn-card__meta {
+    display: flex; gap: 14px; font-size: .74rem; color: var(--lt-text-muted); flex-wrap: wrap;
+}
+.hw-asgn-card__right { flex-shrink: 0; }
+</style>
+}
+
+@section Scripts {
+<script>
+// Filter tabs
+document.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const filter = this.dataset.filter;
+        document.querySelectorAll('.hw-asgn-card-wrap').forEach(card => {
+            card.style.display = (filter === 'all' || card.dataset.filter === filter) ? '' : 'none';
+        });
+    });
+});
+</script>
+}

@@ -56,6 +56,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<QuestionBank>         QuestionBanks         { get; }
     IRepository<QuestionOption>       QuestionOptions       { get; }
     IRepository<Assignment>           Assignments           { get; }
+    IRepository<AssignmentAttachment> AssignmentAttachments { get; }
     IRepository<AssignmentSubmission> AssignmentSubmissions { get; }
     IRepository<SubmissionFile>       SubmissionFiles       { get; }
     IRepository<VirtualLabSession>    VirtualLabSessions    { get; }

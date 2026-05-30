@@ -55,6 +55,11 @@ public class TeacherProfileConfiguration : IEntityTypeConfiguration<TeacherProfi
 
         b.HasOne(x => x.School).WithMany()
             .HasForeignKey(x => x.SchoolId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(x => x.PrimarySubject).WithMany()
+            .HasForeignKey(x => x.PrimarySubjectId)
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
     }
 }
 

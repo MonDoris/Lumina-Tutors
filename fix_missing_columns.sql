@@ -250,3 +250,28 @@ IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory]
     VALUES ('20260529000000_AddOnlineClassroomFull', '8.0.27');
 
 PRINT '=== Done ===';
+
+-- ── 8. AssignmentAttachments ─────────────────────────────────────────────────
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AssignmentAttachments')
+BEGIN
+    CREATE TABLE AssignmentAttachments (
+        AttachmentId INT            IDENTITY(1,1) NOT NULL,
+        AssignmentId INT            NOT NULL,
+        FileName     NVARCHAR(255)  NOT NULL,
+        FileUrl      NVARCHAR(500)  NOT NULL,
+        FileType     NVARCHAR(50)   NOT NULL,
+        FileSizeKB   INT            NULL,
+        UploadedAt   DATETIME2      NOT NULL CONSTRAINT DF_AA_UploadedAt DEFAULT GETUTCDATE(),
+        CONSTRAINT PK_AssignmentAttachments PRIMARY KEY (AttachmentId)
+    );
+    CREATE INDEX IX_AssignmentAttachments_AssignmentId ON AssignmentAttachments (AssignmentId);
+
+    IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Assignments')
+        ALTER TABLE AssignmentAttachments
+            ADD CONSTRAINT FK_AssignmentAttachments_Assignments
+            FOREIGN KEY (AssignmentId) REFERENCES Assignments (AssignmentId) ON DELETE CASCADE;
+
+    PRINT 'AssignmentAttachments: table created';
+END
+ELSE
+    PRINT 'AssignmentAttachments: already exists';

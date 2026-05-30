@@ -43,4 +43,11 @@ public interface IAccountService
     /// <summary>Danh sách lớp học trong trường (dùng cho dropdown).</summary>
     Task<Result<IReadOnlyList<(int ClassId, string ClassName)>>> GetClassSelectListAsync(
         int schoolId, CancellationToken ct = default);
+
+    /// <summary>Danh sách môn học trong trường (dùng cho dropdown chọn bộ môn giáo viên).</summary>
+    Task<Result<IReadOnlyList<(int SubjectId, string SubjectName, string SubjectCode)>>> GetSubjectSelectListAsync(
+        int schoolId, CancellationToken ct = default);
+
+    /// <summary>Lấy SubjectId chính của giáo viên từ TeacherProfile.PrimarySubjectId.</summary>
+    Task<int?> GetTeacherPrimarySubjectIdAsync(int schoolId, int teacherUserId, CancellationToken ct = default);
 }

@@ -40,7 +40,9 @@
       "Bash(Select-Object Name)",
       "Bash(xargs grep -l \"QuestionType\\\\|DifficultyLevel\")",
       "Bash(Select-String \"AddQuizSystem\")",
-      "Bash(curl -L -o \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\\\\src\\\\LuminaTutors.Web\\\\wwwroot\\\\js\\\\three\\\\three.module.min.js\" \"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js\")"
+      "Bash(curl -L -o \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\\\\src\\\\LuminaTutors.Web\\\\wwwroot\\\\js\\\\three\\\\three.module.min.js\" \"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js\")",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\\\\src\\\\LuminaTutors.Domain\\\\Entities\\\\Learning\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\Documents\\\\Claude\\\\Projects\\\\Hệ Thống Quản Lý Giáo Dục Lumina Tutors\" -Directory)"
     ]
   }
 }

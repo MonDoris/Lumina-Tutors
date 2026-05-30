@@ -50,7 +50,7 @@ public sealed class AccountService : IAccountService
             include: q => q
                 .Include(u => u.Role)
                 .Include(u => u.StudentProfile)
-                .Include(u => u.TeacherProfile)
+                .Include(u => u.TeacherProfile).ThenInclude(tp => tp!.PrimarySubject)
                 .Include(u => u.SupervisorProfile)
                 .Include(u => u.ParentProfile),
             ct: ct);
@@ -70,7 +70,7 @@ public sealed class AccountService : IAccountService
             include: q => q
                 .Include(u => u.Role)
                 .Include(u => u.StudentProfile)
-                .Include(u => u.TeacherProfile)
+                .Include(u => u.TeacherProfile).ThenInclude(tp => tp!.PrimarySubject)
                 .Include(u => u.SupervisorProfile)
                 .Include(u => u.ParentProfile),
             ct: ct);
@@ -242,6 +242,14 @@ public sealed class AccountService : IAccountService
                         break;
 
                     case "TEACHER":
+                        // Always derive SpecializationSubject from the Subject entity when PrimarySubjectId is given.
+                        // This guarantees the two fields never desync regardless of JS behaviour.
+                        string? specSubjectCreate = req.SpecializationSubject?.Trim();
+                        if (req.PrimarySubjectId.HasValue)
+                        {
+                            var sub = await _uow.Subjects.GetByIdAsync(req.PrimarySubjectId.Value, ct);
+                            if (sub != null) specSubjectCreate = sub.SubjectName;
+                        }
                         await _uow.TeacherProfiles.AddAsync(new TeacherProfile
                         {
                             UserId                = user.Id,
@@ -249,7 +257,8 @@ public sealed class AccountService : IAccountService
                             TeacherCode           = $"GV{DateTime.UtcNow:yyMM}{user.Id:D4}",
                             DateOfBirth           = req.DateOfBirth,
                             Gender                = req.Gender,
-                            SpecializationSubject = req.SpecializationSubject?.Trim(),
+                            SpecializationSubject = specSubjectCreate,
+                            PrimarySubjectId      = req.PrimarySubjectId,
                             Qualification         = req.Qualification?.Trim(),
                             HireDate              = DateOnly.FromDateTime(DateTime.UtcNow)
                         }, ct);
@@ -371,9 +380,17 @@ public sealed class AccountService : IAccountService
                     case "TEACHER":
                         if (user.TeacherProfile != null)
                         {
+                            // Derive SpecializationSubject from Subject entity (source of truth = PrimarySubjectId)
+                            string? specSubjectUpdate = req.SpecializationSubject?.Trim();
+                            if (req.PrimarySubjectId.HasValue)
+                            {
+                                var sub = await _uow.Subjects.GetByIdAsync(req.PrimarySubjectId.Value, ct);
+                                if (sub != null) specSubjectUpdate = sub.SubjectName;
+                            }
                             user.TeacherProfile.DateOfBirth           = req.DateOfBirth;
                             user.TeacherProfile.Gender                = req.Gender;
-                            user.TeacherProfile.SpecializationSubject = req.SpecializationSubject?.Trim();
+                            user.TeacherProfile.SpecializationSubject = specSubjectUpdate;
+                            user.TeacherProfile.PrimarySubjectId      = req.PrimarySubjectId;
                             user.TeacherProfile.Qualification         = req.Qualification?.Trim();
                         }
                         break;
@@ -507,6 +524,29 @@ public sealed class AccountService : IAccountService
         return Result<IReadOnlyList<(int, string)>>.Success(list);
     }
 
+    public async Task<Result<IReadOnlyList<(int SubjectId, string SubjectName, string SubjectCode)>>> GetSubjectSelectListAsync(
+        int schoolId, CancellationToken ct = default)
+    {
+        var subjects = await _uow.Subjects.FindAsync(
+            s => s.SchoolId == schoolId,
+            ct: ct);
+
+        var list = subjects
+            .OrderBy(s => s.SubjectName)
+            .Select(s => (s.Id, s.SubjectName, s.SubjectCode))
+            .ToList() as IReadOnlyList<(int, string, string)>;
+
+        return Result<IReadOnlyList<(int, string, string)>>.Success(list);
+    }
+
+    public async Task<int?> GetTeacherPrimarySubjectIdAsync(
+        int schoolId, int teacherUserId, CancellationToken ct = default)
+    {
+        var profiles = await _uow.TeacherProfiles.FindAsync(
+            p => p.UserId == teacherUserId && p.SchoolId == schoolId, ct: ct);
+        return profiles.FirstOrDefault()?.PrimarySubjectId;
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────────
 
     private static AccountListItemDto ToListItem(User u)
@@ -518,7 +558,9 @@ public sealed class AccountService : IAccountService
             "SUPERVISOR" => u.SupervisorProfile?.SupervisorCode,
             _            => null
         };
-        string? subject = u.TeacherProfile?.SpecializationSubject;
+        // Prefer PrimarySubject name (FK) over free-text SpecializationSubject
+        string? subject = u.TeacherProfile?.PrimarySubject?.SubjectName
+                       ?? u.TeacherProfile?.SpecializationSubject;
 
         return new AccountListItemDto(
             UserId:      u.Id,
@@ -600,6 +642,8 @@ public sealed class AccountService : IAccountService
                                   u.Role.RoleCode == "TEACHER"    ? u.TeacherProfile?.Gender :
                                   u.Role.RoleCode == "SUPERVISOR" ? u.SupervisorProfile?.Gender : null,
             SpecializationSubject: u.TeacherProfile?.SpecializationSubject,
+            PrimarySubjectId:      u.TeacherProfile?.PrimarySubjectId,
+            PrimarySubjectName:    u.TeacherProfile?.PrimarySubject?.SubjectName,
             Qualification:        u.TeacherProfile?.Qualification,
             CurrentClassId:       classId,
             ClassName:            className,

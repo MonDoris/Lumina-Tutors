@@ -1,0 +1,317 @@
+@using LuminaTutors.Application.DTOs.Homework
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Giao bài tập mới";
+    var sas             = ViewBag.SubjectAssignments as IReadOnlyList<SubjectAssignmentOptionDto> ?? [];
+    var preselectedSaId = ViewBag.PreselectedSaId as int? ?? 0;
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-plus-circle-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Giao bài tập mới
+        </h1>
+        <p class="lt-page-subtitle">Tạo bài tập và đính kèm tài liệu cho học sinh</p>
+    </div>
+    <a asp-action="Teacher" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<form asp-action="Create" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-4">
+
+        <!-- ── Left: Main info ──────────────────────────────────────────── -->
+        <div class="col-lg-8">
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-file-text-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Thông tin bài tập
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Môn học — Lớp <span class="lt-text-danger">*</span></label>
+                        <select name="subjectAssignmentId" class="lt-select" required>
+                            <option value="">— Chọn môn học / lớp —</option>
+                            @foreach (var sa in sas)
+                            {
+                                <option value="@sa.Id" selected="@(sa.Id == preselectedSaId ? "selected" : null)">
+                                    @sa.SubjectName — @sa.ClassName
+                                </option>
+                            }
+                        </select>
+                        @if (!sas.Any())
+                        {
+                            <p class="lt-form-hint lt-text-danger">
+                                Bạn chưa được phân công dạy môn nào. Liên hệ Admin.
+                            </p>
+                        }
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Tiêu đề bài tập <span class="lt-text-danger">*</span></label>
+                        <input name="title" type="text" class="lt-input"
+                               placeholder="VD: Bài tập trang 45 — Phương trình bậc 2"
+                               maxlength="200" required />
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Hướng dẫn / Yêu cầu</label>
+                        <textarea name="instructions" class="lt-input" rows="5"
+                                  placeholder="Mô tả chi tiết yêu cầu bài tập, nguồn tài liệu tham khảo, lưu ý khi làm bài..."
+                                  style="resize:vertical"></textarea>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Attachments ─────────────────────────────────────────── -->
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-paperclip" style="color:var(--lt-gold);margin-right:6px"></i>
+                        File đính kèm
+                    </h3>
+                    <span class="lt-badge">Hỗ trợ mọi định dạng file</span>
+                </div>
+                <div class="lt-card__body">
+                    <div id="drop-zone" class="hw-drop-zone">
+                        <i class="bi bi-cloud-arrow-up-fill hw-drop-zone__icon"></i>
+                        <div class="hw-drop-zone__title">Kéo thả file vào đây</div>
+                        <div class="hw-drop-zone__sub">hoặc</div>
+                        <label class="lt-btn lt-btn--outline" style="cursor:pointer">
+                            <i class="bi bi-folder2-open"></i> Chọn file
+                            <input type="file" name="attachments" multiple id="file-input"
+                                   style="display:none" />
+                        </label>
+                        <div class="hw-drop-zone__hint">
+                            PDF, Word, Excel, PowerPoint, ảnh, video, ZIP, ... không giới hạn định dạng. Tối đa 50MB/file.
+                        </div>
+                    </div>
+                    <div id="file-list" class="hw-file-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Right: Settings ──────────────────────────────────────────── -->
+        <div class="col-lg-4">
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-gear-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Cài đặt
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Loại bài tập <span class="lt-text-danger">*</span></label>
+                        <select name="assignmentType" class="lt-select" required>
+                            <option value="1" selected>📚 Bài về nhà</option>
+                            <option value="2">📝 Kiểm tra</option>
+                            <option value="3">📋 Giữa kỳ</option>
+                            <option value="4">🎓 Cuối kỳ</option>
+                            <option value="5">🔬 Dự án</option>
+                        </select>
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Điểm tối đa</label>
+                        <input name="maxScore" type="number" class="lt-input"
+                               value="10" min="0" max="1000" step="0.5" />
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Hạn nộp bài</label>
+                        <input name="dueDate" type="datetime-local" class="lt-input" />
+                        <p class="lt-form-hint">Để trống nếu không giới hạn thời gian.</p>
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <div style="display:flex;align-items:center;justify-content:space-between">
+                            <label class="lt-label" style="margin:0">Cho phép nộp muộn</label>
+                            <label class="hw-toggle">
+                                <input type="checkbox" name="allowLateSubmission" id="allowLate" value="true" />
+                                <span class="hw-toggle__track"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="lt-form-group lt-mb-4" id="penalty-group" style="display:none">
+                        <label class="lt-label">Phạt điểm khi nộp muộn (%)</label>
+                        <input name="latePenaltyPercent" type="number" class="lt-input"
+                               value="0" min="0" max="100" />
+                        <p class="lt-form-hint">0 = không phạt.</p>
+                    </div>
+
+                    <div style="background:var(--lt-bg-subtle);border-radius:10px;padding:14px;margin-bottom:16px">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                            <label class="lt-label" style="margin:0;font-weight:700">Đăng ngay</label>
+                            <label class="hw-toggle">
+                                <input type="checkbox" name="isPublished" id="publishToggle" value="true" checked />
+                                <span class="hw-toggle__track"></span>
+                            </label>
+                        </div>
+                        <p style="font-size:.76rem;color:var(--lt-text-muted);margin:0">
+                            Bật = học sinh thấy ngay. Tắt = lưu bản nháp.
+                        </p>
+                    </div>
+
+                    <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                        <i class="bi bi-send-fill"></i> Giao bài tập
+                    </button>
+                    <a asp-action="Teacher" class="lt-btn lt-btn--outline"
+                       style="width:100%;justify-content:center;margin-top:8px">
+                        Hủy
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</form>
+
+@section Styles {
+<style>
+/* Drop zone */
+.hw-drop-zone {
+    border: 2px dashed var(--lt-border);
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    transition: border-color .18s, background .18s;
+    cursor: default;
+}
+.hw-drop-zone.drag-over {
+    border-color: var(--lt-navy);
+    background: oklch(96% 0.01 240);
+}
+.hw-drop-zone__icon { font-size: 2.4rem; color: var(--lt-navy-100); display: block; margin-bottom: 10px; }
+.hw-drop-zone__title { font-weight: 700; color: var(--lt-navy); margin-bottom: 4px; }
+.hw-drop-zone__sub   { font-size: .8rem; color: var(--lt-text-muted); margin-bottom: 10px; }
+.hw-drop-zone__hint  { font-size: .73rem; color: var(--lt-text-muted); margin-top: 10px; }
+
+/* File list */
+.hw-file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.hw-file-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-radius: 8px;
+    background: var(--lt-bg-subtle); border: 1px solid var(--lt-border);
+    font-size: .8rem;
+}
+.hw-file-item__icon { font-size: 1.1rem; flex-shrink: 0; }
+.hw-file-item__name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hw-file-item__size { color: var(--lt-text-muted); flex-shrink: 0; }
+.hw-file-item__del  {
+    background: none; border: none; color: var(--lt-text-muted); cursor: pointer;
+    font-size: .85rem; padding: 2px 4px; transition: color .15s;
+}
+.hw-file-item__del:hover { color: var(--lt-danger); }
+
+/* Toggle */
+.hw-toggle { position: relative; display: inline-block; width: 42px; height: 24px; }
+.hw-toggle input { opacity: 0; width: 0; height: 0; }
+.hw-toggle__track {
+    position: absolute; inset: 0;
+    background: var(--lt-border); border-radius: 99px;
+    transition: background .18s;
+}
+.hw-toggle input:checked + .hw-toggle__track { background: var(--lt-navy); }
+.hw-toggle__track::before {
+    content: ""; position: absolute;
+    width: 18px; height: 18px; border-radius: 50%; background: #fff;
+    left: 3px; top: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    transition: transform .18s;
+}
+.hw-toggle input:checked + .hw-toggle__track::before { transform: translateX(18px); }
+</style>
+}
+
+@section Scripts {
+<script>
+// ── File drag-and-drop + preview ──────────────────────────────────────────
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const fileList  = document.getElementById('file-list');
+let selectedFiles = new DataTransfer();
+
+function fmtSize(bytes) {
+    if (bytes < 1024)       return bytes + ' B';
+    if (bytes < 1048576)    return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1048576).toFixed(1) + ' MB';
+}
+function fileIcon(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    const map = {
+        pdf:'bi-file-earmark-pdf-fill', doc:'bi-file-earmark-word-fill', docx:'bi-file-earmark-word-fill',
+        xls:'bi-file-earmark-excel-fill', xlsx:'bi-file-earmark-excel-fill',
+        ppt:'bi-file-earmark-ppt-fill',  pptx:'bi-file-earmark-ppt-fill',
+        jpg:'bi-image-fill', jpeg:'bi-image-fill', png:'bi-image-fill', gif:'bi-image-fill',
+        mp4:'bi-camera-video-fill', mov:'bi-camera-video-fill', avi:'bi-camera-video-fill',
+        zip:'bi-file-earmark-zip-fill', rar:'bi-file-earmark-zip-fill',
+        txt:'bi-file-earmark-text-fill', mp3:'bi-music-note-beamed',
+    };
+    return map[ext] || 'bi-file-earmark-fill';
+}
+
+function renderFiles() {
+    fileList.innerHTML = '';
+    Array.from(selectedFiles.files).forEach((f, i) => {
+        const item = document.createElement('div');
+        item.className = 'hw-file-item';
+        item.innerHTML = `
+            <i class="bi ${fileIcon(f.name)} hw-file-item__icon"></i>
+            <span class="hw-file-item__name" title="${f.name}">${f.name}</span>
+            <span class="hw-file-item__size">${fmtSize(f.size)}</span>
+            <button type="button" class="hw-file-item__del" data-idx="${i}" title="Xóa">
+                <i class="bi bi-x-lg"></i>
+            </button>`;
+        fileList.appendChild(item);
+    });
+    // Sync to input
+    fileInput.files = selectedFiles.files;
+}
+
+function addFiles(newFiles) {
+    Array.from(newFiles).forEach(f => selectedFiles.items.add(f));
+    renderFiles();
+}
+
+fileInput.addEventListener('change', () => { addFiles(fileInput.files); });
+fileList.addEventListener('click', e => {
+    const btn = e.target.closest('[data-idx]');
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.idx);
+    const dt  = new DataTransfer();
+    Array.from(selectedFiles.files).forEach((f, i) => { if (i !== idx) dt.items.add(f); });
+    selectedFiles = dt;
+    renderFiles();
+});
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    addFiles(e.dataTransfer.files);
+});
+
+// ── Late penalty visibility ────────────────────────────────────────────────
+const allowLate    = document.getElementById('allowLate');
+const penaltyGroup = document.getElementById('penalty-group');
+allowLate.addEventListener('change', () => {
+    penaltyGroup.style.display = allowLate.checked ? 'block' : 'none';
+});
+</script>
+}

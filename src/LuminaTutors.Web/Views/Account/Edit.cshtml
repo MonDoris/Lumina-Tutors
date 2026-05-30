@@ -130,6 +130,8 @@
         <!-- Role-specific -->
         @if (acc.RoleCode == "TEACHER")
         {
+            var editSubjects = (ViewBag.SubjectList as IReadOnlyList<(int SubjectId, string SubjectName, string SubjectCode)>)
+                              ?? new List<(int, string, string)>();
             <div class="dcard" style="margin-bottom:20px">
                 <div class="dcard__head">
                     <div class="dcard__title"><i class="bi bi-book-fill" style="color:#059669"></i> Thông tin giảng dạy</div>
@@ -137,8 +139,28 @@
                 <div class="dcard__body">
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                         <div>
-                            <label class="lt-form__label">Bộ môn giảng dạy</label>
-                            <input asp-for="SpecializationSubject" class="lt-form__input"/>
+                            <label class="lt-form__label">Bộ môn giảng dạy chính</label>
+                            @if (editSubjects.Any())
+                            {
+                                <select name="PrimarySubjectId" class="lt-form__input"
+                                        onchange="syncEditSubjectName(this)">
+                                    <option value="">— Chọn bộ môn —</option>
+                                    @foreach (var s in editSubjects)
+                                    {
+                                        <option value="@s.SubjectId"
+                                                data-name="@s.SubjectName"
+                                                selected="@(Model.PrimarySubjectId == s.SubjectId ? "selected" : null)">
+                                            @s.SubjectName (@s.SubjectCode)
+                                        </option>
+                                    }
+                                </select>
+                                <input type="hidden" asp-for="SpecializationSubject" id="editSubjectNameHidden" />
+                            }
+                            else
+                            {
+                                <input asp-for="SpecializationSubject" class="lt-form__input"
+                                       placeholder="Tên bộ môn..." />
+                            }
                         </div>
                         <div>
                             <label class="lt-form__label">Trình độ học vấn</label>
@@ -232,6 +254,17 @@
 
 @section Scripts {
 <script>
+function syncEditSubjectName(sel) {
+    const opt    = sel.options[sel.selectedIndex];
+    const hidden = document.getElementById('editSubjectNameHidden');
+    if (hidden) hidden.value = opt ? (opt.dataset.name || '') : '';
+}
+(function initEdit() {
+    // Always sync on load — no guard on pss.value so pre-selected option also fires
+    const pss = document.querySelector('[name="PrimarySubjectId"]');
+    if (pss) syncEditSubjectName(pss);
+})();
+
 function previewAvatar(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();

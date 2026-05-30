@@ -273,14 +273,18 @@
                                    placeholder="VD: Thí nghiệm chuẩn độ HCl-NaOH"
                                    maxlength="100" required/>
                         </div>
+                        @{
+                            var defaultTag = ViewBag.DefaultSubjectTag as string ?? "";
+                        }
                         <div class="lt-form-group lt-mb-3">
                             <label class="lt-label">Môn học <span class="lt-text-danger">*</span></label>
-                            <select name="SubjectTag" class="lt-select" required>
+                            <select name="SubjectTag" class="lt-select" required id="subjectTagSelect"
+                                    onchange="filterScenes(this.value)">
                                 <option value="">— Chọn môn —</option>
-                                <option value="chemistry">⚗️ Hóa học</option>
-                                <option value="physics">⚙️ Vật lý</option>
-                                <option value="biology">🧬 Sinh học</option>
-                                <option value="math">📐 Toán học</option>
+                                <option value="chemistry" selected="@(defaultTag=="chemistry")">⚗️ Hóa học</option>
+                                <option value="physics"   selected="@(defaultTag=="physics")">⚙️ Vật lý</option>
+                                <option value="biology"   selected="@(defaultTag=="biology")">🧬 Sinh học</option>
+                                <option value="math"      selected="@(defaultTag=="math")">📐 Toán học</option>
                             </select>
                         </div>
                         <div class="lt-form-group lt-mb-3">
@@ -349,5 +353,55 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw-3d.js').catch(() => {});
     }
+
+    // Scene options grouped by subject tag
+    const scenesByTag = {
+        chemistry: [
+            { val: 'titration',    label: 'Chuẩn độ axit-bazơ' },
+            { val: 'electrolysis', label: 'Điện phân nước' },
+            { val: 'distillation', label: 'Chưng cất đơn giản' },
+        ],
+        physics: [
+            { val: 'pendulum', label: 'Con lắc đơn' },
+            { val: 'spring',   label: 'Con lắc lò xo' },
+            { val: 'optics',   label: 'Quang học — khúc xạ ánh sáng' },
+        ],
+        biology: [
+            { val: 'cell',           label: 'Quan sát tế bào' },
+            { val: 'dna',            label: 'Cấu trúc DNA' },
+            { val: 'photosynthesis', label: 'Quang hợp' },
+        ],
+        math: [
+            { val: 'polyhedron', label: 'Khám phá đa diện đều' },
+            { val: 'vectors',    label: 'Vector 3D & tích có hướng' },
+        ],
+    };
+
+    function filterScenes(tag) {
+        const sel = document.getElementById('sceneTypeSelect');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">— Chọn thí nghiệm —</option>';
+        const scenes = scenesByTag[tag];
+        if (!scenes || !scenes.length) {
+            // Show all when no tag selected
+            Object.entries(scenesByTag).forEach(([t, list]) => {
+                const grp = document.createElement('optgroup');
+                grp.label = { chemistry:'⚗️ Hóa học', physics:'⚙️ Vật lý', biology:'🧬 Sinh học', math:'📐 Toán học' }[t] || t;
+                list.forEach(s => {
+                    const opt = new Option(s.label, s.val);
+                    grp.appendChild(opt);
+                });
+                sel.appendChild(grp);
+            });
+        } else {
+            scenes.forEach(s => sel.appendChild(new Option(s.label, s.val)));
+        }
+    }
+
+    // Init: fire filterScenes with the pre-selected subject (from teacher's primary subject)
+    (function() {
+        const tagSel = document.getElementById('subjectTagSelect');
+        if (tagSel) filterScenes(tagSel.value);
+    })();
     </script>
 }

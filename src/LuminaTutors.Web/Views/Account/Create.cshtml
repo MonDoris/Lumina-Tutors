@@ -409,6 +409,10 @@
 
         <!-- TEACHER section -->
         <div id="panel-TEACHER" class="role-panel @(activeRole == "TEACHER" ? "rp--active" : "")">
+            @{
+                var subjects = (ViewBag.SubjectList as IReadOnlyList<(int SubjectId, string SubjectName, string SubjectCode)>)
+                              ?? new List<(int, string, string)>();
+            }
             <div class="lt-card lt-mb-4">
                 <div class="lt-card__header" style="border-left:4px solid #059669">
                     <h3 class="lt-card__title">
@@ -420,23 +424,42 @@
 
                     <div class="fld lt-mb-3">
                         <label>
-                            Bộ môn giảng dạy <span class="req">*</span>
+                            Bộ môn giảng dạy chính <span class="req">*</span>
                             <span class="req-badge">Bắt buộc</span>
                         </label>
-                        <input name="SpecializationSubject" id="subjectInput" class="lt-input"
-                               placeholder="Chọn hoặc nhập bộ môn..."
-                               value="@(Model?.SpecializationSubject)" required
-                               autocomplete="off"
-                               oninput="syncSubjectChips(this.value)"/>
-                        <div class="hint">Chọn nhanh bên dưới hoặc nhập trực tiếp</div>
-                        <!-- Quick-pick chips -->
-                        <div class="subject-chips" id="subjectChips">
-                            @foreach (var s in commonSubjects)
-                            {
-                                <span class="subject-chip @(Model?.SpecializationSubject == s ? "sc--active" : "")"
-                                      onclick="pickSubject('@s')">@s</span>
-                            }
-                        </div>
+                        @if (subjects.Any())
+                        {
+                            <!-- Dropdown bound to actual Subject entities from DB -->
+                            <select name="PrimarySubjectId" id="primarySubjectSelect"
+                                    class="lt-select" required
+                                    onchange="syncSubjectName(this)">
+                                <option value="">— Chọn bộ môn —</option>
+                                @foreach (var s in subjects)
+                                {
+                                    <option value="@s.SubjectId"
+                                            data-name="@s.SubjectName"
+                                            selected="@(Model?.PrimarySubjectId == s.SubjectId ? "selected" : null)">
+                                        @s.SubjectName (@s.SubjectCode)
+                                    </option>
+                                }
+                            </select>
+                            <!-- Hidden: keep SpecializationSubject in sync for display elsewhere -->
+                            <input type="hidden" name="SpecializationSubject" id="subjectNameHidden"
+                                   value="@(Model?.SpecializationSubject)" />
+                            <div class="hint">Chọn từ danh sách môn học đã được Admin cấu hình.</div>
+                        }
+                        else
+                        {
+                            <!-- Fallback if no subjects exist yet -->
+                            <input name="SpecializationSubject" id="subjectInput" class="lt-input"
+                                   placeholder="Nhập tên bộ môn..."
+                                   value="@(Model?.SpecializationSubject)"
+                                   autocomplete="off"/>
+                            <div class="hint" style="color:var(--lt-danger)">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                Chưa có môn học nào. Hãy vào <strong>Chương trình học → Môn học</strong> để thêm trước.
+                            </div>
+                        }
                     </div>
 
                     <div class="form-row cols-2">
@@ -557,9 +580,11 @@ function selectRole(code) {
     const panel = document.getElementById('panel-' + code);
     if (panel) { panel.classList.add('rp--active'); panel.style.display = 'block'; }
 
-    // Required on subject for teacher only
-    const subj = document.getElementById('subjectInput');
-    if (subj) subj.required = (code === 'TEACHER');
+    // Required on subject select for teacher only
+    const subjSel = document.getElementById('primarySubjectSelect');
+    if (subjSel) subjSel.required = (code === 'TEACHER');
+    const subjInp = document.getElementById('subjectInput');
+    if (subjInp) subjInp.required = (code === 'TEACHER');
 }
 
 // ── Parent toggle ─────────────────────────────────────────────────────────────
@@ -585,15 +610,11 @@ function toggleParentSection() {
     if (parentEmail) parentEmail.required = parentEnabled;
 }
 
-// ── Subject chip picker ───────────────────────────────────────────────────────
-function pickSubject(name) {
-    document.getElementById('subjectInput').value = name;
-    syncSubjectChips(name);
-}
-function syncSubjectChips(val) {
-    document.querySelectorAll('.subject-chip').forEach(c => {
-        c.classList.toggle('sc--active', c.textContent.trim() === val.trim());
-    });
+// ── Subject dropdown: sync hidden SpecializationSubject field ─────────────────
+function syncSubjectName(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const hidden = document.getElementById('subjectNameHidden');
+    if (hidden) hidden.value = opt ? (opt.dataset.name || '') : '';
 }
 
 // ── Password visibility ───────────────────────────────────────────────────────
@@ -624,7 +645,9 @@ function previewAvatar(input) {
 (function init() {
     const active = '@activeRole';
     selectRole(active);
-    syncSubjectChips(document.getElementById('subjectInput')?.value ?? '');
+    // Init subject name sync on load (no guard — always sync)
+    const pss = document.getElementById('primarySubjectSelect');
+    if (pss) syncSubjectName(pss);
 })();
 </script>
 }

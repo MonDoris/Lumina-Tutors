@@ -171,6 +171,21 @@ public class SubmissionFileConfiguration : IEntityTypeConfiguration<SubmissionFi
     }
 }
 
+public class AssignmentAttachmentConfiguration : IEntityTypeConfiguration<AssignmentAttachment>
+{
+    public void Configure(EntityTypeBuilder<AssignmentAttachment> b)
+    {
+        b.ToTable("AssignmentAttachments");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("AttachmentId").UseIdentityColumn();
+        b.Property(x => x.FileName).IsRequired().HasMaxLength(255);
+        b.Property(x => x.FileUrl).IsRequired().HasMaxLength(500);
+        b.Property(x => x.FileType).IsRequired().HasMaxLength(50);
+        b.HasOne(x => x.Assignment).WithMany(a => a.Attachments)
+            .HasForeignKey(x => x.AssignmentId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class QuizExamConfiguration : IEntityTypeConfiguration<QuizExam>
 {
     public void Configure(EntityTypeBuilder<QuizExam> b)

@@ -1,0 +1,297 @@
+@using LuminaTutors.Application.DTOs.Homework
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Quản lý bài tập";
+    var assignments = ViewBag.Assignments as IReadOnlyList<AssignmentListDto> ?? [];
+    var sas         = ViewBag.SubjectAssignments as IReadOnlyList<SubjectAssignmentOptionDto> ?? [];
+
+    // Group assignments by "Subject – Class"
+    var grouped = assignments
+        .GroupBy(a => $"{a.SubjectName}|{a.ClassName}")
+        .OrderBy(g => g.Key)
+        .ToList();
+
+    string TypeLabel(AssignmentType t) => t switch {
+        AssignmentType.Homework => "Bài về nhà",
+        AssignmentType.Quiz     => "Kiểm tra",
+        AssignmentType.Midterm  => "Giữa kỳ",
+        AssignmentType.Final    => "Cuối kỳ",
+        AssignmentType.Project  => "Dự án",
+        _                       => t.ToString()
+    };
+    string TypeColor(AssignmentType t) => t switch {
+        AssignmentType.Homework => "var(--lt-navy)",
+        AssignmentType.Quiz     => "#7c3aed",
+        AssignmentType.Midterm  => "#b45309",
+        AssignmentType.Final    => "var(--lt-danger)",
+        AssignmentType.Project  => "var(--lt-success)",
+        _                       => "var(--lt-text-muted)"
+    };
+    var subjectColors = new[] { "#1e40af","#065f46","#7e22ce","#9a3412","#0c4a6e","#4c1d95","#134e4a","#7f1d1d" };
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-journal-bookmark-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Quản lý bài tập
+        </h1>
+        <p class="lt-page-subtitle">Giao và theo dõi bài tập theo từng môn học — lớp học</p>
+    </div>
+    <a asp-action="Create" class="lt-btn lt-btn--primary">
+        <i class="bi bi-plus-lg"></i> Giao bài tập mới
+    </a>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+@* ── Summary strip ─────────────────────────────────────────────────────── *@
+@if (assignments.Any())
+{
+    var totalStudents  = assignments.Sum(a => a.TotalStudents);
+    var totalSubmitted = assignments.Sum(a => a.SubmittedCount);
+    var totalGraded    = assignments.Sum(a => a.GradedCount);
+    var unpublished    = assignments.Count(a => !a.IsPublished);
+
+    <div class="row g-3 lt-mb-4">
+        <div class="col-6 col-md-3">
+            <div class="lt-card" style="text-align:center;padding:.1rem 0">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--lt-navy)">@assignments.Count</div>
+                    <div style="font-size:.78rem;color:var(--lt-text-muted)">Bài tập</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-card" style="text-align:center">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--lt-success)">@totalSubmitted</div>
+                    <div style="font-size:.78rem;color:var(--lt-text-muted)">Bài đã nộp</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-card" style="text-align:center">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--lt-gold)">@totalGraded</div>
+                    <div style="font-size:.78rem;color:var(--lt-text-muted)">Đã chấm điểm</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-card" style="text-align:center">
+                <div class="lt-card__body" style="padding:1rem">
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--lt-text-muted)">@unpublished</div>
+                    <div style="font-size:.78rem;color:var(--lt-text-muted)">Bản nháp</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── No assignments ──────────────────────────────────────────────────────── *@
+@if (!assignments.Any())
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <i class="bi bi-journal-x" style="font-size:3rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">Chưa có bài tập nào</div>
+                <div class="lt-empty__sub">Bắt đầu giao bài tập cho học sinh của bạn.</div>
+                <a asp-action="Create" class="lt-btn lt-btn--primary lt-mt-3">
+                    <i class="bi bi-plus-lg"></i> Giao bài tập đầu tiên
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    @* ── Course folders ────────────────────────────────────────────────────── *@
+    <div class="hw-course-grid">
+        @foreach (var group in grouped)
+        {
+            var parts       = group.Key.Split('|');
+            var subjectName = parts[0];
+            var className   = parts[1];
+            var colorIdx    = Math.Abs(subjectName.GetHashCode()) % subjectColors.Length;
+            var cardColor   = subjectColors[colorIdx];
+            var published   = group.Count(a => a.IsPublished);
+            var totalSub    = group.Sum(a => a.SubmittedCount);
+            var totalSt     = group.Sum(a => a.TotalStudents);
+
+            <div class="hw-folder" style="--folder-color:@cardColor">
+                <div class="hw-folder__header">
+                    <div class="hw-folder__letter">@subjectName[0]</div>
+                    <div class="hw-folder__info">
+                        <div class="hw-folder__subject">@subjectName</div>
+                        <div class="hw-folder__class">@className</div>
+                    </div>
+                </div>
+                <div class="hw-folder__stats">
+                    <span><i class="bi bi-clipboard2-fill"></i> @group.Count() bài tập</span>
+                    <span><i class="bi bi-check2-circle"></i> @totalSub / @totalSt đã nộp</span>
+                </div>
+
+                <div class="hw-folder__list">
+                    @foreach (var a in group.OrderByDescending(x => x.DueDate ?? x.Id switch { _ => DateTime.MinValue }))
+                    {
+                        var overdue = a.DueDate.HasValue && DateTime.UtcNow > a.DueDate.Value && a.IsPublished;
+                        var pct     = a.TotalStudents > 0
+                            ? (int)Math.Round((double)a.SubmittedCount / a.TotalStudents * 100)
+                            : 0;
+                        <div class="hw-item">
+                            <div class="hw-item__left">
+                                <span class="hw-item__type" style="background:@TypeColor(a.AssignmentType)22;color:@TypeColor(a.AssignmentType)">
+                                    @TypeLabel(a.AssignmentType)
+                                </span>
+                                <div class="hw-item__title">@a.Title</div>
+                                <div class="hw-item__meta">
+                                    @if (a.DueDate.HasValue)
+                                    {
+                                        <span style="color:@(overdue?"var(--lt-danger)":"var(--lt-text-muted)")">
+                                            <i class="bi bi-clock"></i>
+                                            @a.DueDate.Value.ToLocalTime().ToString("dd/MM HH:mm")
+                                            @if (overdue) { <span>(Quá hạn)</span> }
+                                        </span>
+                                    }
+                                    <span><i class="bi bi-star"></i> @a.MaxScore đ</span>
+                                </div>
+                            </div>
+                            <div class="hw-item__right">
+                                <div class="hw-item__progress-wrap">
+                                    <div class="hw-item__progress-bar">
+                                        <div class="hw-item__progress-fill" style="width:@pct%;background:@cardColor"></div>
+                                    </div>
+                                    <div class="hw-item__progress-label">@a.SubmittedCount/@a.TotalStudents</div>
+                                </div>
+                                @if (!a.IsPublished)
+                                {
+                                    <span class="lt-badge">Nháp</span>
+                                }
+                                else if (a.GradedCount == a.TotalStudents && a.TotalStudents > 0)
+                                {
+                                    <span class="lt-badge lt-badge--success">Đã chấm xong</span>
+                                }
+                                <div class="hw-item__actions">
+                                    <a asp-action="Stats" asp-route-id="@a.Id" class="lt-btn lt-btn--sm lt-btn--primary" title="Thống kê bài nộp">
+                                        <i class="bi bi-bar-chart-fill"></i> Thống kê
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@a.Id" class="lt-btn lt-btn--sm lt-btn--outline" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@a.Id" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                style="color:var(--lt-danger);border-color:var(--lt-danger)"
+                                                onclick="return confirm('Xóa bài tập «@a.Title»?')">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="hw-folder__footer">
+                    <a asp-action="Create" asp-route-subjectAssignmentId="@(group.First().Id)" class="lt-btn lt-btn--outline lt-btn--sm">
+                        <i class="bi bi-plus-lg"></i> Giao thêm bài
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Styles {
+<style>
+/* ── Course folders grid ──────────────────────────────────────────────── */
+.hw-course-grid {
+    display: flex; flex-direction: column; gap: 1.5rem;
+}
+
+.hw-folder {
+    background: #fff; border-radius: 14px;
+    border: 1px solid var(--lt-border);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.hw-folder__header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px;
+    background: var(--folder-color);
+    color: #fff;
+}
+.hw-folder__letter {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,.22); border: 2px solid rgba(255,255,255,.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; font-weight: 800; flex-shrink: 0;
+}
+.hw-folder__subject { font-size: 1rem; font-weight: 700; }
+.hw-folder__class   { font-size: .78rem; opacity: .82; margin-top: 2px; }
+
+.hw-folder__stats {
+    display: flex; gap: 20px;
+    padding: 10px 20px;
+    background: color-mix(in srgb, var(--folder-color) 8%, #fff);
+    border-bottom: 1px solid var(--lt-border);
+    font-size: .78rem; color: var(--lt-text-muted);
+}
+
+/* ── Assignment items ──────────────────────────────────────────────────── */
+.hw-item {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--lt-border);
+    transition: background .14s;
+}
+.hw-item:last-child { border-bottom: none; }
+.hw-item:hover { background: var(--lt-bg-subtle); }
+
+.hw-item__left  { flex: 1; min-width: 0; }
+.hw-item__right {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 8px; flex-shrink: 0;
+}
+
+.hw-item__type {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: .7rem; font-weight: 700; margin-bottom: 4px;
+}
+.hw-item__title {
+    font-size: .9rem; font-weight: 600; color: var(--lt-navy);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hw-item__meta {
+    display: flex; gap: 12px; margin-top: 4px;
+    font-size: .74rem; color: var(--lt-text-muted);
+}
+
+/* Progress bar */
+.hw-item__progress-wrap { display: flex; align-items: center; gap: 8px; }
+.hw-item__progress-bar {
+    width: 90px; height: 5px; border-radius: 99px;
+    background: var(--lt-bg-subtle); overflow: hidden; flex-shrink: 0;
+}
+.hw-item__progress-fill { height: 100%; border-radius: 99px; transition: width .3s; }
+.hw-item__progress-label { font-size: .72rem; color: var(--lt-text-muted); white-space: nowrap; }
+
+.hw-item__actions { display: flex; gap: 5px; }
+
+.hw-folder__footer {
+    padding: 12px 20px;
+    background: var(--lt-bg-subtle);
+    border-top: 1px solid var(--lt-border);
+}
+</style>
+}
