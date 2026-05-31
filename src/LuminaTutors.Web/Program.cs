@@ -1,4 +1,7 @@
+using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using LuminaTutors.Application.Extensions;
 using LuminaTutors.Infrastructure.Extensions;
@@ -32,9 +35,31 @@ try
     builder.Services.AddControllersWithViews()
         .AddViewOptions(o => o.HtmlHelperOptions.ClientValidationEnabled = true);
 
-    // ── Authentication (Cookie-based for MVC) ─────────────────────────────────
-    builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddCookie(options =>
+    // ── Authentication (Cookie for MVC + JWT for API) ────────────────────────
+    var jwtKey    = builder.Configuration["JwtSettings:SecretKey"]!;
+    var jwtIssuer = builder.Configuration["JwtSettings:Issuer"]!;
+    var jwtAud    = builder.Configuration["JwtSettings:Audience"]!;
+
+    builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme    = CookieAuthenticationDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer           = true,
+                ValidateAudience         = true,
+                ValidateLifetime         = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer              = jwtIssuer,
+                ValidAudience            = jwtAud,
+                IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+                ClockSkew                = TimeSpan.Zero
+            };
+        })
+        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
         {
             options.LoginPath         = "/Auth/Login";
             options.LogoutPath        = "/Auth/Logout";
@@ -54,6 +79,19 @@ try
         options.AddPolicy("SupervisorAccess",p => p.RequireRole("SUPERVISOR", "ADMIN"));
         options.AddPolicy("AnyAuthenticated",p => p.RequireAuthenticatedUser());
         options.AddPolicy("LabAccess",       p => p.RequireRole("TEACHER", "ADMIN", "STUDENT", "PARENT", "SUPERVISOR", "ACCOUNTANT"));
+        // API policies (JWT)
+        options.AddPolicy("ApiAccess", p => p
+            .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+            .RequireAuthenticatedUser());
+    });
+
+    // ── CORS for React Native ────────────────────────────────────────────────
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("MobileApp", policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
     });
 
     // ── Session ───────────────────────────────────────────────────────────────
@@ -95,6 +133,7 @@ try
     app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseSerilogRequestLogging();
+    app.UseCors("MobileApp");
     app.UseRouting();
     app.UseSession();
     app.UseAuthentication();

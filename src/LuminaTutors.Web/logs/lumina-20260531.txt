@@ -2491,3 +2491,140 @@ LEFT JOIN [AiTutorMessages] AS [a0] ON [a].[Id] = [a0].[SessionId]
 WHERE [a].[SchoolId] = @__schoolId_0 AND [a].[StudentId] = @__studentId_1
 ORDER BY [a].[Id], [u].[UserId]
 2026-05-31 21:02:39.114 +07:00 [INF] HTTP GET /AiTutor responded 200 in 146.6429 ms
+2026-05-31 22:32:32.616 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-31 22:32:34.507 +07:00 [INF] Executed DbCommand (26ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-31 22:32:34.564 +07:00 [INF] Executed DbCommand (30ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-31 22:32:34.576 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-31 22:32:34.581 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-31 22:32:34.598 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-31 22:32:34.851 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [Users] AS [u]
+WHERE [u].[Email] IN (N'teacher@lumina.edu.vn', N'student@lumina.edu.vn', N'parent@lumina.edu.vn', N'supervisor@lumina.edu.vn', N'accountant@lumina.edu.vn')
+2026-05-31 22:32:34.870 +07:00 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-31 22:32:34.885 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+2026-05-31 22:32:35.042 +07:00 [INF] Executed DbCommand (33ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = N'admin@lumina.edu.vn' AND [u].[SchoolId] = @__school_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-31 22:32:35.053 +07:00 [INF] ℹ️  Admin account already exists — skipping seed.
+2026-05-31 22:32:35.063 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__school_Id_0 AND [a].[YearName] = N'2026-2027'
+2026-05-31 22:32:35.105 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__ay_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Semesters] AS [s]
+        WHERE [s].[AcademicYearId] = @__ay_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-31 22:32:35.363 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-31 22:32:36.869 +07:00 [INF] HTTP GET / responded 200 in 311.0810 ms
+2026-05-31 22:32:37.528 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 6.3945 ms
+2026-05-31 22:32:48.128 +07:00 [WRN] You do not have a valid license key for the Lucky Penny software AutoMapper. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-05-31 22:32:48.145 +07:00 [INF] HTTP GET /Auth/SelectRole responded 200 in 284.7942 ms
+2026-05-31 22:44:38.554 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-31 22:44:40.435 +07:00 [INF] Executed DbCommand (22ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-31 22:44:40.484 +07:00 [INF] Executed DbCommand (25ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-31 22:44:40.491 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-31 22:44:40.498 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-31 22:44:40.522 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-31 22:44:40.769 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [Users] AS [u]
+WHERE [u].[Email] IN (N'teacher@lumina.edu.vn', N'student@lumina.edu.vn', N'parent@lumina.edu.vn', N'supervisor@lumina.edu.vn', N'accountant@lumina.edu.vn')
+2026-05-31 22:44:40.793 +07:00 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-31 22:44:40.808 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+2026-05-31 22:44:40.996 +07:00 [INF] Executed DbCommand (30ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = N'admin@lumina.edu.vn' AND [u].[SchoolId] = @__school_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-31 22:44:41.005 +07:00 [INF] ℹ️  Admin account already exists — skipping seed.
+2026-05-31 22:44:41.021 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__school_Id_0 AND [a].[YearName] = N'2026-2027'
+2026-05-31 22:44:41.062 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__ay_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Semesters] AS [s]
+        WHERE [s].[AcademicYearId] = @__ay_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-31 22:44:41.325 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-31 22:44:42.871 +07:00 [INF] HTTP GET / responded 200 in 505.6069 ms
+2026-05-31 22:44:43.927 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 8.9613 ms
+2026-05-31 22:45:36.620 +07:00 [WRN] Sensitive data logging is enabled. Log entries and exception messages may include sensitive application data; this mode should only be enabled during development.
+2026-05-31 22:45:37.981 +07:00 [INF] Executed DbCommand (53ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-31 22:45:38.052 +07:00 [INF] Executed DbCommand (39ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-31 22:45:38.060 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1
+2026-05-31 22:45:38.076 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+2026-05-31 22:45:38.229 +07:00 [INF] Executed DbCommand (29ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId];
+2026-05-31 22:45:39.281 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[UserId], [u].[AvatarUrl], [u].[CreatedAt], [u].[Email], [u].[FullName], [u].[IsActive], [u].[IsEmailVerified], [u].[LastLoginAt], [u].[PasswordHash], [u].[PhoneNumber], [u].[RoleId], [u].[SchoolId], [u].[UpdatedAt]
+FROM [Users] AS [u]
+WHERE [u].[Email] IN (N'teacher@lumina.edu.vn', N'student@lumina.edu.vn', N'parent@lumina.edu.vn', N'supervisor@lumina.edu.vn', N'accountant@lumina.edu.vn')
+2026-05-31 22:45:39.306 +07:00 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-31 22:45:39.321 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[SchoolId], [s].[Address], [s].[CreatedAt], [s].[Email], [s].[IsActive], [s].[LicenseCode], [s].[LogoUrl], [s].[PhoneNumber], [s].[Province], [s].[SchoolCode], [s].[SchoolName], [s].[UpdatedAt], [s].[WebsiteUrl]
+FROM [Schools] AS [s]
+2026-05-31 22:45:39.595 +07:00 [INF] Executed DbCommand (37ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]
+        WHERE [u].[Email] = N'admin@lumina.edu.vn' AND [u].[SchoolId] = @__school_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-31 22:45:39.603 +07:00 [INF] ℹ️  Admin account already exists — skipping seed.
+2026-05-31 22:45:39.618 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@__school_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [a].[AcademicYearId], [a].[CreatedAt], [a].[EndDate], [a].[IsActive], [a].[SchoolId], [a].[StartDate], [a].[UpdatedAt], [a].[YearName]
+FROM [AcademicYears] AS [a]
+WHERE [a].[SchoolId] = @__school_Id_0 AND [a].[YearName] = N'2026-2027'
+2026-05-31 22:45:39.676 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[@__ay_Id_0='1'], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Semesters] AS [s]
+        WHERE [s].[AcademicYearId] = @__ay_Id_0) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END
+2026-05-31 22:45:40.034 +07:00 [INF] 🌟 Lumina Tutors starting on Development
+2026-05-31 22:45:42.190 +07:00 [INF] HTTP GET / responded 200 in 402.0205 ms
+2026-05-31 22:45:43.144 +07:00 [INF] HTTP GET /favicon.ico responded 404 in 7.1178 ms
