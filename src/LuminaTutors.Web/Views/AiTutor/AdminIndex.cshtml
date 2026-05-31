@@ -1,0 +1,116 @@
+@using LuminaTutors.Application.DTOs.AI
+@model IReadOnlyList<AiTutorSessionDto>
+@{
+    ViewData["Title"] = "Quản lý Gia Sư AI";
+    var flaggedOnly = (bool?)ViewBag.FlaggedOnly;
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h2 class="fw-bold mb-1"><i class="bi bi-shield-check me-2 text-danger"></i>Kiểm soát nội dung Gia Sư AI</h2>
+            <p class="text-muted">Xem và kiểm duyệt tất cả phiên hội thoại của học sinh</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <a asp-action="AdminIndex" class="btn @(flaggedOnly == null ? "btn-primary" : "btn-outline-secondary")">
+                    Tất cả
+                </a>
+                <a asp-action="AdminIndex" asp-route-flaggedOnly="true" class="btn @(flaggedOnly == true ? "btn-danger" : "btn-outline-danger")">
+                    <i class="bi bi-flag-fill me-1"></i>Bị gắn cờ
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3">
+                <div class="h2 fw-bold text-primary mb-0">@Model.Count</div>
+                <small class="text-muted">Tổng phiên học</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3">
+                <div class="h2 fw-bold text-danger mb-0">@Model.Count(s => s.IsFlagged)</div>
+                <small class="text-muted">Bị gắn cờ</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3">
+                <div class="h2 fw-bold text-warning mb-0">@Model.Count(s => !s.IsReviewed)</div>
+                <small class="text-muted">Chưa duyệt</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center p-3">
+                <div class="h2 fw-bold text-success mb-0">@Model.Sum(s => s.MessageCount)</div>
+                <small class="text-muted">Tổng tin nhắn</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Học sinh</th>
+                        <th>Chủ đề</th>
+                        <th class="text-center">Tin nhắn</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th>Thời gian</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var session in Model)
+                    {
+                        <tr class="@(session.IsFlagged ? "table-danger" : "")">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:14px">
+                                        @session.StudentName[0]
+                                    </div>
+                                    <span class="fw-semibold">@session.StudentName</span>
+                                </div>
+                            </td>
+                            <td class="text-truncate" style="max-width:200px">@session.Title</td>
+                            <td class="text-center"><span class="badge bg-secondary">@session.MessageCount</span></td>
+                            <td class="text-center">
+                                @if (session.IsFlagged)
+                                {
+                                    <span class="badge bg-danger"><i class="bi bi-flag-fill me-1"></i>Gắn cờ</span>
+                                }
+                                else if (!session.IsReviewed)
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-eye me-1"></i>Chưa duyệt</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã duyệt</span>
+                                }
+                            </td>
+                            <td class="text-muted small">@session.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <a asp-action="AdminSession" asp-route-id="@session.SessionId" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i>Xem
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                Không có phiên nào @(flaggedOnly == true ? "bị gắn cờ" : "")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,164 @@
+@model LuminaTutors.Application.DTOs.Attendance.AttendanceSessionDto
+@{
+    ViewData["Title"] = "Phiên điểm danh";
+    var isOpen = Model?.SessionStatus == "Open";
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm mb-2">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+        <h1 class="lt-page-title">Điểm danh — @Model?.SubjectName</h1>
+        <p class="lt-page-subtitle">
+            @Model?.ClassName &nbsp;·&nbsp; @Model?.SessionDate.ToString("dd/MM/yyyy") &nbsp;·&nbsp;
+            @if (isOpen)
+            {
+                <span class="lt-badge lt-badge--success"><i class="bi bi-circle-fill" style="font-size:.4rem;animation:pulse 1s infinite"></i> Đang mở</span>
+            }
+            else
+            {
+                <span class="lt-badge lt-badge--gray">Đã đóng</span>
+            }
+        </p>
+    </div>
+    <div style="display:flex;gap:8px">
+        @if (isOpen)
+        {
+            <a asp-action="QR" asp-route-id="@Model?.SessionId" class="lt-btn lt-btn--gold" target="_blank">
+                <i class="bi bi-qr-code"></i> Hiển thị QR
+            </a>
+            <form asp-action="NotifyParents" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="sessionId" value="@Model?.SessionId"/>
+                <button type="submit" class="lt-btn lt-btn--outline">
+                    <i class="bi bi-send"></i> Thông báo PH vắng
+                </button>
+            </form>
+            <form asp-action="Close" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model?.SessionId"/>
+                <button type="submit" class="lt-btn lt-btn--primary"
+                        onclick="return confirm('Đóng phiên điểm danh?')"
+                        data-testid="btn-close-session">
+                    <i class="bi bi-lock-fill"></i> Đóng phiên
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+<!-- Summary stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--navy"><i class="bi bi-people-fill"></i></div>
+            <div><div class="lt-stat__value">@Model?.TotalStudents</div><div class="lt-stat__label">Tổng HS</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--success"><i class="bi bi-check-circle-fill"></i></div>
+            <div><div class="lt-stat__value">@Model?.PresentCount</div><div class="lt-stat__label">Có mặt</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--danger"><i class="bi bi-x-circle-fill"></i></div>
+            <div><div class="lt-stat__value">@Model?.AbsentCount</div><div class="lt-stat__label">Vắng mặt</div></div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--warning"><i class="bi bi-clock-fill"></i></div>
+            <div><div class="lt-stat__value">@Model?.LateCount</div><div class="lt-stat__label">Đi muộn</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance records table -->
+<div class="lt-card">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title">Danh sách điểm danh</h3>
+        @if (isOpen)
+        {
+            <span class="lt-badge lt-badge--gold">
+                <i class="bi bi-clock"></i> QR hết hạn lúc @Model?.QRExpiresAt.ToString("HH:mm:ss")
+            </span>
+        }
+    </div>
+    <div class="lt-card__body" style="padding:0">
+        <table class="lt-table" data-testid="attendance-table">
+            <thead>
+                <tr>
+                    <th>Học sinh</th>
+                    <th>Trạng thái</th>
+                    <th>Giờ điểm danh</th>
+                    <th>Phương thức</th>
+                    @if (isOpen)
+                    {
+                        <th style="width:200px">Cập nhật thủ công</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var rec in Model?.Records ?? new List<LuminaTutors.Application.DTOs.Attendance.AttendanceRecordDto>())
+                {
+                    <tr data-testid="attendance-row">
+                        <td>
+                            <div style="font-weight:600">@rec.StudentName</div>
+                            <div style="font-size:.75rem;color:#9ca3af">@rec.StudentCode</div>
+                        </td>
+                        <td>
+                            @switch (rec.Status)
+                            {
+                                case "Present":
+                                    <span class="lt-badge lt-badge--success"><i class="bi bi-check-circle-fill"></i> Có mặt</span>
+                                    break;
+                                case "Absent":
+                                    <span class="lt-badge lt-badge--danger"><i class="bi bi-x-circle-fill"></i> Vắng</span>
+                                    break;
+                                case "Late":
+                                    <span class="lt-badge lt-badge--warning"><i class="bi bi-clock-fill"></i> Muộn</span>
+                                    break;
+                                default:
+                                    <span class="lt-badge lt-badge--gray">@rec.Status</span>
+                                    break;
+                            }
+                        </td>
+                        <td style="font-size:.82rem;color:#6b7280">
+                            @(rec.CheckedInAt?.ToString("HH:mm:ss") ?? "—")
+                        </td>
+                        <td>
+                            @if (rec.CheckMethod != null)
+                            {
+                                <span class="lt-badge lt-badge--info">
+                                    <i class="bi bi-@(rec.CheckMethod == "QR" ? "qr-code-scan" : "pencil")"></i>
+                                    @rec.CheckMethod
+                                </span>
+                            }
+                        </td>
+                        @if (isOpen)
+                        {
+                            <td>
+                                <form asp-action="UpdateRecord" method="post" style="display:flex;gap:4px">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="sessionId" value="@Model?.SessionId"/>
+                                    <input type="hidden" name="model.StudentId" value="@rec.StudentId"/>
+                                    <select name="model.Status" class="lt-select" style="width:auto;padding:5px 10px;font-size:.8rem">
+                                        <option value="Present" selected="@(rec.Status == "Present" ? "selected" : null)">Có mặt</option>
+                                        <option value="Absent"  selected="@(rec.Status == "Absent"  ? "selected" : null)">Vắng</option>
+                                        <option value="Late"    selected="@(rec.Status == "Late"    ? "selected" : null)">Muộn</option>
+                                    </select>
+                                    <button type="submit" class="lt-btn lt-btn--outline lt-btn--sm">
+                                        <i class="bi bi-check"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,84 @@
+@using LuminaTutors.Application.DTOs.OnlineClassroom
+@{
+    ViewData["Title"] = "Tạo phòng học Online";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-camera-video-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Tạo phòng học Online
+        </h1>
+        <p class="lt-page-subtitle">Thiết lập buổi học trực tuyến cho học sinh tham gia</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">Thông tin phòng học</h3>
+                </div>
+                <div class="lt-card__body">
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label lt-required">Tên buổi học</label>
+                        <input type="text" name="Title" class="lt-input"
+                               placeholder="Vd: Toán 10 — Chương 3 Hàm số" required maxlength="200">
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Mô tả</label>
+                        <textarea name="Description" class="lt-input lt-textarea" rows="3"
+                                  placeholder="Nội dung bài học hôm nay..."></textarea>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <div class="lt-form-group">
+                                <label class="lt-label">Thời gian dự kiến</label>
+                                <input type="datetime-local" name="ScheduledAt" class="lt-input">
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="lt-form-group">
+                                <label class="lt-label lt-required">Số học sinh tối đa</label>
+                                <input type="number" name="MaxParticipants" class="lt-input"
+                                       value="50" min="2" max="200" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lt-card lt-mb-4" style="background:rgba(201,169,110,.06);border-color:rgba(201,169,110,.3)">
+                <div class="lt-card__body">
+                    <div style="display:flex;align-items:flex-start;gap:10px">
+                        <i class="bi bi-info-circle-fill" style="color:var(--lt-gold);font-size:1.1rem;margin-top:1px;flex-shrink:0"></i>
+                        <div style="font-size:.82rem;color:var(--lt-text-muted);line-height:1.6">
+                            Sau khi tạo, bạn sẽ nhận được <strong>mã phòng</strong> để chia sẻ với học sinh.
+                            Học sinh dùng mã này tại trang <strong>"Nhập mã phòng"</strong> để tham gia.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+                <a asp-action="Index" class="lt-btn lt-btn--outline">Hủy</a>
+                <button type="submit" class="lt-btn lt-btn--primary">
+                    <i class="bi bi-camera-video-fill"></i> Tạo phòng học
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

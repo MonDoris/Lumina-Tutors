@@ -1,0 +1,196 @@
+@model LuminaTutors.Application.DTOs.Finance.InvoiceDto
+@{
+    ViewData["Title"] = $"Hóa đơn INV-{Model?.InvoiceId:D5}";
+    var paidAmount = Model?.Payments?.Sum(p => p.AmountPaid) ?? 0;
+    var remaining  = (Model?.FinalAmount ?? 0) - paidAmount;
+    var isPaid    = Model?.Status == "Paid";
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Invoices" class="lt-btn lt-btn--outline lt-btn--sm mb-2">
+            <i class="bi bi-arrow-left"></i> Danh sách hóa đơn
+        </a>
+        <h1 class="lt-page-title">Hóa đơn INV-@Model?.InvoiceId.ToString("D5")</h1>
+        <p class="lt-page-subtitle">Kỳ thu: @Model?.BillingPeriod</p>
+    </div>
+    @if (!isPaid)
+    {
+        <button class="lt-btn lt-btn--gold" data-bs-toggle="modal" data-bs-target="#payModal"
+                data-testid="btn-record-payment">
+            <i class="bi bi-credit-card"></i> Ghi nhận thanh toán
+        </button>
+    }
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+
+        <!-- Invoice card -->
+        <div class="lt-card mb-3">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">Thông tin hóa đơn</h3>
+                @{
+                    var (cls, lbl) = Model?.Status switch {
+                        "Paid"        => ("lt-badge--success", "Đã thanh toán"),
+                        "Unpaid"      => ("lt-badge--warning", "Chưa thanh toán"),
+                        "PartialPaid" => ("lt-badge--info",    "Thanh toán một phần"),
+                        "Overdue"     => ("lt-badge--danger",  "Quá hạn"),
+                        _             => ("lt-badge--gray", Model?.Status ?? "")
+                    };
+                }
+                <span class="lt-badge @cls">@lbl</span>
+            </div>
+            <div class="lt-card__body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="lt-label">Học sinh</div>
+                        <div style="font-weight:600;color:var(--lt-navy)">@Model?.StudentName</div>
+                        <div style="font-size:.8rem;color:#9ca3af">@Model?.StudentCode</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="lt-label">Ngày phát hành</div>
+                        <div style="font-weight:600">@Model?.CreatedAt.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="lt-label">Hạn thanh toán</div>
+                        <div style="font-weight:600;color:@(remaining > 0 ? "var(--lt-danger)" : "inherit")">
+                            @Model?.DueDate.ToString("dd/MM/yyyy")
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="lt-label">Ghi chú</div>
+                        <div>—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Amount summary -->
+        <div class="lt-card">
+            <div class="lt-card__body">
+                <div class="row g-3 text-center">
+                    <div class="col-4">
+                        <div style="font-size:1.4rem;font-weight:800;color:var(--lt-navy)">
+                            @Model?.Amount.ToString("N0")đ
+                        </div>
+                        <div style="font-size:.75rem;color:#9ca3af;text-transform:uppercase">Tổng phát sinh</div>
+                    </div>
+                    <div class="col-4">
+                        <div style="font-size:1.4rem;font-weight:800;color:var(--lt-success)">
+                            @paidAmount.ToString("N0")đ
+                        </div>
+                        <div style="font-size:.75rem;color:#9ca3af;text-transform:uppercase">Đã thu</div>
+                    </div>
+                    <div class="col-4">
+                        <div style="font-size:1.4rem;font-weight:800;color:@(remaining > 0 ? "var(--lt-danger)" : "var(--lt-success)")">
+                            @remaining.ToString("N0")đ
+                        </div>
+                        <div style="font-size:.75rem;color:#9ca3af;text-transform:uppercase">Còn lại</div>
+                    </div>
+                </div>
+                <!-- Progress bar -->
+                <div style="margin-top:20px">
+                    <div style="background:#f3f4f6;border-radius:999px;height:10px;overflow:hidden">
+                        @{
+                            var pct = Model?.FinalAmount > 0
+                                ? Math.Round((paidAmount / Model!.FinalAmount) * 100, 1)
+                                : 0;
+                        }
+                        <div style="background:linear-gradient(90deg,var(--lt-gold),var(--lt-gold-light));
+                                    width:@pct%;height:100%;border-radius:999px;transition:width .6s">
+                        </div>
+                    </div>
+                    <div style="text-align:right;font-size:.75rem;color:#9ca3af;margin-top:4px">@pct%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment history -->
+    <div class="col-lg-5">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">Lịch sử thanh toán</h3>
+            </div>
+            <div class="lt-card__body" style="padding:0">
+                @if (!Model?.Payments.Any() ?? true)
+                {
+                    <div style="text-align:center;padding:32px;color:#9ca3af">
+                        <i class="bi bi-credit-card" style="font-size:2rem;display:block;margin-bottom:8px"></i>
+                        Chưa có lịch sử thanh toán
+                    </div>
+                }
+                @foreach (var p in Model?.Payments ?? new List<LuminaTutors.Application.DTOs.Finance.PaymentSummaryDto>())
+                {
+                    <div style="padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <div style="font-weight:600;color:var(--lt-navy)">@p.AmountPaid.ToString("N0")đ</div>
+                            <div style="font-size:.75rem;color:#9ca3af">
+                                @p.PaymentDate.ToString("dd/MM/yyyy HH:mm") &nbsp;·&nbsp; @p.PaymentMethod
+                            </div>
+                            @if (!string.IsNullOrEmpty(p.TransactionCode))
+                            {
+                                <div style="font-size:.75rem;color:#9ca3af">Ref: @p.TransactionCode</div>
+                            }
+                        </div>
+                        <span class="lt-badge lt-badge--success">
+                            <i class="bi bi-check-circle-fill"></i> OK
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+@if (!isPaid)
+{
+    <div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:16px;border:none">
+                <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                    <h5 class="modal-title lt-card__title">Ghi nhận thanh toán</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form asp-action="RecordPayment" method="post" data-testid="payment-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="model.InvoiceId" value="@Model?.InvoiceId"/>
+                    <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:16px">
+                        <div class="lt-form-group" style="margin-bottom:0">
+                            <label class="lt-label">Số tiền thanh toán (tối đa @remaining.ToString("N0")đ)</label>
+                            <input type="number" name="model.AmountPaid" class="lt-input"
+                                   value="@remaining" min="1" max="@remaining" required
+                                   data-testid="input-payment-amount"/>
+                        </div>
+                        <div class="lt-form-group" style="margin-bottom:0">
+                            <label class="lt-label">Phương thức thanh toán</label>
+                            <select name="model.PaymentMethod" class="lt-select" data-testid="select-payment-method">
+                                <option value="Cash">Tiền mặt</option>
+                                <option value="BankTransfer">Chuyển khoản</option>
+                                <option value="MoMo">MoMo</option>
+                                <option value="VNPay">VNPay</option>
+                            </select>
+                        </div>
+                        <div class="lt-form-group" style="margin-bottom:0">
+                            <label class="lt-label">Mã giao dịch (nếu có)</label>
+                            <input type="text" name="model.TransactionCode" class="lt-input"
+                                   placeholder="TXN-..." data-testid="input-txn-ref"/>
+                        </div>
+                        <div class="lt-form-group" style="margin-bottom:0">
+                            <label class="lt-label">Ghi chú</label>
+                            <input type="text" name="model.Note" class="lt-input"/>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                        <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="lt-btn lt-btn--gold" data-testid="btn-confirm-payment">
+                            <i class="bi bi-check-circle"></i> Xác nhận
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

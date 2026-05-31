@@ -1,0 +1,840 @@
+@using System.Security.Claims
+@{
+    var isAuth   = User.Identity?.IsAuthenticated == true;
+    var fullName = User.FindFirstValue(ClaimTypes.Name) ?? "";
+    var roleCode = User.FindFirstValue(ClaimTypes.Role) ?? "";
+    var school   = User.FindFirstValue("SchoolName") ?? "Lumina Tutors";
+    var avatarUrl = User.FindFirstValue("AvatarUrl");
+    var initials = fullName.Length > 0 ? string.Concat(fullName.Split(' ').TakeLast(2).Select(p => p[0])) : "LT";
+
+    string Nav(string ctrl, string? action = "Index")
+        => Context.Request.Path.StartsWithSegments($"/{ctrl}", StringComparison.OrdinalIgnoreCase)
+            ? "lt-nav__item active"
+            : "lt-nav__item";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="Lumina Tutors — Hệ thống quản lý giáo dục">
+    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} — Lumina Tutors" : "Lumina Tutors")</title>
+
+    <!-- DNS / TLS warm-up for external services (zero cost if not used) -->
+    <link rel="preconnect" href="https://meet.jit.si" crossorigin>
+    <link rel="dns-prefetch" href="https://meet.jit.si">
+    <link rel="dns-prefetch" href="https://8x8.vc">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <!-- Lumina Luxury Theme -->
+    <link rel="stylesheet" href="~/css/lumina.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/lt-confirm.css" asp-append-version="true"/>
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+<!-- ══════════ PAGE TRANSITION SPLASH ══════════ -->
+<div id="lt-splash" aria-hidden="true">
+    <div class="lt-splash__inner">
+        <div class="lt-splash__logo">L</div>
+        <div class="lt-splash__brand">Lumina Tutors</div>
+        <div class="lt-splash__bar"><div class="lt-splash__fill"></div></div>
+    </div>
+</div>
+
+<style>
+#lt-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+}
+#lt-splash.lt-splash--show {
+    opacity: 1;
+    pointer-events: all;
+}
+.lt-splash__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    transform: translateY(6px);
+    transition: transform .22s ease;
+}
+#lt-splash.lt-splash--show .lt-splash__inner {
+    transform: translateY(0);
+}
+.lt-splash__logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #c9a96e 0%, #e8c98a 50%, #c9a96e 100%);
+    color: #0f172a;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 28px rgba(201,169,110,.45);
+    animation: lt-splash-pulse 1.4s ease-in-out infinite;
+}
+@@keyframes lt-splash-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(201,169,110,.35); }
+    50%       { box-shadow: 0 0 40px rgba(201,169,110,.65); }
+}
+.lt-splash__brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    letter-spacing: .04em;
+}
+.lt-splash__bar {
+    width: 120px;
+    height: 3px;
+    background: rgba(255,255,255,.1);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.lt-splash__fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #c9a96e, #e8c98a);
+    border-radius: 99px;
+    transition: width .35s ease;
+}
+</style>
+
+@if (isAuth)
+{
+<div class="lt-app">
+
+    <!-- ══════════ SIDEBAR ══════════ -->
+    <aside class="lt-sidebar" id="ltSidebar" aria-label="Điều hướng chính">
+
+        <!-- Brand -->
+        <div class="lt-sidebar__brand">
+            <div class="lt-sidebar__brand-logo">
+                <div class="lt-sidebar__brand-icon">L</div>
+                <div>
+                    <div class="lt-sidebar__brand-name">Lumina Tutors</div>
+                    <div class="lt-sidebar__brand-sub">@school</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="lt-nav" role="navigation">
+
+            <!-- Core -->
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Tổng quan</div>
+                <a asp-controller="Dashboard" asp-action="Index" class="@Nav("Dashboard")">
+                    <span class="lt-nav__icon"><i class="bi bi-grid-1x2-fill"></i></span>
+                    Dashboard
+                </a>
+                <a asp-controller="Dashboard" asp-action="Notifications" class="@Nav("Dashboard", "Notifications")">
+                    <span class="lt-nav__icon"><i class="bi bi-bell-fill"></i></span>
+                    Thông báo
+                    @if ((ViewBag.UnreadCount as int?) > 0)
+                    {
+                        <span class="lt-nav__badge">@ViewBag.UnreadCount</span>
+                    }
+                </a>
+            </div>
+
+            <!-- Academic -->
+            @if (roleCode is "ADMIN" or "TEACHER")
+            {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Học vụ</div>
+                <a asp-controller="Class" asp-action="Index" class="@Nav("Class")">
+                    <span class="lt-nav__icon"><i class="bi bi-building"></i></span>
+                    Lớp học
+                </a>
+                <a asp-controller="Student" asp-action="Index" class="@Nav("Student")">
+                    <span class="lt-nav__icon"><i class="bi bi-people-fill"></i></span>
+                    Học sinh
+                </a>
+                <a asp-controller="Attendance" asp-action="Index" class="@Nav("Attendance")">
+                    <span class="lt-nav__icon"><i class="bi bi-qr-code-scan"></i></span>
+                    Điểm danh QR
+                </a>
+                <a asp-controller="Grading" asp-action="Index" class="@Nav("Grading")">
+                    <span class="lt-nav__icon"><i class="bi bi-journal-text"></i></span>
+                    Sổ điểm TT22
+                </a>
+                <a asp-controller="AiTutor" asp-action="Index" class="@Nav("AiTutor")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-robot"></i></span>
+                    Gia Sư AI
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">AI</span>
+                </a>
+                <a asp-controller="VirtualLab" asp-action="Index" class="@Nav("VirtualLab")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-badge-vr-fill"></i></span>
+                    Lab 3D ảo
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:var(--lt-gold);color:var(--lt-navy);
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
+                </a>
+                <a asp-controller="OnlineClassroom" asp-action="Index" class="@Nav("OnlineClassroom")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-camera-video-fill"></i></span>
+                    Phòng học Online
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:var(--lt-danger);color:#fff;
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">WebRTC</span>
+                </a>
+                <a asp-controller="Homework" asp-action="Teacher" class="@Nav("Homework")">
+                    <span class="lt-nav__icon"><i class="bi bi-journal-bookmark-fill"></i></span>
+                    Bài tập
+                </a>
+                <a asp-controller="QuizExam" asp-action="Index" class="@Nav("QuizExam")">
+                    <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>
+                    Đề thi trắc nghiệm
+                </a>
+                <a asp-controller="QuestionBank" asp-action="Index" class="@Nav("QuestionBank")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-collection-fill"></i></span>
+                    Ngân hàng câu hỏi
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:var(--lt-gold);color:var(--lt-navy);
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
+                </a>
+            </div>
+            }
+
+            <!-- Finance (Accountant + Admin) -->
+            @if (roleCode is "ACCOUNTANT" or "ADMIN")
+            {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Tài chính</div>
+                <a asp-controller="Finance" asp-action="Index" class="@Nav("Finance")">
+                    <span class="lt-nav__icon"><i class="bi bi-currency-dollar"></i></span>
+                    Tổng quan
+                </a>
+                <a asp-controller="Finance" asp-action="Invoices" class="@Nav("Finance", "Invoices")">
+                    <span class="lt-nav__icon"><i class="bi bi-receipt"></i></span>
+                    Hóa đơn học phí
+                </a>
+                <a asp-controller="Finance" asp-action="OutstandingDebts" class="@Nav("Finance", "OutstandingDebts")">
+                    <span class="lt-nav__icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                    Công nợ
+                </a>
+            </div>
+            }
+
+            <!-- Accounts (Admin only) -->
+            @if (roleCode == "ADMIN")
+            {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Tài khoản</div>
+                <a asp-controller="Account" asp-action="Index" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-people-fill"></i></span>
+                    Tất cả tài khoản
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-role="STUDENT" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-mortarboard-fill"></i></span>
+                    Học sinh
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-role="TEACHER" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-person-video3"></i></span>
+                    Giáo viên
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-role="SUPERVISOR" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-shield-fill"></i></span>
+                    Giám thị
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-role="PARENT" class="@Nav("Account")">
+                    <span class="lt-nav__icon"><i class="bi bi-house-heart-fill"></i></span>
+                    Phụ huynh
+                </a>
+            </div>
+
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Kiểm duyệt AI</div>
+                <a asp-controller="AiTutor" asp-action="AdminIndex" class="@Nav("AiTutor")">
+                    <span class="lt-nav__icon"><i class="bi bi-shield-check"></i></span>
+                    Nội dung Gia Sư AI
+                </a>
+            </div>
+
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Cấu hình</div>
+                <a asp-controller="AcademicConfig" asp-action="Index" class="@Nav("AcademicConfig")">
+                    <span class="lt-nav__icon"><i class="bi bi-sliders"></i></span>
+                    Cấu hình học vụ
+                </a>
+            </div>
+
+            <!-- Subjects (Admin only) -->
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Chương trình học</div>
+                <a asp-controller="Subject" asp-action="Index" class="@Nav("Subject")">
+                    <span class="lt-nav__icon"><i class="bi bi-journals"></i></span>
+                    Môn học
+                </a>
+            </div>
+
+            <!-- HR (Admin only) -->
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Nhân sự</div>
+                <a href="/HR/Teachers" class="@Nav("HR")">
+                    <span class="lt-nav__icon"><i class="bi bi-person-badge-fill"></i></span>
+                    Hợp đồng GV
+                </a>
+                <a asp-controller="Auth" asp-action="InviteLinks" class="@Nav("Auth", "InviteLinks")">
+                    <span class="lt-nav__icon"><i class="bi bi-link-45deg"></i></span>
+                    Liên kết mời
+                </a>
+            </div>
+            }
+
+            <!-- Supervisor -->
+            @if (roleCode is "SUPERVISOR" or "ADMIN")
+            {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Giám thị</div>
+                <a asp-controller="Supervisor" asp-action="Index" class="@Nav("Supervisor")">
+                    <span class="lt-nav__icon"><i class="bi bi-shield-fill"></i></span>
+                    Tổng quan
+                </a>
+                <a asp-controller="Supervisor" asp-action="Records" class="@Nav("Supervisor", "Records")">
+                    <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>
+                    Hồ sơ kỷ luật
+                </a>
+                <a asp-controller="Supervisor" asp-action="Messages" class="@Nav("Supervisor", "Messages")">
+                    <span class="lt-nav__icon"><i class="bi bi-chat-dots-fill"></i></span>
+                    Nhắn tin PH
+                </a>
+            </div>
+            }
+
+            <!-- Student learning section -->
+            @if (roleCode == "STUDENT")
+            {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Học tập</div>
+                <a asp-controller="StudentGrades" asp-action="Index" class="@Nav("StudentGrades")">
+                    <span class="lt-nav__icon"><i class="bi bi-journal-text"></i></span>
+                    Bảng điểm
+                </a>
+                <a asp-controller="AiTutor" asp-action="Index" class="@Nav("AiTutor")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-robot"></i></span>
+                    Gia Sư AI
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">AI</span>
+                </a>
+                <a asp-controller="Homework" asp-action="Index" class="@Nav("Homework")">
+                    <span class="lt-nav__icon"><i class="bi bi-journal-bookmark-fill"></i></span>
+                    Bài tập
+                </a>
+                <a asp-controller="OnlineClassroom" asp-action="Index" class="@Nav("OnlineClassroom")">
+                    <span class="lt-nav__icon"><i class="bi bi-camera-video-fill"></i></span>
+                    Phòng học Online
+                </a>
+                <a asp-controller="QuizExam" asp-action="Index" class="@Nav("QuizExam")">
+                    <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>
+                    Đề thi trắc nghiệm
+                </a>
+            </div>
+            }
+
+        </nav>
+
+        <!-- Sidebar Footer — User -->
+        <div class="lt-sidebar__footer">
+            <div class="lt-sidebar__user">
+                <div class="lt-sidebar__avatar">
+                    @if (!string.IsNullOrEmpty(avatarUrl))
+                    {
+                        <img src="@avatarUrl" alt="Avatar">
+                    }
+                    else
+                    {
+                        @initials
+                    }
+                </div>
+                <div class="lt-flex-1">
+                    <div class="lt-sidebar__user-name">@fullName</div>
+                    <div class="lt-sidebar__user-role">@roleCode</div>
+                </div>
+                <form asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="lt-topbar__btn" title="Đăng xuất">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ══════════ MAIN ══════════ -->
+    <div class="lt-main">
+
+        <!-- Topbar -->
+        <header class="lt-topbar">
+            <!-- Mobile hamburger -->
+            <button class="lt-topbar__btn d-lg-none" id="sidebarToggle" aria-label="Mở menu">
+                <i class="bi bi-list" style="font-size:1.3rem"></i>
+            </button>
+
+            <h1 class="lt-topbar__title">@(ViewData["Title"] ?? "Dashboard")</h1>
+
+            <div class="lt-topbar__actions">
+                <!-- Notification bell -->
+                <a asp-controller="Dashboard" asp-action="Notifications" class="lt-topbar__btn" title="Thông báo">
+                    <i class="bi bi-bell"></i>
+                    @if ((ViewBag.UnreadCount as int?) > 0)
+                    {
+                        <span class="lt-topbar__notif-dot"></span>
+                    }
+                </a>
+
+                <!-- Change password -->
+                <a asp-controller="Auth" asp-action="ChangePassword" class="lt-topbar__btn" title="Đổi mật khẩu">
+                    <i class="bi bi-key"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- Alerts (TempData) -->
+        @if (TempData["Success"] != null || TempData["Error"] != null)
+        {
+            <div style="padding:20px 32px 0">
+                @if (TempData["Success"] != null)
+                {
+                    <div class="lt-alert lt-alert--success" role="alert" data-testid="alert-success">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>@TempData["Success"]</span>
+                    </div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="lt-alert lt-alert--danger" role="alert" data-testid="alert-error">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <span>@TempData["Error"]</span>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Page Content -->
+        <main class="lt-content" id="mainContent">
+            @RenderBody()
+        </main>
+
+    </div><!-- /.lt-main -->
+
+</div><!-- /.lt-app -->
+}
+else
+{
+    <!-- Unauthenticated pages (Login, Activate) render full-width -->
+    @RenderBody()
+}
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Sidebar toggle (mobile)
+const sidebarToggle = document.getElementById('sidebarToggle');
+const ltSidebar     = document.getElementById('ltSidebar');
+if (sidebarToggle && ltSidebar) {
+    sidebarToggle.addEventListener('click', () => ltSidebar.classList.toggle('open'));
+    document.addEventListener('click', e => {
+        if (!ltSidebar.contains(e.target) && !sidebarToggle.contains(e.target))
+            ltSidebar.classList.remove('open');
+    });
+}
+
+// Auto-dismiss alerts after 5 s
+document.querySelectorAll('.lt-alert').forEach(el => {
+    setTimeout(() => {
+        el.style.transition = 'opacity .5s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500);
+    }, 5000);
+});
+</script>
+
+@await RenderSectionAsync("Scripts", required: false)
+
+<script>
+(function () {
+    var splash = document.getElementById('lt-splash');
+    var fill   = splash ? splash.querySelector('.lt-splash__fill') : null;
+    var timer  = null;
+
+    function showSplash() {
+        if (!splash) return;
+        splash.classList.add('lt-splash--show');
+        // animate progress bar: 0 → 70% quickly, wait, then complete on pageshow
+        if (fill) {
+            fill.style.transition = 'none';
+            fill.style.width = '0%';
+            requestAnimationFrame(function () {
+                fill.style.transition = 'width .55s cubic-bezier(.4,0,.2,1)';
+                fill.style.width = '70%';
+            });
+        }
+        // safety: hide after 6 s if page never loads
+        timer = setTimeout(hideSplash, 6000);
+    }
+
+    function hideSplash() {
+        if (!splash) return;
+        clearTimeout(timer);
+        if (fill) {
+            fill.style.transition = 'width .2s ease';
+            fill.style.width = '100%';
+        }
+        setTimeout(function () {
+            splash.style.transition = 'opacity .25s ease';
+            splash.classList.remove('lt-splash--show');
+        }, 180);
+    }
+
+    // Show on navigation links (not #anchors, not target="_blank", not download)
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href') || '';
+        if (
+            href.startsWith('#') ||
+            href.startsWith('javascript') ||
+            href === '' ||
+            a.target === '_blank' ||
+            a.hasAttribute('download') ||
+            e.ctrlKey || e.metaKey || e.shiftKey
+        ) return;
+        // Only same-origin navigation
+        try {
+            var url = new URL(href, location.origin);
+            if (url.origin !== location.origin) return;
+        } catch (_) { return; }
+        showSplash();
+    });
+
+    // Show on form submissions (POST navigations)
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        // Skip AJAX forms (data-ajax) and forms that open new tabs
+        if (form.dataset.ajax || form.target === '_blank') return;
+        showSplash();
+    });
+
+    // Hide as soon as new page is interactive
+    window.addEventListener('pageshow', hideSplash);
+    if (document.readyState === 'complete') {
+        hideSplash();
+    } else {
+        window.addEventListener('load', hideSplash);
+    }
+})();
+</script>
+<!-- ══ Lumina Confirm Dialog — replaces native confirm() everywhere ══ -->
+<div id="lt-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="lt-cd-title">
+    <div id="lt-confirm-dialog">
+        <div class="lt-cd__icon-wrap" id="lt-cd-icon-wrap">
+            <i class="bi lt-cd__icon" id="lt-cd-icon"></i>
+        </div>
+        <div class="lt-cd__body">
+            <h3 class="lt-cd__title" id="lt-cd-title">Xác nhận</h3>
+            <p  class="lt-cd__msg"   id="lt-cd-msg"></p>
+        </div>
+        <div class="lt-cd__actions">
+            <button class="lt-cd__btn lt-cd__btn-cancel" id="lt-cd-cancel" type="button">
+                <i class="bi bi-x-lg"></i> Hủy
+            </button>
+            <button class="lt-cd__btn lt-cd__btn-ok" id="lt-cd-ok" type="button">
+                <i class="bi bi-check-lg" id="lt-cd-ok-icon"></i>
+                <span id="lt-cd-ok-label">Xác nhận</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ── Overlay ─────────────────────────────────────────────────────────────── */
+#lt-confirm-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(10, 18, 40, 0.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .18s ease;
+    backdrop-filter: blur(3px);
+}
+#lt-confirm-overlay.lt-cd--show {
+    opacity: 1; pointer-events: all;
+}
+
+/* ── Dialog card ─────────────────────────────────────────────────────────── */
+#lt-confirm-dialog {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(10, 18, 40, 0.22), 0 4px 16px rgba(10, 18, 40, 0.12);
+    width: 100%; max-width: 380px;
+    padding: 32px 28px 24px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    transform: scale(.88) translateY(14px);
+    transition: transform .22s cubic-bezier(.34,1.3,.64,1), opacity .18s ease;
+    opacity: 0;
+}
+#lt-confirm-overlay.lt-cd--show #lt-confirm-dialog {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* ── Icon bubble ─────────────────────────────────────────────────────────── */
+.lt-cd__icon-wrap {
+    width: 62px; height: 62px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px; flex-shrink: 0;
+    transition: background .15s;
+}
+.lt-cd__icon { font-size: 1.6rem; }
+
+/* Icon themes */
+.lt-cd__icon-wrap--danger  { background: #fee2e2; }
+.lt-cd__icon-wrap--danger .lt-cd__icon { color: #dc2626; }
+.lt-cd__icon-wrap--warning { background: #fef9c3; }
+.lt-cd__icon-wrap--warning .lt-cd__icon { color: #ca8a04; }
+.lt-cd__icon-wrap--safe    { background: #dcfce7; }
+.lt-cd__icon-wrap--safe .lt-cd__icon { color: #16a34a; }
+.lt-cd__icon-wrap--info    { background: #ede9fe; }
+.lt-cd__icon-wrap--info .lt-cd__icon { color: #7c3aed; }
+
+/* ── Text ────────────────────────────────────────────────────────────────── */
+.lt-cd__body { margin-bottom: 22px; }
+.lt-cd__title {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    color: #0f172a; margin-bottom: 6px;
+}
+.lt-cd__msg {
+    font-size: .88rem; color: #475569;
+    line-height: 1.55; margin: 0;
+    white-space: pre-line; /* support \n in messages */
+}
+
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+.lt-cd__actions {
+    display: flex; gap: 10px; width: 100%;
+}
+.lt-cd__btn {
+    flex: 1; padding: 10px 16px; border-radius: 11px;
+    font-size: .87rem; font-weight: 600;
+    border: none; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all .15s;
+}
+.lt-cd__btn-cancel {
+    background: #f1f5f9; color: #64748b;
+}
+.lt-cd__btn-cancel:hover { background: #e2e8f0; color: #334155; }
+
+/* OK variants */
+.lt-cd__btn-ok              { background: #0f2044; color: #fff; }
+.lt-cd__btn-ok:hover        { background: #1a3060; }
+.lt-cd__btn-ok--danger      { background: #dc2626; color: #fff; }
+.lt-cd__btn-ok--danger:hover{ background: #b91c1c; }
+.lt-cd__btn-ok--warning     { background: #d97706; color: #fff; }
+.lt-cd__btn-ok--warning:hover{ background: #b45309; }
+.lt-cd__btn-ok--safe        { background: #16a34a; color: #fff; }
+.lt-cd__btn-ok--safe:hover  { background: #15803d; }
+.lt-cd__btn-ok--info        { background: #7c3aed; color: #fff; }
+.lt-cd__btn-ok--info:hover  { background: #6d28d9; }
+</style>
+
+<script>
+(function () {
+    const overlay  = document.getElementById('lt-confirm-overlay');
+    const dialog   = document.getElementById('lt-confirm-dialog');
+    const msgEl    = document.getElementById('lt-cd-msg');
+    const iconWrap = document.getElementById('lt-cd-icon-wrap');
+    const iconEl   = document.getElementById('lt-cd-icon');
+    const okBtn    = document.getElementById('lt-cd-ok');
+    const okIcon   = document.getElementById('lt-cd-ok-icon');
+    const okLabel  = document.getElementById('lt-cd-ok-label');
+    const cancelBtn= document.getElementById('lt-cd-cancel');
+
+    if (!overlay) return; // guard: auth pages without sidebar
+
+    let pendingAction = null;
+
+    // ── Type detection ────────────────────────────────────────────────────────
+    const TYPES = {
+        danger : {
+            iconClass : 'bi-trash3-fill',
+            wrapClass : 'lt-cd__icon-wrap--danger',
+            btnClass  : 'lt-cd__btn-ok--danger',
+            btnLabel  : 'Xóa',
+            btnIcon   : 'bi-trash3',
+            title     : 'Xác nhận xóa',
+            keywords  : ['xóa', 'xoá', 'thu hồi', 'vô hiệu']
+        },
+        warning : {
+            iconClass : 'bi-exclamation-triangle-fill',
+            wrapClass : 'lt-cd__icon-wrap--warning',
+            btnClass  : 'lt-cd__btn-ok--warning',
+            btnLabel  : 'Xác nhận',
+            btnIcon   : 'bi-check-lg',
+            title     : 'Xác nhận',
+            keywords  : ['kết thúc', 'đóng phòng', 'đóng phiên', 'đóng đề', 'khóa sổ', 'hủy buổi', 'hủy liên kết', 'xếp phòng']
+        },
+        safe   : {
+            iconClass : 'bi-send-fill',
+            wrapClass : 'lt-cd__icon-wrap--safe',
+            btnClass  : 'lt-cd__btn-ok--safe',
+            btnLabel  : 'Nộp bài',
+            btnIcon   : 'bi-send-fill',
+            title     : 'Xác nhận nộp bài',
+            keywords  : ['nộp bài', 'nộp lại']
+        },
+        info   : {
+            iconClass : 'bi-info-circle-fill',
+            wrapClass : 'lt-cd__icon-wrap--info',
+            btnClass  : 'lt-cd__btn-ok--info',
+            btnLabel  : 'Xác nhận',
+            btnIcon   : 'bi-check-lg',
+            title     : 'Xác nhận',
+            keywords  : ['phát sinh', 'tính điểm', 'tính đtb', 'xếp phòng ngẫu nhiên']
+        },
+    };
+
+    function detectType(msg) {
+        const lower = msg.toLowerCase();
+        for (const [key, cfg] of Object.entries(TYPES))
+            if (cfg.keywords.some(k => lower.includes(k)))
+                return cfg;
+        return TYPES.warning; // default
+    }
+
+    // ── Show / hide ───────────────────────────────────────────────────────────
+    function show(msg, onOk) {
+        const cfg = detectType(msg);
+
+        // Reset icon classes
+        iconWrap.className = 'lt-cd__icon-wrap ' + cfg.wrapClass;
+        iconEl.className   = 'bi lt-cd__icon ' + cfg.iconClass;
+        okBtn.className    = 'lt-cd__btn lt-cd__btn-ok ' + cfg.btnClass;
+        okIcon.className   = 'bi ' + cfg.btnIcon;
+        okLabel.textContent= cfg.btnLabel;
+        document.getElementById('lt-cd-title').textContent = cfg.title;
+        msgEl.textContent  = msg;
+
+        pendingAction = onOk;
+        overlay.setAttribute('aria-hidden', 'false');
+        overlay.classList.add('lt-cd--show');
+
+        // Trap focus
+        requestAnimationFrame(() => okBtn.focus());
+    }
+
+    function hide() {
+        overlay.classList.remove('lt-cd--show');
+        overlay.setAttribute('aria-hidden', 'true');
+        pendingAction = null;
+    }
+
+    // ── Button events ─────────────────────────────────────────────────────────
+    okBtn.addEventListener('click', () => {
+        const action = pendingAction;
+        hide();
+        if (action) action();
+    });
+    cancelBtn.addEventListener('click', hide);
+    overlay.addEventListener('click', e => { if (e.target === overlay) hide(); });
+
+    // Keyboard
+    overlay.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { hide(); }
+        if (e.key === 'Enter')  { const a = pendingAction; hide(); if (a) a(); }
+        // Tab trap
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            (document.activeElement === okBtn ? cancelBtn : okBtn).focus();
+        }
+    });
+
+    // ── Global interceptor: capture phase ─────────────────────────────────────
+    // Matches any button whose onclick contains `return confirm('...')` or confirm("...")
+    const RE_CONFIRM = /\bconfirm\s*\(\s*(['"])([\s\S]*?)\1\s*\)/;
+
+    document.addEventListener('click', function (e) {
+        // Walk up to find a button/submit with onclick confirm
+        let el = e.target;
+        while (el && el !== document.body) {
+            const oc = el.getAttribute && el.getAttribute('onclick');
+            if (oc) {
+                const m = RE_CONFIRM.exec(oc);
+                if (m) {
+                    // Already flagged as confirmed? Let it run.
+                    if (el.dataset.ltOk === '1') {
+                        delete el.dataset.ltOk;
+                        return; // proceed normally
+                    }
+
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+
+                    const msg  = m[2].replace(/\\n/g, '\n').replace(/\\'/g, "'").replace(/\\"/g, '"');
+                    const form = el.closest('form');
+
+                    show(msg, () => {
+                        if (form) {
+                            // Submit the form directly — no need to re-fire onclick
+                            form.submit();
+                        } else {
+                            // Non-form action (anchor, js, etc.)
+                            el.dataset.ltOk = '1';
+                            el.click();
+                        }
+                    });
+                    return;
+                }
+            }
+            el = el.parentElement;
+        }
+    }, true /* capture phase — fires before onclick */);
+
+    // ── Expose for manual use: window.ltConfirm(msg, callback) ───────────────
+    window.ltConfirm = function (msg, callback) {
+        show(msg, callback);
+    };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+@using LuminaTutors.Application.DTOs.Grading
+@model List<ExamDto>
+@{
+    ViewData["Title"] = "Quản lý kỳ thi";
+    var semesterId = ViewBag.SemesterId as int? ?? 0;
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Quản lý kỳ thi</h1>
+        <p class="lt-page-subtitle">Tổ chức và phân công phòng thi</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <button type="button" class="lt-btn lt-btn--gold lt-btn--sm"
+                data-bs-toggle="collapse" data-bs-target="#collapseCreateExam">
+            <i class="bi bi-plus-lg"></i> Tạo kỳ thi mới
+        </button>
+    </div>
+</div>
+
+<!-- Create Exam Form -->
+<div class="collapse lt-mb-4" id="collapseCreateExam">
+    <div class="lt-card">
+        <div class="lt-card__header">
+            <h3 class="lt-card__title">Thêm kỳ thi mới</h3>
+        </div>
+        <div class="lt-card__body">
+            <form asp-action="CreateExam" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="SemesterId" value="@semesterId"/>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Tên kỳ thi <span class="lt-text-danger">*</span></label>
+                            <input type="text" name="ExamName" class="lt-input"
+                                   placeholder="VD: Kiểm tra giữa học kỳ 1 - Toán 10A" required/>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Loại kỳ thi <span class="lt-text-danger">*</span></label>
+                            <select name="ExamType" class="lt-select">
+                                <option value="MidTerm">Giữa kỳ</option>
+                                <option value="FinalTerm">Cuối kỳ</option>
+                                <option value="Regular">Thường xuyên</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="lt-form-group">
+                            <label class="lt-label">ID Môn học <span class="lt-text-danger">*</span></label>
+                            <input type="number" name="SubjectId" class="lt-input"
+                                   placeholder="VD: 1" required min="1"/>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="lt-form-group">
+                            <label class="lt-label">ID Khối <span class="lt-text-danger">*</span></label>
+                            <input type="number" name="GradeLevelId" class="lt-input"
+                                   placeholder="VD: 1" required min="1"/>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Ngày thi <span class="lt-text-danger">*</span></label>
+                            <input type="date" name="ExamDate" class="lt-input" required/>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Giờ bắt đầu <span class="lt-text-danger">*</span></label>
+                            <input type="time" name="StartTime" class="lt-input" value="07:30" required/>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Thời lượng (phút) <span class="lt-text-danger">*</span></label>
+                            <input type="number" name="DurationMinutes" class="lt-input"
+                                   value="90" min="30" max="180" required/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lt-flex-between lt-mt-4" style="justify-content:flex-end;gap:12px">
+                    <button type="button" class="lt-btn lt-btn--outline"
+                            data-bs-toggle="collapse" data-bs-target="#collapseCreateExam">
+                        Hủy
+                    </button>
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-check-lg"></i> Tạo kỳ thi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (Model == null || Model.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-clipboard2-x"></i></div>
+                <p class="lt-empty__title">Chưa có kỳ thi</p>
+                <p class="lt-empty__text">Chưa có kỳ thi nào được tổ chức trong học kỳ này.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lt-card">
+        <div class="lt-card__body" style="padding:0;overflow-x:auto">
+            <table class="lt-table" data-testid="exam-table">
+                <thead>
+                    <tr>
+                        <th>Tên kỳ thi</th>
+                        <th>Môn học</th>
+                        <th>Khối</th>
+                        <th>Loại</th>
+                        <th>Ngày thi</th>
+                        <th>Giờ</th>
+                        <th class="lt-th--right">Phòng thi</th>
+                        <th class="lt-th--right">Thí sinh</th>
+                        <th class="lt-td--actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model.OrderBy(x => x.ExamDate))
+                    {
+                        <tr>
+                            <td class="lt-fw-600">@e.ExamName</td>
+                            <td>@e.SubjectName</td>
+                            <td><span class="lt-badge lt-badge--navy">@e.GradeName</span></td>
+                            <td>
+                                <span class="lt-badge @(e.ExamType == "FinalTerm" ? "lt-badge--danger" : e.ExamType == "MidTerm" ? "lt-badge--warning" : "lt-badge--navy")">
+                                    @(e.ExamType == "FinalTerm" ? "Cuối kỳ" : e.ExamType == "MidTerm" ? "Giữa kỳ" : e.ExamType)
+                                </span>
+                            </td>
+                            <td class="lt-td--mono">@e.ExamDate.ToString("dd/MM/yyyy")</td>
+                            <td class="lt-td--dim">@e.StartTime (@e.DurationMinutes phút)</td>
+                            <td class="lt-td--right">@e.RoomCount</td>
+                            <td class="lt-td--right">@e.TotalStudents</td>
+                            <td>
+                                <a asp-action="ExamRooms" asp-route-examId="@e.ExamId"
+                                   class="lt-btn lt-btn--outline lt-btn--sm lt-btn--icon"
+                                   title="Xem phòng thi">
+                                    <i class="bi bi-door-open"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="lt-card__footer">
+            <span class="lt-text-sm lt-text-muted">
+                Tổng: <strong class="lt-text-navy">@Model.Count</strong> kỳ thi
+            </span>
+        </div>
+    </div>
+}

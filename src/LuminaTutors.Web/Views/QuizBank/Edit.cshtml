@@ -1,0 +1,112 @@
+@using LuminaTutors.Application.DTOs.Quiz
+@model QuizQuestionDto
+@{
+    ViewData["Title"] = "Chỉnh sửa câu hỏi";
+    var subjects    = ViewBag.Subjects    as IReadOnlyList<dynamic> ?? new List<dynamic>();
+    var gradeLevels = ViewBag.GradeLevels as IReadOnlyList<dynamic> ?? new List<dynamic>();
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-pencil-square" style="color:var(--lt-gold);margin-right:8px"></i>
+            Chỉnh sửa câu hỏi
+        </h1>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i> @err
+    </div>
+}
+
+<form asp-action="Edit" asp-route-id="@Model.QuestionId" method="post">
+    @Html.AntiForgeryToken()
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__body">
+                    <div class="lt-form-group lt-mb-4">
+                        <label class="lt-label">Câu hỏi <span class="lt-text-danger">*</span></label>
+                        <textarea name="questionText" class="lt-input" rows="4" required
+                                  style="resize:vertical;min-height:100px">@Model.QuestionText</textarea>
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Giải thích đáp án</label>
+                        <textarea name="explanationText" class="lt-input" rows="2"
+                                  style="resize:vertical">@Model.ExplanationText</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-list-check" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Các lựa chọn đáp án
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+                    @for (int idx = 0; idx < Model.Options.Count; idx++)
+                    {
+                        var opt = Model.Options[idx];
+                        <div class="option-row" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                            <div style="width:32px;height:32px;border-radius:8px;
+                                        background:var(--lt-navy-900);
+                                        display:flex;align-items:center;justify-content:center;
+                                        font-weight:700;font-size:.85rem;color:var(--lt-gold);flex-shrink:0">
+                                @opt.OptionLabel
+                            </div>
+                            <input type="hidden" name="optionLabel" value="@opt.OptionLabel"/>
+                            <input type="text" name="optionText" class="lt-input"
+                                   value="@opt.OptionText" required style="flex:1"/>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;
+                                          white-space:nowrap;font-size:.82rem;color:var(--lt-text-muted)">
+                                <input type="radio" name="correctIndex" value="@idx"
+                                       @(opt.IsCorrect ? "checked" : "")
+                                       style="accent-color:var(--lt-success);width:16px;height:16px"/>
+                                Đúng
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__body">
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Độ khó</label>
+                        <select name="difficultyLevel" class="lt-select">
+                            <option value="Easy"   selected="@(Model.DifficultyLevel=="Easy")">Dễ</option>
+                            <option value="Medium" selected="@(Model.DifficultyLevel=="Medium")">Trung bình</option>
+                            <option value="Hard"   selected="@(Model.DifficultyLevel=="Hard")">Khó</option>
+                        </select>
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Chương / Chủ đề</label>
+                        <input name="chapterTag" class="lt-input" value="@Model.ChapterTag"
+                               placeholder="VD: Chương 3"/>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px">
+                <a asp-action="Index" class="lt-btn lt-btn--outline" style="flex:1;justify-content:center">
+                    Hủy
+                </a>
+                <button type="submit" class="lt-btn lt-btn--primary" style="flex:2;justify-content:center">
+                    <i class="bi bi-check-circle-fill"></i> Lưu thay đổi
+                </button>
+            </div>
+            <p class="lt-form-hint" style="text-align:center;margin-top:.5rem">
+                <i class="bi bi-info-circle"></i> Sau khi sửa, câu hỏi sẽ cần duyệt lại
+            </p>
+        </div>
+    </div>
+</form>

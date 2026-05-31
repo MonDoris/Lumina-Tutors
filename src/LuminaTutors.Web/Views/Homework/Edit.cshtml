@@ -1,0 +1,276 @@
+@using LuminaTutors.Application.DTOs.Homework
+@using LuminaTutors.Domain.Enums
+@model AssignmentDetailDto
+@{
+    ViewData["Title"] = "Chỉnh sửa bài tập";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-pencil-square" style="color:var(--lt-gold);margin-right:8px"></i>
+            Chỉnh sửa bài tập
+        </h1>
+        <p class="lt-page-subtitle">@Model.SubjectName — @Model.ClassName</p>
+    </div>
+    <div style="display:flex;gap:8px">
+        <a asp-action="Stats" asp-route-id="@Model.Id" class="lt-btn lt-btn--outline">
+            <i class="bi bi-bar-chart-fill"></i> Thống kê
+        </a>
+        <a asp-action="Teacher" class="lt-btn lt-btn--outline">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-4">
+
+        <!-- ── Left: Main info ──────────────────────────────────────────── -->
+        <div class="col-lg-8">
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-file-text-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Thông tin bài tập
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Môn học — Lớp</label>
+                        <input class="lt-input" value="@Model.SubjectName — @Model.ClassName" disabled />
+                        <p class="lt-form-hint">Không thể thay đổi môn học / lớp sau khi tạo.</p>
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Tiêu đề bài tập <span class="lt-text-danger">*</span></label>
+                        <input name="title" type="text" class="lt-input"
+                               value="@Model.Title" maxlength="200" required />
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Hướng dẫn / Yêu cầu</label>
+                        <textarea name="instructions" class="lt-input" rows="5"
+                                  style="resize:vertical">@Model.Instructions</textarea>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ── Existing attachments ────────────────────────────────── -->
+            @if (Model.Attachments.Any())
+            {
+                <div class="lt-card lt-mb-4">
+                    <div class="lt-card__header">
+                        <h3 class="lt-card__title">
+                            <i class="bi bi-paperclip" style="color:var(--lt-gold);margin-right:6px"></i>
+                            File đính kèm hiện có
+                        </h3>
+                    </div>
+                    <div class="lt-card__body" style="padding:0">
+                        <table class="lt-table">
+                            <tbody>
+                                @foreach (var att in Model.Attachments)
+                                {
+                                    <tr>
+                                        <td style="width:36px;padding:10px 8px 10px 16px">
+                                            <i class="bi bi-paperclip" style="color:var(--lt-navy)"></i>
+                                        </td>
+                                        <td>
+                                            <a href="@att.FileUrl" target="_blank"
+                                               style="font-weight:500;font-size:.85rem;color:var(--lt-navy)">
+                                                @att.FileName
+                                            </a>
+                                            <div style="font-size:.72rem;color:var(--lt-text-muted)">
+                                                @att.FileType · @(att.FileSizeKB.HasValue ? att.FileSizeKB + " KB" : "—")
+                                            </div>
+                                        </td>
+                                        <td style="text-align:right;padding-right:16px">
+                                            <form asp-action="DeleteAttachment" method="post" style="display:inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="attachmentId" value="@att.Id" />
+                                                <input type="hidden" name="assignmentId" value="@Model.Id" />
+                                                <button type="submit"
+                                                        class="lt-btn lt-btn--sm lt-btn--outline"
+                                                        style="color:var(--lt-danger)"
+                                                        onclick="return confirm('Xóa file đính kèm này?')">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <!-- ── Add more files ──────────────────────────────────────── -->
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-cloud-arrow-up" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Thêm file đính kèm
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+                    <div id="drop-zone" class="hw-drop-zone">
+                        <i class="bi bi-cloud-arrow-up-fill hw-drop-zone__icon"></i>
+                        <div class="hw-drop-zone__title">Kéo thả file vào đây</div>
+                        <div class="hw-drop-zone__sub">hoặc</div>
+                        <label class="lt-btn lt-btn--outline" style="cursor:pointer">
+                            <i class="bi bi-folder2-open"></i> Chọn file
+                            <input type="file" name="attachments" multiple id="file-input" style="display:none" />
+                        </label>
+                        <div class="hw-drop-zone__hint">Hỗ trợ mọi định dạng. Tối đa 50MB/file.</div>
+                    </div>
+                    <div id="file-list" class="hw-file-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Right: Settings ──────────────────────────────────────────── -->
+        <div class="col-lg-4">
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-gear-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Cài đặt
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Loại bài tập</label>
+                        <select name="assignmentType" class="lt-select">
+                            <option value="1" selected="@(Model.AssignmentType == AssignmentType.Homework ? "selected" : null)">📚 Bài về nhà</option>
+                            <option value="2" selected="@(Model.AssignmentType == AssignmentType.Quiz     ? "selected" : null)">📝 Kiểm tra</option>
+                            <option value="3" selected="@(Model.AssignmentType == AssignmentType.Midterm  ? "selected" : null)">📋 Giữa kỳ</option>
+                            <option value="4" selected="@(Model.AssignmentType == AssignmentType.Final    ? "selected" : null)">🎓 Cuối kỳ</option>
+                            <option value="5" selected="@(Model.AssignmentType == AssignmentType.Project  ? "selected" : null)">🔬 Dự án</option>
+                        </select>
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Điểm tối đa</label>
+                        <input name="maxScore" type="number" class="lt-input"
+                               value="@Model.MaxScore" min="0" max="1000" step="0.5" />
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Hạn nộp bài</label>
+                        <input name="dueDate" type="datetime-local" class="lt-input"
+                               value="@(Model.DueDate.HasValue ? Model.DueDate.Value.ToLocalTime().ToString("yyyy-MM-ddTHH:mm") : "")" />
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <div style="display:flex;align-items:center;justify-content:space-between">
+                            <label class="lt-label" style="margin:0">Cho phép nộp muộn</label>
+                            <label class="hw-toggle">
+                                <input type="checkbox" name="allowLateSubmission" id="allowLate"
+                                       value="true" @(Model.AllowLateSubmission ? "checked" : "") />
+                                <span class="hw-toggle__track"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3" id="penalty-group"
+                         style="display:@(Model.AllowLateSubmission?"block":"none")">
+                        <label class="lt-label">Phạt điểm khi nộp muộn (%)</label>
+                        <input name="latePenaltyPercent" type="number" class="lt-input"
+                               value="@Model.LatePenaltyPercent" min="0" max="100" />
+                    </div>
+
+                    <div style="background:var(--lt-bg-subtle);border-radius:10px;padding:14px;margin-bottom:16px">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                            <label class="lt-label" style="margin:0;font-weight:700">Đăng bài</label>
+                            <label class="hw-toggle">
+                                <input type="checkbox" name="isPublished" value="true"
+                                       @(Model.IsPublished ? "checked" : "") />
+                                <span class="hw-toggle__track"></span>
+                            </label>
+                        </div>
+                        <p style="font-size:.76rem;color:var(--lt-text-muted);margin:0">
+                            @if (Model.IsPublished)
+                            { <span>Đang hiển thị với học sinh.</span> }
+                            else
+                            { <span>Bản nháp — học sinh chưa thấy.</span> }
+                        </p>
+                    </div>
+
+                    <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                        <i class="bi bi-check2-circle"></i> Lưu thay đổi
+                    </button>
+                    <a asp-action="Teacher" class="lt-btn lt-btn--outline"
+                       style="width:100%;justify-content:center;margin-top:8px">
+                        Hủy
+                    </a>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</form>
+
+@section Styles {
+<style>
+.hw-drop-zone {
+    border: 2px dashed var(--lt-border); border-radius: 12px;
+    padding: 1.5rem; text-align: center; transition: border-color .18s, background .18s;
+}
+.hw-drop-zone.drag-over { border-color: var(--lt-navy); background: oklch(96% 0.01 240); }
+.hw-drop-zone__icon  { font-size: 2rem; color: var(--lt-navy-100); display: block; margin-bottom: 8px; }
+.hw-drop-zone__title { font-weight: 700; color: var(--lt-navy); margin-bottom: 4px; }
+.hw-drop-zone__sub   { font-size: .8rem; color: var(--lt-text-muted); margin-bottom: 10px; }
+.hw-drop-zone__hint  { font-size: .72rem; color: var(--lt-text-muted); margin-top: 10px; }
+.hw-file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.hw-file-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    border-radius: 8px; background: var(--lt-bg-subtle); border: 1px solid var(--lt-border); font-size: .8rem;
+}
+.hw-file-item__name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hw-file-item__size { color: var(--lt-text-muted); flex-shrink: 0; }
+.hw-file-item__del  { background: none; border: none; color: var(--lt-text-muted); cursor: pointer; }
+.hw-file-item__del:hover { color: var(--lt-danger); }
+.hw-toggle { position: relative; display: inline-block; width: 42px; height: 24px; }
+.hw-toggle input { opacity: 0; width: 0; height: 0; }
+.hw-toggle__track { position: absolute; inset: 0; background: var(--lt-border); border-radius: 99px; transition: background .18s; }
+.hw-toggle input:checked + .hw-toggle__track { background: var(--lt-navy); }
+.hw-toggle__track::before {
+    content:""; position:absolute; width:18px; height:18px; border-radius:50%; background:#fff;
+    left:3px; top:3px; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:transform .18s;
+}
+.hw-toggle input:checked + .hw-toggle__track::before { transform: translateX(18px); }
+</style>
+}
+@section Scripts {
+<script>
+const dropZone = document.getElementById('drop-zone'), fileInput = document.getElementById('file-input'), fileList = document.getElementById('file-list');
+let sel = new DataTransfer();
+function fmtSize(b) { return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB'; }
+function render() {
+    fileList.innerHTML='';
+    Array.from(sel.files).forEach((f,i)=>{
+        const d=document.createElement('div'); d.className='hw-file-item';
+        d.innerHTML=`<i class="bi bi-paperclip"></i><span class="hw-file-item__name">${f.name}</span><span class="hw-file-item__size">${fmtSize(f.size)}</span><button type="button" class="hw-file-item__del" data-i="${i}"><i class="bi bi-x-lg"></i></button>`;
+        fileList.appendChild(d);
+    }); fileInput.files=sel.files;
+}
+fileInput.addEventListener('change',()=>{ Array.from(fileInput.files).forEach(f=>sel.items.add(f)); render(); });
+fileList.addEventListener('click',e=>{ const b=e.target.closest('[data-i]'); if(!b)return; const dt=new DataTransfer(); Array.from(sel.files).forEach((f,i)=>{if(i!=b.dataset.i)dt.items.add(f);}); sel=dt; render(); });
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');Array.from(e.dataTransfer.files).forEach(f=>sel.items.add(f));render();});
+document.getElementById('allowLate').addEventListener('change',function(){ document.getElementById('penalty-group').style.display=this.checked?'block':'none'; });
+</script>
+}

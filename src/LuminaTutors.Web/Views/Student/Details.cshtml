@@ -1,0 +1,215 @@
+@model LuminaTutors.Application.DTOs.Student.StudentDetailDto
+@{
+    ViewData["Title"] = $"Học sinh — {Model?.FullName}";
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm mb-2">
+            <i class="bi bi-arrow-left"></i> Danh sách
+        </a>
+        <h1 class="lt-page-title">@Model?.FullName</h1>
+        <p class="lt-page-subtitle">Mã học sinh: <code>@Model?.StudentCode</code></p>
+    </div>
+    @if (User.IsInRole("ADMIN"))
+    {
+        <div style="display:flex;gap:8px">
+            <a asp-action="Edit" asp-route-id="@Model?.UserId" class="lt-btn lt-btn--outline">
+                <i class="bi bi-pencil"></i> Chỉnh sửa
+            </a>
+            <button class="lt-btn lt-btn--gold" data-bs-toggle="modal" data-bs-target="#enrollModal">
+                <i class="bi bi-person-check"></i> Xếp lớp
+            </button>
+        </div>
+    }
+</div>
+
+<div class="row g-3">
+
+    <!-- Profile Card -->
+    <div class="col-lg-4">
+        <div class="lt-card">
+            <div class="lt-card__body" style="text-align:center;padding:32px 24px">
+                <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--lt-navy),var(--lt-navy-light));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:1.6rem;margin:0 auto 16px">
+                    @(Model?.FullName.Length > 0 ? string.Concat(Model.FullName.Split(' ').TakeLast(2).Select(p => p[0])) : "??")
+                </div>
+                <h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--lt-navy);margin-bottom:4px">@Model?.FullName</h3>
+                <span class="lt-badge @(Model?.IsActive == true ? "lt-badge--success" : "lt-badge--gray")">
+                    @(Model?.IsActive == true ? "Đang học" : "Đã nghỉ")
+                </span>
+            </div>
+            <div class="lt-card__body" style="border-top:1px solid #f0f0f0">
+                @{
+                    void InfoRow(string icon, string label, string? value)
+                    {
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px">
+                                <i class="bi bi-@icon" style="color:var(--lt-gold);margin-top:2px;font-size:.9rem;width:16px;text-align:center"></i>
+                                <div>
+                                    <div style="font-size:.72rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em">@label</div>
+                                    <div style="font-size:.875rem;color:var(--lt-navy);font-weight:500">@value</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+                @{ InfoRow("envelope", "Email", Model?.Email); }
+                @{ InfoRow("telephone", "SĐT", Model?.PhoneNumber); }
+                @{ InfoRow("calendar-date", "Ngày sinh", Model?.DateOfBirth?.ToString("dd/MM/yyyy")); }
+                @{ InfoRow("gender-ambiguous", "Giới tính", Model?.Gender); }
+                @{ InfoRow("geo-alt", "Địa chỉ", Model?.PermanentAddress); }
+                @{ InfoRow("calendar-check", "Ngày nhập học", Model?.AdmissionDate?.ToString("dd/MM/yyyy")); }
+            </div>
+        </div>
+
+        @if (User.IsInRole("ADMIN") && Model?.IsActive == true)
+        {
+            <div class="lt-card mt-3">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">Thao tác</h3>
+                </div>
+                <div class="lt-card__body d-flex flex-column gap-2">
+                    <button class="lt-btn lt-btn--outline" data-bs-toggle="modal" data-bs-target="#transferModal">
+                        <i class="bi bi-arrow-left-right"></i> Chuyển lớp
+                    </button>
+                    <form asp-action="Deactivate" method="post" onsubmit="return confirm('Xác nhận vô hiệu hóa học sinh?')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model?.UserId"/>
+                        <button type="submit" class="lt-btn lt-btn--danger w-100" data-testid="btn-deactivate">
+                            <i class="bi bi-person-x"></i> Vô hiệu hóa
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Enrollment + Parents -->
+    <div class="col-lg-8">
+
+        <!-- Current Class -->
+        <div class="lt-card mb-3">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title"><i class="bi bi-building" style="color:var(--lt-gold);margin-right:6px"></i>Lớp hiện tại</h3>
+            </div>
+            <div class="lt-card__body">
+                @if (Model?.CurrentClassId.HasValue == true)
+                {
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <div class="lt-label">Lớp</div>
+                            <div style="font-weight:600;color:var(--lt-navy)">@Model.CurrentClassName</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="lt-label">Khối</div>
+                            <div>@Model.CurrentGradeName</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="lt-label">GVCN</div>
+                            <div>@Model.HomeRoomTeacherName</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="text-align:center;padding:16px;color:#9ca3af">Chưa xếp lớp</div>
+                }
+            </div>
+        </div>
+
+        <!-- Parents -->
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title"><i class="bi bi-person-heart" style="color:var(--lt-gold);margin-right:6px"></i>Phụ huynh liên kết</h3>
+            </div>
+            <div class="lt-card__body" style="padding:0">
+                <table class="lt-table">
+                    <thead>
+                        <tr>
+                            <th>Họ tên</th>
+                            <th>Quan hệ</th>
+                            <th>SĐT</th>
+                            <th>Liên hệ chính</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model?.Parents?.Count == 0)
+                        {
+                            <tr><td colspan="4" style="text-align:center;padding:24px;color:#9ca3af">Chưa liên kết phụ huynh</td></tr>
+                        }
+                        @foreach (var p in Model?.Parents ?? new List<LuminaTutors.Application.DTOs.Student.ParentInfoDto>())
+                        {
+                            <tr>
+                                <td><strong>@p.FullName</strong></td>
+                                <td>@p.Relationship</td>
+                                <td>@p.PhoneNumber</td>
+                                <td>
+                                    @if (p.IsPrimaryContact)
+                                    {
+                                        <span class="lt-badge lt-badge--success"><i class="bi bi-star-fill"></i> Chính</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Enroll Modal -->
+<div class="modal fade" id="enrollModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none">
+            <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                <h5 class="modal-title lt-card__title">Xếp lớp cho học sinh</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Enroll" asp-route-studentId="@Model?.UserId" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body" style="padding:24px">
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">ID Lớp học</label>
+                        <input type="number" name="model.ClassId" class="lt-input" placeholder="Nhập ID lớp" required/>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--gold">Xếp lớp</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Modal -->
+<div class="modal fade" id="transferModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none">
+            <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                <h5 class="modal-title lt-card__title">Chuyển lớp</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Transfer" asp-route-studentId="@Model?.UserId" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:16px">
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Lớp mới (ID)</label>
+                        <input type="number" name="model.NewClassId" class="lt-input" required/>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Lý do chuyển lớp</label>
+                        <input type="text" name="model.TransferNote" class="lt-input" placeholder="Nhập lý do chuyển lớp" required/>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--primary">Chuyển lớp</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

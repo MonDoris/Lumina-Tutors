@@ -1,0 +1,196 @@
+@using LuminaTutors.Domain.Entities.Academic
+@using LuminaTutors.Domain.Enums
+@model List<Subject>
+@{
+    ViewData["Title"] = "Quản lý môn học";
+    var search     = ViewBag.Search     as string ?? "";
+    var activeOnly = (bool)(ViewBag.ActiveOnly ?? false);
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-journals" style="color:var(--lt-gold);margin-right:8px"></i>
+            Môn học
+        </h1>
+        <p class="lt-page-subtitle">Quản lý danh sách môn học của trường</p>
+    </div>
+    <a asp-action="Create" class="lt-btn lt-btn--primary">
+        <i class="bi bi-plus-lg"></i> Thêm môn học
+    </a>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<!-- Filter -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body">
+        <form method="get" asp-action="Index" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+                <label class="lt-label">Tìm kiếm</label>
+                <input name="search" value="@search" class="lt-input" placeholder="Tên hoặc mã môn học...">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding-bottom:4px">
+                <input type="checkbox" name="activeOnly" value="true" id="chk-active" @(activeOnly?"checked":"")
+                       style="width:16px;height:16px;accent-color:var(--lt-navy)">
+                <label for="chk-active" style="font-size:.85rem;cursor:pointer">Chỉ hiện đang hoạt động</label>
+            </div>
+            <div style="display:flex;gap:6px">
+                <button type="submit" class="lt-btn lt-btn--primary lt-btn--sm"><i class="bi bi-search"></i> Lọc</button>
+                <a asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm"><i class="bi bi-x"></i> Xóa lọc</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 lt-mb-4">
+    <div class="col-6 col-md-3">
+        <div class="lt-card">
+            <div class="lt-card__body" style="text-align:center">
+                <div style="font-size:1.6rem;font-weight:700;color:var(--lt-navy)">@Model.Count</div>
+                <div style="font-size:.78rem;color:var(--lt-text-muted)">Tổng môn học</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="lt-card">
+            <div class="lt-card__body" style="text-align:center">
+                <div style="font-size:1.6rem;font-weight:700;color:var(--lt-success)">@Model.Count(s => s.IsActive)</div>
+                <div style="font-size:.78rem;color:var(--lt-text-muted)">Đang hoạt động</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="lt-card">
+            <div class="lt-card__body" style="text-align:center">
+                <div style="font-size:1.6rem;font-weight:700;color:var(--lt-gold)">@Model.Count(s => s.SubjectCategory == SubjectCategory.Main)</div>
+                <div style="font-size:.78rem;color:var(--lt-text-muted)">Môn bắt buộc</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="lt-card">
+            <div class="lt-card__body" style="text-align:center">
+                <div style="font-size:1.6rem;font-weight:700;color:var(--lt-navy-100)">@Model.Count(s => s.Has3DLab)</div>
+                <div style="font-size:.78rem;color:var(--lt-text-muted)">Có Lab 3D</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+@if (!Model.Any())
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <i class="bi bi-journals" style="font-size:2.5rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">Chưa có môn học nào</div>
+                <div class="lt-empty__subtitle">Hãy tạo môn học đầu tiên để bắt đầu.</div>
+                <a asp-action="Create" class="lt-btn lt-btn--primary lt-mt-3">
+                    <i class="bi bi-plus-lg"></i> Thêm môn học
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lt-card">
+        <div class="lt-card__body" style="padding:0">
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th style="width:90px">Mã môn</th>
+                        <th>Tên môn học</th>
+                        <th style="width:130px">Phân loại</th>
+                        <th style="width:80px;text-align:center">Lab 3D</th>
+                        <th style="width:100px;text-align:center">Trạng thái</th>
+                        <th style="width:120px;text-align:right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr style="@(s.IsActive ? "" : "opacity:.55")">
+                            <td>
+                                <span style="font-family:monospace;font-weight:700;font-size:.85rem;
+                                             color:var(--lt-navy);background:rgba(15,23,62,.07);
+                                             padding:2px 8px;border-radius:5px">@s.SubjectCode</span>
+                            </td>
+                            <td>
+                                <div style="font-weight:600;font-size:.88rem">@s.SubjectName</div>
+                            </td>
+                            <td>
+                                @if (s.SubjectCategory == SubjectCategory.Main)
+                                {
+                                    <span class="lt-badge" style="background:rgba(15,23,62,.08);color:var(--lt-navy)">
+                                        Bắt buộc
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="lt-badge" style="background:rgba(201,169,110,.12);color:var(--lt-gold)">
+                                        Tự chọn
+                                    </span>
+                                }
+                            </td>
+                            <td style="text-align:center">
+                                @if (s.Has3DLab)
+                                {
+                                    <i class="bi bi-check-circle-fill" style="color:var(--lt-success)"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-dash" style="color:var(--lt-text-muted)"></i>
+                                }
+                            </td>
+                            <td style="text-align:center">
+                                @if (s.IsActive)
+                                {
+                                    <span class="lt-badge lt-badge--success">Hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="lt-badge" style="background:rgba(220,38,38,.1);color:var(--lt-danger)">Tắt</span>
+                                }
+                            </td>
+                            <td style="text-align:right">
+                                <div style="display:flex;gap:4px;justify-content:flex-end">
+                                    <a asp-action="Edit" asp-route-id="@s.Id"
+                                       class="lt-btn lt-btn--sm lt-btn--outline" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="Toggle" asp-route-id="@s.Id" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                title="@(s.IsActive ? "Vô hiệu hóa" : "Kích hoạt")"
+                                                style="@(s.IsActive ? "color:var(--lt-gold)" : "color:var(--lt-success)")">
+                                            <i class="bi bi-@(s.IsActive ? "pause-circle" : "play-circle")"></i>
+                                        </button>
+                                    </form>
+                                    <form asp-action="Delete" asp-route-id="@s.Id" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                style="color:var(--lt-danger)" title="Xóa"
+                                                onclick="return confirm('Xóa môn học \"@s.SubjectName\"?\nLưu ý: không thể xóa nếu đang được sử dụng.')">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

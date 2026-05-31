@@ -1,0 +1,312 @@
+@using LuminaTutors.Application.DTOs.AI
+@model IReadOnlyList<AiTutorSessionDto>
+@{
+    ViewData["Title"] = "Gia Sư AI";
+    var subjects = new[] {
+        ("Toán","bi-calculator"),("Lý","bi-lightning-charge"),("Hóa","bi-flask"),
+        ("Sinh","bi-tree"),("Văn","bi-book-half"),("Sử","bi-hourglass-split"),
+        ("Địa","bi-globe-americas"),("Anh","bi-chat-quote"),("Tin","bi-cpu"),("GDCD","bi-shield-check")
+    };
+}
+
+<style>
+/* ── Page shell ── */
+.ait-page {
+    min-height: calc(100vh - 60px);
+    background-color: #faf8f4;
+    background-image: radial-gradient(rgba(201,168,76,.13) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    padding: 2rem 1.5rem 3rem;
+}
+
+/* ── Hero ── */
+.ait-hero {
+    background: #0f1c2e;
+    border-radius: 14px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2.5rem;
+    display: flex; align-items: center; gap: 2rem;
+    box-shadow: 0 4px 24px rgba(15,28,46,.25);
+}
+.ait-hero-text h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.55rem; font-weight: 700;
+    color: #faf8f4; margin: 0 0 .35rem;
+}
+.ait-hero-text p {
+    font-size: .875rem; color: rgba(250,248,244,.55);
+    margin: 0 0 1rem; max-width: 52ch;
+}
+.subject-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.subject-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(201,168,76,.1);
+    border: 1px solid rgba(201,168,76,.25);
+    border-radius: 6px; padding: 4px 10px;
+    font-size: .75rem; font-weight: 600;
+    color: #e2c97e; letter-spacing: .02em;
+    transition: background 150ms, border-color 150ms;
+}
+.subject-chip:hover {
+    background: rgba(201,168,76,.18);
+    border-color: rgba(201,168,76,.45);
+}
+.subject-chip i { font-size: .8rem; color: #c9a84c; }
+
+/* ── New session button ── */
+.btn-ait-new {
+    background: #c9a84c; color: #0f1c2e;
+    border: none; border-radius: 8px;
+    padding: 9px 20px; font-weight: 600; font-size: .875rem;
+    white-space: nowrap;
+    transition: background 200ms cubic-bezier(.4,0,.2,1), box-shadow 200ms cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 2px 8px rgba(201,168,76,.35);
+    flex-shrink: 0;
+}
+.btn-ait-new:hover {
+    background: #e2c97e; color: #0f1c2e;
+    box-shadow: 0 4px 14px rgba(201,168,76,.45);
+}
+
+/* ── Session cards ── */
+.sessions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.session-card {
+    background: #fefefe; border: 1px solid #e5e7eb;
+    border-radius: 12px; overflow: hidden;
+    transition: box-shadow 200ms cubic-bezier(.4,0,.2,1), transform 200ms cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+}
+.session-card:hover {
+    box-shadow: 0 8px 28px rgba(15,28,46,.14);
+    transform: translateY(-2px);
+}
+.session-card-bar { height: 3px; background: #0f1c2e; }
+.session-card-body { padding: 1.25rem; }
+.session-title {
+    font-size: .9rem; font-weight: 600;
+    color: #1f2937; line-height: 1.4;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: .5rem;
+}
+.session-meta {
+    font-size: .75rem; color: #9ca3af;
+    display: flex; gap: 1rem; margin-bottom: 1rem;
+}
+.session-actions { display: flex; gap: .5rem; }
+.btn-continue {
+    flex: 1; background: #0f1c2e; color: #fefefe;
+    border: none; border-radius: 7px; padding: 7px 14px;
+    font-size: .8rem; font-weight: 600;
+    transition: background 200ms cubic-bezier(.4,0,.2,1), box-shadow 200ms cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 2px 8px rgba(15,28,46,.25);
+}
+.btn-continue:hover {
+    background: #1a2d45;
+    box-shadow: 0 4px 14px rgba(15,28,46,.35);
+    color: #fefefe;
+}
+.btn-delete {
+    background: transparent; border: 1.5px solid #e5e7eb;
+    border-radius: 7px; padding: 7px 11px;
+    color: #9ca3af; font-size: .8rem;
+    transition: border-color 200ms, color 200ms, background 200ms;
+}
+.btn-delete:hover { border-color: #e74c3c; color: #e74c3c; background: rgba(231,76,60,.06); }
+
+/* ── Empty state ── */
+.ait-empty {
+    background: #fefefe; border: 1.5px dashed #d1d5db;
+    border-radius: 14px; padding: 3rem 2rem; text-align: center;
+    max-width: 460px; margin: 0 auto;
+}
+.ait-empty-icon { margin: 0 auto 1.25rem; }
+
+/* ── Modal ── */
+.modal-content { border: none; border-radius: 14px; box-shadow: 0 16px 48px rgba(15,28,46,.2); overflow: hidden; }
+.modal-header-navy {
+    background: #0f1c2e; padding: 1.25rem 1.5rem;
+    border: none; display: flex; align-items: center; gap: .75rem;
+}
+.modal-title-navy { color: #faf8f4; font-size: 1rem; font-weight: 600; margin: 0; }
+.modal-body { padding: 1.5rem; }
+.modal-input {
+    width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px;
+    padding: 10px 14px; font-size: .9375rem;
+    transition: border-color 200ms, box-shadow 200ms;
+    outline: none; background: #fefefe;
+}
+.modal-input:focus {
+    border-color: #c9a84c;
+    box-shadow: 0 0 0 3px rgba(201,168,76,.15);
+}
+.quick-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: .75rem; }
+.quick-topic {
+    font-size: .78rem; font-weight: 500;
+    background: #f3f4f6; border: 1px solid #e5e7eb;
+    border-radius: 6px; padding: 4px 10px;
+    color: #374151; cursor: pointer;
+    transition: background 150ms, border-color 150ms, color 150ms;
+    border-bottom-style: solid;
+}
+.quick-topic:hover { background: #faf5e4; border-color: #c9a84c; color: #92620a; }
+.modal-footer { padding: .75rem 1.5rem 1.5rem; border: none; gap: .5rem; }
+
+/* ── Section heading ── */
+.section-heading {
+    font-size: .75rem; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; color: #9ca3af;
+    margin-bottom: .75rem;
+}
+
+@@media (max-width: 640px) {
+    .ait-hero { flex-direction: column; align-items: flex-start; gap: 1.25rem; padding: 1.5rem; }
+    .ait-hero-text h1 { font-size: 1.25rem; }
+}
+</style>
+
+<div class="ait-page">
+<div style="max-width:1060px; margin:0 auto">
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+            <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+            <span>@TempData["Error"]</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Hero -->
+    <div class="ait-hero">
+        @* AI Avatar — precision diamond, navy/gold *@
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0">
+            <circle cx="32" cy="32" r="32" fill="#1a2d45"/>
+            <circle cx="32" cy="32" r="28" stroke="#c9a84c" stroke-width="0.7" fill="none" opacity="0.3"/>
+            <path d="M32 8 L54 32 L32 56 L10 32 Z" fill="none" stroke="#c9a84c" stroke-width="1.6"/>
+            <path d="M32 17 L47 32 L32 47 L17 32 Z" fill="none" stroke="#c9a84c" stroke-width="0.9" opacity="0.5"/>
+            <circle cx="32" cy="32" r="3.5" fill="#c9a84c"/>
+            <line x1="32" y1="10" x2="32" y2="16" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+            <line x1="32" y1="48" x2="32" y2="54" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="32" x2="18" y2="32" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+            <line x1="46" y1="32" x2="52" y2="32" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+
+        <div class="ait-hero-text flex-fill">
+            <h1>Gia Sư AI Lumina</h1>
+            <p>Trợ lý học tập thông minh — giải thích từng bước, kiên nhẫn 24/7, hỗ trợ tất cả môn học.</p>
+            <div class="subject-chips">
+                @foreach (var (name, icon) in subjects)
+                {
+                    <span class="subject-chip">
+                        <i class="bi @icon"></i>@name
+                    </span>
+                }
+            </div>
+        </div>
+
+        <button class="btn-ait-new" data-bs-toggle="modal" data-bs-target="#newSessionModal">
+            <i class="bi bi-plus-lg me-2"></i>Phiên học mới
+        </button>
+    </div>
+
+    <!-- Session list -->
+    @if (!Model.Any())
+    {
+        <div class="ait-empty">
+            <svg class="ait-empty-icon" width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="32" cy="32" r="32" fill="#f3f4f6"/>
+                <circle cx="32" cy="32" r="28" stroke="#c9a84c" stroke-width="0.7" fill="none" opacity="0.4"/>
+                <path d="M32 8 L54 32 L32 56 L10 32 Z" fill="none" stroke="#9ca3af" stroke-width="1.6"/>
+                <circle cx="32" cy="32" r="3" fill="#d1d5db"/>
+            </svg>
+            <h5 style="font-family:'Playfair Display',Georgia,serif;color:#1f2937;margin:.75rem 0 .4rem">Chưa có phiên học nào</h5>
+            <p style="color:#6b7280;font-size:.875rem;margin:0 0 1.25rem">Bắt đầu một phiên để hỏi Gia Sư AI về bài học của bạn.</p>
+            <button class="btn-ait-new" data-bs-toggle="modal" data-bs-target="#newSessionModal">
+                <i class="bi bi-play-fill me-2"></i>Bắt đầu học
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="section-heading">Lịch sử phiên học — @Model.Count phiên</div>
+        <div class="sessions-grid">
+            @foreach (var session in Model)
+            {
+                <div class="session-card">
+                    <div class="session-card-bar"></div>
+                    <div class="session-card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                            <div class="session-title" title="@session.Title">@session.Title</div>
+                            @if (session.IsFlagged)
+                            {
+                                <span class="badge" style="background:rgba(231,76,60,.1);color:#dc2626;font-size:.68rem;flex-shrink:0">
+                                    <i class="bi bi-flag-fill me-1"></i>Gắn cờ
+                                </span>
+                            }
+                        </div>
+                        <div class="session-meta">
+                            <span><i class="bi bi-chat-left me-1"></i>@session.MessageCount tin nhắn</span>
+                            <span><i class="bi bi-clock me-1"></i>@session.CreatedAt.ToString("dd/MM HH:mm")</span>
+                        </div>
+                        <div class="session-actions">
+                            <a asp-action="Chat" asp-route-id="@session.SessionId" class="btn-continue text-decoration-none text-center">
+                                Tiếp tục <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@session.SessionId" method="post"
+                                  onsubmit="return confirm('Xóa phiên học này?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn-delete" title="Xóa phiên">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+</div>
+</div>
+
+<!-- New session modal -->
+<div class="modal fade" id="newSessionModal" tabindex="-1" aria-labelledby="newSessionModalLabel" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+        <div class="modal-content">
+            <div class="modal-header-navy">
+                <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="32" cy="32" r="32" fill="#1a2d45"/>
+                    <path d="M32 10 L50 32 L32 54 L14 32 Z" fill="none" stroke="#c9a84c" stroke-width="1.8"/>
+                    <circle cx="32" cy="32" r="3" fill="#c9a84c"/>
+                </svg>
+                <h5 class="modal-title-navy" id="newSessionModalLabel">Phiên học mới</h5>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <label for="sessionTitle" class="form-label" style="font-size:.78rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#6b7280">Chủ đề</label>
+                    <input id="sessionTitle" type="text" name="title" class="modal-input"
+                           placeholder="VD: Giải phương trình bậc 2, Tác phẩm Tắt đèn..."
+                           maxlength="200" autocomplete="off" autofocus />
+                    <p style="font-size:.75rem;color:#9ca3af;margin:.5rem 0 .75rem">
+                        Để trống — AI sẽ đặt tiêu đề từ câu hỏi đầu tiên.
+                    </p>
+                    <div class="quick-topics" id="quickTopics">
+                        @foreach (var topic in new[]{"Giải bài tập Toán","Từ vựng Tiếng Anh","Phản ứng hóa học","Lịch sử Việt Nam","Định luật vật lý"})
+                        {
+                            <button type="button" class="quick-topic"
+                                    onclick="document.getElementById('sessionTitle').value='@topic'">@topic</button>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-ait-new">
+                        <i class="bi bi-play-fill me-1"></i>Bắt đầu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,180 @@
+@using LuminaTutors.Application.DTOs.AI
+@{
+    ViewData["Title"] = "Chi tiết phiên AI";
+    var session  = (AiTutorSessionDto)ViewBag.Session;
+    var messages = (IReadOnlyList<AiTutorMessageDto>)ViewBag.Messages;
+    var token    = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+
+<div class="container-fluid py-4" style="max-width:960px">
+    <!-- Header -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a asp-action="AdminIndex" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại
+        </a>
+        <div class="flex-fill">
+            <h4 class="fw-bold mb-0">@session.Title</h4>
+            <small class="text-muted">
+                <i class="bi bi-person me-1"></i>@session.StudentName
+                &nbsp;·&nbsp;@session.MessageCount tin nhắn
+                &nbsp;·&nbsp;@session.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+            </small>
+        </div>
+        <div class="d-flex gap-2">
+            @if (!session.IsReviewed)
+            {
+                <form asp-action="MarkReviewed" asp-route-sessionId="@session.SessionId" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-1"></i>Đánh dấu đã duyệt
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Transcript -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-chat-text me-2"></i>Lịch sử hội thoại</h6>
+                    <span class="badge bg-secondary">@messages.Count tin nhắn</span>
+                </div>
+                <div class="card-body p-3" style="max-height:600px;overflow-y:auto">
+                    @foreach (var msg in messages)
+                    {
+                        <div class="d-flex @(msg.Role == "user" ? "justify-content-end" : "justify-content-start") mb-3" id="msg-@msg.MessageId">
+                            @if (msg.Role == "assistant")
+                            {
+                                <div class="me-2 mt-1"><div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:16px">🤖</div></div>
+                            }
+                            <div class="position-relative" style="max-width:75%">
+                                <div class="@(msg.Role == "user" ? "bg-primary text-white" : "bg-light border") rounded-3 p-3 @(msg.IsFlagged ? "border-danger border-2" : "")"
+                                     style="white-space:pre-wrap;word-break:break-word">
+                                    @msg.Content
+                                    <div class="@(msg.Role == "user" ? "text-white-50" : "text-muted") small mt-1 d-flex justify-content-between gap-3">
+                                        <span>@msg.CreatedAt.ToString("dd/MM HH:mm")</span>
+                                        <button class="btn btn-link btn-sm p-0 @(msg.IsFlagged ? "text-danger" : "text-muted") flag-btn"
+                                                data-id="@msg.MessageId" data-flagged="@msg.IsFlagged.ToString().ToLower()"
+                                                title="@(msg.IsFlagged ? "Bỏ gắn cờ" : "Gắn cờ nội dung này")">
+                                            <i class="bi @(msg.IsFlagged ? "bi-flag-fill" : "bi-flag")"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (msg.Role == "user")
+                            {
+                                <div class="ms-2 mt-1"><div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:32px;height:32px"><i class="bi bi-person-fill"></i></div></div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin panel -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top:80px">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-primary"></i>Quản trị viên</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">TRẠNG THÁI</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            @if (session.IsFlagged)
+                            {
+                                <span class="badge bg-danger"><i class="bi bi-flag-fill me-1"></i>Bị gắn cờ</span>
+                            }
+                            @if (session.IsReviewed)
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Đã duyệt</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark"><i class="bi bi-eye me-1"></i>Chưa duyệt</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="mb-3">
+                        <label for="adminNote" class="form-label fw-semibold small text-muted">GHI CHÚ ADMIN</label>
+                        <textarea id="adminNote" class="form-control" rows="4"
+                                  placeholder="Ghi chú về nội dung phiên này...">@session.AdminNote</textarea>
+                    </div>
+
+                    <!-- Flag toggle -->
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="flagSession" @(session.IsFlagged ? "checked" : "")>
+                        <label class="form-check-label fw-semibold" for="flagSession">
+                            <i class="bi bi-flag text-danger me-1"></i>Gắn cờ phiên này
+                        </label>
+                    </div>
+
+                    <button id="saveNoteBtn" class="btn btn-primary w-100">
+                        <i class="bi bi-save me-1"></i>Lưu ghi chú
+                    </button>
+
+                    <div id="saveStatus" class="text-success small text-center mt-2 d-none">
+                        <i class="bi bi-check-circle me-1"></i>Đã lưu
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const TOKEN       = '@token';
+const SESSION_ID  = @session.SessionId;
+const FLAG_MSG_URL = '@Url.Action("FlagMessage")';
+const NOTE_URL    = '@Url.Action("AdminNote")';
+
+// Flag message
+document.querySelectorAll('.flag-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const id      = +btn.dataset.id;
+        const current = btn.dataset.flagged === 'true';
+        const newVal  = !current;
+
+        const resp = await fetch(FLAG_MSG_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'RequestVerificationToken': TOKEN },
+            body: JSON.stringify({ isFlagged: newVal })
+        });
+
+        if (resp.ok) {
+            btn.dataset.flagged = String(newVal);
+            btn.querySelector('i').className = newVal ? 'bi bi-flag-fill' : 'bi bi-flag';
+            btn.className = btn.className.replace(newVal ? 'text-muted' : 'text-danger', newVal ? 'text-danger' : 'text-muted');
+            const bubble = document.getElementById(`msg-${id}`).querySelector('[class*="rounded-3"]');
+            if (newVal) bubble.classList.add('border-danger','border-2');
+            else bubble.classList.remove('border-danger','border-2');
+        }
+    });
+});
+
+// Save admin note
+document.getElementById('saveNoteBtn').addEventListener('click', async () => {
+    const note     = document.getElementById('adminNote').value;
+    const flagged  = document.getElementById('flagSession').checked;
+
+    const resp = await fetch(`${NOTE_URL}?sessionId=${SESSION_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'RequestVerificationToken': TOKEN },
+        body: JSON.stringify({ note, isFlagged: flagged })
+    });
+
+    const status = document.getElementById('saveStatus');
+    if (resp.ok) {
+        status.classList.remove('d-none');
+        setTimeout(() => status.classList.add('d-none'), 3000);
+    }
+});
+</script>
+}

@@ -1,0 +1,484 @@
+@using LuminaTutors.Application.DTOs.AI
+@{
+    ViewData["Title"] = "Gia Sư AI";
+    var session  = (AiTutorSessionDto)ViewBag.Session;
+    var messages = (IReadOnlyList<AiTutorMessageDto>)ViewBag.Messages;
+    var token    = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+
+<style>
+/* ── Page background ── */
+.chat-page {
+    height: calc(100vh - 60px);
+    background-color: #faf8f4;
+    background-image: radial-gradient(rgba(201,168,76,.13) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    display: flex; align-items: stretch;
+    padding: .75rem 1rem;
+    box-sizing: border-box;
+}
+
+/* ── Chat frame ── */
+.chat-frame {
+    flex: 1;
+    background: #fefefe; border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(15,28,46,.1);
+    display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ── Header ── */
+.chat-head {
+    background: #0f1c2e;
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+}
+.ai-avatar {
+    width: 40px; height: 40px; flex-shrink: 0;
+}
+.chat-head-text { flex: 1; min-width: 0; }
+.chat-head-name {
+    font-size: .9rem; font-weight: 600; color: #faf8f4;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin: 0;
+}
+.chat-head-sub {
+    font-size: .72rem; color: rgba(250,248,244,.45);
+    display: flex; align-items: center; gap: 5px; margin-top: 1px;
+}
+.status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #27ae60; flex-shrink: 0;
+}
+.btn-back {
+    color: rgba(250,248,244,.55); background: none; border: none;
+    padding: 4px 6px; border-radius: 6px;
+    transition: color 150ms, background 150ms;
+    line-height: 1;
+}
+.btn-back:hover { color: #faf8f4; background: rgba(250,248,244,.08); }
+
+/* ── Messages ── */
+.chat-body {
+    flex: 1; overflow-y: auto; padding: 1.25rem 1.25rem .5rem;
+    display: flex; flex-direction: column; gap: 1rem;
+    scroll-behavior: smooth;
+}
+.chat-body::-webkit-scrollbar { width: 5px; }
+.chat-body::-webkit-scrollbar-track { background: transparent; }
+.chat-body::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+.msg-row {
+    display: flex; align-items: flex-end; gap: 8px;
+}
+.msg-row.user { justify-content: flex-end; }
+.msg-row.assistant { justify-content: flex-start; }
+
+/* Small avatar badge */
+.msg-avatar {
+    width: 30px; height: 30px; flex-shrink: 0;
+}
+.msg-avatar-user {
+    width: 30px; height: 30px; flex-shrink: 0;
+    background: #243650; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(250,248,244,.7); font-size: 14px;
+}
+
+.bubble {
+    max-width: 72%; padding: 10px 14px;
+    font-size: .9rem; line-height: 1.6;
+    word-break: break-word; white-space: pre-wrap;
+    animation: msgIn 200ms cubic-bezier(.4,0,.2,1);
+}
+@@keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.bubble.user {
+    background: #0f1c2e; color: #faf8f4;
+    border-radius: 14px 14px 4px 14px;
+    box-shadow: 0 2px 8px rgba(15,28,46,.2);
+}
+.bubble.assistant {
+    background: #fefefe; color: #1f2937;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px 14px 14px 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.bubble-time {
+    font-size: .68rem; margin-top: 5px; display: block;
+}
+.bubble.user .bubble-time { color: rgba(250,248,244,.4); text-align: right; }
+.bubble.assistant .bubble-time { color: #9ca3af; }
+
+/* ── Typing indicator ── */
+.typing-bubble {
+    display: flex; align-items: center; gap: 5px;
+    padding: 12px 16px;
+    background: #fefefe; border: 1px solid #e5e7eb;
+    border-radius: 14px 14px 14px 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #9ca3af;
+    animation: typePulse 1.4s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: .2s; }
+.typing-dot:nth-child(3) { animation-delay: .4s; }
+@@keyframes typePulse {
+    0%, 60%, 100% { opacity: .3; transform: scale(.8); }
+    30% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Welcome state ── */
+.welcome-pane {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center;
+    flex: 1; padding: 2rem;
+}
+.welcome-pane h4 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.2rem; color: #1f2937; margin: 1rem 0 .4rem;
+}
+.welcome-pane p { font-size: .875rem; color: #6b7280; margin: 0 0 1.25rem; max-width: 42ch; }
+.quick-chips { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
+.quick-chip {
+    font-size: .8rem; font-weight: 500;
+    background: #faf8f4; border: 1.5px solid #e5e7eb;
+    border-radius: 7px; padding: 5px 12px; color: #374151;
+    cursor: pointer; transition: border-color 150ms, background 150ms, color 150ms;
+}
+.quick-chip:hover { border-color: #c9a84c; background: #faf5e4; color: #92620a; }
+
+/* ── Input area ── */
+.chat-input-wrap {
+    border-top: 1px solid #e5e7eb;
+    padding: .75rem 1rem;
+    flex-shrink: 0;
+}
+.input-row {
+    display: flex; align-items: flex-end; gap: .5rem;
+}
+.msg-textarea {
+    flex: 1; border: 1.5px solid #d1d5db; border-radius: 8px;
+    padding: 9px 12px; font-size: .9rem; font-family: Inter, system-ui, sans-serif;
+    resize: none; outline: none; min-height: 42px; max-height: 120px;
+    transition: border-color 200ms, box-shadow 200ms;
+    background: #fefefe; color: #1f2937;
+}
+.msg-textarea:focus {
+    border-color: #c9a84c;
+    box-shadow: 0 0 0 3px rgba(201,168,76,.12);
+}
+.msg-textarea::placeholder { color: #9ca3af; }
+.btn-send {
+    width: 42px; height: 42px; border: none; border-radius: 8px;
+    background: #0f1c2e; color: #faf8f4;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; cursor: pointer;
+    transition: background 200ms, box-shadow 200ms;
+    box-shadow: 0 2px 8px rgba(15,28,46,.25);
+}
+.btn-send:hover { background: #1a2d45; box-shadow: 0 4px 14px rgba(15,28,46,.35); }
+.btn-send:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+
+.input-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 5px; padding: 0 2px;
+}
+.input-hint { font-size: .7rem; color: #9ca3af; display: flex; align-items: center; gap: 4px; }
+.char-count { font-size: .7rem; color: #9ca3af; }
+
+/* ── Slow hint ── */
+.slow-hint {
+    display: none;
+    background: rgba(243,156,18,.08); border: 1px solid rgba(243,156,18,.3);
+    border-radius: 8px; padding: 7px 12px;
+    font-size: .78rem; color: #92400e;
+    margin: 0 1rem .5rem;
+}
+
+@@media (prefers-reduced-motion: reduce) {
+    .bubble { animation: none; }
+    .typing-dot { animation: none; opacity: .6; }
+}
+@@media (max-width: 640px) {
+    .chat-page { padding: .5rem; }
+    .chat-frame { border-radius: 10px; }
+}
+</style>
+
+<div class="chat-page">
+<div class="chat-frame">
+
+    <!-- Header -->
+    <div class="chat-head">
+        <a asp-action="Index" class="btn-back" title="Quay lại" aria-label="Quay lại danh sách">
+            <i class="bi bi-arrow-left" style="font-size:1.1rem"></i>
+        </a>
+
+        <svg class="ai-avatar" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="32" cy="32" r="32" fill="#1a2d45"/>
+            <circle cx="32" cy="32" r="28" stroke="#c9a84c" stroke-width="0.7" fill="none" opacity="0.3"/>
+            <path d="M32 8 L54 32 L32 56 L10 32 Z" fill="none" stroke="#c9a84c" stroke-width="1.6"/>
+            <path d="M32 17 L47 32 L32 47 L17 32 Z" fill="none" stroke="#c9a84c" stroke-width="0.9" opacity="0.5"/>
+            <circle cx="32" cy="32" r="3.5" fill="#c9a84c"/>
+            <line x1="32" y1="10" x2="32" y2="16" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+            <line x1="32" y1="48" x2="32" y2="54" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="32" x2="18" y2="32" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+            <line x1="46" y1="32" x2="52" y2="32" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+
+        <div class="chat-head-text">
+            <p class="chat-head-name">@session.Title</p>
+            <div class="chat-head-sub">
+                <div class="status-dot" aria-hidden="true"></div>
+                Gia Sư AI · @session.MessageCount tin nhắn
+            </div>
+        </div>
+
+        @if (session.IsFlagged)
+        {
+            <span class="badge" style="background:rgba(231,76,60,.15);color:#e74c3c;font-size:.7rem">
+                <i class="bi bi-flag-fill me-1"></i>Gắn cờ
+            </span>
+        }
+    </div>
+
+    <!-- Body -->
+    @if (!messages.Any())
+    {
+        <div id="welcomePane" class="welcome-pane">
+            <svg width="56" height="56" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="32" cy="32" r="32" fill="#f3f4f6"/>
+                <circle cx="32" cy="32" r="28" stroke="#c9a84c" stroke-width="0.7" fill="none" opacity="0.4"/>
+                <path d="M32 8 L54 32 L32 56 L10 32 Z" fill="none" stroke="#374151" stroke-width="1.6"/>
+                <path d="M32 17 L47 32 L32 47 L17 32 Z" fill="none" stroke="#9ca3af" stroke-width="0.9"/>
+                <circle cx="32" cy="32" r="3" fill="#c9a84c"/>
+            </svg>
+            <h4>Xin chào! Tôi là Gia Sư AI Lumina.</h4>
+            <p>Hỏi tôi bất kỳ điều gì về bài học — Toán, Lý, Hóa, Văn, Sử, Địa, Anh, Tin học...</p>
+            <div class="quick-chips">
+                @foreach (var q in new[]{"Định luật Newton là gì?","Phương trình bậc 2","Dịch sang Tiếng Anh","Phân tích nhân vật Chí Phèo","2Na + 2H₂O = ?"})
+                {
+                    <button type="button" class="quick-chip" onclick="setQuestion('@q')">@q</button>
+                }
+            </div>
+        </div>
+        <div id="chatBody" class="chat-body" style="display:none!important"></div>
+    }
+    else
+    {
+        <div id="chatBody" class="chat-body">
+            @foreach (var msg in messages)
+            {
+                <div class="msg-row @msg.Role">
+                    @if (msg.Role == "assistant")
+                    {
+                        <svg class="msg-avatar" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="32" cy="32" r="32" fill="#1a2d45"/>
+                            <path d="M32 10 L50 32 L32 54 L14 32 Z" fill="none" stroke="#c9a84c" stroke-width="1.8"/>
+                            <circle cx="32" cy="32" r="3" fill="#c9a84c"/>
+                        </svg>
+                    }
+                    <div class="bubble @msg.Role" data-id="@msg.MessageId">
+                        @msg.Content
+                        <span class="bubble-time">@msg.CreatedAt.ToString("HH:mm")</span>
+                    </div>
+                    @if (msg.Role == "user")
+                    {
+                        <div class="msg-avatar-user" aria-hidden="true">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Typing -->
+            <div id="typingRow" class="msg-row assistant" style="display:none">
+                <svg class="msg-avatar" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="32" cy="32" r="32" fill="#1a2d45"/>
+                    <path d="M32 10 L50 32 L32 54 L14 32 Z" fill="none" stroke="#c9a84c" stroke-width="1.8"/>
+                    <circle cx="32" cy="32" r="3" fill="#c9a84c"/>
+                </svg>
+                <div class="typing-bubble" role="status" aria-label="Gia Sư AI đang soạn">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Slow hint -->
+    <div id="slowHint" class="slow-hint" role="status">
+        <i class="bi bi-hourglass-split me-1"></i>
+        Gia Sư AI đang khởi động lần đầu — chờ khoảng 1–2 phút.
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-wrap">
+        <div class="input-row">
+            <textarea id="msgInput" class="msg-textarea" rows="1"
+                      placeholder="Nhập câu hỏi... (Enter gửi, Shift+Enter xuống dòng)"
+                      maxlength="2000" aria-label="Tin nhắn"></textarea>
+            <button id="sendBtn" class="btn-send" aria-label="Gửi">
+                <i class="bi bi-send-fill" style="font-size:.85rem"></i>
+            </button>
+        </div>
+        <div class="input-footer">
+            <span class="input-hint">
+                <i class="bi bi-shield-check" style="color:#27ae60"></i>
+                Chỉ hỗ trợ nội dung học tập
+            </span>
+            <span class="char-count"><span id="charCount">0</span>/2000</span>
+        </div>
+    </div>
+
+</div>
+</div>
+
+@section Scripts {
+<script>
+const SESSION_ID = @session.SessionId;
+const SEND_URL   = '@Url.Action("Send")';
+const TOKEN      = '@token';
+const HAS_MSGS   = @(messages.Any() ? "true" : "false");
+
+const chatBody  = HAS_MSGS ? document.getElementById('chatBody')   : null;
+const welcomePane = document.getElementById('welcomePane');
+const typingRow = document.getElementById('typingRow');
+const input     = document.getElementById('msgInput');
+const sendBtn   = document.getElementById('sendBtn');
+const charCount = document.getElementById('charCount');
+const slowHint  = document.getElementById('slowHint');
+
+// Ensure chat body exists even when starting from welcome
+function getChatBody() {
+    let el = document.getElementById('chatBody');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'chatBody'; el.className = 'chat-body';
+        const frame = document.querySelector('.chat-frame');
+        frame.insertBefore(el, document.querySelector('.slow-hint'));
+    }
+    return el;
+}
+
+function scrollBottom() {
+    const body = document.getElementById('chatBody');
+    if (body) body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' });
+}
+scrollBottom();
+
+function setQuestion(q) {
+    input.value = q;
+    charCount.textContent = q.length;
+    input.focus();
+}
+
+input.addEventListener('input', () => {
+    charCount.textContent = input.value.length;
+    // Auto-grow
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+sendBtn.addEventListener('click', sendMessage);
+
+function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function appendMessage(role, content, time) {
+    // Remove welcome pane on first message
+    if (welcomePane) {
+        welcomePane.style.display = 'none';
+        const body = getChatBody();
+        body.style.removeProperty('display');
+    }
+    const body = getChatBody();
+
+    const isUser = role === 'user';
+    const timeHtml = time ? `<span class="bubble-time">${esc(time)}</span>` : '';
+    const aiAvatar = `<svg class="msg-avatar" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#1a2d45"/><path d="M32 10 L50 32 L32 54 L14 32 Z" fill="none" stroke="#c9a84c" stroke-width="1.8"/><circle cx="32" cy="32" r="3" fill="#c9a84c"/></svg>`;
+    const userAvatar = `<div class="msg-avatar-user" aria-hidden="true"><i class="bi bi-person-fill"></i></div>`;
+
+    const row = document.createElement('div');
+    row.className = `msg-row ${role}`;
+    row.innerHTML = `
+        ${!isUser ? aiAvatar : ''}
+        <div class="bubble ${role}">${esc(content)}${timeHtml}</div>
+        ${isUser ? userAvatar : ''}`;
+
+    if (typingRow && typingRow.parentElement === body) {
+        body.insertBefore(row, typingRow);
+    } else {
+        body.appendChild(row);
+    }
+    scrollBottom();
+}
+
+async function sendMessage() {
+    const content = input.value.trim();
+    if (!content || sendBtn.disabled) return;
+
+    const now = new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+    appendMessage('user', content, now);
+    input.value = ''; charCount.textContent = '0'; input.style.height = '';
+    sendBtn.disabled = true;
+
+    // Move typing indicator into body if needed
+    const body = getChatBody();
+    if (typingRow && typingRow.parentElement !== body) body.appendChild(typingRow);
+    typingRow.style.display = 'flex';
+    scrollBottom();
+
+    const slowTimer = setTimeout(() => { slowHint.style.display = 'block'; }, 15000);
+
+    try {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 600000);
+
+        const resp = await fetch(`${SEND_URL}?sessionId=${SESSION_ID}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': TOKEN
+            },
+            body: JSON.stringify({ content }),
+            signal: controller.signal
+        });
+        clearTimeout(tid);
+        clearTimeout(slowTimer);
+        slowHint.style.display = 'none';
+        typingRow.style.display = 'none';
+
+        if (resp.ok) {
+            const data = await resp.json();
+            appendMessage('assistant', data.content, data.createdAt);
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            appendMessage('assistant', '⚠ ' + (err.error || 'Đã xảy ra lỗi. Vui lòng thử lại.'), '');
+        }
+    } catch (e) {
+        clearTimeout(slowTimer);
+        slowHint.style.display = 'none';
+        typingRow.style.display = 'none';
+        const msg = e.name === 'AbortError'
+            ? '⏱ Hết thời gian chờ. Ollama có thể đang tải model, thử lại sau ít phút.'
+            : '⚠ Không kết nối được Gia Sư AI. Kiểm tra Ollama đang chạy.';
+        appendMessage('assistant', msg, '');
+    } finally {
+        sendBtn.disabled = false;
+        input.focus();
+    }
+}
+</script>
+}

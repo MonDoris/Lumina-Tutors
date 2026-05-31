@@ -1,0 +1,339 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Tạo đề thi";
+    var subjects    = ViewBag.Subjects    as IReadOnlyList<dynamic> ?? new List<dynamic>();
+    var gradeLevels = ViewBag.GradeLevels as IReadOnlyList<dynamic> ?? new List<dynamic>();
+
+    var rawQuestions = ViewBag.ApprovedQuestions as IEnumerable<LuminaTutors.Application.DTOs.Quiz.QuizQuestionDto>
+                       ?? Enumerable.Empty<LuminaTutors.Application.DTOs.Quiz.QuizQuestionDto>();
+
+    var questionsJson = JsonSerializer.Serialize(rawQuestions.Select(q => new {
+        id          = q.QuestionId,
+        text        = q.QuestionText,
+        subject     = q.SubjectName,
+        subjectId   = q.SubjectId,
+        difficulty  = q.DifficultyLevel,
+        chapter     = q.ChapterTag ?? "",
+        type        = q.QuestionType
+    }));
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-file-earmark-plus-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Tạo đề thi trắc nghiệm
+        </h1>
+        <p class="lt-page-subtitle">Chọn câu hỏi từ ngân hàng và cấu hình đề thi</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
+}
+
+<form asp-action="Create" method="post" id="examForm">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-4">
+
+        <!-- ══ LEFT: Question Bank Browser ══ -->
+        <div class="col-lg-7">
+            <div class="lt-card" style="height:100%">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-collection-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Ngân hàng câu hỏi đã duyệt
+                    </h3>
+                    <span id="bankCount" class="lt-badge lt-badge--navy">0 câu</span>
+                </div>
+
+                <!-- Filter bar -->
+                <div style="padding:.75rem 1.1rem;border-bottom:1px solid var(--lt-border);
+                            display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                    <select id="filterSubject" class="lt-select" style="height:34px;font-size:.8rem;min-width:130px">
+                        <option value="">Tất cả môn</option>
+                        @foreach (dynamic s in subjects)
+                        {
+                            <option value="@s.SubjectId">@s.SubjectName</option>
+                        }
+                    </select>
+                    <select id="filterDiff" class="lt-select" style="height:34px;font-size:.8rem;min-width:110px">
+                        <option value="">Tất cả độ khó</option>
+                        <option value="Easy">Dễ</option>
+                        <option value="Medium">Trung bình</option>
+                        <option value="Hard">Khó</option>
+                    </select>
+                    <input id="filterKeyword" class="lt-input" placeholder="Tìm câu hỏi..."
+                           style="height:34px;font-size:.8rem;flex:1;min-width:150px"/>
+                    <button type="button" id="addAllBtn" class="lt-btn lt-btn--sm lt-btn--outline"
+                            style="white-space:nowrap;border-color:var(--lt-success);color:var(--lt-success)">
+                        <i class="bi bi-plus-circle"></i> Thêm tất cả
+                    </button>
+                </div>
+
+                <!-- Question list -->
+                <div style="overflow-y:auto;max-height:520px" id="questionBankList">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ RIGHT: Selected Questions + Settings ══ -->
+        <div class="col-lg-5">
+
+            <!-- Selected questions panel -->
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-check2-square" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Câu hỏi đã chọn
+                    </h3>
+                    <span id="selectedCount" class="lt-badge lt-badge--navy">0 câu</span>
+                </div>
+                <div id="selectedList" style="padding:.5rem;max-height:260px;overflow-y:auto;min-height:60px">
+                    <div id="selectedEmpty" class="lt-empty" style="padding:1.5rem;font-size:.82rem">
+                        <i class="bi bi-inbox" style="font-size:2rem;color:var(--lt-navy-100)"></i>
+                        <div class="lt-empty__title" style="font-size:.85rem">Chưa chọn câu hỏi nào</div>
+                    </div>
+                </div>
+                <!-- Hidden inputs for selected question IDs will be appended here by JS -->
+                <div id="hiddenInputs"></div>
+            </div>
+
+            <!-- Exam settings -->
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-gear-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Cấu hình đề thi
+                    </h3>
+                </div>
+                <div class="lt-card__body" style="display:flex;flex-direction:column;gap:12px">
+
+                    <div class="lt-form-group" style="margin:0">
+                        <label class="lt-label">Tên đề thi <span class="lt-text-danger">*</span></label>
+                        <input name="title" class="lt-input" required placeholder="VD: Kiểm tra Hóa học Chương 3"/>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                        <div class="lt-form-group" style="margin:0">
+                            <label class="lt-label">Môn học <span class="lt-text-danger">*</span></label>
+                            <select name="subjectId" class="lt-select" required>
+                                <option value="">— Chọn môn —</option>
+                                @foreach (dynamic s in subjects)
+                                {
+                                    <option value="@s.SubjectId">@s.SubjectName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="lt-form-group" style="margin:0">
+                            <label class="lt-label">Khối lớp</label>
+                            <select name="gradeLevelId" class="lt-select">
+                                <option value="">Tất cả</option>
+                                @foreach (dynamic g in gradeLevels)
+                                {
+                                    <option value="@g.GradeLevelId">@g.GradeName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                        <div class="lt-form-group" style="margin:0">
+                            <label class="lt-label">Thời gian (phút)</label>
+                            <input name="timeLimitMinutes" type="number" class="lt-input"
+                                   value="45" min="0" max="300"
+                                   placeholder="0 = không giới hạn"/>
+                        </div>
+                        <div class="lt-form-group" style="margin:0">
+                            <label class="lt-label">Điểm / câu</label>
+                            <input name="pointsPerQuestion" type="number" class="lt-input"
+                                   value="1" min="0.1" max="10" step="0.1"/>
+                        </div>
+                    </div>
+
+                    <div class="lt-form-group" style="margin:0">
+                        <label class="lt-label">Mô tả (tùy chọn)</label>
+                        <textarea name="description" class="lt-input" rows="2"
+                                  placeholder="Mô tả thêm về đề thi..." style="resize:vertical"></textarea>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:.75rem;
+                                background:var(--lt-bg-subtle);border-radius:10px">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer">
+                            <input type="checkbox" name="shuffleQuestions" value="true" checked
+                                   style="accent-color:var(--lt-gold);width:15px;height:15px"/>
+                            <span>Xáo trộn thứ tự câu hỏi (mỗi HS mã đề khác nhau)</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer">
+                            <input type="checkbox" name="shuffleOptions" value="true" checked
+                                   style="accent-color:var(--lt-gold);width:15px;height:15px"/>
+                            <span>Xáo trộn thứ tự đáp án</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;cursor:pointer">
+                            <input type="checkbox" name="showResultAfter" value="true" checked
+                                   style="accent-color:var(--lt-gold);width:15px;height:15px"/>
+                            <span>Hiện kết quả ngay sau nộp bài</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="lt-btn lt-btn--primary"
+                            style="width:100%;justify-content:center" disabled>
+                        <i class="bi bi-file-earmark-check-fill"></i>
+                        Tạo đề thi (<span id="submitCount">0</span> câu)
+                    </button>
+                    <p style="text-align:center;font-size:.75rem;color:var(--lt-text-muted);margin:0">
+                        <i class="bi bi-info-circle"></i> Đề thi sẽ ở trạng thái Nháp — mở sau khi kiểm tra lại
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+const ALL_QUESTIONS = @Html.Raw(questionsJson);
+let selectedIds = new Set();
+
+// ── Render helpers ────────────────────────────────────────────────────────
+function diffLabel(d) { return d==='Easy'?'Dễ':d==='Medium'?'Trung bình':'Khó'; }
+function diffColor(d) { return d==='Easy'?'var(--lt-success)':d==='Medium'?'var(--lt-gold)':'var(--lt-danger)'; }
+function typeLabel(t) { return t==='TrueFalse'?'Đúng/Sai':'Trắc nghiệm'; }
+
+function renderBank() {
+    const subjectFilter = document.getElementById('filterSubject').value;
+    const diffFilter    = document.getElementById('filterDiff').value;
+    const kw            = document.getElementById('filterKeyword').value.toLowerCase().trim();
+
+    const filtered = ALL_QUESTIONS.filter(q => {
+        if (subjectFilter && q.subjectId != subjectFilter) return false;
+        if (diffFilter    && q.difficulty !== diffFilter)  return false;
+        if (kw            && !q.text.toLowerCase().includes(kw) && !q.chapter.toLowerCase().includes(kw)) return false;
+        return true;
+    });
+
+    document.getElementById('bankCount').textContent = filtered.length + ' câu';
+
+    const container = document.getElementById('questionBankList');
+    if (!filtered.length) {
+        container.innerHTML = '<div class="lt-empty" style="padding:2rem"><i class="bi bi-search" style="font-size:2rem;color:var(--lt-navy-100)"></i><div class="lt-empty__title" style="font-size:.85rem">Không tìm thấy câu hỏi</div></div>';
+        return;
+    }
+
+    container.innerHTML = filtered.map(q => {
+        const sel = selectedIds.has(q.id);
+        return `<div class="bank-item" style="display:flex;gap:10px;align-items:flex-start;
+                     padding:.7rem 1rem;border-bottom:1px solid var(--lt-border);
+                     background:${sel ? 'var(--lt-bg-subtle)' : 'transparent'};
+                     transition:background .15s">
+            <div style="flex:1;min-width:0">
+                <div style="font-size:.82rem;font-weight:500;line-height:1.4;
+                            display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+                    ${escHtml(q.text)}
+                </div>
+                <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;align-items:center">
+                    <span style="font-size:.7rem;color:var(--lt-text-muted)">${escHtml(q.subject)}</span>
+                    <span class="lt-badge" style="font-size:.65rem;background:${diffColor(q.difficulty)}22;color:${diffColor(q.difficulty)};border:none">${diffLabel(q.difficulty)}</span>
+                    ${q.chapter ? `<span style="font-size:.68rem;color:var(--lt-text-muted)"><i class="bi bi-bookmark-fill"></i> ${escHtml(q.chapter)}</span>` : ''}
+                </div>
+            </div>
+            <button type="button" onclick="toggleQuestion(${q.id})"
+                    class="lt-btn lt-btn--sm ${sel ? 'lt-btn--primary' : 'lt-btn--outline'}"
+                    style="flex-shrink:0;${sel ? '' : 'border-color:var(--lt-success);color:var(--lt-success)'}">
+                <i class="bi ${sel ? 'bi-dash-lg' : 'bi-plus-lg'}"></i>
+            </button>
+        </div>`;
+    }).join('');
+}
+
+function renderSelected() {
+    const selItems = ALL_QUESTIONS.filter(q => selectedIds.has(q.id));
+    const count = selItems.length;
+
+    document.getElementById('selectedCount').textContent = count + ' câu';
+    document.getElementById('submitCount').textContent   = count;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = count === 0;
+
+    const empty = document.getElementById('selectedEmpty');
+    const list  = document.getElementById('selectedList');
+    empty.style.display = count === 0 ? '' : 'none';
+
+    // Remove previous cards (keep empty placeholder)
+    list.querySelectorAll('.sel-item').forEach(el => el.remove());
+
+    selItems.forEach((q, idx) => {
+        const div = document.createElement('div');
+        div.className = 'sel-item';
+        div.style.cssText = 'display:flex;gap:8px;align-items:center;padding:.45rem .6rem;border-radius:7px;background:var(--lt-bg-subtle);margin-bottom:4px';
+        div.innerHTML = `<span style="width:20px;height:20px;border-radius:5px;background:var(--lt-navy-900);
+                                color:var(--lt-gold);font-size:.7rem;font-weight:700;
+                                display:flex;align-items:center;justify-content:center;flex-shrink:0">${idx+1}</span>
+            <span style="flex:1;font-size:.78rem;line-height:1.3;
+                         display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">${escHtml(q.text)}</span>
+            <button type="button" onclick="toggleQuestion(${q.id})"
+                    style="background:none;border:none;color:var(--lt-danger);cursor:pointer;padding:2px 4px;line-height:1">
+                <i class="bi bi-x-lg" style="font-size:.75rem"></i>
+            </button>`;
+        list.appendChild(div);
+    });
+
+    // Rebuild hidden inputs
+    const hiddenDiv = document.getElementById('hiddenInputs');
+    hiddenDiv.innerHTML = selItems.map(q => `<input type="hidden" name="questionIds" value="${q.id}"/>`).join('');
+}
+
+function toggleQuestion(id) {
+    if (selectedIds.has(id)) selectedIds.delete(id);
+    else                     selectedIds.add(id);
+    renderBank();
+    renderSelected();
+}
+
+function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Add-all filtered ──────────────────────────────────────────────────────
+document.getElementById('addAllBtn').addEventListener('click', () => {
+    const subjectFilter = document.getElementById('filterSubject').value;
+    const diffFilter    = document.getElementById('filterDiff').value;
+    const kw            = document.getElementById('filterKeyword').value.toLowerCase().trim();
+
+    ALL_QUESTIONS.forEach(q => {
+        if (subjectFilter && q.subjectId != subjectFilter) return;
+        if (diffFilter    && q.difficulty !== diffFilter)  return;
+        if (kw && !q.text.toLowerCase().includes(kw))     return;
+        selectedIds.add(q.id);
+    });
+    renderBank();
+    renderSelected();
+});
+
+// ── Filter events ─────────────────────────────────────────────────────────
+['filterSubject','filterDiff'].forEach(id => {
+    document.getElementById(id).addEventListener('change', renderBank);
+});
+document.getElementById('filterKeyword').addEventListener('input', renderBank);
+
+// ── Submit guard ──────────────────────────────────────────────────────────
+document.getElementById('examForm').addEventListener('submit', e => {
+    if (selectedIds.size === 0) {
+        e.preventDefault();
+        alert('Vui lòng chọn ít nhất 1 câu hỏi cho đề thi.');
+    }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderBank();
+renderSelected();
+</script>
+}

@@ -1,0 +1,2912 @@
+@using LuminaTutors.Application.DTOs.Lab
+@model LabSessionDto
+@{
+    Layout = null; // Full-screen immersive 3D experience
+    var isHost    = ViewBag.IsHost as bool? ?? false;
+    var sceneType = Model.SceneType.ToLower();
+    var subject   = Model.SubjectTag.ToLower();
+    string subjectLabel = subject switch
+    {
+        "chemistry" => "Hóa học",
+        "physics"   => "Vật lý",
+        "biology"   => "Sinh học",
+        "math"      => "Toán học",
+        _           => subject
+    };
+    string sceneLabel = sceneType switch
+    {
+        "titration"      => "Chuẩn độ axit-bazơ",
+        "electrolysis"   => "Điện phân nước",
+        "distillation"   => "Chưng cất đơn giản",
+        "pendulum"       => "Con lắc đơn",
+        "spring"         => "Con lắc lò xo",
+        "optics"         => "Quang học — khúc xạ",
+        "cell"           => "Quan sát tế bào",
+        "dna"            => "Cấu trúc DNA",
+        "photosynthesis" => "Quang hợp",
+        "polyhedron"     => "Đa diện đều",
+        "vectors"        => "Vector 3D",
+        _                => sceneType
+    };
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@Model.SessionName — Lab 3D · Lumina Tutors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/lt-confirm.css">
+
+    <!--
+        IMPORTMAP must come BEFORE any <link rel="modulepreload">.
+        If a preload appears first, browsers silently discard the importmap
+        and bare specifiers like "three" fail to resolve.
+    -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three":         "/js/three/three.module.js",
+        "three/addons/": "/js/three/"
+      }
+    }
+    </script>
+
+    <!-- Preload hints — placed AFTER importmap so they resolve correctly -->
+    <link rel="modulepreload" href="/js/three/three.module.js">
+    <link rel="modulepreload" href="/js/three/controls/OrbitControls.js">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --navy: #0f2044;
+            --navy-900: #0a1628;
+            --gold: #c9a96e;
+            --gold-light: #e8c98a;
+            /* Instrument panel: very dark teal — like scientific readout displays */
+            --panel-bg: rgba(6, 18, 22, 0.97);
+            --panel-border: rgba(56, 189, 248, 0.2);
+            --panel-border-subtle: rgba(56, 189, 248, 0.08);
+            --success: #22c55e;
+            --danger: #ef4444;
+            --info: #38bdf8;
+        }
+
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background: #0a0f1e;
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+        }
+
+        /* ── Canvas ──────────────────────────────────────────────────────────── */
+        #lab-canvas {
+            display: block;
+            width: 100%; height: 100%;
+        }
+
+        /* ── Overlay UI ──────────────────────────────────────────────────────── */
+        #ui-overlay {
+            position: fixed; inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Header bar */
+        #ui-header {
+            pointer-events: all;
+            position: absolute; top: 0; left: 0; right: 0;
+            display: flex; align-items: center; gap: 12px;
+            padding: 0 16px;
+            height: 52px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--panel-border);
+        }
+        .ui-brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem; font-weight: 700;
+            color: var(--gold);
+            letter-spacing: .04em;
+            flex-shrink: 0;
+        }
+        .ui-sep { width: 1px; height: 20px; background: var(--panel-border-subtle); flex-shrink: 0; }
+        .ui-session-name { font-size: .87rem; font-weight: 600; color: #f1f5f9; line-height: 1.2; }
+        .ui-session-meta { font-size: .72rem; color: #4a7d8a; margin-top: 2px; line-height: 1; }
+        .ui-code {
+            margin-left: auto;
+            background: rgba(201,169,110,.09);
+            border: 1px solid var(--panel-border);
+            border-radius: 7px;
+            padding: 4px 12px;
+            font-size: .79rem; font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: .14em;
+            font-family: monospace;
+            flex-shrink: 0;
+        }
+        .ui-back {
+            pointer-events: all;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px;
+            border-radius: 7px;
+            border: 1px solid var(--panel-border-subtle);
+            background: rgba(255,255,255,.03);
+            color: #64748b;
+            font-size: .79rem; font-weight: 500;
+            text-decoration: none;
+            transition: all .16s;
+            flex-shrink: 0;
+        }
+        .ui-back:hover { background: rgba(255,255,255,.08); color: #e2e8f0; border-color: var(--panel-border); }
+
+        /* Pulse indicator */
+        .live-dot {
+            display: inline-block; width: 7px; height: 7px;
+            border-radius: 50%; background: var(--success);
+            box-shadow: 0 0 0 2px rgba(34,197,94,.2);
+            animation: pulse-live 1.8s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+        @@keyframes pulse-live {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 2px rgba(34,197,94,.25); }
+            50% { opacity: .7; box-shadow: 0 0 0 5px rgba(34,197,94,.1); }
+        }
+
+        /* Controls panel */
+        #ui-controls {
+            pointer-events: all;
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; align-items: center; gap: 4px;
+            padding: 7px 12px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 13px;
+        }
+        .ctrl-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+            padding: 6px 13px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: #2d7a8a;
+            font-size: .78rem; font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+        .ctrl-btn:hover { background: rgba(56,189,248,.07); color: #a8d8e8; border-color: var(--panel-border-subtle); }
+        .ctrl-btn.active { background: rgba(56,189,248,.14); color: #38bdf8; border-color: rgba(56,189,248,.3); }
+        .ctrl-btn.laser-active { background: rgba(239,68,68,.1); color: #fca5a5; border-color: rgba(239,68,68,.35); }
+        .ctrl-sep { width: 1px; height: 18px; background: var(--panel-border-subtle); margin: 0 2px; }
+
+        /* Info panel (bottom-right) */
+        #ui-info {
+            pointer-events: none;
+            position: absolute; bottom: 20px; right: 16px;
+            width: 190px;
+            background: rgba(10, 16, 30, 0.93);
+            border: 1px solid var(--panel-border-subtle);
+            border-radius: 10px;
+            padding: 10px 13px;
+            font-size: .75rem;
+        }
+        .info-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+        .info-row:last-child { margin-bottom: 0; }
+        .info-label { color: #1a4550; }
+        .info-value { color: #5ba8bc; font-weight: 600; }
+
+        /* Close session button (host only) */
+        #btn-close-session { color: #f87171; }
+        #btn-close-session:hover {
+            background: rgba(239,68,68,.1);
+            border-color: rgba(239,68,68,.4);
+            color: #fca5a5;
+        }
+
+        /* Loading overlay */
+        #loading {
+            position: fixed; inset: 0; z-index: 100;
+            background: #0a0f1e;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 18px;
+            transition: opacity .4s ease;
+        }
+        #loading.hide { opacity: 0; pointer-events: none; }
+        .loading-icon {
+            width: 64px; height: 64px; border-radius: 18px;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            color: var(--navy-900); font-size: 2rem;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 32px rgba(201,169,110,.4);
+            animation: loading-spin 2s ease-in-out infinite;
+        }
+        @@keyframes loading-spin {
+            0%, 100% { box-shadow: 0 0 20px rgba(201,169,110,.3); transform: rotate(-8deg); }
+            50% { box-shadow: 0 0 45px rgba(201,169,110,.6); transform: rotate(8deg); }
+        }
+        .loading-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem; color: #f1f5f9; letter-spacing: .04em;
+        }
+        .loading-sub { font-size: .8rem; color: #64748b; }
+        .loading-bar {
+            width: 180px; height: 3px; background: rgba(255,255,255,.08);
+            border-radius: 99px; overflow: hidden;
+        }
+        .loading-bar-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 99px;
+            animation: bar-fill 1.6s ease forwards;
+        }
+        @@keyframes bar-fill { to { width: 100%; } }
+
+        /* Step overlay */
+        #step-overlay {
+            pointer-events: none;
+            position: absolute; top: 64px; right: 16px;
+            width: 214px;
+            background: rgba(10, 16, 30, 0.95);
+            border: 1px solid var(--panel-border-subtle);
+            border-radius: 10px;
+            padding: 13px 14px;
+            font-size: .78rem;
+            display: none;
+        }
+        #step-overlay.show { display: block; }
+        .step-title { font-weight: 700; color: #5ba8bc; margin-bottom: 6px; font-size: .8rem; }
+        .step-desc { color: #2d5e68; line-height: 1.55; }
+        .step-progress { margin-top: 10px; }
+        .step-bar {
+            height: 2px; border-radius: 99px;
+            background: rgba(255,255,255,.07); overflow: hidden;
+        }
+        .step-bar-fill {
+            height: 100%; background: #38bdf8;
+            border-radius: 99px;
+            transition: width .6s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* ── Hover tooltip ───────────────────────────────────────────────────── */
+        #hover-tooltip {
+            position: fixed;
+            display: none;
+            background: rgba(10, 16, 30, 0.97);
+            border: 1px solid var(--panel-border);
+            border-radius: 7px;
+            padding: 6px 11px;
+            font-size: .75rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            pointer-events: none;
+            z-index: 50;
+            white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(0,0,0,.55);
+        }
+        #hover-tooltip .tt-hint {
+            display: block;
+            font-size: .67rem;
+            color: var(--gold);
+            margin-top: 2px;
+        }
+
+        /* ── Interaction guide (left) ─────────────────────────────────────── */
+        #interaction-guide {
+            pointer-events: none;
+            position: absolute; top: 64px; left: 14px;
+            width: 208px;
+            background: rgba(10, 16, 30, 0.95);
+            border: 1px solid var(--panel-border-subtle);
+            border-radius: 10px;
+            padding: 12px 13px;
+            font-size: .77rem;
+        }
+        .guide-header {
+            display: flex; align-items: center; gap: 6px;
+            font-weight: 700; font-size: .7rem;
+            color: #2d7a8a; margin-bottom: 9px;
+            text-transform: uppercase; letter-spacing: .07em;
+        }
+        .guide-item {
+            display: flex; align-items: flex-start; gap: 8px;
+            margin-bottom: 7px; color: #2d5e68; line-height: 1.45;
+        }
+        .guide-item:last-child { margin-bottom: 0; }
+        .guide-icon {
+            flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px;
+            background: rgba(56,189,248,.06); border: 1px solid var(--panel-border-subtle);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .63rem; color: #2d7a8a;
+        }
+        .guide-text strong { color: #5ba8bc; display: block; font-size: .74rem; margin-bottom: 1px; }
+
+        /* ── Live data panel ────────────────────────────────────────────────── */
+        #data-panel {
+            pointer-events: none;
+            position: absolute; top: 64px; right: 16px;
+            width: 214px;
+            background: rgba(10, 16, 30, 0.95);
+            border: 1px solid var(--panel-border-subtle);
+            border-radius: 10px;
+            padding: 12px 13px;
+            font-size: .77rem;
+            display: none;
+        }
+        #data-panel.show { display: block; }
+        .dp-header {
+            display: flex; align-items: center; gap: 6px;
+            font-weight: 700; font-size: .7rem;
+            color: #2d7a8a; margin-bottom: 10px;
+            text-transform: uppercase; letter-spacing: .07em;
+        }
+        .dp-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            margin-bottom: 6px; padding-bottom: 6px;
+            border-bottom: 1px solid var(--panel-border-subtle);
+        }
+        .dp-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .dp-label { color: #2d5e68; font-size: .7rem; }
+        .dp-value {
+            color: #a8d8e8; font-weight: 700; font-size: .9rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .dp-unit { color: #2d7a8a; font-size: .65rem; margin-left: 2px; }
+
+        /* Drip rate control buttons */
+        .drip-btn {
+            flex: 1; padding: 5px 0; border-radius: 6px;
+            border: 1px solid var(--panel-border-subtle);
+            background: transparent;
+            color: #334155; font-size: .74rem; font-weight: 600;
+            cursor: pointer; transition: all .14s;
+        }
+        .drip-btn:hover { background: rgba(255,255,255,.05); color: #64748b; }
+        .drip-btn.active.drip-btn--off  { background: rgba(100,116,139,.12); color: #94a3b8; border-color: rgba(100,116,139,.35); }
+        .drip-btn.active.drip-btn--slow { background: rgba(34,197,94,.1); color: #4ade80; border-color: rgba(34,197,94,.35); }
+        .drip-btn.active.drip-btn--fast { background: rgba(239,68,68,.1); color: #fca5a5; border-color: rgba(239,68,68,.35); }
+
+        /* Legacy drip rate badge (used in dp-rows) */
+        .drip-badge {
+            display: inline-block; padding: 2px 7px; border-radius: 20px;
+            font-size: .71rem; font-weight: 700;
+        }
+        .drip-badge.off  { background: rgba(100,116,139,.15); color: #64748b; }
+        .drip-badge.slow { background: rgba(34,197,94,.1);  color: #4ade80; }
+        .drip-badge.fast { background: rgba(239,68,68,.1);  color: #fca5a5; }
+
+        /* ── Cell info card ─────────────────────────────────────────────────── */
+        #cell-info-card {
+            pointer-events: all;
+            position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%) scale(.93);
+            width: 300px;
+            background: rgba(10, 15, 28, 0.98);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 20px;
+            display: none;
+            z-index: 30;
+            box-shadow: 0 20px 60px rgba(0,0,0,.75);
+            transition: transform .22s cubic-bezier(.34,1.4,.64,1), opacity .18s;
+            opacity: 0;
+        }
+        #cell-info-card.show {
+            display: block;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        .cic-icon { font-size: 2.2rem; margin-bottom: 10px; display: block; }
+        .cic-title { font-weight: 700; font-size: 1rem; color: #f1f5f9; margin-bottom: 6px; }
+        .cic-desc { font-size: .81rem; color: #475569; line-height: 1.65; }
+        .cic-close {
+            position: absolute; top: 12px; right: 12px;
+            width: 26px; height: 26px; border-radius: 50%;
+            background: rgba(255,255,255,.04); border: 1px solid var(--panel-border-subtle);
+            color: #475569; font-size: .75rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all .14s;
+        }
+        .cic-close:hover { background: rgba(255,255,255,.1); color: #e2e8f0; }
+        .cic-fact {
+            margin-top: 12px; padding: 9px 12px;
+            background: rgba(201,169,110,.06);
+            border: 1px solid rgba(201,169,110,.18);
+            border-radius: 8px;
+            font-size: .74rem; color: #8a6f4a; line-height: 1.55;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading splash -->
+<div id="loading">
+    <div class="loading-icon"><i class="bi bi-badge-vr-fill"></i></div>
+    <div class="loading-text">Khởi động phòng Lab 3D</div>
+    <div class="loading-sub" id="loading-sub">Đang tải môi trường @subjectLabel...</div>
+    <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+</div>
+
+<!--
+    PLAIN-SCRIPT safety: runs regardless of whether the Three.js module loads.
+    • Dismisses the loading screen after 8 s if the module never finishes.
+    • Shows a visible error bar for any uncaught JS errors (helps diagnose).
+    • Checks WebGL availability upfront.
+-->
+<script>
+(function () {
+    // ── WebGL availability check ─────────────────────────────────────────────
+    function hasWebGL() {
+        try {
+            var c = document.createElement('canvas');
+            return !!(c.getContext('webgl2') || c.getContext('webgl'));
+        } catch (e) { return false; }
+    }
+
+    // ── Visible error bar ────────────────────────────────────────────────────
+    function showError(msg) {
+        var bar = document.getElementById('lab-err-bar');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'lab-err-bar';
+            bar.style.cssText = [
+                'position:fixed','bottom:0','left:0','right:0',
+                'background:rgba(220,38,38,.92)','color:#fff',
+                'font-size:.78rem','font-family:monospace',
+                'padding:8px 14px','z-index:9999',
+                'white-space:pre-wrap','word-break:break-all'
+            ].join(';');
+            document.body.appendChild(bar);
+        }
+        bar.textContent = msg;
+    }
+
+    // ── Loading dismiss helper ───────────────────────────────────────────────
+    var dismissed = false;
+    function safeHide(isError, reason) {
+        if (dismissed) return;
+        dismissed = true;
+        var el = document.getElementById('loading');
+        if (!el) return;
+        if (isError) {
+            document.getElementById('loading-sub').textContent =
+                reason || 'Không tải được môi trường 3D. Hãy thử tải lại trang.';
+        }
+        el.classList.add('hide');
+        setTimeout(function () { if (el && el.parentNode) el.parentNode.removeChild(el); }, 500);
+    }
+
+    // Expose so the module calls this when the scene is ready
+    window.__labLoadingDone = function () { safeHide(false); };
+
+    // ── Immediate WebGL check ────────────────────────────────────────────────
+    if (!hasWebGL()) {
+        safeHide(true, 'Trình duyệt không hỗ trợ WebGL. Dùng Chrome/Firefox/Edge mới nhất.');
+        showError('WebGL không khả dụng trên trình duyệt này.');
+    }
+
+    // ── Hard timeout: dismiss loading screen if module never finishes ────────
+    setTimeout(function () {
+        safeHide(true, 'Three.js chưa khởi động sau 8 giây. Kiểm tra Console (F12) để biết lỗi.');
+    }, 8000);
+
+    // ── Catch runtime errors and show them on screen ─────────────────────────
+    window.addEventListener('error', function (e) {
+        showError('JS Error: ' + e.message + '\n' + (e.filename || '') + ':' + e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+        showError('Promise Error: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+    });
+}());
+</script>
+
+<!-- 3D canvas -->
+<canvas id="lab-canvas"></canvas>
+
+<!-- UI overlay -->
+<div id="ui-overlay">
+
+    <!-- Header -->
+    <div id="ui-header">
+        <a href="/VirtualLab" class="ui-back">
+            <i class="bi bi-arrow-left"></i> Ra khỏi Lab
+        </a>
+        <div class="ui-sep"></div>
+        <div class="ui-brand">L</div>
+        <div>
+            <div class="ui-session-name">@Model.SessionName</div>
+            <div class="ui-session-meta">
+                @subjectLabel · @sceneLabel · GV: @Model.TeacherName
+            </div>
+        </div>
+        <span class="live-dot" style="margin-left:auto;margin-right:4px"></span>
+        <span style="font-size:.78rem;color:#22c55e;margin-right:12px">Đang hoạt động</span>
+        <div class="ui-code">@Model.SessionCode</div>
+    </div>
+
+    <!-- Hover tooltip -->
+    <div id="hover-tooltip">
+        <span id="tt-name"></span>
+        <span class="tt-hint" id="tt-hint"></span>
+    </div>
+
+    <!-- Interaction guide (left side) -->
+    <div id="interaction-guide">
+        <div class="guide-header">
+            <i class="bi bi-hand-index-thumb-fill" style="color:var(--gold)"></i>
+            Tương tác
+        </div>
+        <div id="guide-list">
+            @if (sceneType == "titration")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Van buret</strong>Click để điều chỉnh tốc độ nhỏ giọt</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Bình tam giác</strong>Click để khuấy dung dịch</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Buret</strong>Click để xem thể tích còn lại</div>
+                </div>
+            }
+            else if (sceneType == "pendulum")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-hand-index-fill"></i></div>
+                    <div class="guide-text"><strong>Quả nặng</strong>Kéo trái/phải để đặt góc ban đầu</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-mouse2"></i></div>
+                    <div class="guide-text"><strong>Cuộn chuột</strong>Thay đổi chiều dài dây (L)</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-play-fill"></i></div>
+                    <div class="guide-text"><strong>Bắt đầu</strong>Thả quả nặng dao động</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Bảng số liệu</strong>Cập nhật thời gian thực</div>
+                </div>
+            }
+            else if (sceneType == "electrolysis")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Công tắc</strong>Click để đóng/mở mạch điện</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Bảng số liệu</strong>Theo dõi thời gian & khí thoát ra</div>
+                </div>
+            }
+            else if (sceneType == "distillation")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Ngọn lửa</strong>Click để bật/tắt nguồn nhiệt</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-thermometer-half"></i></div>
+                    <div class="guide-text"><strong>Nhiệt kế</strong>Theo dõi nhiệt độ trong bảng số liệu</div>
+                </div>
+            }
+            else if (sceneType == "spring")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-hand-index-fill"></i></div>
+                    <div class="guide-text"><strong>Quả nặng</strong>Kéo lên/xuống để đặt biên độ ban đầu</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-play-fill"></i></div>
+                    <div class="guide-text"><strong>Bắt đầu</strong>Thả vật — lò xo dao động điều hòa</div>
+                </div>
+            }
+            else if (sceneType == "optics")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Lăng kính</strong>Click & kéo để xoay lăng kính</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-rainbow"></i></div>
+                    <div class="guide-text"><strong>Cầu vồng</strong>Quan sát tán sắc ánh sáng trắng</div>
+                </div>
+            }
+            else if (sceneType == "cell")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Nhân tế bào</strong>Click để xem chi tiết</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Ti thể</strong>Click để xem chi tiết</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Không bào / Lạp lục</strong>Click để xem chi tiết</div>
+                </div>
+            }
+            else if (sceneType == "dna")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="guide-text"><strong>Xoắn kép</strong>Xoay tự động — quan sát cấu trúc 3D</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Cặp base</strong>Màu sắc: đỏ/vàng = A-T, xanh = G-C</div>
+                </div>
+            }
+            else if (sceneType == "photosynthesis")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-brightness-high-fill"></i></div>
+                    <div class="guide-text"><strong>Ánh sáng</strong>Tia sáng vàng → lạp lục xanh trong lá</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Bảng số liệu</strong>CO₂ hấp thụ & O₂ thải ra theo thời gian</div>
+                </div>
+            }
+            else if (sceneType == "polyhedron")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Click khối</strong>Chuyển sang đa diện tiếp theo</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="guide-text"><strong>Xoay tự do</strong>Kéo để xem từ mọi góc độ</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Euler</strong>V − E + F = 2 hiển thị trong bảng số liệu</div>
+                </div>
+            }
+            else if (sceneType == "vectors")
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-arrow-repeat"></i></div>
+                    <div class="guide-text"><strong>Vector</strong>Đỏ = u⃗, Xanh lá = v⃗, Vàng = u⃗×v⃗</div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="guide-text"><strong>Bảng số liệu</strong>Góc giữa hai vector, tích vô hướng</div>
+                </div>
+            }
+            else
+            {
+                <div class="guide-item">
+                    <div class="guide-icon"><i class="bi bi-cursor-fill"></i></div>
+                    <div class="guide-text"><strong>Tương tác</strong>Click vào đối tượng 3D để khám phá</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Live data panel (titration / pendulum) -->
+    <div id="data-panel">
+        <div class="dp-header">
+            <i class="bi bi-bar-chart-line-fill"></i>
+            Số liệu thực nghiệm
+        </div>
+        <div id="dp-rows"></div>
+        @if (sceneType == "titration")
+        {
+            <!-- Drip rate control — pointer-events:all lets clicks through the overlay -->
+            <div id="dp-drip-ctrl"
+                 style="pointer-events:all;margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px">
+                <div style="font-size:.69rem;color:#334155;margin-bottom:7px;
+                            text-transform:uppercase;letter-spacing:.06em">Tốc độ nhỏ giọt</div>
+                <div style="display:flex;gap:5px">
+                    <button class="drip-btn drip-btn--off active"
+                            onclick="window.setDripRate('off')" id="drip-off">Tắt</button>
+                    <button class="drip-btn drip-btn--slow"
+                            onclick="window.setDripRate('slow')" id="drip-slow">Chậm</button>
+                    <button class="drip-btn drip-btn--fast"
+                            onclick="window.setDripRate('fast')" id="drip-fast">Nhanh</button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Cell info card -->
+    <div id="cell-info-card">
+        <div class="cic-close" id="cic-close-btn" onclick="closeCellInfo()">
+            <i class="bi bi-x"></i>
+        </div>
+        <span class="cic-icon" id="cic-icon"></span>
+        <div class="cic-title" id="cic-title"></div>
+        <div class="cic-desc" id="cic-desc"></div>
+        <div class="cic-fact" id="cic-fact"></div>
+    </div>
+
+    <!-- Experiment step overlay -->
+    <div id="step-overlay">
+        <div class="step-title" id="step-title">Bắt đầu thí nghiệm</div>
+        <div class="step-desc" id="step-desc">Nhấn "Bắt đầu" để khởi động thí nghiệm</div>
+        <div class="step-progress">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:.72rem;color:#64748b">
+                <span id="step-num">Bước 0/0</span>
+                <span id="step-pct">0%</span>
+            </div>
+            <div class="step-bar"><div class="step-bar-fill" id="step-bar-fill" style="width:0%"></div></div>
+        </div>
+    </div>
+
+    <!-- Info panel (bottom-right) -->
+    <div id="ui-info">
+        <div class="info-row">
+            <span class="info-label">Mã phòng</span>
+            <span class="info-value" style="color:var(--gold-light);letter-spacing:.1em">@Model.SessionCode</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Môn học</span>
+            <span class="info-value">@subjectLabel</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Thí nghiệm</span>
+            <span class="info-value">@sceneLabel</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Sức chứa</span>
+            <span class="info-value">@Model.MaxParticipants HS</span>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div id="ui-controls">
+        <button class="ctrl-btn" id="btn-start" onclick="startExperiment()">
+            <i class="bi bi-play-fill"></i> Bắt đầu
+        </button>
+        <button class="ctrl-btn" id="btn-reset" onclick="resetExperiment()">
+            <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
+        </button>
+        <div class="ctrl-sep"></div>
+        <button class="ctrl-btn" id="btn-orbit" onclick="toggleOrbit()" title="Xoay camera">
+            <i class="bi bi-arrow-repeat"></i> Xoay tự do
+        </button>
+        <button class="ctrl-btn" id="btn-focus" onclick="focusCamera()" title="Focus vào thí nghiệm">
+            <i class="bi bi-fullscreen"></i> Focus
+        </button>
+        @if (isHost)
+        {
+            <div class="ctrl-sep"></div>
+            <button class="ctrl-btn" id="btn-laser" onclick="toggleLaser()" title="Con trỏ laser giảng dạy">
+                <i class="bi bi-broadcast-pin"></i> Laser
+            </button>
+            <div class="ctrl-sep"></div>
+            <form asp-action="Close" asp-route-id="@Model.Id" method="post" id="close-form" style="display:inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="ctrl-btn" id="btn-close-session"
+                        onclick="return confirm('Kết thúc phòng lab này?')">
+                    <i class="bi bi-stop-circle-fill"></i> Kết thúc phòng
+                </button>
+            </form>
+        }
+    </div>
+
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Scene Config ──────────────────────────────────────────────────────────────
+const SCENE_TYPE  = '@sceneType';
+const SUBJECT_TAG = '@subject';
+const IS_HOST     = @(isHost ? "true" : "false");
+
+// ── Renderer ──────────────────────────────────────────────────────────────────
+const canvas   = document.getElementById('lab-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+// ── Scene ─────────────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a2a3d);   // medium blue-gray — well-lit lab
+scene.fog        = new THREE.FogExp2(0x1a2a3d, 0.012);  // gentle fog
+
+// ── Camera ────────────────────────────────────────────────────────────────────
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 4, 9);
+camera.lookAt(0, 1.2, 0);
+
+// ── Orbit Controls ────────────────────────────────────────────────────────────
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping    = true;
+controls.dampingFactor    = 0.06;
+controls.target.set(0, 1.2, 0);
+controls.minDistance      = 3;
+controls.maxDistance      = 18;
+controls.maxPolarAngle    = Math.PI / 2.05;
+controls.autoRotate       = false;
+controls.autoRotateSpeed  = 1.2;
+controls.update();
+
+// ── Lighting — bright, clinical lab atmosphere ────────────────────────────────
+const ambient = new THREE.AmbientLight(0xf0f4ff, 1.1);   // cool white ambient
+scene.add(ambient);
+
+const keyLight = new THREE.DirectionalLight(0xfff8f0, 2.0);  // warm main key
+keyLight.position.set(5, 10, 6);
+keyLight.castShadow  = true;
+keyLight.shadow.mapSize.set(1024, 1024);
+keyLight.shadow.camera.near = 0.5;
+keyLight.shadow.camera.far  = 40;
+keyLight.shadow.camera.left = keyLight.shadow.camera.bottom = -8;
+keyLight.shadow.camera.right = keyLight.shadow.camera.top   =  8;
+keyLight.shadow.bias = -0.001;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0xb8d4ff, 0.7);  // cool blue fill
+fillLight.position.set(-5, 3, -4);
+scene.add(fillLight);
+
+const rimLight = new THREE.PointLight(0xc9a96e, 0.9, 16);   // warm gold rim
+rimLight.position.set(-3, 4, -5);
+scene.add(rimLight);
+
+// ── Materials ─────────────────────────────────────────────────────────────────
+const matFloor  = new THREE.MeshStandardMaterial({ color: 0x3a5068, roughness: .8,  metalness: .05 }); // lighter floor
+const matWall   = new THREE.MeshStandardMaterial({ color: 0x4a6080, roughness: .88, metalness: 0   }); // lighter walls
+const matBench  = new THREE.MeshStandardMaterial({ color: 0x455a6e, roughness: .65, metalness: .18 }); // lighter bench
+const matBenchT = new THREE.MeshStandardMaterial({ color: 0x1e3248, roughness: .45, metalness: .22 }); // bench top
+const matMetal  = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: .3, metalness: .8 });
+const matGlass  = new THREE.MeshStandardMaterial({ color: 0x93c5fd, roughness: .05, metalness: 0, transparent: true, opacity: .35 });
+const matGold   = new THREE.MeshStandardMaterial({ color: 0xc9a96e, roughness: .2, metalness: .9 });
+
+// ── Lab Room ──────────────────────────────────────────────────────────────────
+function buildRoom() {
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(22, 22), matFloor);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(22, 10), matWall);
+    backWall.position.set(0, 5, -7);
+    backWall.receiveShadow = true;
+    scene.add(backWall);
+
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(14, 10), matWall);
+    leftWall.position.set(-11, 5, 0);
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.receiveShadow = true;
+    scene.add(leftWall);
+
+    const ceiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(22, 22),
+        new THREE.MeshStandardMaterial({ color: 0x2a3a4e, roughness: 1 })
+    );
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = 9;
+    scene.add(ceiling);
+
+    // Fluorescent strips — bright clinical lab lighting
+    for (let x = -4; x <= 4; x += 4) {
+        const strip = new THREE.Mesh(
+            new THREE.BoxGeometry(0.22, 0.05, 3.2),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xf0f8ff, emissiveIntensity: 2.5 })
+        );
+        strip.position.set(x, 8.97, 0);
+        scene.add(strip);
+        const stripLight = new THREE.PointLight(0xf0f8ff, 1.2, 10);
+        stripLight.position.set(x, 8.5, 0);
+        scene.add(stripLight);
+    }
+
+    const benchBase = new THREE.Mesh(new THREE.BoxGeometry(5, 0.9, 1.6), matBench);
+    benchBase.position.set(0, 0.45, 0);
+    benchBase.castShadow = benchBase.receiveShadow = true;
+    scene.add(benchBase);
+
+    const benchTop = new THREE.Mesh(new THREE.BoxGeometry(5.1, 0.08, 1.7), matBenchT);
+    benchTop.position.set(0, 0.94, 0);
+    benchTop.castShadow = benchTop.receiveShadow = true;
+    scene.add(benchTop);
+
+    [[-2.35,-2.35],[2.35,-2.35],[-2.35,2.35/2.5],[2.35,2.35/2.5]].forEach(([bx,bz])=>{
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.88,0.08), matMetal);
+        leg.position.set(bx, 0.44, bz * 0.65);
+        scene.add(leg);
+    });
+
+    const cabinet = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.55), matBench);
+    cabinet.position.set(-3.5, 0.8, -1.8);
+    cabinet.castShadow = true;
+    scene.add(cabinet);
+
+    const board = new THREE.Mesh(
+        new THREE.BoxGeometry(3.5, 1.8, 0.04),
+        new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: .95 })
+    );
+    board.position.set(0, 3.5, -6.96);
+    scene.add(board);
+
+    const boardFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(3.7, 2.0, 0.03),
+        new THREE.MeshStandardMaterial({ color: 0x475569, roughness: .5, metalness: .4 })
+    );
+    boardFrame.position.set(0, 3.5, -6.98);
+    scene.add(boardFrame);
+}
+
+buildRoom();
+
+// ── Experiment-specific scenes ────────────────────────────────────────────────
+let experimentData = {};
+let isRunning = false;
+let stepIndex  = 0;
+
+// ─ CHEMISTRY: Titration ──────────────────────────────────────────────────────
+function buildTitrationScene() {
+    const standPole = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,2.2,12), matMetal);
+    standPole.position.set(.3, 2.05, -.2);
+    standPole.castShadow = true;
+    scene.add(standPole);
+
+    const standBase = new THREE.Mesh(new THREE.BoxGeometry(.8,.04,.5), matMetal);
+    standBase.position.set(.3, .96, -.2);
+    scene.add(standBase);
+
+    const ring = new THREE.TorusGeometry(.18,.015,8,24);
+    const ringMesh = new THREE.Mesh(ring, matMetal);
+    ringMesh.rotation.x = Math.PI/2;
+    ringMesh.position.set(.3,2.6,-.2);
+    scene.add(ringMesh);
+
+    const buretMat = matGlass.clone();
+    const buretBody = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,1.6,16), buretMat);
+    buretBody.position.set(.3,2.2,-.2);
+    buretBody.castShadow = true;
+    scene.add(buretBody);
+
+    for (let y = 1.5; y <= 2.9; y += .1) {
+        const mark = new THREE.Mesh(new THREE.BoxGeometry(.01,.002,.04),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, opacity: .6, transparent: true }));
+        mark.position.set(.34,y,-.2);
+        scene.add(mark);
+    }
+
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(.008,.015,.12,8), matMetal);
+    tip.position.set(.3,1.37,-.2);
+    scene.add(tip);
+
+    const cockMat = matMetal.clone();
+    const cock = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.06,16), cockMat);
+    cock.rotation.z = Math.PI/2;
+    cock.position.set(.3,1.45,-.2);
+    scene.add(cock);
+    experimentData.stopcock    = cock;
+    experimentData.stopcockMat = cockMat;
+
+    const flaskMat  = matGlass.clone();
+    const flaskBody = new THREE.Mesh(new THREE.SphereGeometry(.22,24,16,[0,Math.PI*2,0,Math.PI*.55]), flaskMat);
+    flaskBody.position.set(.3,.96+.22,-.2);
+    flaskBody.castShadow = true;
+    scene.add(flaskBody);
+
+    const flaskNeckMat = matGlass.clone();
+    const flaskNeck = new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,.25,16), flaskNeckMat);
+    flaskNeck.position.set(.3,1.46,-.2);
+    scene.add(flaskNeck);
+
+    const flaskRim = new THREE.Mesh(new THREE.TorusGeometry(.05,.008,8,16), matGlass.clone());
+    flaskRim.position.set(.3,1.59,-.2);
+    scene.add(flaskRim);
+
+    const solution = new THREE.Mesh(
+        new THREE.CircleGeometry(.18,32),
+        new THREE.MeshStandardMaterial({ color: 0x93c5fd, transparent: true, opacity: .55, side: THREE.DoubleSide })
+    );
+    solution.rotation.x = -Math.PI/2;
+    solution.position.set(.3,1.01,-.2);
+    scene.add(solution);
+    experimentData.solution    = solution;
+    experimentData.solutionMat = solution.material;
+
+    const beaker = new THREE.Mesh(new THREE.CylinderGeometry(.1,.09,.22,24), matGlass.clone());
+    beaker.position.set(-.5,1.07,-.3);
+    scene.add(beaker);
+
+    const stirPlate = new THREE.Mesh(new THREE.BoxGeometry(.35,.04,.3),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness:.3,metalness:.6 }));
+    stirPlate.position.set(.3,.98,-.2);
+    scene.add(stirPlate);
+
+    // Droplet: visible sphere that falls from buret tip to flask
+    const droplet = new THREE.Mesh(new THREE.SphereGeometry(.022, 10, 10),
+        new THREE.MeshStandardMaterial({ color: 0xbfdbfe, transparent: true, opacity: 0 }));
+    droplet.position.set(.3, 1.38, -.2);
+    scene.add(droplet);
+    experimentData.droplet    = droplet;
+    experimentData.dropletMat = droplet.material;
+    experimentData.dropletY   = 1.38;
+
+    // Stream: thin cylinder used only in 'fast' mode to simulate continuous flow
+    const streamMat = new THREE.MeshStandardMaterial({
+        color: 0xbfdbfe, transparent: true, opacity: 0
+    });
+    const streamMesh = new THREE.Mesh(new THREE.CylinderGeometry(.006, .004, .4, 6), streamMat);
+    streamMesh.position.set(.3, 1.18, -.2);  // midpoint between buret tip and flask
+    scene.add(streamMesh);
+    experimentData.streamMesh = streamMesh;
+    experimentData.streamMat  = streamMat;
+
+    // Save refs for interaction
+    experimentData.buretBody  = buretBody;
+    experimentData.buretMat   = buretMat;
+    experimentData.flaskMeshes = [flaskBody, flaskNeck, flaskRim];
+    experimentData.flaskMat   = flaskMat;
+
+    // State
+    experimentData.dripRate   = 'off';   // 'off' | 'slow' | 'fast'
+    experimentData.dripCount  = 0;
+    experimentData.dripTimer  = 0;
+    experimentData.swirling   = false;
+    experimentData.swirlTime  = 0;
+    experimentData.swirlAngle = 0;
+    experimentData.buretVolume = 50.0;   // mL, starts full
+
+    const steps = [
+        { title:'Chuẩn bị',          desc:'Đổ dung dịch HCl vào bình tam giác. Thêm 2-3 giọt chỉ thị phenolphthalein.' },
+        { title:'Nạp buret',          desc:'Đổ dung dịch NaOH chuẩn vào buret. Đuổi hết bọt khí ở đầu van.' },
+        { title:'Chuẩn độ thô',       desc:'Mở khóa buret từ từ. Quan sát màu dung dịch thay đổi cục bộ.' },
+        { title:'Chuẩn độ chính xác', desc:'Nhỏ từng giọt đến khi dung dịch chuyển sang hồng nhạt bền 30 giây.' },
+        { title:'Điểm tương đương',   desc:'Màu hồng bền: đã đạt điểm tương đương! Ghi thể tích NaOH đã dùng.' },
+        { title:'Tính kết quả',       desc:'C(HCl) = C(NaOH) × V(NaOH) / V(HCl). Làm 3 lần và lấy trung bình.' },
+    ];
+    experimentData.steps = steps;
+    experimentData.type  = 'titration';
+}
+
+// ─ PHYSICS: Pendulum ─────────────────────────────────────────────────────────
+function buildPendulumScene() {
+    const vLeft  = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2,.8,12), matMetal);
+    const vRight = vLeft.clone();
+    vLeft.position.set(-.8,1.88,0);
+    vRight.position.set( .8,1.88,0);
+    scene.add(vLeft,vRight);
+
+    const hBar = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.7,12), matMetal);
+    hBar.rotation.z = Math.PI/2;
+    hBar.position.set(0,2.88,0);
+    scene.add(hBar);
+
+    const pivot = new THREE.Mesh(new THREE.SphereGeometry(.04,12,12), matMetal);
+    pivot.position.set(0,2.86,0);
+    scene.add(pivot);
+
+    const stringLen = 1.4;
+    const strMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(.004,.004,stringLen,8),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8 })
+    );
+    strMesh.position.set(0, 2.86 - stringLen/2, 0);
+    scene.add(strMesh);
+    experimentData.stringMesh = strMesh;
+
+    const bobMat = new THREE.MeshStandardMaterial({ color: 0xd4a017, roughness:.15, metalness:.9 });
+    const bob = new THREE.Mesh(new THREE.SphereGeometry(.095,24,16), bobMat);
+    bob.position.set(0, 2.86 - stringLen, 0);
+    bob.castShadow = true;
+    scene.add(bob);
+
+    // Invisible larger sphere for reliable hit detection (bob visual is only ~10cm)
+    const hitSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.28, 8, 8),
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    hitSphere.position.copy(bob.position);
+    scene.add(hitSphere);
+
+    experimentData.bob       = bob;
+    experimentData.bobMat    = bobMat;
+    experimentData.hitSphere = hitSphere;
+    experimentData.stringLen = stringLen;
+    experimentData.origStringLen = stringLen;
+    experimentData.pivotY    = 2.86;
+    experimentData.angle     = Math.PI / 6;
+    experimentData.vel       = 0;
+
+    const arcPoints = [];
+    for (let a = -Math.PI/2; a <= Math.PI/2; a += 0.05) {
+        arcPoints.push(new THREE.Vector3(Math.sin(a)*1.2, -Math.cos(a)*1.2, 0));
+    }
+    const arcGeo  = new THREE.BufferGeometry().setFromPoints(arcPoints);
+    const arcLine = new THREE.Line(arcGeo,
+        new THREE.LineBasicMaterial({ color: 0x334155, opacity: .7, transparent: true }));
+    arcLine.position.set(0, 2.86, 0.01);
+    scene.add(arcLine);
+
+    for (let deg = -60; deg <= 60; deg += 10) {
+        const rad = deg * Math.PI / 180;
+        const mk = new THREE.Mesh(new THREE.BoxGeometry(.015,.04,.01),
+            new THREE.MeshStandardMaterial({ color: 0x64748b }));
+        mk.position.set(Math.sin(rad)*1.22 , 2.86 - Math.cos(rad)*1.22, .01);
+        mk.rotation.z = -rad;
+        scene.add(mk);
+    }
+
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPts = new Float32Array(60 * 3).fill(0);
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPts, 3));
+    const trail = new THREE.Points(trailGeo,
+        new THREE.PointsMaterial({ color: 0xc9a96e, size: .04, transparent: true, opacity: .6 }));
+    scene.add(trail);
+    experimentData.trail    = trail;
+    experimentData.trailPts = trailPts;
+    experimentData.trailIdx = 0;
+
+    const ruler = new THREE.Mesh(new THREE.BoxGeometry(.04,.02,1.6),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+    ruler.position.set(.5,0.96,.0);
+    scene.add(ruler);
+
+    // Oscillation counter
+    experimentData.oscCount       = 0;
+    experimentData.lastSign       = 0;
+    experimentData.totalElapsed   = 0;
+
+    const steps = [
+        { title:'Đo chiều dài con lắc', desc:'Đo từ điểm treo đến tâm quả nặng: L = 1.40 m.' },
+        { title:'Kéo lệch góc 30°',     desc:'Kéo quả nặng lệch 30° so với phương thẳng đứng.' },
+        { title:'Thả tự do',            desc:'Thả không có vận tốc ban đầu. Bắt đầu đồng hồ bấm giây.' },
+        { title:'Đo chu kỳ',            desc:'Đo 10 dao động toàn phần. T₁₀ = thời gian / 10.' },
+        { title:'Tính g',               desc:'T = 2π√(L/g) → g = 4π²L/T². So sánh với g = 9.81 m/s².' },
+        { title:'Sai số',               desc:'Tính sai số tuyệt đối và tương đối. Nêu nguồn gây sai số.' },
+    ];
+    experimentData.steps   = steps;
+    experimentData.type    = 'pendulum';
+    experimentData.damping = 0.998;
+}
+
+// ─ BIOLOGY: Cell ─────────────────────────────────────────────────────────────
+function buildCellScene() {
+    const cellMat = new THREE.MeshStandardMaterial({
+        color: 0x4ade80, roughness: .6, metalness: 0,
+        transparent: true, opacity: .22, side: THREE.DoubleSide
+    });
+    const cellMesh = new THREE.Mesh(new THREE.SphereGeometry(.9,32,24), cellMat);
+    cellMesh.position.set(0,1.8,0);
+    cellMesh.castShadow = true;
+    scene.add(cellMesh);
+    experimentData.cell    = cellMesh;
+    experimentData.cellMat = cellMat;
+
+    const nucleusMat = new THREE.MeshStandardMaterial({
+        color: 0x7c3aed, roughness:.4, metalness:.1, transparent:true, opacity:.85
+    });
+    const nucleus = new THREE.Mesh(new THREE.SphereGeometry(.3,24,16), nucleusMat);
+    nucleus.position.set(0,1.8,0);
+    scene.add(nucleus);
+    experimentData.nucleus    = nucleus;
+    experimentData.nucleusMat = nucleusMat;
+
+    const nucleolus = new THREE.Mesh(new THREE.SphereGeometry(.1,16,12),
+        new THREE.MeshStandardMaterial({ color: 0xa78bfa, roughness:.3, emissive:0x4c1d95, emissiveIntensity:.3 }));
+    nucleolus.position.set(0,1.8,0);
+    scene.add(nucleolus);
+
+    const mitoAngles = [0,1.2,2.4,3.6,4.8];
+    const mitoMeshes = mitoAngles.map((a,i) => {
+        const mitoMat = new THREE.MeshStandardMaterial({
+            color: 0xf97316, roughness:.5, metalness:.1, transparent:true, opacity:.9
+        });
+        const mito = new THREE.Mesh(new THREE.CapsuleGeometry(.055,.22,6,12), mitoMat);
+        const r = .62 + (i%2)*.1;
+        mito.position.set(Math.sin(a)*r, 1.8 + Math.sin(a*1.3)*.15, Math.cos(a)*r);
+        mito.rotation.z = a + .4;
+        scene.add(mito);
+        return { mesh:mito, mat:mitoMat, baseAngle:a, r };
+    });
+    experimentData.mito = mitoMeshes;
+
+    const vacData = [{x:.4,y:2.15,z:.3,s:.12},{x:-.45,y:1.6,z:.2,s:.09},{x:.2,y:1.5,z:-.35,s:.1}];
+    const vacMeshes = vacData.map(v => {
+        const vacMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, transparent:true, opacity:.65 });
+        const vac = new THREE.Mesh(new THREE.SphereGeometry(v.s,16,12), vacMat);
+        vac.position.set(v.x,v.y,v.z);
+        scene.add(vac);
+        return { mesh:vac, mat:vacMat };
+    });
+    experimentData.vacuoles = vacMeshes;
+
+    for (let i=0;i<4;i++) {
+        const er = new THREE.Mesh(
+            new THREE.TorusGeometry(.4+i*.05,.012,6,28,[0,Math.PI*.8]),
+            new THREE.MeshStandardMaterial({ color: 0xfde68a, transparent:true, opacity:.55 })
+        );
+        er.rotation.x = i*.4; er.rotation.y = i*.9;
+        er.position.set(0,1.8,0);
+        scene.add(er);
+    }
+
+    const cpMeshes = [-.6,.6].map(x=>{
+        const cpMat = new THREE.MeshStandardMaterial({ color:0x166534,roughness:.6,transparent:true,opacity:.8 });
+        const cp = new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.025,16), cpMat);
+        cp.position.set(x,1.85,-.3);
+        scene.add(cp);
+        return { mesh:cp, mat:cpMat };
+    });
+    experimentData.chloroplasts = cpMeshes;
+
+    const mScope = new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.8,12), matMetal);
+    mScope.position.set(-1.8,1.34,-.3);
+    scene.add(mScope);
+    const mBase = new THREE.Mesh(new THREE.BoxGeometry(.25,.03,.2), matMetal);
+    mBase.position.set(-1.8,.96,-.3);
+    scene.add(mBase);
+    const mHead = new THREE.Mesh(new THREE.BoxGeometry(.1,.2,.12),
+        new THREE.MeshStandardMaterial({color:0x334155,roughness:.3,metalness:.5}));
+    mHead.position.set(-1.8,1.84,-.3);
+    scene.add(mHead);
+
+    const steps = [
+        { title:'Nhận diện tế bào',   desc:'Quan sát màng tế bào (membrane): lớp ngoài cùng bán thấm.' },
+        { title:'Nhân tế bào',         desc:'Nucleus (màu tím): chứa DNA, điều khiển hoạt động tế bào.' },
+        { title:'Ti thể',              desc:'Mitochondria (màu cam): nhà máy ATP — "powerhouse of the cell".' },
+        { title:'Không bào',           desc:'Vacuoles (màu xanh lam): dự trữ nước, muối khoáng, sắc tố.' },
+        { title:'Lạp lục',             desc:'Chloroplasts (màu xanh lá): quang hợp. Chỉ có ở tế bào thực vật.' },
+        { title:'Tổng hợp',            desc:'Hoàn thành sơ đồ tế bào và chú thích đầy đủ 8 bào quan chính.' },
+    ];
+    experimentData.steps     = steps;
+    experimentData.type      = 'cell';
+    experimentData.cellAngle = 0;
+}
+
+// ─ CHEMISTRY: Electrolysis ───────────────────────────────────────────────────
+function buildElectrolysisScene() {
+    // Tank of water
+    const tankMat = matGlass.clone(); tankMat.opacity = .18;
+    const tank    = new THREE.Mesh(new THREE.BoxGeometry(1.2, .8, .8), tankMat);
+    tank.position.set(0, 1.34, -.1);
+    scene.add(tank);
+    const waterMat = new THREE.MeshStandardMaterial({ color: 0x60a5fa, transparent: true, opacity: .25, side: THREE.DoubleSide });
+    const water    = new THREE.Mesh(new THREE.BoxGeometry(1.16, .72, .76), waterMat);
+    water.position.set(0, 1.34, -.1);
+    scene.add(water);
+
+    // Two electrodes (carbon rods)
+    const elMat1 = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness:.3, metalness:.7 });
+    const elMat2 = elMat1.clone();
+    const rod1   = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.55,12), elMat1);
+    const rod2   = new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.55,12), elMat2);
+    rod1.position.set(-.32, 1.38, -.1);
+    rod2.position.set( .32, 1.38, -.1);
+    rod1.castShadow = rod2.castShadow = true;
+    scene.add(rod1, rod2);
+    experimentData.cathode = rod1; experimentData.anode = rod2;
+
+    // Wires to battery
+    const wireMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness:.8 });
+    const wireMat2 = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness:.8 });
+    const wire1 = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.6,6), wireMat2);
+    wire1.position.set(-.32, 1.74, -.1); scene.add(wire1);
+    const wire2 = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.6,6), wireMat);
+    wire2.position.set( .32, 1.74, -.1); scene.add(wire2);
+
+    // Battery
+    const battery = new THREE.Mesh(new THREE.BoxGeometry(.5,.25,.25),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness:.4, metalness:.4 }));
+    battery.position.set(0, 2.08, -.1); scene.add(battery);
+    const battLabel = new THREE.Mesh(new THREE.BoxGeometry(.48,.23,.01),
+        new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness:.8 }));
+    battLabel.position.set(0, 2.08, .04); scene.add(battLabel);
+
+    // Switch (toggle)
+    const switchBase = new THREE.Mesh(new THREE.BoxGeometry(.15,.06,.08),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness:.4, metalness:.5 }));
+    switchBase.position.set(.7, 2.08, -.1); scene.add(switchBase);
+    const switchMat   = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness:.3, metalness:.7 });
+    const switchLever = new THREE.Mesh(new THREE.BoxGeometry(.035,.12,.035,4), switchMat);
+    switchLever.position.set(.7, 2.14, -.1); scene.add(switchLever);
+    experimentData.switchLever = switchLever;
+    experimentData.switchMat   = switchMat;
+
+    // Bubble pool (particles near electrodes)
+    const bubbles = [];
+    for (let i = 0; i < 24; i++) {
+        const bMat = new THREE.MeshStandardMaterial({
+            color: 0xbfdbfe, transparent: true, opacity: 0, roughness:.1
+        });
+        const b = new THREE.Mesh(new THREE.SphereGeometry(.012,6,6), bMat);
+        const side = (i < 12) ? -.32 : .32;
+        b.userData.side  = side;
+        b.userData.age   = Math.random();
+        b.userData.spd   = .004 + Math.random() * .006;
+        b.userData.rx    = (Math.random()-.5) * .06;
+        b.position.set(side + b.userData.rx, 1.0 + Math.random()*.4, -.1 + (Math.random()-.5)*.06);
+        scene.add(b);
+        bubbles.push({ mesh: b, mat: bMat });
+    }
+    experimentData.bubbles = bubbles;
+
+    // State
+    experimentData.powered     = false;
+    experimentData.powerTimer  = 0;
+    experimentData.type        = 'electrolysis';
+    experimentData.steps       = [
+        { title:'Chuẩn bị',         desc:'Đổ dung dịch H₂SO₄ loãng vào bình điện phân. Cắm hai điện cực carbon.' },
+        { title:'Đóng mạch điện',   desc:'Nhấn công tắc để kết nối nguồn điện một chiều (DC) 6–12V.' },
+        { title:'Phân ly nước',     desc:'2H₂O → 2H₂↑ (catod −) + O₂↑ (anod +). Bọt khí xuất hiện ở cả hai điện cực.' },
+        { title:'Thu khí',          desc:'Tỉ lệ thể tích H₂ : O₂ = 2:1 theo đúng tỉ lệ mol. Thu vào ống nghiệm úp ngược.' },
+        { title:'Nhận biết khí',    desc:'H₂ làm bùng cháy que diêm tàn; O₂ làm que đỏ rực bùng lại.' },
+        { title:'Tính hiệu suất',   desc:'Áp dụng định luật Faraday: m = (M × I × t) / (n × F).' },
+    ];
+}
+
+// ─ CHEMISTRY: Distillation ───────────────────────────────────────────────────
+function buildDistillationScene() {
+    // Round-bottom flask on tripod with alcohol mixture
+    const rbfMat = matGlass.clone(); rbfMat.opacity = .32;
+    const rbf    = new THREE.Mesh(new THREE.SphereGeometry(.22,24,16), rbfMat);
+    rbf.position.set(-.5, 1.34, 0);
+    scene.add(rbf);
+    const liquidMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, transparent:true, opacity:.5 });
+    const liquid    = new THREE.Mesh(new THREE.SphereGeometry(.17,16,12,[0,Math.PI*2,0,Math.PI*.6]), liquidMat);
+    liquid.position.copy(rbf.position);
+    scene.add(liquid);
+    experimentData.rbfLiquid = liquid; experimentData.rbfLiquidMat = liquidMat;
+
+    // Neck going up to condenser
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(.04,.06,.35,12), rbfMat.clone());
+    neck.position.set(-.32, 1.69, 0); neck.rotation.z = -.4; scene.add(neck);
+    // Condenser tube (slanted down)
+    const condMat = matGlass.clone(); condMat.opacity = .3;
+    const cond    = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.9,12), condMat);
+    cond.position.set(.1, 1.55, 0); cond.rotation.z = Math.PI/3.5; scene.add(cond);
+    // Water jacket around condenser
+    const jacketMat = matGlass.clone(); jacketMat.opacity = .13;
+    const jacket    = new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.9,16), jacketMat);
+    jacket.position.copy(cond.position); jacket.rotation.copy(cond.rotation); scene.add(jacket);
+    // Collection flask
+    const colMat = matGlass.clone(); colMat.opacity = .28;
+    const col    = new THREE.Mesh(new THREE.SphereGeometry(.14,20,14), colMat);
+    col.position.set(.55, 1.18, 0); scene.add(col);
+    const colNeck= new THREE.Mesh(new THREE.CylinderGeometry(.03,.05,.18,12), colMat.clone());
+    colNeck.position.set(.55, 1.37, 0); scene.add(colNeck);
+    // Collection liquid (grows over time)
+    const colLiqMat = new THREE.MeshStandardMaterial({ color: 0xf0f9ff, transparent:true, opacity:.4 });
+    const colLiq    = new THREE.Mesh(new THREE.SphereGeometry(.01,8,8), colLiqMat);
+    colLiq.position.set(.55, 1.13, 0); scene.add(colLiq);
+    experimentData.colLiq = colLiq; experimentData.colLiqMat = colLiqMat;
+
+    // Bunsen burner / hotplate under flask
+    const burnerMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness:.3, metalness:.6 });
+    const burner    = new THREE.Mesh(new THREE.CylinderGeometry(.08,.1,.1,16), burnerMat);
+    burner.position.set(-.5, 1.0, 0); scene.add(burner);
+    // Flame
+    const flameMat = new THREE.MeshStandardMaterial({ color: 0xf97316, emissive:0xf97316, emissiveIntensity:.8, transparent:true, opacity:.7 });
+    const flame    = new THREE.Mesh(new THREE.ConeGeometry(.06,.14,12), flameMat);
+    flame.position.set(-.5, 1.12, 0);
+    scene.add(flame);
+    experimentData.flame = flame; experimentData.flameMat = flameMat;
+
+    // Thermometer in flask neck
+    const thermoBody = new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.4,8),
+        new THREE.MeshStandardMaterial({ color: 0x93c5fd, transparent:true, opacity:.6 }));
+    thermoBody.position.set(-.45, 1.76, 0); thermoBody.rotation.z = -.4; scene.add(thermoBody);
+    const thermoBulb = new THREE.Mesh(new THREE.SphereGeometry(.012,8,8),
+        new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+    thermoBulb.position.set(-.35, 1.53, 0); scene.add(thermoBulb);
+
+    // Tripod
+    [-1,0,1].forEach(d => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,.3,6), matMetal);
+        leg.rotation.z = (d * .25);
+        leg.position.set(-.5 + d*.08, 0.85, d*.1); scene.add(leg);
+    });
+
+    experimentData.heating  = false;
+    experimentData.heatTime = 0;
+    experimentData.temp     = 20;
+    experimentData.type     = 'distillation';
+    experimentData.steps    = [
+        { title:'Lắp dụng cụ',   desc:'Lắp bình đáy tròn, ống sinh hàn, bình hứng. Kiểm tra kín khít.' },
+        { title:'Đổ hỗn hợp',   desc:'Đổ hỗn hợp ethanol-nước (thể tích ≤ 2/3 bình) vào bình đáy tròn.' },
+        { title:'Đun nóng',      desc:'Nhấn để bật ngọn lửa. Nhiệt độ tăng dần — chú ý nhiệt kế.' },
+        { title:'Thu cất',       desc:'Khi T ≈ 78°C, hơi ethanol ngưng tụ qua ống sinh hàn, nhỏ vào bình hứng.' },
+        { title:'Kết thúc',      desc:'Tắt đèn cồn khi nhiệt kế vượt 82°C. Tháo thu phần cất được.' },
+        { title:'Kiểm tra',      desc:'Thử lửa: ethanol thuần bốc cháy với ngọn lửa màu xanh nhạt.' },
+    ];
+}
+
+// ─ PHYSICS: Spring ───────────────────────────────────────────────────────────
+function buildSpringScene() {
+    // Ceiling mount
+    const mount = new THREE.Mesh(new THREE.BoxGeometry(.25,.06,.25), matMetal);
+    mount.position.set(0, 3.0, -.1); scene.add(mount);
+    const screw = new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.12,8), matMetal);
+    screw.position.set(0, 2.94, -.1); scene.add(screw);
+
+    // Spring (made from torus rings stacked)
+    const springCoils = [];
+    const springMat   = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness:.2, metalness:.9 });
+    const nCoils = 14;
+    const naturalLen = 1.2;
+    for (let i = 0; i < nCoils; i++) {
+        const coil = new THREE.Mesh(new THREE.TorusGeometry(.07, .012, 8, 24), springMat);
+        coil.rotation.x = Math.PI / 2;
+        coil.position.set(0, 2.88 - (i / (nCoils-1)) * naturalLen, -.1);
+        scene.add(coil);
+        springCoils.push(coil);
+    }
+    experimentData.springCoils   = springCoils;
+    experimentData.springNatural = naturalLen;
+    experimentData.springTopY    = 2.88;
+
+    // Mass block
+    const blockMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness:.3, metalness:.3 });
+    const block    = new THREE.Mesh(new THREE.BoxGeometry(.2,.15,.2), blockMat);
+    block.position.set(0, 2.88 - naturalLen - .075, -.1);
+    block.castShadow = true;
+    scene.add(block);
+    experimentData.block    = block;
+    experimentData.blockMat = blockMat;
+
+    // Hit sphere for drag
+    const springHit = new THREE.Mesh(
+        new THREE.SphereGeometry(.2, 8, 8),
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    springHit.position.copy(block.position);
+    scene.add(springHit);
+    experimentData.springHit    = springHit;
+    experimentData.springDragY  = 0;
+    experimentData.springDragOn = false;
+
+    // Reference ruler on side
+    const ruler = new THREE.Mesh(new THREE.BoxGeometry(.03, naturalLen * 1.6, .02),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+    ruler.position.set(.28, 2.88 - naturalLen * .8, -.1); scene.add(ruler);
+
+    // State
+    const k = 12; // N/m spring constant
+    const m = .5;  // kg mass
+    experimentData.springK      = k;
+    experimentData.springM      = m;
+    experimentData.springDisp   = -0.2; // initial displacement (stretched)
+    experimentData.springVel    = 0;
+    experimentData.springDamping= 0.998;
+    experimentData.type         = 'spring';
+    experimentData.origStringLen = naturalLen; // reuse reset logic
+    experimentData.steps        = [
+        { title:'Đo hệ số lò xo',  desc:'Đo độ giãn x khi treo vật m: k = mg/x. Đây là hệ số đàn hồi.' },
+        { title:'Kéo vật xuống',   desc:'Kéo quả nặng xuống thêm A cm rồi thả — vật dao động điều hòa.' },
+        { title:'Đo chu kỳ',       desc:'T = 2π√(m/k). Đo thực tế bằng đồng hồ — so sánh với lý thuyết.' },
+        { title:'Năng lượng',      desc:'E = ½kx² + ½mv² = hằng số (bảo toàn năng lượng cơ học).' },
+        { title:'Ảnh hưởng m',     desc:'Tăng m → T tăng. Thay vật nặng hơn và quan sát sự thay đổi.' },
+        { title:'Sai số',          desc:'Ma sát không khí và tính phi tuyến của lò xo gây tắt dần — phân tích sai số.' },
+    ];
+}
+
+// ─ PHYSICS: Optics ───────────────────────────────────────────────────────────
+function buildOpticsScene() {
+    // Glass prism
+    const prismGeo = new THREE.CylinderGeometry(.01,.35,.5,3); // triangular prism
+    const prismMat = new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness:.02, metalness:0, transparent:true, opacity:.55 });
+    const prism    = new THREE.Mesh(prismGeo, prismMat);
+    prism.position.set(0, 1.24, 0);
+    prism.rotation.y = Math.PI / 6;
+    prism.castShadow = true;
+    scene.add(prism);
+    experimentData.prism    = prism;
+    experimentData.prismMat = prismMat;
+
+    // Incoming white light ray
+    const rayMat  = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2 });
+    const inRay   = new THREE.Mesh(new THREE.CylinderGeometry(.008,.008,1.2,6), rayMat);
+    inRay.rotation.z = Math.PI / 2;
+    inRay.position.set(-1.0, 1.34, 0);
+    scene.add(inRay);
+
+    // Refracted rainbow rays emerging from prism
+    const rayColors = [0xff3333, 0xff8800, 0xffee00, 0x44ff44, 0x3399ff, 0x8833ff];
+    const outRays   = rayColors.map((col, i) => {
+        const rMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.5, transparent:true, opacity:.9 });
+        const ray  = new THREE.Mesh(new THREE.CylinderGeometry(.005,.005,.8,4), rMat);
+        const spread = (i - 2.5) * .055;
+        ray.rotation.z = Math.PI / 2 + spread * .18;
+        ray.position.set(.55 + .3 * i * .15 + spread * .2, 1.2 + spread, 0);
+        scene.add(ray);
+        return ray;
+    });
+    experimentData.outRays = outRays;
+    experimentData.inRay   = inRay;
+
+    // Rotatable prism angle — mouse drag rotates prism
+    experimentData.prismAngle = Math.PI / 6;
+    experimentData.type       = 'optics';
+    experimentData.steps      = [
+        { title:'Chiếu sáng',    desc:'Ánh sáng trắng đi vào lăng kính — bị khúc xạ khi đổi môi trường.' },
+        { title:'Tán sắc',       desc:'Mỗi màu có bước sóng khác nhau → chỉ số khúc xạ khác → lệch góc khác.' },
+        { title:'Màu sắc',       desc:'Đỏ (λ≈700nm) lệch ít nhất — Tím (λ≈400nm) lệch nhiều nhất.' },
+        { title:'Định luật Snell',desc:'n₁sinθ₁ = n₂sinθ₂. Cho thủy tinh: n ≈ 1.5 (đỏ) đến 1.53 (tím).' },
+        { title:'Cầu vồng',      desc:'Cầu vồng hình thành bởi hàng triệu giọt nước — mỗi giọt là một lăng kính nhỏ.' },
+        { title:'Quang phổ',     desc:'Quang phổ liên tục: ánh sáng trắng cho đầy đủ 7 màu ROYGBIV.' },
+    ];
+}
+
+// ─ BIOLOGY: DNA ──────────────────────────────────────────────────────────────
+function buildDnaScene() {
+    const helixPts = [];
+    const nSteps   = 30;
+    const helixR   = .35;
+    const helixPitch = .18;
+    const basePairColors = [
+        [0xef4444, 0xfde047], // A-T: red/yellow
+        [0x22d3ee, 0x34d399], // G-C: cyan/green
+        [0xfde047, 0xef4444],
+        [0x34d399, 0x22d3ee],
+    ];
+
+    const strand1Pts = [];
+    const strand2Pts = [];
+    const basePairs  = [];
+
+    for (let i = 0; i < nSteps; i++) {
+        const t    = i / (nSteps - 1);
+        const y    = -1.2 + t * 2.4;
+        const ang  = t * Math.PI * 4; // 2 full turns
+
+        const x1 = Math.cos(ang) * helixR;
+        const z1 = Math.sin(ang) * helixR;
+        const x2 = Math.cos(ang + Math.PI) * helixR;
+        const z2 = Math.sin(ang + Math.PI) * helixR;
+
+        strand1Pts.push(new THREE.Vector3(x1, y + 1.8, z1));
+        strand2Pts.push(new THREE.Vector3(x2, y + 1.8, z2));
+
+        if (i % 3 === 0) {
+            const pair = basePairColors[Math.floor(i / 3) % 4];
+            const b1Mat = new THREE.MeshStandardMaterial({ color: pair[0], roughness:.4 });
+            const b2Mat = new THREE.MeshStandardMaterial({ color: pair[1], roughness:.4 });
+            const b1 = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.35,8), b1Mat);
+            const b2 = new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.35,8), b2Mat);
+            const midX = (x1+x2)/2, midZ = (z1+z2)/2;
+            b1.rotation.z = Math.PI/2; b1.rotation.y = ang;
+            b2.rotation.z = Math.PI/2; b2.rotation.y = ang;
+            b1.position.set(x1*.5, y+1.8, z1*.5);
+            b2.position.set(x2*.5, y+1.8, z2*.5);
+            scene.add(b1, b2);
+            basePairs.push({ b1, b2, b1Mat, b2Mat, ang });
+        }
+    }
+
+    // Backbone strands as tube paths
+    const strandMat1 = new THREE.MeshStandardMaterial({ color: 0xc9a96e, roughness:.3, metalness:.3 });
+    const strandMat2 = new THREE.MeshStandardMaterial({ color: 0x60a5fa, roughness:.3, metalness:.3 });
+
+    const geo1 = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(strand1Pts), nSteps*3, .022, 6, false);
+    const geo2 = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(strand2Pts), nSteps*3, .022, 6, false);
+    const tube1 = new THREE.Mesh(geo1, strandMat1);
+    const tube2 = new THREE.Mesh(geo2, strandMat2);
+    tube1.castShadow = tube2.castShadow = true;
+    scene.add(tube1, tube2);
+
+    experimentData.dnaTube1    = tube1;
+    experimentData.dnaTube2    = tube2;
+    experimentData.dnaBasePairs= basePairs;
+    experimentData.dnaAngle    = 0;
+    experimentData.type        = 'dna';
+    experimentData.steps       = [
+        { title:'Cấu trúc xoắn kép',  desc:'DNA gồm 2 chuỗi polynucleotide xoắn quanh nhau theo chiều ngược chiều kim đồng hồ.' },
+        { title:'Nucleotide',         desc:'Mỗi nucleotide: đường deoxyribose + nhóm phosphate + base nitơ (A, T, G, C).' },
+        { title:'Liên kết bổ sung',   desc:'A-T: 2 liên kết hydro (đỏ-vàng). G-C: 3 liên kết hydro (xanh-lục).' },
+        { title:'Chiều đọc',          desc:'Hai chuỗi ngược chiều (antiparallel): một chuỗi 5\'→3\', chuỗi còn lại 3\'→5\'.' },
+        { title:'Sao chép',           desc:'Nguyên tắc bổ sung đảm bảo sao chép chính xác: A→T, G→C, T→A, C→G.' },
+        { title:'Thông tin di truyền',desc:'3 tỷ cặp base mã hóa khoảng 25.000 gene trong bộ gen người (haploid).' },
+    ];
+}
+
+// ─ BIOLOGY: Photosynthesis ───────────────────────────────────────────────────
+function buildPhotosynthesisScene() {
+    // Stylized leaf cross-section
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness:.7, metalness:0, transparent:true, opacity:.8 });
+    const leaf    = new THREE.Mesh(new THREE.BoxGeometry(2.2,.06,1.0), leafMat);
+    leaf.position.set(0, 1.5, 0); scene.add(leaf);
+
+    // Chloroplasts inside leaf
+    const cpPositions = [
+        [-.7,1.53,-.15],[-.3,1.53,.2],[.1,1.53,-.1],[.5,1.53,.15],[-.5,1.53,.3],[.3,1.53,-.25]
+    ];
+    const cpMeshes = cpPositions.map(([x,y,z]) => {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness:.5, metalness:0 });
+        const cp  = new THREE.Mesh(new THREE.CapsuleGeometry(.07,.14,6,8), mat);
+        cp.position.set(x,y,z); cp.rotation.z = Math.random() * .4 - .2;
+        scene.add(cp);
+        return { mesh: cp, mat };
+    });
+    experimentData.cpMeshes = cpMeshes;
+
+    // Sun light rays from above
+    const sunColors = [0xfde047, 0xfbbf24, 0xfcd34d];
+    const sunRays   = [];
+    for (let i = 0; i < 6; i++) {
+        const rMat = new THREE.MeshStandardMaterial({ color: sunColors[i%3], emissive: sunColors[i%3], emissiveIntensity:1.5, transparent:true, opacity:.5 });
+        const r    = new THREE.Mesh(new THREE.CylinderGeometry(.018,.005,.6,4), rMat);
+        r.position.set(-1.0 + i*.4, 1.92, (Math.random()-.5)*.3);
+        scene.add(r);
+        sunRays.push({ mesh: r, mat: rMat });
+    }
+    experimentData.sunRays = sunRays;
+
+    // CO2 molecules (small balls) drifting in
+    const co2Meshes = [];
+    for (let i = 0; i < 6; i++) {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent:true, opacity:.8 });
+        const m   = new THREE.Mesh(new THREE.SphereGeometry(.035,8,8), mat);
+        m.position.set(-1.2 + Math.random()*.4, 1.7 + Math.random()*.3, (Math.random()-.5)*.4);
+        m.userData.targetX = -.5 + Math.random()*.8;
+        m.userData.speed   = .15 + Math.random()*.1;
+        m.userData.done    = false;
+        scene.add(m);
+        co2Meshes.push({ mesh:m, mat });
+    }
+    experimentData.co2Meshes = co2Meshes;
+
+    // O2 + glucose rising up
+    const o2Meshes = [];
+    for (let i = 0; i < 4; i++) {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, transparent:true, opacity:0 });
+        const m   = new THREE.Mesh(new THREE.SphereGeometry(.03,8,8), mat);
+        m.position.set(-.5 + i*.3, 1.56, (Math.random()-.5)*.2);
+        m.userData.startY = 1.56;
+        scene.add(m);
+        o2Meshes.push({ mesh:m, mat });
+    }
+    experimentData.o2Meshes = o2Meshes;
+
+    experimentData.psAngle = 0;
+    experimentData.type    = 'photosynthesis';
+    experimentData.steps   = [
+        { title:'Nguyên liệu',     desc:'6CO₂ + 6H₂O + năng lượng ánh sáng → C₆H₁₂O₆ + 6O₂.' },
+        { title:'Lục lạp',        desc:'Chloroplast hấp thụ ánh sáng — diệp lục hấp thụ mạnh đỏ & tím-xanh.' },
+        { title:'Pha sáng',       desc:'Quang phân ly nước, tổng hợp ATP và NADPH, giải phóng O₂.' },
+        { title:'Pha tối (Calvin)',desc:'ATP + NADPH + CO₂ → G3P → glucose (chu trình Calvin-Benson).' },
+        { title:'Sản phẩm',       desc:'Glucose là nguyên liệu cho hô hấp và tổng hợp tinh bột, cellulose.' },
+        { title:'Ý nghĩa',        desc:'Quang hợp cung cấp O₂ và tích lũy năng lượng cho toàn bộ sự sống trên Trái Đất.' },
+    ];
+}
+
+// ─ MATH: Polyhedra ───────────────────────────────────────────────────────────
+function buildPolyhedronScene() {
+    const solidMat = new THREE.MeshStandardMaterial({
+        color: 0xc9a96e, roughness:.15, metalness:.7, wireframe: false
+    });
+    const wireMat  = new THREE.MeshStandardMaterial({
+        color: 0xfde047, roughness:1, wireframe: true
+    });
+
+    const solids = [
+        { name:'Tứ diện đều (Tetrahedron)',   V:4, E:6,  F:4,  geo: new THREE.TetrahedronGeometry(.55) },
+        { name:'Lập phương (Cube)',            V:8, E:12, F:6,  geo: new THREE.BoxGeometry(.75,.75,.75) },
+        { name:'Bát diện đều (Octahedron)',   V:6, E:12, F:8,  geo: new THREE.OctahedronGeometry(.55) },
+        { name:'Mười hai mặt (Dodecahedron)', V:20,E:30, F:12, geo: new THREE.DodecahedronGeometry(.5) },
+        { name:'Hai mươi mặt (Icosahedron)',  V:12,E:30, F:20, geo: new THREE.IcosahedronGeometry(.55) },
+    ];
+
+    const solidMeshes  = [];
+    const wireMeshes   = [];
+    solids.forEach((s, i) => {
+        const mesh = new THREE.Mesh(s.geo, solidMat.clone());
+        const wire = new THREE.Mesh(s.geo, wireMat.clone());
+        mesh.position.set(0, 1.8, 0);
+        wire.position.set(0, 1.8, 0);
+        mesh.visible = i === 0;
+        wire.visible = i === 0;
+        mesh.castShadow = true;
+        scene.add(mesh, wire);
+        solidMeshes.push(mesh);
+        wireMeshes.push(wire);
+    });
+
+    experimentData.polyMeshes  = solidMeshes;
+    experimentData.polyWires   = wireMeshes;
+    experimentData.polySolids  = solids;
+    experimentData.polyIndex   = 0;
+    experimentData.polyAngle   = 0;
+    experimentData.type        = 'polyhedron';
+    experimentData.steps       = [
+        { title:'Đa diện đều',     desc:'Gồm 5 khối Platonic: tứ diện, lập phương, bát diện, mười hai mặt, hai mươi mặt.' },
+        { title:'Định lý Euler',   desc:'V − E + F = 2 (đúng với mọi đa diện lồi). Kiểm chứng với từng khối!' },
+        { title:'Tứ diện (T)',     desc:'4 mặt tam giác đều. V=4, E=6, F=4 → 4−6+4=2 ✓' },
+        { title:'Lập phương (C)',  desc:'6 mặt vuông. V=8, E=12, F=6 → 8−12+6=2 ✓' },
+        { title:'Nhị thập diện',  desc:'20 mặt tam giác đều — xấp xỉ mặt cầu tốt nhất trong 5 khối Platonic.' },
+        { title:'Ứng dụng',       desc:'Virus có vỏ protein dạng icosahedron. Kim cương: carbon lập phương tâm mặt.' },
+    ];
+}
+
+// ─ MATH: Vectors ─────────────────────────────────────────────────────────────
+function buildVectorsScene() {
+    // Coordinate axes
+    const axisLen = 1.5;
+    const makeAxis = (dir, col) => {
+        const mat = new THREE.MeshStandardMaterial({ color: col, roughness:.3, emissive: col, emissiveIntensity:.3 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,axisLen,8), mat);
+        const tip  = new THREE.Mesh(new THREE.ConeGeometry(.04,.12,8), mat);
+        const end  = dir.clone().multiplyScalar(axisLen/2);
+        body.position.copy(dir.clone().multiplyScalar(axisLen/2)).add(new THREE.Vector3(0,1.8,0));
+        body.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+        tip.position.copy(dir.clone().multiplyScalar(axisLen)).add(new THREE.Vector3(0,1.8,0));
+        tip.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+        scene.add(body, tip);
+        return { body, tip, mat };
+    };
+    makeAxis(new THREE.Vector3(1,0,0), 0xef4444);
+    makeAxis(new THREE.Vector3(0,1,0), 0x22c55e);
+    makeAxis(new THREE.Vector3(0,0,1), 0x3b82f6);
+
+    // Grid plane at y=1.8
+    const gridHelper = new THREE.GridHelper(3, 6, 0x334155, 0x1e293b);
+    gridHelper.position.set(0, 1.8, 0);
+    scene.add(gridHelper);
+
+    // Vector U (red)
+    const makeVector = (col, start, end) => {
+        const dir = end.clone().sub(start);
+        const len = dir.length();
+        const mat = new THREE.MeshStandardMaterial({ color: col, roughness:.2, metalness:.3, emissive:col, emissiveIntensity:.4 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,len,8), mat);
+        const tip  = new THREE.Mesh(new THREE.ConeGeometry(.05,.15,8), mat);
+        const mid  = start.clone().add(end).multiplyScalar(.5);
+        body.position.copy(mid);
+        body.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+        tip.position.copy(end);
+        tip.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+        scene.add(body, tip);
+        return { body, tip, mat, start: start.clone(), end: end.clone() };
+    };
+
+    const O  = new THREE.Vector3(0, 1.8, 0);
+    const vU = makeVector(0xef4444, O, new THREE.Vector3(.8, 2.6, .3));
+    const vV = makeVector(0x22c55e, O, new THREE.Vector3(-.5, 2.3, .9));
+    // Cross product W = U × V
+    const uVec = vU.end.clone().sub(O);
+    const vVec = vV.end.clone().sub(O);
+    const wVec = new THREE.Vector3().crossVectors(uVec, vVec).normalize().multiplyScalar(.7);
+    const vW   = makeVector(0xfbbf24, O, O.clone().add(wVec));
+
+    experimentData.vecU  = vU;
+    experimentData.vecV  = vV;
+    experimentData.vecW  = vW;
+    experimentData.vecO  = O;
+    experimentData.vecAngle = 0;
+    experimentData.type  = 'vectors';
+    experimentData.steps = [
+        { title:'Vector trong 3D',     desc:'Vector u⃗, v⃗ được biểu diễn bởi mũi tên từ gốc O. Độ dài = modulus |u⃗|.' },
+        { title:'Tích vô hướng',      desc:'u⃗·v⃗ = |u⃗||v⃗|cosθ. Bằng 0 khi hai vector vuông góc nhau.' },
+        { title:'Tích có hướng',      desc:'u⃗×v⃗ (màu vàng) vuông góc với cả u⃗ và v⃗. |u⃗×v⃗| = |u⃗||v⃗|sinθ.' },
+        { title:'Quy tắc bàn tay phải',desc:'Nắm bàn tay phải từ u⃗ xoay sang v⃗ — ngón cái chỉ chiều u⃗×v⃗.' },
+        { title:'Diện tích hình bình hành',desc:'|u⃗×v⃗| chính là diện tích hình bình hành tạo bởi u⃗ và v⃗.' },
+        { title:'Ứng dụng',           desc:'Lực Lorentz: F⃗=qv⃗×B⃗. Moment lực: M⃗=r⃗×F⃗. Tính pháp tuyến mặt phẳng.' },
+    ];
+}
+
+// ── Build the scene ───────────────────────────────────────────────────────────
+if      (SCENE_TYPE === 'titration')      buildTitrationScene();
+else if (SCENE_TYPE === 'electrolysis')   buildElectrolysisScene();
+else if (SCENE_TYPE === 'distillation')   buildDistillationScene();
+else if (SCENE_TYPE === 'pendulum')       buildPendulumScene();
+else if (SCENE_TYPE === 'spring')         buildSpringScene();
+else if (SCENE_TYPE === 'optics')         buildOpticsScene();
+else if (SCENE_TYPE === 'cell')           buildCellScene();
+else if (SCENE_TYPE === 'dna')            buildDnaScene();
+else if (SCENE_TYPE === 'photosynthesis') buildPhotosynthesisScene();
+else if (SCENE_TYPE === 'polyhedron')     buildPolyhedronScene();
+else if (SCENE_TYPE === 'vectors')        buildVectorsScene();
+else buildCellScene();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── Interactive System ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const interactiveObjects = []; // { meshes, name, hint, cursor, onHover, onHoverEnd, onClick }
+
+function registerInteractive(config) {
+    interactiveObjects.push(config);
+}
+
+// ── Raycaster ─────────────────────────────────────────────────────────────────
+const raycaster    = new THREE.Raycaster();
+const mouse        = new THREE.Vector2();
+let   mouseScreen  = { x: 0, y: 0 };
+let   currentHover = null;
+
+const ttEl   = document.getElementById('hover-tooltip');
+const ttName = document.getElementById('tt-name');
+const ttHint = document.getElementById('tt-hint');
+
+function showTooltip(name, hint, x, y) {
+    ttName.textContent = name;
+    ttHint.textContent = hint || '';
+    ttEl.style.display = 'block';
+    ttEl.style.left    = (x + 16) + 'px';
+    ttEl.style.top     = (y - 14) + 'px';
+}
+function hideTooltip() { ttEl.style.display = 'none'; }
+
+// Emissive highlight helpers
+// MeshBasicMaterial has no emissive property — guard before accessing it
+function applyHover(item) {
+    (item.meshes || []).forEach(m => {
+        if (!m.material || !('emissive' in m.material)) return;
+        m.userData._savedEmissive = m.material.emissive
+            ? m.material.emissive.clone()
+            : new THREE.Color(0);
+        m.userData._savedEmissiveIntensity = m.material.emissiveIntensity ?? 0;
+        m.material.emissive          = new THREE.Color(0xc9a96e);
+        m.material.emissiveIntensity = 0.35;
+    });
+}
+function removeHover(item) {
+    (item.meshes || []).forEach(m => {
+        if (!m.material || !('emissive' in m.material)) return;
+        m.material.emissive          = m.userData._savedEmissive ?? new THREE.Color(0);
+        m.material.emissiveIntensity = m.userData._savedEmissiveIntensity ?? 0;
+    });
+}
+
+// Drag state (pendulum bob)
+let isDragging = false;
+let dragActive = false;
+
+canvas.addEventListener('mousemove', e => {
+    mouseScreen = { x: e.clientX, y: e.clientY };
+    const rect = canvas.getBoundingClientRect();
+    mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+    mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+
+    // Pendulum drag — map horizontal mouse position to angle
+    if (dragActive && SCENE_TYPE === 'pendulum') {
+        const nx = (e.clientX - rect.left) / rect.width - 0.5;
+        experimentData.angle = THREE.MathUtils.clamp(nx * Math.PI * 1.4, -Math.PI * 0.65, Math.PI * 0.65);
+        experimentData.vel   = 0;
+        return;
+    }
+    // Spring drag — map vertical mouse position to displacement
+    if (dragActive && SCENE_TYPE === 'spring') {
+        const ny = (e.clientY - rect.top) / rect.height; // 0=top,1=bottom
+        // map to −0.5..0.5 displacement range
+        const disp = THREE.MathUtils.clamp((ny - 0.35) * 1.6, -0.55, 0.55);
+        experimentData.springDisp = disp;
+        experimentData.springVel  = 0;
+        return;
+    }
+
+    // Hover detection
+    raycaster.setFromCamera(mouse, camera);
+    const allMeshes = interactiveObjects.flatMap(o => o.meshes);
+    const hits = raycaster.intersectObjects(allMeshes, false);
+
+    if (hits.length > 0) {
+        const hitMesh = hits[0].object;
+        const item    = interactiveObjects.find(o => o.meshes.includes(hitMesh));
+
+        if (item !== currentHover) {
+            if (currentHover) removeHover(currentHover);
+            currentHover = item;
+            if (item) applyHover(item);
+        }
+        canvas.style.cursor = item?.cursor || 'pointer';
+        showTooltip(item?.name || '', item?.hint || 'Click để tương tác', e.clientX, e.clientY);
+    } else {
+        if (currentHover) { removeHover(currentHover); currentHover = null; }
+        canvas.style.cursor = laserMode ? 'crosshair' : 'default';
+        hideTooltip();
+    }
+});
+
+canvas.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    // Pendulum bob drag
+    if (SCENE_TYPE === 'pendulum' && experimentData.bob) {
+        raycaster.setFromCamera(mouse, camera);
+        const targets = [experimentData.bob, experimentData.hitSphere].filter(Boolean);
+        const hits    = raycaster.intersectObjects(targets);
+        if (hits.length > 0) {
+            dragActive = isDragging = true; isRunning = false;
+            controls.enabled = false; canvas.style.cursor = 'grabbing';
+        }
+    }
+    // Spring block drag
+    if (SCENE_TYPE === 'spring' && experimentData.block) {
+        raycaster.setFromCamera(mouse, camera);
+        const targets = [experimentData.block, experimentData.springHit].filter(Boolean);
+        const hits    = raycaster.intersectObjects(targets);
+        if (hits.length > 0) {
+            dragActive = isDragging = true; isRunning = false;
+            controls.enabled = false; canvas.style.cursor = 'grabbing';
+        }
+    }
+});
+
+canvas.addEventListener('mouseup', () => {
+    if (dragActive) {
+        dragActive       = false;
+        isDragging       = false;
+        controls.enabled = true;
+        canvas.style.cursor = 'default';
+        // Release → start swinging
+        isRunning = true;
+        const bS = document.getElementById('btn-start');
+        bS.innerHTML = '<i class="bi bi-skip-forward-fill"></i> Bước tiếp';
+        bS.classList.add('active');
+        if (stepIndex === 0) showStep(0);
+    }
+});
+
+canvas.addEventListener('click', () => {
+    if (isDragging || dragActive) return;
+    if (!currentHover) return;
+    if (currentHover.onClick) currentHover.onClick();
+});
+
+// ── Pendulum: scroll wheel changes string length ──────────────────────────────
+canvas.addEventListener('wheel', e => {
+    if (SCENE_TYPE !== 'pendulum') return;
+    if (isRunning) return; // lock length while swinging
+    e.preventDefault();
+
+    const step   = e.deltaY > 0 ? -0.1 : 0.1;
+    const rawLen = experimentData.stringLen + step;
+    const newLen = Math.round(
+        THREE.MathUtils.clamp(rawLen, 0.4, 2.2) * 10
+    ) / 10; // snap to nearest 0.1 m
+
+    if (newLen === experimentData.stringLen) return;
+    experimentData.stringLen = newLen;
+
+    // Scale the cylinder mesh visually (geometry height = origStringLen = 1.4)
+    experimentData.stringMesh.scale.y = newLen / experimentData.origStringLen;
+
+    // Update bob + hitSphere to new rest position (preserves current angle)
+    const a  = experimentData.angle;
+    const px = Math.sin(a) * newLen;
+    const py = -Math.cos(a) * newLen;
+    experimentData.bob.position.set(px, experimentData.pivotY + py, 0);
+    if (experimentData.hitSphere) experimentData.hitSphere.position.copy(experimentData.bob.position);
+
+    updateDataPanel();
+}, { passive: false });
+
+// ── Laser pointer ─────────────────────────────────────────────────────────────
+let laserMode   = false;
+const laserDot  = new THREE.Mesh(
+    new THREE.SphereGeometry(.04, 12, 12),
+    new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff0000, emissiveIntensity: 1.5, roughness: .1 })
+);
+laserDot.visible = false;
+scene.add(laserDot);
+
+// Collect all scene surfaces for laser intersection
+const laserTargets = [];
+scene.children.forEach(c => {
+    if (c.isMesh && c !== laserDot) laserTargets.push(c);
+});
+
+window.toggleLaser = function() {
+    laserMode = !laserMode;
+    laserDot.visible = laserMode;
+    const btn = document.getElementById('btn-laser');
+    if (btn) btn.classList.toggle('laser-active', laserMode);
+    canvas.style.cursor = laserMode ? 'crosshair' : 'default';
+};
+
+// ── Titration: drip rate control (called from HTML buttons and stopcock click) ─
+window.setDripRate = function(rate) {
+    if (!experimentData.stopcockMat) return;
+    experimentData.dripRate = rate;
+    experimentData.stopcockMat.color.set(
+        rate === 'off'  ? 0x94a3b8 :
+        rate === 'slow' ? 0x4ade80 : 0xef4444
+    );
+    // Sync HTML button active states
+    ['off', 'slow', 'fast'].forEach(r => {
+        const btn = document.getElementById('drip-' + r);
+        if (btn) btn.classList.toggle('active', r === rate);
+    });
+    updateDataPanel();
+};
+
+// ── Data panel DOM refs — must be declared before initDataPanel() is called ───
+const dataPanel        = document.getElementById('data-panel');
+const dpRows           = document.getElementById('dp-rows');
+const DATA_PANEL_SCENES = new Set([
+    'titration','electrolysis','distillation',
+    'pendulum','spring',
+    'polyhedron','vectors'
+]);
+
+// ── Register interactive objects per scene ────────────────────────────────────
+
+if (SCENE_TYPE === 'titration') {
+    // Stopcock → drip rate control (also controllable via the HTML buttons panel)
+    registerInteractive({
+        meshes: [experimentData.stopcock],
+        name:   'Van buret (Stopcock)',
+        hint:   'Click để thay đổi tốc độ nhỏ giọt',
+        cursor: 'pointer',
+        onClick() {
+            const rates = ['off', 'slow', 'fast'];
+            const idx   = rates.indexOf(experimentData.dripRate);
+            window.setDripRate(rates[(idx + 1) % rates.length]);
+        }
+    });
+
+    // Flask → swirl
+    registerInteractive({
+        meshes: experimentData.flaskMeshes,
+        name:   'Bình tam giác (Erlenmeyer Flask)',
+        hint:   'Click để khuấy dung dịch',
+        cursor: 'pointer',
+        onClick() {
+            experimentData.swirling  = true;
+            experimentData.swirlTime = 0;
+        }
+    });
+
+    // Buret → show volume
+    registerInteractive({
+        meshes: [experimentData.buretBody],
+        name:   'Buret',
+        hint:   'Click để xem thể tích còn lại',
+        cursor: 'pointer',
+        onClick() { updateDataPanel(); }
+    });
+
+    // Init data panel
+    initDataPanel();
+
+} else if (SCENE_TYPE === 'pendulum') {
+    // Include hitSphere so hover tooltip fires within the larger invisible sphere
+    const pendulumMeshes = [experimentData.bob];
+    if (experimentData.hitSphere) pendulumMeshes.push(experimentData.hitSphere);
+    registerInteractive({
+        meshes:  pendulumMeshes,
+        name:    'Quả nặng',
+        hint:    'Kéo trái/phải để đặt góc — cuộn chuột để đổi chiều dài',
+        cursor:  'grab',
+        onClick() { /* drag handled separately */ }
+    });
+
+    initDataPanel();
+
+} else if (SCENE_TYPE === 'cell') {
+    registerInteractive({
+        meshes: [experimentData.cell],
+        name:   'Màng tế bào (Cell Membrane)',
+        hint:   'Click để xem chi tiết',
+        cursor: 'pointer',
+        onClick() { showCellInfo('membrane', experimentData.cell.position); }
+    });
+
+    registerInteractive({
+        meshes: [experimentData.nucleus],
+        name:   'Nhân tế bào (Nucleus)',
+        hint:   'Click để xem chi tiết',
+        cursor: 'pointer',
+        onClick() { showCellInfo('nucleus', experimentData.nucleus.position); }
+    });
+
+    (experimentData.mito || []).forEach((m, i) => {
+        registerInteractive({
+            meshes: [m.mesh],
+            name:   `Ti thể #${i+1} (Mitochondria)`,
+            hint:   'Click để xem chi tiết',
+            cursor: 'pointer',
+            onClick() { showCellInfo('mitochondria', m.mesh.position); }
+        });
+    });
+
+    (experimentData.vacuoles || []).forEach((v, i) => {
+        registerInteractive({
+            meshes: [v.mesh],
+            name:   `Không bào #${i+1} (Vacuole)`,
+            hint:   'Click để xem chi tiết',
+            cursor: 'pointer',
+            onClick() { showCellInfo('vacuole', v.mesh.position); }
+        });
+    });
+
+    (experimentData.chloroplasts || []).forEach((c, i) => {
+        registerInteractive({
+            meshes: [c.mesh],
+            name:   `Lạp lục #${i+1} (Chloroplast)`,
+            hint:   'Click để xem chi tiết',
+            cursor: 'pointer',
+            onClick() { showCellInfo('chloroplast', c.mesh.position); }
+        });
+    });
+}
+
+// Electrolysis interactions
+if (SCENE_TYPE === 'electrolysis' && experimentData.switchLever) {
+    registerInteractive({
+        meshes: [experimentData.switchLever],
+        name:   'Công tắc điện',
+        hint:   'Click để đóng / mở mạch',
+        cursor: 'pointer',
+        onClick() {
+            experimentData.powered = !experimentData.powered;
+            experimentData.switchLever.rotation.z = experimentData.powered ? .4 : 0;
+            experimentData.switchMat.color.set(experimentData.powered ? 0x4ade80 : 0x94a3b8);
+            updateDataPanel();
+        }
+    });
+    initDataPanel();
+}
+
+// Distillation interactions
+if (SCENE_TYPE === 'distillation' && experimentData.flame) {
+    registerInteractive({
+        meshes: [experimentData.flame],
+        name:   'Ngọn lửa (Bunsen Burner)',
+        hint:   'Click để bật / tắt nguồn nhiệt',
+        cursor: 'pointer',
+        onClick() {
+            experimentData.heating = !experimentData.heating;
+            experimentData.flameMat.emissiveIntensity = experimentData.heating ? .8 : 0;
+            experimentData.flameMat.opacity           = experimentData.heating ? .7 : .15;
+            updateDataPanel();
+        }
+    });
+    initDataPanel();
+}
+
+// Spring interactions (drag handled in mousedown/mousemove — register for hover)
+if (SCENE_TYPE === 'spring' && experimentData.block) {
+    const springTargets = [experimentData.block];
+    if (experimentData.springHit) springTargets.push(experimentData.springHit);
+    registerInteractive({
+        meshes: springTargets,
+        name:   'Quả nặng (Mass)',
+        hint:   'Kéo lên/xuống để đặt biên độ ban đầu',
+        cursor: 'grab',
+        onClick() {}
+    });
+    initDataPanel();
+}
+
+// Polyhedron interaction
+if (SCENE_TYPE === 'polyhedron') {
+    (experimentData.polyMeshes || []).forEach(m => {
+        registerInteractive({
+            meshes: [m],
+            name:   'Đa diện',
+            hint:   'Click để chuyển sang đa diện tiếp theo',
+            cursor: 'pointer',
+            onClick() {
+                const n = experimentData.polySolids.length;
+                const prev = experimentData.polyIndex;
+                experimentData.polyIndex = (prev + 1) % n;
+                experimentData.polyMeshes.forEach((pm, i) => { pm.visible = i === experimentData.polyIndex; });
+                experimentData.polyWires.forEach((pw, i)  => { pw.visible = i === experimentData.polyIndex; });
+                updateDataPanel();
+            }
+        });
+    });
+    initDataPanel();
+}
+
+// Vectors — data panel only (no click interaction)
+if (SCENE_TYPE === 'vectors') { initDataPanel(); }
+
+// ── Cell info card ────────────────────────────────────────────────────────────
+const CELL_INFO = {
+    membrane: {
+        icon:  '🟢',
+        title: 'Màng tế bào (Cell Membrane)',
+        desc:  'Lớp ngoài cùng của tế bào, có tính bán thấm chọn lọc. Cấu tạo từ lớp phospholipid kép, điều hòa trao đổi chất giữa tế bào và môi trường xung quanh.',
+        fact:  'Chiều dày màng tế bào chỉ khoảng 7-10 nm — mỏng hơn tờ giấy hàng nghìn lần.'
+    },
+    nucleus: {
+        icon:  '🟣',
+        title: 'Nhân tế bào (Nucleus)',
+        desc:  'Trung tâm điều khiển của tế bào. Chứa DNA (vật chất di truyền) quy định mọi đặc tính sinh học và kiểm soát toàn bộ hoạt động sống của tế bào.',
+        fact:  'Nhân tế bào người chứa khoảng 3 tỷ cặp base DNA, nếu kéo dài sẽ đạt ~2 mét.'
+    },
+    mitochondria: {
+        icon:  '🟠',
+        title: 'Ti thể (Mitochondria)',
+        desc:  '"Nhà máy năng lượng" của tế bào. Tổng hợp ATP qua quá trình hô hấp tế bào. Ti thể có màng kép, DNA và ribosome riêng — bằng chứng cho thuyết nội cộng sinh.',
+        fact:  'Một tế bào gan có thể chứa đến 2.000 ti thể, chiếm 20% thể tích tế bào.'
+    },
+    vacuole: {
+        icon:  '🔵',
+        title: 'Không bào (Vacuole)',
+        desc:  'Bào quan chứa dịch tế bào, dự trữ nước, muối khoáng, sắc tố và chất thải. Ở tế bào thực vật trưởng thành, không bào trung tâm chiếm đến 90% thể tích.',
+        fact:  'Không bào giữ áp suất thẩm thấu giúp tế bào thực vật cứng và đứng thẳng (sức trương).'
+    },
+    chloroplast: {
+        icon:  '🟩',
+        title: 'Lạp lục (Chloroplast)',
+        desc:  'Nơi thực hiện quang hợp — chuyển ánh sáng mặt trời thành năng lượng hóa học (glucose). Chứa diệp lục (chlorophyll) hấp thụ ánh sáng đỏ và xanh tím. Chỉ có ở thực vật và tảo.',
+        fact:  '6CO₂ + 6H₂O + ánh sáng → C₆H₁₂O₆ + 6O₂ — phương trình quang hợp tổng quát.'
+    }
+};
+
+let cellInfoTarget = null;
+let cellInfoOpen   = false;
+
+function showCellInfo(key, pos) {
+    const info = CELL_INFO[key];
+    if (!info) return;
+
+    document.getElementById('cic-icon').textContent  = info.icon;
+    document.getElementById('cic-title').textContent = info.title;
+    document.getElementById('cic-desc').textContent  = info.desc;
+    document.getElementById('cic-fact').textContent  = info.fact;
+
+    const card = document.getElementById('cell-info-card');
+    card.style.display = 'block';
+    setTimeout(() => card.classList.add('show'), 10);
+    cellInfoOpen = true;
+
+    // Zoom camera toward the organelle
+    cellInfoTarget = {
+        pos:  new THREE.Vector3(pos.x * .4, pos.y + .2, pos.z * .4 + 3.5),
+        look: new THREE.Vector3(pos.x * .8, pos.y,       pos.z * .8)
+    };
+    animCam = { pos: cellInfoTarget.pos, look: cellInfoTarget.look, t: 0 };
+}
+
+window.closeCellInfo = function() {
+    const card = document.getElementById('cell-info-card');
+    card.classList.remove('show');
+    cellInfoOpen = false;
+    setTimeout(() => { card.style.display = 'none'; }, 220);
+    // Return camera
+    animCam = {
+        pos:  new THREE.Vector3(0, 4, 9),
+        look: new THREE.Vector3(0, 1.8, 0),
+        t: 0
+    };
+};
+
+// ── Data panel ────────────────────────────────────────────────────────────────
+
+function initDataPanel() {
+    if (!DATA_PANEL_SCENES.has(SCENE_TYPE)) return;
+    dataPanel.classList.add('show');
+    updateDataPanel();
+}
+
+function updateDataPanel() {
+    if (SCENE_TYPE === 'electrolysis') {
+        const t   = (experimentData.powerTimer || 0).toFixed(1);
+        const h2  = (experimentData.powerTimer * 0.0037).toFixed(3);
+        const o2  = (experimentData.powerTimer * 0.00185).toFixed(3);
+        dpRows.innerHTML = `
+            <div class="dp-row"><span class="dp-label">Trạng thái mạch</span>
+              <span class="dp-value" style="color:${experimentData.powered?'#4ade80':'#64748b'}">${experimentData.powered?'Đóng':'Mở'}</span></div>
+            <div class="dp-row"><span class="dp-label">Thời gian (t)</span>
+              <span class="dp-value">${t}<span class="dp-unit">s</span></span></div>
+            <div class="dp-row"><span class="dp-label">Khí H₂ (catod)</span>
+              <span class="dp-value">${h2}<span class="dp-unit">mL</span></span></div>
+            <div class="dp-row"><span class="dp-label">Khí O₂ (anod)</span>
+              <span class="dp-value">${o2}<span class="dp-unit">mL</span></span></div>`;
+    } else if (SCENE_TYPE === 'distillation') {
+        const T = (experimentData.temp || 20).toFixed(1);
+        const collected = Math.min(100, (experimentData.heatTime || 0) * 2).toFixed(0);
+        dpRows.innerHTML = `
+            <div class="dp-row"><span class="dp-label">Nhiệt độ (T)</span>
+              <span class="dp-value" style="color:${T>77?'#ef4444':'#e2e8f0'}">${T}<span class="dp-unit">°C</span></span></div>
+            <div class="dp-row"><span class="dp-label">Trạng thái đun</span>
+              <span class="dp-value" style="color:${experimentData.heating?'#f97316':'#64748b'}">${experimentData.heating?'Đang đun':'Tắt'}</span></div>
+            <div class="dp-row"><span class="dp-label">Đã thu được</span>
+              <span class="dp-value">${collected}<span class="dp-unit">%</span></span></div>`;
+    } else if (SCENE_TYPE === 'spring') {
+        const k   = experimentData.springK;
+        const m   = experimentData.springM;
+        const T   = (2 * Math.PI * Math.sqrt(m / k)).toFixed(3);
+        const x   = (experimentData.springDisp * 100).toFixed(1);
+        const v   = Math.abs((experimentData.springVel || 0) * 100).toFixed(2);
+        const E   = (.5 * k * experimentData.springDisp ** 2).toFixed(4);
+        dpRows.innerHTML = `
+            <div class="dp-row"><span class="dp-label">k = hệ số lò xo</span>
+              <span class="dp-value">${k}<span class="dp-unit">N/m</span></span></div>
+            <div class="dp-row"><span class="dp-label">Ly độ x</span>
+              <span class="dp-value">${x}<span class="dp-unit">cm</span></span></div>
+            <div class="dp-row"><span class="dp-label">Chu kỳ lý thuyết</span>
+              <span class="dp-value">${T}<span class="dp-unit">s</span></span></div>
+            <div class="dp-row"><span class="dp-label">Thế năng đàn hồi</span>
+              <span class="dp-value">${E}<span class="dp-unit">J</span></span></div>`;
+    } else if (SCENE_TYPE === 'polyhedron') {
+        const idx = experimentData.polyIndex ?? 0;
+        const s   = experimentData.polySolids?.[idx];
+        if (s) {
+            const euler = s.V - s.E + s.F;
+            dpRows.innerHTML = `
+                <div class="dp-row"><span class="dp-label">Tên</span>
+                  <span class="dp-value" style="font-size:.75rem">${s.name.split('(')[0].trim()}</span></div>
+                <div class="dp-row"><span class="dp-label">Đỉnh V</span>
+                  <span class="dp-value">${s.V}</span></div>
+                <div class="dp-row"><span class="dp-label">Cạnh E</span>
+                  <span class="dp-value">${s.E}</span></div>
+                <div class="dp-row"><span class="dp-label">Mặt F</span>
+                  <span class="dp-value">${s.F}</span></div>
+                <div class="dp-row"><span class="dp-label">V−E+F (Euler)</span>
+                  <span class="dp-value" style="color:#4ade80">${euler}</span></div>`;
+        }
+    } else if (SCENE_TYPE === 'vectors') {
+        const O  = experimentData.vecO;
+        const uE = experimentData.vecU?.end;
+        const vE = experimentData.vecV?.end;
+        if (uE && vE && O) {
+            const u  = uE.clone().sub(O);
+            const v  = vE.clone().sub(O);
+            const dot  = u.dot(v).toFixed(3);
+            const cosT = (u.dot(v) / (u.length() * v.length()));
+            const ang  = (Math.acos(THREE.MathUtils.clamp(cosT,-1,1)) * 180 / Math.PI).toFixed(1);
+            const cross = new THREE.Vector3().crossVectors(u, v);
+            dpRows.innerHTML = `
+                <div class="dp-row"><span class="dp-label">|u⃗|</span>
+                  <span class="dp-value">${u.length().toFixed(3)}</span></div>
+                <div class="dp-row"><span class="dp-label">|v⃗|</span>
+                  <span class="dp-value">${v.length().toFixed(3)}</span></div>
+                <div class="dp-row"><span class="dp-label">u⃗·v⃗ (tích vô hướng)</span>
+                  <span class="dp-value">${dot}</span></div>
+                <div class="dp-row"><span class="dp-label">Góc (θ)</span>
+                  <span class="dp-value">${ang}<span class="dp-unit">°</span></span></div>
+                <div class="dp-row"><span class="dp-label">|u⃗×v⃗|</span>
+                  <span class="dp-value">${cross.length().toFixed(3)}</span></div>`;
+        }
+    } else if (SCENE_TYPE === 'titration') {
+        const dropped = experimentData.dripCount * 0.05;
+        const vol     = Math.max(0, experimentData.buretVolume - dropped).toFixed(2);
+        const dripR   = experimentData.dripRate;
+        const badge   = `<span class="drip-badge ${dripR}">${
+            dripR === 'off' ? 'Tắt' : dripR === 'slow' ? 'Chậm' : 'Nhanh'
+        }</span>`;
+        dpRows.innerHTML = `
+            <div class="dp-row">
+                <span class="dp-label">Tốc độ nhỏ giọt</span>
+                <span>${badge}</span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Thể tích đã nhỏ</span>
+                <span class="dp-value">${dropped.toFixed(2)}<span class="dp-unit">mL</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Buret còn lại</span>
+                <span class="dp-value">${vol}<span class="dp-unit">mL</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Số giọt</span>
+                <span class="dp-value">${experimentData.dripCount}</span>
+            </div>
+        `;
+    } else if (SCENE_TYPE === 'pendulum') {
+        const L    = experimentData.stringLen;
+        const g    = 9.81;
+        const T    = 2 * Math.PI * Math.sqrt(L / g);
+        const deg  = (experimentData.angle * 180 / Math.PI).toFixed(1);
+        const v    = Math.abs(experimentData.vel * L).toFixed(3);
+        const osc  = experimentData.oscCount ?? 0;
+        const hint = isRunning ? '' : '<span style="font-size:.66rem;color:#334155;margin-left:4px">(cuộn để đổi)</span>';
+        dpRows.innerHTML = `
+            <div class="dp-row">
+                <span class="dp-label">Chiều dài dây (L)${hint}</span>
+                <span class="dp-value">${L.toFixed(2)}<span class="dp-unit">m</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Góc lệch (θ)</span>
+                <span class="dp-value">${deg}<span class="dp-unit">°</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Chu kỳ lý thuyết</span>
+                <span class="dp-value">${T.toFixed(3)}<span class="dp-unit">s</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Vận tốc tức thời</span>
+                <span class="dp-value">${v}<span class="dp-unit">m/s</span></span>
+            </div>
+            <div class="dp-row">
+                <span class="dp-label">Số dao động</span>
+                <span class="dp-value">${osc}</span>
+            </div>
+        `;
+    }
+}
+
+// ── Step HUD helpers ──────────────────────────────────────────────────────────
+const stepOverlay  = document.getElementById('step-overlay');
+const stepTitle    = document.getElementById('step-title');
+const stepDesc     = document.getElementById('step-desc');
+const stepNum      = document.getElementById('step-num');
+const stepPct      = document.getElementById('step-pct');
+const stepBarFill  = document.getElementById('step-bar-fill');
+
+function showStep(idx) {
+    const steps = experimentData.steps || [];
+    if (!steps.length) return;
+    idx = Math.min(idx, steps.length - 1);
+    const s   = steps[idx];
+    const pct = Math.round((idx+1) / steps.length * 100);
+    stepOverlay.classList.add('show');
+    stepTitle.textContent   = s.title;
+    stepDesc.textContent    = s.desc;
+    stepNum.textContent     = `Bước ${idx+1}/${steps.length}`;
+    stepPct.textContent     = `${pct}%`;
+    stepBarFill.style.width = `${pct}%`;
+}
+
+// ── Experiment controls ───────────────────────────────────────────────────────
+window.startExperiment = function() {
+    if (isRunning) {
+        stepIndex = Math.min(stepIndex + 1, (experimentData.steps?.length || 1) - 1);
+        showStep(stepIndex);
+        return;
+    }
+    isRunning = true;
+    stepIndex = 0;
+    document.getElementById('btn-start').innerHTML = '<i class="bi bi-skip-forward-fill"></i> Bước tiếp';
+    document.getElementById('btn-start').classList.add('active');
+    showStep(0);
+};
+
+window.resetExperiment = function() {
+    isRunning = false;
+    stepIndex = 0;
+    stepOverlay.classList.remove('show');
+    document.getElementById('btn-start').innerHTML = '<i class="bi bi-play-fill"></i> Bắt đầu';
+    document.getElementById('btn-start').classList.remove('active');
+
+    if (experimentData.type === 'titration') {
+        experimentData.solutionMat.color.set(0x93c5fd);
+        experimentData.solutionMat.opacity = .55;
+        experimentData.dripCount   = 0;
+        experimentData.dripTimer   = 0;
+        experimentData.buretVolume = 50.0;
+        experimentData.dropletMat.opacity = 0;
+        if (experimentData.streamMat) experimentData.streamMat.opacity = 0;
+        experimentData.swirling   = false;
+        experimentData.swirlAngle = 0;
+        experimentData.flaskMeshes.forEach(m => { m.rotation.y = 0; });
+        window.setDripRate('off'); // resets buttons + stopcock color + updateDataPanel
+    }
+    if (experimentData.type === 'pendulum') {
+        experimentData.angle     = Math.PI / 6;
+        experimentData.vel       = 0;
+        experimentData.oscCount  = 0;
+        experimentData.lastSign  = 0;
+        // Reset string length to original
+        experimentData.stringLen = experimentData.origStringLen ?? 1.4;
+        if (experimentData.stringMesh) experimentData.stringMesh.scale.y = 1;
+        updateDataPanel();
+    }
+    if (experimentData.type === 'cell') {
+        closeCellInfo();
+    }
+    if (experimentData.type === 'electrolysis') {
+        experimentData.powered     = false;
+        experimentData.powerTimer  = 0;
+        if (experimentData.switchLever) experimentData.switchLever.rotation.z = 0;
+        if (experimentData.switchMat)   experimentData.switchMat.color.set(0x94a3b8);
+        updateDataPanel();
+    }
+    if (experimentData.type === 'distillation') {
+        experimentData.heating  = false;
+        experimentData.heatTime = 0;
+        experimentData.temp     = 20;
+        if (experimentData.flameMat) { experimentData.flameMat.emissiveIntensity = 0; experimentData.flameMat.opacity = .15; }
+        if (experimentData.colLiq)   experimentData.colLiq.scale.setScalar(.01);
+        updateDataPanel();
+    }
+    if (experimentData.type === 'spring') {
+        experimentData.springDisp = -0.2;
+        experimentData.springVel  = 0;
+        updateDataPanel();
+    }
+    if (experimentData.type === 'polyhedron') {
+        experimentData.polyIndex = 0;
+        experimentData.polyAngle = 0;
+        experimentData.polyMeshes?.forEach((m, i) => { m.visible = i === 0; });
+        experimentData.polyWires?.forEach((w, i)  => { w.visible = i === 0; });
+        updateDataPanel();
+    }
+};
+
+let orbitFree = false;
+window.toggleOrbit = function() {
+    orbitFree = !orbitFree;
+    controls.autoRotate = orbitFree;
+    document.getElementById('btn-orbit').classList.toggle('active', orbitFree);
+};
+
+window.focusCamera = function() {
+    controls.autoRotate = false;
+    orbitFree = false;
+    document.getElementById('btn-orbit').classList.remove('active');
+    const targetPos  = new THREE.Vector3(0, 4, 9);
+    const targetLook = SCENE_TYPE === 'cell'
+        ? new THREE.Vector3(0, 1.8, 0)
+        : new THREE.Vector3(0, 1.2, 0);
+    animCam = { pos: targetPos, look: targetLook, t: 0 };
+};
+
+let animCam = null;
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+let dataPanelTimer = 0;
+
+// ── Render loop ───────────────────────────────────────────────────────────────
+function animate() {
+    requestAnimationFrame(animate);
+    const dt  = clock.getDelta();
+    const now = clock.getElapsedTime();
+
+    controls.update();
+
+    // Smooth camera animation
+    if (animCam) {
+        animCam.t += dt * 2.5;
+        const t    = Math.min(animCam.t, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        camera.position.lerp(animCam.pos,   ease * dt * 5);
+        controls.target.lerp(animCam.look,  ease * dt * 5);
+        if (t >= 1) animCam = null;
+    }
+
+    // ── Laser pointer update ─────────────────────────────────────────────────
+    if (laserMode) {
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(laserTargets, false);
+        if (hits.length > 0) {
+            laserDot.visible = true;
+            laserDot.position.copy(hits[0].point).addScaledVector(hits[0].face.normal, 0.02);
+            laserDot.material.emissiveIntensity = 1.2 + Math.sin(now * 12) * 0.4;
+        } else {
+            laserDot.visible = false;
+        }
+    }
+
+    // ── Titration animation ──────────────────────────────────────────────────
+    if (SCENE_TYPE === 'titration') {
+        const progress = stepIndex / Math.max(1, (experimentData.steps?.length || 1) - 1);
+
+        // Drip logic
+        if (experimentData.dripRate !== 'off') {
+            const interval = experimentData.dripRate === 'slow' ? 1.5 : 0.42;
+            experimentData.dripTimer += dt;
+            if (experimentData.dripTimer >= interval) {
+                experimentData.dripTimer = 0;
+                experimentData.dripCount++;
+                experimentData.buretVolume = Math.max(0, experimentData.buretVolume - 0.05);
+            }
+        }
+
+        // Droplet + stream visual
+        const d   = experimentData.droplet;
+        const dm  = experimentData.dropletMat;
+        const sm  = experimentData.streamMesh;
+        const smM = experimentData.streamMat;
+        if (experimentData.dripRate === 'slow') {
+            const interval = 1.5;
+            const phase    = experimentData.dripTimer / interval;
+            // Droplet swells, detaches, falls
+            dm.opacity   = Math.pow(Math.sin(phase * Math.PI), 1.2) * 0.88;
+            d.position.y = experimentData.dropletY - phase * 0.38;
+            d.visible    = true;
+            // No stream in slow mode
+            if (smM) smM.opacity = 0;
+        } else if (experimentData.dripRate === 'fast') {
+            // Continuous stream visible, droplet falls fast
+            const interval = 0.42;
+            const phase    = experimentData.dripTimer / interval;
+            dm.opacity     = Math.pow(Math.sin(phase * Math.PI), 1.0) * 0.7;
+            d.position.y   = experimentData.dropletY - phase * 0.4;
+            d.visible      = true;
+            // Show stream
+            if (smM) {
+                smM.opacity = 0.55 + Math.sin(now * 18) * 0.1; // shimmer
+                sm.visible  = true;
+            }
+        } else {
+            dm.opacity  = 0;
+            d.visible   = false;
+            if (smM) smM.opacity = 0;
+        }
+
+        // Solution color shift: clear blue → pink at equivalence
+        if (isRunning && progress > .4) {
+            const pink = Math.min(1, (progress - .4) * 1.8);
+            experimentData.solutionMat.color.setRGB(
+                .58 + pink * .38,
+                .76 - pink * .36,
+                .99 - pink * .6
+            );
+            experimentData.solutionMat.opacity = .55 + pink * .2;
+        }
+
+        // Stopcock hint rotation when running
+        if (isRunning && stepIndex >= 1 && experimentData.dripRate === 'off') {
+            experimentData.stopcock.rotation.y = Math.sin(now * 2) * .15;
+        }
+
+        // Flask swirl animation
+        if (experimentData.swirling) {
+            experimentData.swirlTime  += dt;
+            experimentData.swirlAngle += dt * 8;
+            const t = experimentData.swirlTime / 1.2;
+            const decay = Math.max(0, 1 - t);
+            experimentData.flaskMeshes.forEach(m => {
+                m.rotation.y = Math.sin(experimentData.swirlAngle) * decay * 0.18;
+            });
+            if (t >= 1) {
+                experimentData.swirling = false;
+                experimentData.flaskMeshes.forEach(m => { m.rotation.y = 0; });
+            }
+        }
+
+        // Data panel throttle
+        dataPanelTimer += dt;
+        if (dataPanelTimer > 0.25) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Pendulum animation ───────────────────────────────────────────────────
+    if (SCENE_TYPE === 'pendulum') {
+        if (!dragActive) {
+            const L = experimentData.stringLen;
+            const g = 9.81;
+            if (isRunning) {
+                const acc = -(g / L) * Math.sin(experimentData.angle);
+                experimentData.vel   += acc * dt;
+                experimentData.vel   *= experimentData.damping;
+                experimentData.angle += experimentData.vel * dt;
+
+                // Count oscillations (zero crossings from positive side)
+                const sign = Math.sign(experimentData.angle);
+                if (experimentData.lastSign === 1 && sign === -1) experimentData.oscCount++;
+                experimentData.lastSign = sign;
+            }
+        }
+
+        const a  = experimentData.angle;
+        const L  = experimentData.stringLen;
+        const px = Math.sin(a) * L;
+        const py = -Math.cos(a) * L;
+
+        const bob = experimentData.bob;
+        bob.position.set(px, experimentData.pivotY + py, 0);
+        // Keep invisible hit sphere in sync with the visual bob
+        if (experimentData.hitSphere) experimentData.hitSphere.position.copy(bob.position);
+
+        const sm = experimentData.stringMesh;
+        sm.position.set(px / 2, experimentData.pivotY + py / 2, 0);
+        sm.rotation.z = -a;
+
+        // Trail
+        const tp = experimentData.trailPts;
+        const ti = experimentData.trailIdx;
+        tp[ti*3]   = px; tp[ti*3+1] = experimentData.pivotY + py; tp[ti*3+2] = 0;
+        experimentData.trailIdx = (ti + 1) % 20;
+        experimentData.trail.geometry.attributes.position.needsUpdate = true;
+
+        // Bob glow when dragging
+        if (dragActive) {
+            experimentData.bobMat.emissive          = new THREE.Color(0xc9a96e);
+            experimentData.bobMat.emissiveIntensity  = 0.5;
+        } else {
+            experimentData.bobMat.emissiveIntensity = 0;
+        }
+
+        // Data panel
+        dataPanelTimer += dt;
+        if (dataPanelTimer > 0.08) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Cell animation ───────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'cell') {
+        experimentData.cellAngle += dt * .4;
+        const ca = experimentData.cellAngle;
+
+        const s = 1 + Math.sin(now * .6) * .025;
+        experimentData.cell.scale.set(s, s, s);
+
+        (experimentData.mito || []).forEach((m, i) => {
+            const a = ca + m.baseAngle;
+            m.mesh.position.set(
+                Math.sin(a) * m.r,
+                1.8 + Math.sin(a * 1.3 + i) * .15,
+                Math.cos(a) * m.r
+            );
+            m.mesh.rotation.z = a + .4;
+        });
+    }
+
+    // ── Electrolysis animation ───────────────────────────────────────────────
+    if (SCENE_TYPE === 'electrolysis') {
+        if (experimentData.powered) {
+            experimentData.powerTimer = (experimentData.powerTimer || 0) + dt;
+        }
+        (experimentData.bubbles || []).forEach(b => {
+            if (!experimentData.powered) { b.mat.opacity = 0; return; }
+            b.userData.age += dt * b.userData.spd * 10;
+            if (b.userData.age > 1) {
+                b.userData.age = 0;
+                b.mesh.position.set(b.userData.side + b.userData.rx, 1.02, -.1 + (Math.random()-.5)*.06);
+                b.userData.rx = (Math.random()-.5) * .06;
+            }
+            b.mesh.position.y += dt * .12;
+            b.mat.opacity = Math.sin(b.userData.age * Math.PI) * .85;
+        });
+        dataPanelTimer += dt;
+        if (dataPanelTimer > .5) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Distillation animation ───────────────────────────────────────────────
+    if (SCENE_TYPE === 'distillation') {
+        if (experimentData.heating) {
+            experimentData.heatTime = (experimentData.heatTime || 0) + dt;
+            experimentData.temp = Math.min(82, 20 + experimentData.heatTime * 8);
+            // Flame flicker
+            experimentData.flame.scale.y = 0.9 + Math.sin(now * 18) * .15;
+            // Collection liquid grows
+            const scale = Math.min(1, experimentData.heatTime * .05);
+            if (experimentData.colLiq) experimentData.colLiq.scale.setScalar(Math.max(.01, scale));
+            if (experimentData.colLiqMat) experimentData.colLiqMat.opacity = .4 + scale * .3;
+        }
+        dataPanelTimer += dt;
+        if (dataPanelTimer > .5) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Spring animation ─────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'spring') {
+        if (!dragActive) {
+            if (isRunning) {
+                const k   = experimentData.springK;
+                const m   = experimentData.springM;
+                const acc = -(k / m) * experimentData.springDisp;
+                experimentData.springVel  += acc * dt;
+                experimentData.springVel  *= experimentData.springDamping;
+                experimentData.springDisp += experimentData.springVel * dt;
+            }
+        }
+        const topY  = experimentData.springTopY;
+        const natL  = experimentData.springNatural;
+        const disp  = experimentData.springDisp;
+        const blockY = topY - natL - .075 + disp;
+        experimentData.block.position.y = blockY;
+        if (experimentData.springHit) experimentData.springHit.position.y = blockY;
+
+        // Update spring coil positions to match extension
+        const nCoils = experimentData.springCoils?.length ?? 0;
+        const stretch = natL + disp;
+        (experimentData.springCoils || []).forEach((coil, i) => {
+            coil.position.y = topY - (i / (nCoils-1)) * stretch;
+        });
+
+        dataPanelTimer += dt;
+        if (dataPanelTimer > .06) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Optics animation ─────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'optics') {
+        // Gentle rotation hint
+        if (experimentData.prism) {
+            experimentData.prism.rotation.y += dt * .3;
+            // Rainbow rays flutter slightly
+            (experimentData.outRays || []).forEach((r, i) => {
+                r.material.emissiveIntensity = 1.2 + Math.sin(now * 3 + i) * .4;
+            });
+        }
+    }
+
+    // ── DNA animation ────────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'dna') {
+        experimentData.dnaAngle = (experimentData.dnaAngle || 0) + dt * .5;
+        if (experimentData.dnaTube1) {
+            experimentData.dnaTube1.rotation.y = experimentData.dnaAngle;
+            experimentData.dnaTube2.rotation.y = experimentData.dnaAngle;
+        }
+        (experimentData.dnaBasePairs || []).forEach((bp, i) => {
+            bp.b1.rotation.y = experimentData.dnaAngle;
+            bp.b2.rotation.y = experimentData.dnaAngle;
+        });
+    }
+
+    // ── Photosynthesis animation ─────────────────────────────────────────────
+    if (SCENE_TYPE === 'photosynthesis') {
+        experimentData.psAngle = (experimentData.psAngle || 0) + dt;
+        // Sun rays pulse
+        (experimentData.sunRays || []).forEach((r, i) => {
+            r.mat.opacity = .4 + Math.sin(experimentData.psAngle * 2 + i) * .2;
+        });
+        // CO2 molecules drift toward leaf
+        (experimentData.co2Meshes || []).forEach(c => {
+            if (!c.mesh.userData.done) {
+                c.mesh.position.x += (c.mesh.userData.targetX - c.mesh.position.x) * dt * .4;
+                if (Math.abs(c.mesh.position.x - c.mesh.userData.targetX) < .05) {
+                    c.mesh.userData.done = true;
+                    c.mat.opacity = 0;
+                }
+            }
+        });
+        // O2 bubbles rise
+        (experimentData.o2Meshes || []).forEach((o, i) => {
+            o.mesh.position.y += dt * .08;
+            const relY = o.mesh.position.y - o.mesh.userData.startY;
+            o.mat.opacity = Math.max(0, .8 - relY * 1.2);
+            if (o.mesh.position.y > 2.5) {
+                o.mesh.position.y = o.mesh.userData.startY;
+                o.mat.opacity     = 0;
+            }
+        });
+        // Chloroplasts breathe
+        (experimentData.cpMeshes || []).forEach((c, i) => {
+            const s = 1 + Math.sin(experimentData.psAngle * 1.5 + i) * .05;
+            c.mesh.scale.set(s, s, s);
+        });
+    }
+
+    // ── Polyhedron animation ─────────────────────────────────────────────────
+    if (SCENE_TYPE === 'polyhedron') {
+        experimentData.polyAngle = (experimentData.polyAngle || 0) + dt * .6;
+        const idx = experimentData.polyIndex ?? 0;
+        const m   = experimentData.polyMeshes?.[idx];
+        const w   = experimentData.polyWires?.[idx];
+        if (m) { m.rotation.x = experimentData.polyAngle * .5; m.rotation.y = experimentData.polyAngle; }
+        if (w) { w.rotation.copy(m.rotation); }
+    }
+
+    // ── Vectors animation ────────────────────────────────────────────────────
+    if (SCENE_TYPE === 'vectors') {
+        experimentData.vecAngle = (experimentData.vecAngle || 0) + dt * .5;
+        // Slow auto-rotate vectors for visual exploration
+        const a  = experimentData.vecAngle;
+        const O  = experimentData.vecO;
+        dataPanelTimer += dt;
+        if (dataPanelTimer > .3) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // Rim light pulse
+    rimLight.intensity = .5 + Math.sin(now * .8) * .15;
+
+    renderer.render(scene, camera);
+}
+animate();
+
+// ── Hide loading screen after first rendered frame ────────────────────────────
+// Calls the plain-script bridge so the overlay is dismissed correctly.
+// The bridge also has its own hard timeout as a backstop.
+function hideLoading() {
+    if (typeof window.__labLoadingDone === 'function') {
+        window.__labLoadingDone();
+        window.__labLoadingDone = null;
+    }
+}
+// Fire after the second animation frame — by then the first pixel is on screen
+requestAnimationFrame(() => requestAnimationFrame(hideLoading));
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+    const w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+});
+
+// ── Expose helpers to onclick attributes ─────────────────────────────────────
+window.closeCellInfo = window.closeCellInfo || (() => {});
+
+</script>
+
+<script src="/js/lt-confirm.js"></script>
+</body>
+</html>

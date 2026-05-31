@@ -1,0 +1,94 @@
+@using LuminaTutors.Domain.Entities.Academic
+@using LuminaTutors.Domain.Enums
+@model Subject
+@{
+    ViewData["Title"] = "Sửa môn học";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title"><i class="bi bi-pencil-square" style="color:var(--lt-gold);margin-right:8px"></i>Sửa môn học</h1>
+        <p class="lt-page-subtitle">Chỉnh sửa thông tin môn học</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline"><i class="bi bi-arrow-left"></i> Quay lại</a>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4">
+        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div><i class="bi bi-exclamation-triangle-fill"></i> @e.ErrorMessage</div>
+        }
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="lt-card">
+            <div class="lt-card__body">
+                <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="lt-label lt-required">Mã môn học</label>
+                            <input name="subjectCode" class="lt-input" required maxlength="20"
+                                   value="@Model.SubjectCode"
+                                   style="text-transform:uppercase"
+                                   oninput="this.value=this.value.toUpperCase()">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="lt-label lt-required">Tên môn học</label>
+                            <input name="subjectName" class="lt-input" required maxlength="200"
+                                   value="@Model.SubjectName">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="lt-label">Phân loại</label>
+                            <select name="subjectCategory" class="lt-input">
+                                @if (Model.SubjectCategory == SubjectCategory.Main)
+                                {
+                                    <option value="@((int)SubjectCategory.Main)" selected>📚 Môn bắt buộc</option>
+                                    <option value="@((int)SubjectCategory.Elective)">🎯 Môn tự chọn</option>
+                                }
+                                else
+                                {
+                                    <option value="@((int)SubjectCategory.Main)">📚 Môn bắt buộc</option>
+                                    <option value="@((int)SubjectCategory.Elective)" selected>🎯 Môn tự chọn</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="lt-label">Tùy chọn</label>
+                            <div style="display:flex;flex-direction:column;gap:8px;padding-top:4px">
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <input type="checkbox" name="has3DLab" value="true" id="chk-lab"
+                                           @(Model.Has3DLab ? "checked" : "")
+                                           style="width:18px;height:18px;accent-color:var(--lt-navy)">
+                                    <label for="chk-lab" style="font-size:.88rem;cursor:pointer">
+                                        <i class="bi bi-vr" style="color:var(--lt-gold)"></i> Có phòng Lab 3D ảo
+                                    </label>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <input type="checkbox" name="isActive" value="true" id="chk-active"
+                                           @(Model.IsActive ? "checked" : "")
+                                           style="width:18px;height:18px;accent-color:var(--lt-navy)">
+                                    <label for="chk-active" style="font-size:.88rem;cursor:pointer">
+                                        <i class="bi bi-check-circle" style="color:var(--lt-success)"></i> Đang hoạt động
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lt-mt-4" style="display:flex;gap:10px">
+                        <button type="submit" class="lt-btn lt-btn--primary">
+                            <i class="bi bi-floppy-fill"></i> Lưu thay đổi
+                        </button>
+                        <a asp-action="Index" class="lt-btn lt-btn--outline">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

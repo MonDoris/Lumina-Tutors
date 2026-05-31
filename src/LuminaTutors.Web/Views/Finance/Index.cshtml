@@ -1,0 +1,232 @@
+@model LuminaTutors.Application.DTOs.Finance.MonthlyFinanceReportDto
+@{
+    ViewData["Title"] = "Tổng quan tài chính";
+    var month = ViewBag.Month as int? ?? DateTime.Now.Month;
+    var year  = ViewBag.Year  as int? ?? DateTime.Now.Year;
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Tổng quan tài chính</h1>
+        <p class="lt-page-subtitle">Báo cáo thu học phí tháng @month/@year</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <a asp-action="Invoices" class="lt-btn lt-btn--outline lt-btn--sm">
+            <i class="bi bi-receipt"></i> Hóa đơn
+        </a>
+        <a asp-action="OutstandingDebts" class="lt-btn lt-btn--gold lt-btn--sm">
+            <i class="bi bi-exclamation-triangle"></i> Công nợ
+        </a>
+    </div>
+</div>
+
+<!-- Month selector -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body" style="padding:14px 24px">
+        <form method="get">
+            <div class="lt-filter-bar">
+                <div class="lt-filter-group">
+                    <label class="lt-label">Tháng</label>
+                    <select name="month" class="lt-select" style="width:100px">
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            <option value="@m" selected="@(m == month ? "selected" : null)">Tháng @m</option>
+                        }
+                    </select>
+                </div>
+                <div class="lt-filter-group">
+                    <label class="lt-label">Năm</label>
+                    <input type="number" name="year" value="@year"
+                           class="lt-input" style="width:90px" min="2020" max="2030"/>
+                </div>
+                <div class="lt-filter-group--auto" style="align-self:flex-end">
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-funnel"></i> Xem báo cáo
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model == null)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-bar-chart"></i></div>
+                <p class="lt-empty__title">Chưa có dữ liệu</p>
+                <p class="lt-empty__text">Chưa có hóa đơn nào được phát sinh trong tháng @month/@year.</p>
+                <a asp-action="Invoices" class="lt-btn lt-btn--primary">
+                    <i class="bi bi-file-earmark-plus"></i> Phát sinh hóa đơn
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Summary Metrics -->
+    <div class="row g-3 lt-mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--navy">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value" style="font-size:1rem">@Model.TotalBilled.ToString("N0")đ</div>
+                    <div class="lt-stat__label">Tổng phát sinh</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value" style="font-size:1rem">@Model.TotalCollected.ToString("N0")đ</div>
+                    <div class="lt-stat__label">Đã thu</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--danger">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value" style="font-size:1rem">@Model.TotalOutstanding.ToString("N0")đ</div>
+                    <div class="lt-stat__label">Còn lại</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--gold">
+                    <i class="bi bi-pie-chart-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.CollectionRate%</div>
+                    <div class="lt-stat__label">Tỷ lệ thu</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail cards -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-currency-dollar" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Tiến độ thu học phí
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+                    <div class="row g-3 lt-mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="lt-metric">
+                                <div class="lt-metric__value lt-metric__value--navy">@Model.TotalInvoices</div>
+                                <div class="lt-metric__label">Tổng hóa đơn</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="lt-metric">
+                                <div class="lt-metric__value lt-metric__value--success">@Model.PaidInvoices</div>
+                                <div class="lt-metric__label">Đã thanh toán</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="lt-metric">
+                                <div class="lt-metric__value lt-metric__value--danger">@Model.OverdueInvoices</div>
+                                <div class="lt-metric__label">Quá hạn</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="lt-metric">
+                                <div class="lt-metric__value lt-metric__value--gold">@Model.CollectionRate%</div>
+                                <div class="lt-metric__label">Tỷ lệ</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lt-flex-between lt-text-xs lt-text-muted lt-mb-2">
+                        <span>Tiến độ thu học phí tháng @month/@year</span>
+                        <span>@Model.PaidInvoices / @Model.TotalInvoices hóa đơn</span>
+                    </div>
+                    <div class="lt-progress" style="height:10px">
+                        <div class="lt-progress__bar" style="width:@Model.CollectionRate%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- By Grade Level -->
+            @if (Model.ByGradeLevel?.Any() == true)
+            {
+                <div class="lt-card lt-mt-4">
+                    <div class="lt-card__header">
+                        <h3 class="lt-card__title">Chi tiết theo khối</h3>
+                    </div>
+                    <div class="lt-card__body" style="padding:0">
+                        <table class="lt-table">
+                            <thead>
+                                <tr>
+                                    <th>Khối</th>
+                                    <th class="lt-th--right">Số HS</th>
+                                    <th class="lt-th--right">Phát sinh</th>
+                                    <th class="lt-th--right">Đã thu</th>
+                                    <th class="lt-th--right">Tỷ lệ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var g in Model.ByGradeLevel)
+                                {
+                                    var rate = g.Billed > 0 ? (int)Math.Round(g.Collected / g.Billed * 100) : 0;
+                                    <tr>
+                                        <td class="lt-fw-600">@g.GradeName</td>
+                                        <td class="lt-td--right">@g.StudentCount</td>
+                                        <td class="lt-td--right lt-td--mono">@g.Billed.ToString("N0")đ</td>
+                                        <td class="lt-td--right lt-td--mono lt-text-success">@g.Collected.ToString("N0")đ</td>
+                                        <td class="lt-td--right">
+                                            <span class="lt-badge @(rate >= 80 ? "lt-badge--success" : rate >= 50 ? "lt-badge--warning" : "lt-badge--danger")">
+                                                @rate%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-4">
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">Thao tác nhanh</h3>
+                </div>
+                <div class="lt-card__body lt-flex-col lt-gap-3">
+                    <a asp-action="Invoices" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-receipt"></i> Xem tất cả hóa đơn
+                    </a>
+                    <a asp-action="Invoices" asp-route-status="Overdue" class="lt-btn lt-btn--outline">
+                        <i class="bi bi-exclamation-triangle"></i> HĐ quá hạn
+                        @if (Model.OverdueInvoices > 0)
+                        {
+                            <span class="lt-nav__badge">@Model.OverdueInvoices</span>
+                        }
+                    </a>
+                    <a asp-action="Invoices" asp-route-status="Unpaid" class="lt-btn lt-btn--outline">
+                        <i class="bi bi-clock-fill"></i> HĐ chưa thanh toán
+                    </a>
+                    <a asp-action="OutstandingDebts" class="lt-btn lt-btn--gold">
+                        <i class="bi bi-list-check"></i> Danh sách công nợ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}

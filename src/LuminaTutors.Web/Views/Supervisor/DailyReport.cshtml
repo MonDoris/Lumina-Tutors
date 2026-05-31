@@ -1,0 +1,183 @@
+@using LuminaTutors.Application.DTOs.Discipline
+@model DailyDisciplineReportDto
+@{
+    ViewData["Title"] = "Báo cáo giám thị ngày";
+    var reportDate = ViewBag.Date is DateOnly d ? d : DateOnly.FromDateTime(DateTime.Today);
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
+            <i class="bi bi-arrow-left"></i> Tổng quan
+        </a>
+        <h1 class="lt-page-title">Báo cáo giám thị ngày</h1>
+        <p class="lt-page-subtitle">@reportDate.ToString("dddd, dd/MM/yyyy")</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <form method="get" style="display:flex;gap:8px;align-items:flex-end">
+            <div>
+                <label class="lt-label lt-text-xs">Ngày xem</label>
+                <input type="date" name="date" class="lt-input lt-input--sm"
+                       value="@reportDate.ToString("yyyy-MM-dd")"/>
+            </div>
+            <button type="submit" class="lt-btn lt-btn--primary lt-btn--sm">
+                <i class="bi bi-funnel"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (Model == null)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-clipboard2-x"></i></div>
+                <p class="lt-empty__title">Không có dữ liệu</p>
+                <p class="lt-empty__text">Chưa có dữ liệu giám thị cho ngày @reportDate.ToString("dd/MM/yyyy").</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Summary -->
+    <div class="row g-3 lt-mb-4">
+        <div class="col-6 col-md-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.TotalViolations</div>
+                    <div class="lt-stat__label">Vi phạm</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon" style="background:rgba(243,156,18,.12)">
+                    <i class="bi bi-door-open-fill" style="color:var(--lt-warning)"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.GateChecksIn</div>
+                    <div class="lt-stat__label">Vào cổng</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--navy">
+                    <i class="bi bi-door-closed-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.GateChecksOut</div>
+                    <div class="lt-stat__label">Ra cổng</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="lt-stat">
+                <div class="lt-stat__icon lt-stat__icon--gold">
+                    <i class="bi bi-clock-fill"></i>
+                </div>
+                <div>
+                    <div class="lt-stat__value">@Model.LateArrivalsCount</div>
+                    <div class="lt-stat__label">Đến muộn</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violation breakdown -->
+    @if (Model.TotalViolations > 0)
+    {
+        <div class="row g-4 lt-mb-4">
+            <div class="col-lg-4">
+                <div class="lt-card">
+                    <div class="lt-card__header">
+                        <h3 class="lt-card__title">Phân loại vi phạm</h3>
+                    </div>
+                    <div class="lt-card__body lt-flex-col lt-gap-3">
+                        <div class="lt-flex-between">
+                            <span class="lt-flex-center" style="gap:8px">
+                                <span class="lt-activity-dot lt-activity-dot--warning" style="width:10px;height:10px"></span>
+                                <span class="lt-text-sm">Nhẹ</span>
+                            </span>
+                            <span class="lt-fw-600">@Model.MinorCount</span>
+                        </div>
+                        <div class="lt-flex-between">
+                            <span class="lt-flex-center" style="gap:8px">
+                                <span class="lt-activity-dot lt-activity-dot--danger" style="width:10px;height:10px;background:var(--lt-warning)"></span>
+                                <span class="lt-text-sm">Trung bình</span>
+                            </span>
+                            <span class="lt-fw-600">@Model.ModerateCount</span>
+                        </div>
+                        <div class="lt-flex-between">
+                            <span class="lt-flex-center" style="gap:8px">
+                                <span class="lt-activity-dot lt-activity-dot--danger" style="width:10px;height:10px"></span>
+                                <span class="lt-text-sm">Nghiêm trọng</span>
+                            </span>
+                            <span class="lt-fw-600 lt-text-danger">@Model.SevereCount</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="lt-card">
+                    <div class="lt-card__header">
+                        <h3 class="lt-card__title">Chi tiết vi phạm</h3>
+                    </div>
+                    <div class="lt-card__body" style="padding:0;overflow-x:auto">
+                        <table class="lt-table">
+                            <thead>
+                                <tr>
+                                    <th>Học sinh</th>
+                                    <th>Lớp</th>
+                                    <th>Loại vi phạm</th>
+                                    <th>Mức độ</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in Model.Records.OrderByDescending(x => x.CreatedAt))
+                                {
+                                    <tr>
+                                        <td class="lt-fw-600">@r.StudentName</td>
+                                        <td><span class="lt-badge lt-badge--navy">@r.ClassName</span></td>
+                                        <td>@r.ViolationType</td>
+                                        <td>
+                                            <span class="lt-badge @(r.Severity == "Severe" ? "lt-badge--danger" : r.Severity == "Moderate" ? "lt-badge--warning" : "lt-badge--navy")">
+                                                @(r.Severity == "Severe" ? "Nghiêm trọng" : r.Severity == "Moderate" ? "Trung bình" : "Nhẹ")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="lt-badge @(r.Status == "Resolved" ? "lt-badge--success" : r.Status == "Escalated" ? "lt-badge--danger" : "lt-badge--warning")">
+                                                @(r.Status == "Resolved" ? "Đã xử lý" : r.Status == "Escalated" ? "Chuyển lên" : "Đang xử lý")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="lt-card lt-mb-4">
+            <div class="lt-card__body">
+                <div class="lt-empty">
+                    <div class="lt-empty__icon">
+                        <i class="bi bi-shield-check" style="color:var(--lt-success)"></i>
+                    </div>
+                    <p class="lt-empty__title">Không có vi phạm</p>
+                    <p class="lt-empty__text">Không ghi nhận vi phạm kỷ luật nào trong ngày hôm nay.</p>
+                </div>
+            </div>
+        </div>
+    }
+}

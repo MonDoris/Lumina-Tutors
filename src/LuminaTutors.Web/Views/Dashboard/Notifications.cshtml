@@ -1,0 +1,84 @@
+@using LuminaTutors.Domain.Common
+@model PagedResult<LuminaTutors.Application.DTOs.Communication.NotificationDto>
+@{
+    ViewData["Title"] = "Thông báo";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Thông báo</h1>
+        <p class="lt-page-subtitle">Theo dõi mọi cập nhật quan trọng</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <form asp-action="MarkAllRead" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="lt-btn lt-btn--outline lt-btn--sm"
+                    data-testid="btn-mark-all-read">
+                <i class="bi bi-check-all"></i> Đánh dấu tất cả đã đọc
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="lt-card">
+    <div class="lt-card__body" style="padding:0">
+        @if (Model == null || Model.Items.Count == 0)
+        {
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-bell"></i></div>
+                <p class="lt-empty__title">Không có thông báo nào</p>
+                <p class="lt-empty__text">Bạn đã đọc hết tất cả thông báo. Tốt lắm!</p>
+            </div>
+        }
+        else
+        {
+            <ul class="lt-notif-list">
+                @foreach (var n in Model.Items)
+                {
+                    <li class="lt-notif-item @(n.IsRead ? "" : "lt-notif-item--unread")"
+                        data-testid="notif-item">
+                        <div class="lt-notif-icon">
+                            <i class="bi @(n.IsRead ? "bi-bell" : "bi-bell-fill")"></i>
+                        </div>
+                        <div class="lt-notif-content">
+                            <div class="lt-notif-title">@n.Title</div>
+                            <div class="lt-notif-body">@n.Body</div>
+                            <div class="lt-notif-time lt-text-xs lt-text-muted">
+                                <i class="bi bi-clock"></i>
+                                @n.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </div>
+                        </div>
+                        @if (!n.IsRead)
+                        {
+                            <form asp-action="MarkNotificationRead" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@n.NotificationId"/>
+                                <button type="submit" class="lt-btn lt-btn--outline lt-btn--sm"
+                                        title="Đánh dấu đã đọc">
+                                    <i class="bi bi-check"></i>
+                                </button>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+
+    @if (Model?.TotalPages > 1)
+    {
+        <div class="lt-card__footer">
+            <span class="lt-text-sm lt-text-muted">
+                Tổng: <strong class="lt-text-navy">@Model.TotalCount</strong> thông báo
+            </span>
+            <div class="lt-pagination">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a asp-action="Notifications"
+                       asp-route-page="@i"
+                       class="lt-page-btn @(i == Model.PageNumber ? "active" : "")">@i</a>
+                }
+            </div>
+        </div>
+    }
+</div>

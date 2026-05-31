@@ -1,0 +1,194 @@
+@model LuminaTutors.Domain.Common.PagedResult<LuminaTutors.Application.DTOs.Finance.InvoiceDto>
+@{
+    ViewData["Title"] = "Hóa đơn học phí";
+    var status        = Context.Request.Query["status"].ToString();
+    var billingPeriod = Context.Request.Query["billingPeriod"].ToString();
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Hóa đơn học phí</h1>
+        <p class="lt-page-subtitle">Quản lý và theo dõi tình trạng thu học phí</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <button class="lt-btn lt-btn--outline" data-bs-toggle="modal" data-bs-target="#generateModal">
+            <i class="bi bi-file-earmark-plus"></i> Phát sinh hóa đơn
+        </button>
+        <a asp-action="OutstandingDebts" class="lt-btn lt-btn--gold">
+            <i class="bi bi-exclamation-triangle"></i> Công nợ
+        </a>
+    </div>
+</div>
+
+<!-- Filter bar -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body" style="padding:14px 24px">
+        <form method="get" data-testid="filter-form">
+            <div class="lt-filter-bar">
+                <div class="lt-filter-group">
+                    <label class="lt-label">Trạng thái</label>
+                    <select name="status" class="lt-select" data-testid="select-status">
+                        <option value="">Tất cả</option>
+                        <option value="Unpaid"      selected="@(status == "Unpaid"      ? "selected" : null)">Chưa thanh toán</option>
+                        <option value="PartialPaid" selected="@(status == "PartialPaid" ? "selected" : null)">Thanh toán một phần</option>
+                        <option value="Paid"        selected="@(status == "Paid"        ? "selected" : null)">Đã thanh toán</option>
+                        <option value="Overdue"     selected="@(status == "Overdue"     ? "selected" : null)">Quá hạn</option>
+                    </select>
+                </div>
+                <div class="lt-filter-group">
+                    <label class="lt-label">Kỳ thu (yyyy-MM)</label>
+                    <input type="text" name="billingPeriod" value="@billingPeriod"
+                           class="lt-input" placeholder="VD: 2024-09" data-testid="input-period"/>
+                </div>
+                <div class="lt-filter-group--auto" style="align-self:flex-end">
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-funnel"></i> Lọc
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="lt-card">
+    <div class="lt-card__body" style="padding:0">
+        <table class="lt-table" data-testid="invoice-table">
+            <thead>
+                <tr>
+                    <th>Mã HĐ</th>
+                    <th>Học sinh</th>
+                    <th>Kỳ thu</th>
+                    <th class="lt-th--right">Số tiền</th>
+                    <th class="lt-th--right">Đã thu</th>
+                    <th class="lt-th--right">Còn lại</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày phát sinh</th>
+                    <th class="lt-td--actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="9">
+                            <div class="lt-empty">
+                                <div class="lt-empty__icon"><i class="bi bi-receipt"></i></div>
+                                <p class="lt-empty__title">Không có hóa đơn</p>
+                                <p class="lt-empty__text">Chưa có hóa đơn nào phù hợp với bộ lọc hiện tại.</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @foreach (var inv in Model?.Items ?? new List<LuminaTutors.Application.DTOs.Finance.InvoiceDto>())
+                {
+                    var invPaid   = inv.Payments?.Sum(p => p.AmountPaid) ?? 0;
+                    var remaining = inv.FinalAmount - invPaid;
+                    <tr data-testid="invoice-row">
+                        <td class="lt-td--dim">
+                            <code>INV-@inv.InvoiceId.ToString("D5")</code>
+                        </td>
+                        <td>
+                            <div class="lt-fw-600">@inv.StudentName</div>
+                            <div class="lt-text-xs lt-text-muted">@inv.StudentCode</div>
+                        </td>
+                        <td><span class="lt-badge lt-badge--navy">@inv.BillingPeriod</span></td>
+                        <td class="lt-td--right lt-td--mono lt-fw-600">
+                            @inv.Amount.ToString("N0")<span class="lt-text-xs lt-text-muted">đ</span>
+                        </td>
+                        <td class="lt-td--right lt-td--mono lt-fw-600 lt-text-success">
+                            @invPaid.ToString("N0")<span class="lt-text-xs lt-text-muted">đ</span>
+                        </td>
+                        <td class="lt-td--right lt-td--mono lt-fw-600 @(remaining > 0 ? "lt-text-danger" : "lt-text-success")">
+                            @remaining.ToString("N0")<span class="lt-text-xs lt-text-muted">đ</span>
+                        </td>
+                        <td>
+                            @{
+                                var (badgeClass, icon, label) = inv.Status switch
+                                {
+                                    "Paid"        => ("lt-badge--success", "check-circle-fill", "Đã thanh toán"),
+                                    "Unpaid"      => ("lt-badge--warning", "clock-fill",        "Chưa TT"),
+                                    "PartialPaid" => ("lt-badge--info",    "pie-chart-fill",    "Một phần"),
+                                    "Overdue"     => ("lt-badge--danger",  "exclamation-triangle-fill", "Quá hạn"),
+                                    _             => ("lt-badge--gray",    "dash",              inv.Status)
+                                };
+                            }
+                            <span class="lt-badge @badgeClass">
+                                <i class="bi bi-@icon"></i> @label
+                            </span>
+                        </td>
+                        <td class="lt-td--dim">@inv.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <a asp-action="InvoiceDetails" asp-route-id="@inv.InvoiceId"
+                               class="lt-btn lt-btn--outline lt-btn--sm lt-btn--icon"
+                               title="Xem chi tiết" data-testid="btn-view-invoice">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model?.TotalPages > 1)
+    {
+        <div class="lt-card__footer">
+            <span class="lt-text-sm lt-text-muted">
+                Tổng: <strong class="lt-text-navy">@Model.TotalCount</strong> hóa đơn
+            </span>
+            <div class="lt-pagination">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a asp-action="Invoices"
+                       asp-route-page="@i"
+                       asp-route-status="@status"
+                       asp-route-billingPeriod="@billingPeriod"
+                       class="lt-page-btn @(i == Model.PageNumber ? "active" : "")">@i</a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Generate Modal -->
+<div class="modal fade lt-modal" id="generateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Phát sinh hóa đơn học phí</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="GenerateInvoices" method="post" data-testid="generate-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="lt-alert lt-alert--warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>
+                            Thao tác này sẽ tạo hóa đơn cho <strong>tất cả học sinh đang học</strong>
+                            trong năm học đã chọn. Kiểm tra kỹ trước khi thực hiện.
+                        </span>
+                    </div>
+                    <div class="lt-form-group lt-mb-0">
+                        <label class="lt-label">ID Năm học</label>
+                        <input type="number" name="model.AcademicYearId" class="lt-input" required/>
+                    </div>
+                    <div class="lt-form-group lt-mb-0">
+                        <label class="lt-label">Kỳ thu (format: yyyy-MM)</label>
+                        <input type="text" name="model.BillingPeriod" class="lt-input"
+                               placeholder="VD: @DateTime.Now.ToString("yyyy-MM")" required
+                               data-testid="input-billing-period"/>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--primary"
+                            onclick="return confirm('Xác nhận phát sinh hóa đơn?')"
+                            data-testid="btn-generate">
+                        <i class="bi bi-file-earmark-plus"></i> Phát sinh
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

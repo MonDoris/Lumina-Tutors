@@ -1,0 +1,71 @@
+@using LuminaTutors.Application.DTOs.OnlineClassroom
+@model OnlineSessionDto
+@{
+    ViewData["Title"] = "Chỉnh sửa phòng học";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-pencil-square" style="color:var(--lt-gold);margin-right:8px"></i>
+            Chỉnh sửa phòng học
+        </h1>
+        <p class="lt-page-subtitle">@Model.Title</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">Thông tin phòng học</h3>
+                    <span class="lt-badge" style="font-family:monospace;letter-spacing:.05em">
+                        <i class="bi bi-key-fill"></i> @Model.RoomCode
+                    </span>
+                </div>
+                <div class="lt-card__body">
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label lt-required">Tên buổi học</label>
+                        <input type="text" name="Title" class="lt-input"
+                               value="@Model.Title" required maxlength="200">
+                    </div>
+
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Mô tả</label>
+                        <textarea name="Description" class="lt-input lt-textarea" rows="3">@Model.Description</textarea>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <div class="lt-form-group">
+                                <label class="lt-label">Thời gian dự kiến</label>
+                                <input type="datetime-local" name="ScheduledAt" class="lt-input"
+                                       value="@(Model.ScheduledAt?.ToString("yyyy-MM-ddTHH:mm"))">
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="lt-form-group">
+                                <label class="lt-label lt-required">Số học sinh tối đa</label>
+                                <input type="number" name="MaxParticipants" class="lt-input"
+                                       value="@Model.MaxParticipants" min="2" max="200" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+                <a asp-action="Index" class="lt-btn lt-btn--outline">Hủy</a>
+                <button type="submit" class="lt-btn lt-btn--primary">
+                    <i class="bi bi-check-lg"></i> Lưu thay đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

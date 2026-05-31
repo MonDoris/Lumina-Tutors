@@ -1,0 +1,207 @@
+@using LuminaTutors.Application.DTOs.Quiz
+@using LuminaTutors.Domain.Common
+@model PagedResult<ExamResultSummaryDto>
+@{
+    ViewData["Title"] = "Kết quả học sinh";
+    var exam = ViewBag.Exam as QuizExamDto;
+
+    double avg = 0;
+    int    submitted = 0;
+    if (Model?.Items?.Count > 0)
+    {
+        submitted = Model.Items.Count(r => r.Status == "Submitted");
+        var scores = Model.Items.Where(r => r.Score.HasValue).Select(r => (double)r.Score!.Value).ToList();
+        avg = scores.Count > 0 ? scores.Average() : 0;
+    }
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-bar-chart-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Kết quả học sinh
+        </h1>
+        <p class="lt-page-subtitle">@exam?.Title</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại danh sách
+    </a>
+</div>
+
+@if (exam != null)
+{
+    <!-- ── Exam info + stats summary ── -->
+    <div class="row g-3 lt-mb-4">
+        <div class="col-md-3">
+            <div class="lt-card" style="text-align:center;padding:.9rem">
+                <div style="font-size:2rem;font-weight:800;color:var(--lt-navy)">@(Model?.TotalCount ?? 0)</div>
+                <div style="font-size:.75rem;color:var(--lt-text-muted)"><i class="bi bi-people-fill"></i> Học sinh đã nộp</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="lt-card" style="text-align:center;padding:.9rem">
+                <div style="font-size:2rem;font-weight:800;color:var(--lt-gold)">@avg.ToString("F1")</div>
+                <div style="font-size:.75rem;color:var(--lt-text-muted)"><i class="bi bi-calculator-fill"></i> Điểm trung bình</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="lt-card" style="text-align:center;padding:.9rem">
+                <div style="font-size:2rem;font-weight:800;color:var(--lt-navy)">@exam.TotalQuestions</div>
+                <div style="font-size:.75rem;color:var(--lt-text-muted)"><i class="bi bi-question-circle-fill"></i> Câu hỏi</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="lt-card" style="text-align:center;padding:.9rem">
+                <div style="font-size:2rem;font-weight:800;color:var(--lt-navy)">@exam.TotalPoints</div>
+                <div style="font-size:.75rem;color:var(--lt-text-muted)"><i class="bi bi-star-fill"></i> Điểm tối đa</div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model == null || Model.Items.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <i class="bi bi-people" style="font-size:3rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">Chưa có học sinh nào nộp bài</div>
+                <div class="lt-empty__sub">Kết quả sẽ hiện ở đây sau khi học sinh hoàn thành bài thi.</div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lt-card">
+        <div class="lt-card__header">
+            <h3 class="lt-card__title">
+                <i class="bi bi-table" style="color:var(--lt-gold);margin-right:6px"></i>
+                Danh sách kết quả
+            </h3>
+            <span class="lt-badge lt-badge--navy">@Model.TotalCount học sinh</span>
+        </div>
+        <div class="lt-card__body" style="padding:0">
+            <div style="overflow-x:auto">
+                <table class="lt-table">
+                    <thead>
+                        <tr>
+                            <th style="width:44px">#</th>
+                            <th>Học sinh</th>
+                            <th style="width:80px">Mã đề</th>
+                            <th style="width:90px">Điểm</th>
+                            <th style="width:80px">Đúng / Tổng</th>
+                            <th style="width:80px">Tỉ lệ</th>
+                            <th style="width:90px">Trạng thái</th>
+                            <th style="width:130px">Nộp lúc</th>
+                            <th style="width:80px;text-align:right">Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (r, i) in Model.Items.Select((x, i) => (x, i)))
+                        {
+                            double pct  = r.TotalQuestions > 0 ? (double)r.TotalCorrect / r.TotalQuestions * 100 : 0;
+                            var scoreColor = pct >= 80 ? "var(--lt-success)" : pct >= 50 ? "var(--lt-gold)" : "var(--lt-danger)";
+                            bool isSubmitted = r.Status == "Submitted";
+
+                            <tr>
+                                <td style="color:var(--lt-text-muted);font-size:.78rem">
+                                    @((Model.PageNumber - 1) * Model.PageSize + i + 1)
+                                </td>
+                                <td>
+                                    <div style="font-weight:600;font-size:.85rem">@r.StudentName</div>
+                                    <div style="font-size:.75rem;color:var(--lt-text-muted)">@r.StudentCode</div>
+                                </td>
+                                <td>
+                                    <span style="font-weight:700;color:var(--lt-gold);font-size:.82rem">@r.ExamCode</span>
+                                </td>
+                                <td>
+                                    @if (r.Score.HasValue)
+                                    {
+                                        <span style="font-size:1rem;font-weight:800;color:@scoreColor">
+                                            @r.Score.Value.ToString("F1")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--lt-text-muted);font-size:.8rem">—</span>
+                                    }
+                                </td>
+                                <td style="font-size:.82rem">
+                                    @if (isSubmitted)
+                                    {
+                                        <span style="color:var(--lt-success);font-weight:600">@r.TotalCorrect</span>
+                                        <span style="color:var(--lt-text-muted)"> / @r.TotalQuestions</span>
+                                    }
+                                    else { <span style="color:var(--lt-text-muted)">—</span> }
+                                </td>
+                                <td>
+                                    @if (isSubmitted && r.TotalQuestions > 0)
+                                    {
+                                        <div style="display:flex;align-items:center;gap:5px">
+                                            <div style="flex:1;height:5px;background:var(--lt-border);border-radius:99px;overflow:hidden">
+                                                <div style="width:@(pct.ToString("F0"))%;height:100%;
+                                                            background:@scoreColor;border-radius:99px"></div>
+                                            </div>
+                                            <span style="font-size:.72rem;font-weight:600;color:@scoreColor;white-space:nowrap">
+                                                @pct.ToString("F0")%
+                                            </span>
+                                        </div>
+                                    }
+                                    else { <span style="color:var(--lt-text-muted);font-size:.8rem">—</span> }
+                                </td>
+                                <td>
+                                    @if (isSubmitted)
+                                    {
+                                        <span class="lt-pulse-dot lt-pulse-dot--success" style="margin-right:4px"></span>
+                                        <span style="font-size:.75rem;color:var(--lt-success)">Đã nộp</span>
+                                    }
+                                    else if (r.Status == "InProgress")
+                                    {
+                                        <span class="lt-pulse-dot" style="background:var(--lt-gold);margin-right:4px"></span>
+                                        <span style="font-size:.75rem;color:var(--lt-gold)">Đang làm</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="font-size:.75rem;color:var(--lt-text-muted)">@r.Status</span>
+                                    }
+                                </td>
+                                <td style="font-size:.78rem;color:var(--lt-text-muted)">
+                                    @(r.SubmittedAt.HasValue ? r.SubmittedAt.Value.ToString("HH:mm dd/MM") : "—")
+                                </td>
+                                <td style="text-align:right">
+                                    @if (isSubmitted)
+                                    {
+                                        <a asp-action="StudentResult" asp-route-id="@r.AttemptId"
+                                           class="lt-btn lt-btn--sm lt-btn--outline" title="Xem chi tiết">
+                                            <i class="bi bi-eye-fill"></i>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span style="font-size:.75rem;color:var(--lt-text-muted)">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="lt-card__footer" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <span style="font-size:.8rem;color:var(--lt-text-muted)">
+                    Trang @Model.PageNumber / @Model.TotalPages · Tổng @Model.TotalCount học sinh
+                </span>
+                <div style="display:flex;gap:6px">
+                    @for (int p = 1; p <= Model.TotalPages; p++)
+                    {
+                        <a href="?page=@p" class="lt-btn lt-btn--sm @(p == Model.PageNumber ? "lt-btn--primary" : "lt-btn--outline")">@p</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

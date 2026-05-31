@@ -1,0 +1,116 @@
+@using LuminaTutors.Application.DTOs.Grading
+@model List<ExamRoomDto>
+@{
+    ViewData["Title"] = "Phòng thi";
+    var examId = ViewBag.ExamId as int? ?? 0;
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Exams" class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
+            <i class="bi bi-arrow-left"></i> Quay lại danh sách kỳ thi
+        </a>
+        <h1 class="lt-page-title">Phòng thi</h1>
+        <p class="lt-page-subtitle">Sơ đồ phòng và danh sách thí sinh</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <form asp-action="AssignSeats" method="post" style="display:inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="examId" value="@examId"/>
+            <button type="submit" class="lt-btn lt-btn--gold lt-btn--sm"
+                    onclick="return confirm('Xếp phòng ngẫu nhiên sẽ xóa phân công cũ. Tiếp tục?')">
+                <i class="bi bi-shuffle"></i> Xếp phòng ngẫu nhiên
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (Model == null || Model.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-door-closed"></i></div>
+                <p class="lt-empty__title">Chưa có phòng thi</p>
+                <p class="lt-empty__text">
+                    Nhấn <strong>Xếp phòng ngẫu nhiên</strong> để hệ thống tự động phân công thí sinh vào phòng thi.
+                </p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lt-alert lt-alert--info lt-mb-4">
+        <i class="bi bi-info-circle-fill"></i>
+        <span>
+            Tổng <strong>@Model.Sum(r => r.AssignedCount)</strong> thí sinh trong
+            <strong>@Model.Count</strong> phòng thi.
+        </span>
+    </div>
+
+    <div class="row g-4">
+        @foreach (var room in Model)
+        {
+            <div class="col-lg-6">
+                <div class="lt-card">
+                    <div class="lt-card__header">
+                        <h3 class="lt-card__title">
+                            <i class="bi bi-door-open" style="color:var(--lt-gold);margin-right:6px"></i>
+                            @room.RoomName
+                        </h3>
+                        <div class="lt-flex-center" style="gap:8px">
+                            <span class="lt-badge lt-badge--navy">
+                                @room.AssignedCount / @room.Capacity thí sinh
+                            </span>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(room.SupervisorName))
+                    {
+                        <div style="padding:8px 20px;border-bottom:1px solid var(--lt-border-light);
+                                    font-size:.82rem;color:var(--lt-text-muted)">
+                            <i class="bi bi-person-badge"></i> Giám thị: <strong>@room.SupervisorName</strong>
+                        </div>
+                    }
+                    @if (room.Seats?.Any() == true)
+                    {
+                        <div class="lt-card__body" style="padding:0;overflow-x:auto">
+                            <table class="lt-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:70px">Chỗ ngồi</th>
+                                        <th>Mã HS</th>
+                                        <th>Học sinh</th>
+                                        <th>Lớp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var seat in room.Seats.OrderBy(s => s.SeatNumber))
+                                    {
+                                        <tr>
+                                            <td class="lt-fw-600 lt-text-center">
+                                                <span class="lt-badge lt-badge--navy">@seat.SeatNumber</span>
+                                            </td>
+                                            <td class="lt-td--dim"><code>@seat.StudentCode</code></td>
+                                            <td class="lt-fw-600">@seat.StudentName</td>
+                                            <td>@seat.ClassName</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="lt-card__body">
+                            <div class="lt-empty lt-empty--sm">
+                                <div class="lt-empty__icon"><i class="bi bi-person-x"></i></div>
+                                <p class="lt-empty__text">Chưa có thí sinh được phân công</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

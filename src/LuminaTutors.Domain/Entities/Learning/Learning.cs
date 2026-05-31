@@ -1,0 +1,356 @@
+using LuminaTutors.Domain.Common;
+using LuminaTutors.Domain.Entities.Academic;
+using LuminaTutors.Domain.Entities.Grading;
+using LuminaTutors.Domain.Entities.Identity;
+using LuminaTutors.Domain.Enums;
+
+namespace LuminaTutors.Domain.Entities.Learning;
+
+// ─── Lesson ───────────────────────────────────────────────────────────────────
+
+public class Lesson : AuditableEntity
+{
+    public int SchoolId { get; set; }
+    public int SubjectAssignmentId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? ContentHtml { get; set; }
+    public LessonType LessonType { get; set; } = LessonType.Lecture;
+    public bool Is3DEnabled { get; set; } = false;
+    public string? Lab3DConfig { get; set; }    // JSON: { subject, experiment, mode }
+    public bool IsPublished { get; set; } = false;
+    public DateTime? PublishedAt { get; set; }
+
+    public School School { get; set; } = null!;
+    public SubjectAssignment SubjectAssignment { get; set; } = null!;
+    public ICollection<LessonMaterial> Materials { get; set; } = [];
+}
+
+// ─── LessonMaterial ───────────────────────────────────────────────────────────
+
+public class LessonMaterial : BaseEntity
+{
+    public int LessonId { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public string FileUrl { get; set; } = string.Empty;
+    public MaterialFileType FileType { get; set; }
+    public int? FileSizeKB { get; set; }
+    public byte SortOrder { get; set; } = 0;
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    public Lesson Lesson { get; set; } = null!;
+}
+
+// ─── QuestionBank ─────────────────────────────────────────────────────────────
+
+public class QuestionBank : AuditableEntity
+{
+    public int SchoolId { get; set; }
+    public int SubjectId { get; set; }
+    public int CreatedByTeacherId { get; set; }
+    public string QuestionText { get; set; } = string.Empty;
+    public QuestionType QuestionType { get; set; }
+    public DifficultyLevel DifficultyLevel { get; set; } = DifficultyLevel.Medium;
+    public int? GradeLevelId { get; set; }
+    public string? ChapterTag { get; set; }
+    public string? ExplanationText { get; set; }
+    public bool IsApproved { get; set; } = false;
+    /// <summary>Correct answer for FillBlank type; essay model answer for Essay type.</summary>
+    public string? CorrectAnswer { get; set; }
+    /// <summary>Source URL if question was imported from the web.</summary>
+    public string? SourceUrl { get; set; }
+    /// <summary>Tags for search, comma-separated.</summary>
+    public string? Tags { get; set; }
+
+    public School School { get; set; } = null!;
+    public Subject Subject { get; set; } = null!;
+    public User CreatedByTeacher { get; set; } = null!;
+    public GradeLevel? GradeLevel { get; set; }
+    public ICollection<QuestionOption> Options { get; set; } = [];
+}
+
+// ─── QuestionImportJob ────────────────────────────────────────────────────────
+
+/// <summary>
+/// Tracks an async scraping/import job for questions collected from a URL.
+/// </summary>
+public class QuestionImportJob : AuditableEntity
+{
+    public int    SchoolId         { get; set; }
+    public int    RequestedByUserId{ get; set; }
+    public int    TargetSubjectId  { get; set; }
+    public string SourceUrl        { get; set; } = string.Empty;
+    public ImportJobStatus Status  { get; set; } = ImportJobStatus.Pending;
+    public int    ImportedCount    { get; set; } = 0;
+    public string? ErrorMessage    { get; set; }
+    public DateTime? ProcessedAt  { get; set; }
+
+    public School School           { get; set; } = null!;
+    public User   RequestedByUser  { get; set; } = null!;
+    public Subject TargetSubject   { get; set; } = null!;
+}
+
+// ─── QuestionOption ───────────────────────────────────────────────────────────
+
+public class QuestionOption : BaseEntity
+{
+    public int QuestionId { get; set; }
+    public char OptionLabel { get; set; }   // A, B, C, D
+    public string OptionText { get; set; } = string.Empty;
+    public bool IsCorrect { get; set; } = false;
+
+    public QuestionBank Question { get; set; } = null!;
+}
+
+// ─── Assignment ───────────────────────────────────────────────────────────────
+
+public class Assignment : AuditableEntity
+{
+    public int SchoolId { get; set; }
+    public int SubjectAssignmentId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Instructions { get; set; }
+    public AssignmentType AssignmentType { get; set; }
+    public int? GradeCategoryId { get; set; }
+    public decimal MaxScore { get; set; } = 10M;
+    public DateTime? DueDate { get; set; }
+    public bool AllowLateSubmission { get; set; } = false;
+    public byte LatePenaltyPercent { get; set; } = 0;
+    public bool IsPublished { get; set; } = false;
+    public DateTime? PublishedAt { get; set; }
+
+    public School School { get; set; } = null!;
+    public SubjectAssignment SubjectAssignment { get; set; } = null!;
+    public GradeCategory? GradeCategory { get; set; }
+    public ICollection<AssignmentSubmission>  Submissions  { get; set; } = [];
+    public ICollection<AssignmentAttachment>  Attachments  { get; set; } = [];
+}
+
+// ─── AssignmentAttachment (file giáo viên đính kèm) ──────────────────────────
+
+public class AssignmentAttachment : BaseEntity
+{
+    public int    AssignmentId { get; set; }
+    public string FileName     { get; set; } = string.Empty;
+    public string FileUrl      { get; set; } = string.Empty;
+    public string FileType     { get; set; } = string.Empty;
+    public int?   FileSizeKB   { get; set; }
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    public Assignment Assignment { get; set; } = null!;
+}
+
+// ─── AssignmentSubmission ─────────────────────────────────────────────────────
+
+public class AssignmentSubmission : AuditableEntity
+{
+    public int AssignmentId { get; set; }
+    public int StudentId { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public bool IsLate { get; set; } = false;
+    public string? AnswerText { get; set; }
+    public decimal? Score { get; set; }
+    public DateTime? GradedAt { get; set; }
+    public int? GradedByUserId { get; set; }
+    public string? Feedback { get; set; }
+    public SubmissionStatus SubmissionStatus { get; set; } = SubmissionStatus.Draft;
+
+    public Assignment Assignment { get; set; } = null!;
+    public User Student { get; set; } = null!;
+    public User? GradedBy { get; set; }
+    public ICollection<SubmissionFile> Files { get; set; } = [];
+}
+
+// ─── SubmissionFile ───────────────────────────────────────────────────────────
+
+public class SubmissionFile : BaseEntity
+{
+    public int SubmissionId { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public string FileUrl { get; set; } = string.Empty;
+    public string FileType { get; set; } = string.Empty;
+    public int? FileSizeKB { get; set; }
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    public AssignmentSubmission Submission { get; set; } = null!;
+}
+
+// ─── QuizExam ─────────────────────────────────────────────────────────────────
+
+/// <summary>
+/// An online multiple-choice exam created by a teacher.
+/// Each student receives a deterministically shuffled version (different question
+/// and answer order) identified by a unique ExamCode (e.g. "MĐ001").
+/// </summary>
+public class QuizExam : AuditableEntity
+{
+    public int    SchoolId          { get; set; }
+    public int    SubjectId         { get; set; }
+    public int?   GradeLevelId      { get; set; }
+    public int    CreatedByTeacherId{ get; set; }
+    public string Title             { get; set; } = string.Empty;
+    public string? Description      { get; set; }
+    public int    TimeLimitMinutes  { get; set; } = 0;     // 0 = unlimited
+    public int    TotalQuestions    { get; set; } = 0;
+    public decimal PointsPerQuestion{ get; set; } = 1M;   // default 1 pt / question
+    public QuizExamStatus Status    { get; set; } = QuizExamStatus.Draft;
+    public DateTime? StartTime      { get; set; }
+    public DateTime? EndTime        { get; set; }
+    public bool   ShuffleQuestions  { get; set; } = true;
+    public bool   ShuffleOptions    { get; set; } = true;
+    public bool   ShowResultAfter   { get; set; } = true;  // student sees score after submit
+
+    // Navigation
+    public School     School          { get; set; } = null!;
+    public Subject    Subject         { get; set; } = null!;
+    public GradeLevel? GradeLevel     { get; set; }
+    public User       CreatedByTeacher{ get; set; } = null!;
+    public ICollection<QuizExamQuestion>    Questions { get; set; } = [];
+    public ICollection<StudentQuizAttempt> Attempts  { get; set; } = [];
+}
+
+// ─── QuizExamQuestion ─────────────────────────────────────────────────────────
+
+/// <summary>
+/// Junction between QuizExam and QuestionBank.
+/// </summary>
+public class QuizExamQuestion : BaseEntity
+{
+    public int ExamId      { get; set; }
+    public int QuestionId  { get; set; }
+    public int OrderIndex  { get; set; } = 0;
+
+    public QuizExam     Exam     { get; set; } = null!;
+    public QuestionBank Question { get; set; } = null!;
+}
+
+// ─── StudentQuizAttempt ───────────────────────────────────────────────────────
+
+/// <summary>
+/// One student's attempt at a QuizExam.
+/// ShuffleSeed drives the deterministic shuffle of questions and options —
+/// the same seed always produces the same order, so the exam can be reconstructed
+/// for grading and review without storing duplicate question data.
+/// ExamCode ("MĐ001") is a human-readable identifier shown on printouts.
+/// </summary>
+public class StudentQuizAttempt : AuditableEntity
+{
+    public int    ExamId       { get; set; }
+    public int    StudentId    { get; set; }
+    public string ExamCode     { get; set; } = string.Empty;  // e.g. "MĐ001"
+    public int    ShuffleSeed  { get; set; }
+    public DateTime  StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? SubmittedAt{ get; set; }
+    public decimal?  Score     { get; set; }        // null until submitted
+    public int    TotalCorrect { get; set; } = 0;
+    public AttemptStatus Status{ get; set; } = AttemptStatus.InProgress;
+
+    public QuizExam Exam    { get; set; } = null!;
+    public User     Student { get; set; } = null!;
+    public ICollection<StudentQuizAnswer> Answers { get; set; } = [];
+}
+
+// ─── StudentQuizAnswer ────────────────────────────────────────────────────────
+
+public class StudentQuizAnswer : BaseEntity
+{
+    public int  AttemptId        { get; set; }
+    public int  QuestionId       { get; set; }
+    public int? SelectedOptionId { get; set; }   // null = skipped
+    public bool IsCorrect        { get; set; } = false;
+
+    public StudentQuizAttempt Attempt        { get; set; } = null!;
+    public QuestionBank       Question       { get; set; } = null!;
+    public QuestionOption?    SelectedOption { get; set; }
+}
+
+// ─── VirtualLabSession ────────────────────────────────────────────────────────
+
+/// <summary>
+/// Represents an active 3D virtual lab session a teacher starts and students
+/// join via a short access code. The Three.js scene is driven by SceneType.
+/// SubjectTag: "chemistry" | "physics" | "biology"
+/// SceneType : "titration" | "pendulum" | "cell"
+/// </summary>
+public class VirtualLabSession : TenantEntity
+{
+    public int    TeacherId       { get; set; }
+    public string SessionName     { get; set; } = string.Empty;
+    public string SessionCode     { get; set; } = string.Empty;  // 6-char uppercase
+    public string SubjectTag      { get; set; } = string.Empty;
+    public string SceneType       { get; set; } = string.Empty;
+    public bool   IsActive        { get; set; } = true;
+    public int    MaxParticipants { get; set; } = 40;
+
+    // Navigation
+    public School School  { get; set; } = null!;
+    public User   Teacher { get; set; } = null!;
+}
+
+// ─── OnlineSession ────────────────────────────────────────────────────────────
+
+/// <summary>
+/// A self-hosted online classroom session with WebRTC video, whiteboard, chat,
+/// and slide sharing — no third-party conferencing tool required.
+/// </summary>
+public class OnlineSession : TenantEntity
+{
+    public int    TeacherId       { get; set; }
+    public string Title           { get; set; } = string.Empty;
+    public string? Description    { get; set; }
+    public string RoomCode        { get; set; } = string.Empty;  // e.g. "ABCD-1234"
+    public OnlineSessionStatus Status { get; set; } = OnlineSessionStatus.Scheduled;
+    public DateTime? ScheduledAt  { get; set; }
+    public DateTime? StartedAt    { get; set; }
+    public DateTime? EndedAt      { get; set; }
+    public int    MaxParticipants { get; set; } = 50;
+
+    // Navigation
+    public School   School       { get; set; } = null!;
+    public User     Teacher      { get; set; } = null!;
+    public ICollection<SessionParticipant> Participants { get; set; } = [];
+    public ICollection<OnlineRoomChat>     Chats        { get; set; } = [];
+    public ICollection<OnlineSlide>        Slides       { get; set; } = [];
+}
+
+// ─── SessionParticipant ───────────────────────────────────────────────────────
+
+public class SessionParticipant : BaseEntity
+{
+    public int      SessionId   { get; set; }
+    public int      UserId      { get; set; }
+    public DateTime JoinedAt    { get; set; } = DateTime.UtcNow;
+    public DateTime? LeftAt     { get; set; }
+    public bool     IsAttended  { get; set; } = false;
+    public DateTime? AttendedAt { get; set; }
+
+    public OnlineSession Session { get; set; } = null!;
+    public User          User    { get; set; } = null!;
+}
+
+// ─── OnlineRoomChat ───────────────────────────────────────────────────────────
+
+public class OnlineRoomChat : BaseEntity
+{
+    public int             SessionId   { get; set; }
+    public int             SenderId    { get; set; }
+    public string          Content     { get; set; } = string.Empty;
+    public ChatMessageType MessageType { get; set; } = ChatMessageType.Text;
+    public DateTime        SentAt      { get; set; } = DateTime.UtcNow;
+
+    public OnlineSession Session { get; set; } = null!;
+    public User          Sender  { get; set; } = null!;
+}
+
+// ─── OnlineSlide ──────────────────────────────────────────────────────────────
+
+public class OnlineSlide : BaseEntity
+{
+    public int      SessionId  { get; set; }
+    public string   FileName   { get; set; } = string.Empty;
+    public string   FileUrl    { get; set; } = string.Empty;
+    public int      TotalPages { get; set; } = 1;
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    public OnlineSession Session { get; set; } = null!;
+}

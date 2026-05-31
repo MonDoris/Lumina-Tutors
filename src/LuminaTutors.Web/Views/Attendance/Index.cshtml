@@ -1,0 +1,126 @@
+@using LuminaTutors.Application.DTOs.Attendance
+@{
+    ViewData["Title"] = "Điểm danh QR";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Điểm danh QR</h1>
+        <p class="lt-page-subtitle">Mở phiên điểm danh và chia sẻ mã QR cho học sinh</p>
+    </div>
+</div>
+
+<!-- Create Session Card -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-qr-code-scan" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Mở phiên điểm danh mới
+                </h3>
+            </div>
+            <div class="lt-card__body">
+                <div class="lt-alert lt-alert--info lt-mb-4">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>
+                        Học sinh sẽ quét mã QR để điểm danh. Mã QR hết hạn sau <strong>10 phút</strong>.
+                    </span>
+                </div>
+
+                <form asp-action="Create" method="post" data-testid="create-session-form">
+                    @Html.AntiForgeryToken()
+
+                    <div class="lt-form-group">
+                        <label class="lt-label">ID Lịch học <span class="lt-text-danger">*</span></label>
+                        <input type="number" name="ScheduleId" class="lt-input"
+                               placeholder="VD: 1" required min="1"
+                               data-testid="input-schedule-id"/>
+                        <p class="lt-form-hint">Lấy từ trang chi tiết lớp học, mục Lịch học</p>
+                    </div>
+
+                    <div class="lt-form-group">
+                        <label class="lt-label">Ngày học <span class="lt-text-danger">*</span></label>
+                        <input type="date" name="SessionDate" class="lt-input"
+                               value="@DateTime.Today.ToString("yyyy-MM-dd")" required
+                               data-testid="input-session-date"/>
+                    </div>
+
+                    <div class="lt-form-group">
+                        <label class="lt-label">Thời gian hết hạn QR (phút)</label>
+                        <select name="QRExpiryMinutes" class="lt-select">
+                            <option value="5">5 phút</option>
+                            <option value="10" selected>10 phút</option>
+                            <option value="15">15 phút</option>
+                            <option value="20">20 phút</option>
+                        </select>
+                    </div>
+
+                    <div class="lt-form-group lt-mb-4">
+                        <label class="lt-label">Ghi chú buổi học</label>
+                        <input type="text" name="TopicNote" class="lt-input"
+                               placeholder="VD: Ôn tập chương 1-3"/>
+                    </div>
+
+                    <button type="submit" class="lt-btn lt-btn--primary lt-btn--full"
+                            data-testid="btn-open-session">
+                        <i class="bi bi-qr-code-scan"></i> Mở phiên điểm danh &amp; Hiển thị QR
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-info-circle" style="color:var(--lt-navy);margin-right:6px"></i>
+                    Hướng dẫn sử dụng
+                </h3>
+            </div>
+            <div class="lt-card__body">
+                <ol style="padding-left:20px;line-height:2">
+                    <li class="lt-text-sm">
+                        <strong>Mở phiên điểm danh</strong> bằng cách điền thông tin và nhấn nút bên trái.
+                    </li>
+                    <li class="lt-text-sm">
+                        <strong>Hiển thị mã QR</strong> trên màn hình lớn hoặc máy chiếu.
+                    </li>
+                    <li class="lt-text-sm">
+                        <strong>Học sinh quét mã</strong> bằng điện thoại trong vòng <strong>10 phút</strong>.
+                    </li>
+                    <li class="lt-text-sm">
+                        <strong>Xem kết quả</strong> điểm danh theo thời gian thực trên trang QR.
+                    </li>
+                    <li class="lt-text-sm">
+                        <strong>Đóng phiên</strong> sau khi hoàn tất để lưu dữ liệu điểm danh.
+                    </li>
+                </ol>
+
+                <div class="lt-alert lt-alert--warning lt-mt-4">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>
+                        Mỗi học sinh chỉ có thể điểm danh <strong>một lần</strong> cho mỗi phiên.
+                        Học sinh đến trễ sau 10 phút sẽ bị đánh dấu vắng.
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="lt-card lt-mt-4">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">Thao tác khác</h3>
+            </div>
+            <div class="lt-card__body lt-flex-col lt-gap-3">
+                <a asp-action="DailyReport" asp-route-classId="0"
+                   class="lt-btn lt-btn--outline">
+                    <i class="bi bi-file-earmark-bar-graph"></i> Báo cáo điểm danh ngày
+                </a>
+                <a asp-controller="Student" asp-action="Index" class="lt-btn lt-btn--outline">
+                    <i class="bi bi-people-fill"></i> Danh sách học sinh
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

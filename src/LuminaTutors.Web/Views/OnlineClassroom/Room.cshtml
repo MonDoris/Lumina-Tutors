@@ -1,0 +1,911 @@
+@using LuminaTutors.Application.DTOs.OnlineClassroom
+@using LuminaTutors.Domain.Enums
+@{
+    Layout = null;
+    var session  = ViewBag.Session as OnlineSessionDto;
+    var userId   = (int)(ViewBag.UserId ?? 0);
+    var isHost   = (bool)(ViewBag.IsHost ?? false);
+    var userName = ViewBag.UserName as string ?? "Người dùng";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>@session?.Title — Lumina Classroom</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+    --bg:#202124;
+    --surface:#292a2d;
+    --surface2:#3c4043;
+    --border:rgba(255,255,255,.1);
+    --text:#e8eaed;
+    --muted:#9aa0a6;
+    --gold:#f9ab00;
+    --danger:#ea4335;
+    --success:#34a853;
+    --blue:#1a73e8;
+    --panel-w:360px;
+}
+html,body{height:100%;font-family:'Roboto',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+button,input,textarea{font-family:inherit;cursor:pointer}
+input,textarea{cursor:text}
+
+/* ── LAYOUT ────────────────────────────────────────── */
+#app{display:grid;grid-template-rows:56px 1fr 88px;height:100vh;position:relative}
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;gap:12px;background:var(--bg);border-bottom:1px solid var(--border)}
+#stage{position:relative;overflow:hidden;background:#000}
+#bottombar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--bg);border-top:1px solid var(--border)}
+
+/* ── TOPBAR ─────────────────────────────────────────── */
+.tb-left{display:flex;align-items:center;gap:12px}
+.tb-logo{font-family:'Google Sans',sans-serif;font-size:.82rem;font-weight:600;color:var(--gold);letter-spacing:.08em}
+.tb-sep{width:1px;height:18px;background:var(--border)}
+.tb-title{font-size:.9rem;font-weight:500;color:var(--text);max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-right{display:flex;align-items:center;gap:8px}
+.tb-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:500;
+    background:var(--surface);color:var(--muted)
+}
+.tb-badge.live{background:rgba(234,67,53,.15);color:var(--danger)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--danger);animation:blink 1.5s infinite}
+@@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+#clock{font-size:.82rem;color:var(--muted);font-feature-settings:'tnum'}
+
+/* ── VIDEO GRID ─────────────────────────────────────── */
+#video-grid{
+    position:absolute;inset:0;
+    display:grid;gap:6px;padding:6px;
+    background:#000;overflow:hidden;align-content:center
+}
+.vt{
+    border-radius:10px;overflow:hidden;position:relative;
+    background:#1a1a1a;min-height:120px
+}
+.vt video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.vt-overlay{
+    position:absolute;inset:0;
+    background:linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 45%)
+}
+.vt-name{
+    position:absolute;bottom:10px;left:12px;right:12px;
+    font-size:.8rem;font-weight:500;color:#fff;
+    display:flex;align-items:center;gap:6px;
+}
+.vt-name .vn-badge{
+    background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+    padding:2px 8px;border-radius:4px;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px
+}
+.vt-muted{
+    position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;
+    background:rgba(234,67,53,.85);display:none;align-items:center;justify-content:center;font-size:.75rem;color:#fff
+}
+.vt.mic-off .vt-muted{display:flex}
+.vt-avatar{
+    position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:var(--surface2)
+}
+.vt.cam-off .vt-avatar{display:flex}
+.vt.cam-off video{display:none}
+.av-circle{
+    width:72px;height:72px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.6rem;font-weight:700;color:#fff
+}
+.vt-pin-btn{
+    position:absolute;top:8px;left:8px;display:none;
+    width:28px;height:28px;border-radius:6px;border:none;
+    background:rgba(0,0,0,.55);color:#fff;font-size:.8rem;align-items:center;justify-content:center
+}
+.vt:hover .vt-pin-btn{display:flex}
+#local-vt{outline:2px solid rgba(249,171,0,.5)}
+
+/* ── CONTENT VIEWS (wb / slides) ────────────────────── */
+#wb-area,#slide-area{
+    position:absolute;inset:0;display:none;
+    background:#f8f9fa
+}
+/* Whiteboard */
+#wb-canvas{position:absolute;inset:0;touch-action:none;cursor:crosshair}
+#wb-toolbar-float{
+    position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:4px;
+    background:rgba(32,33,36,.9);border:1px solid var(--border);
+    padding:6px 12px;border-radius:50px;backdrop-filter:blur(12px);
+    box-shadow:0 4px 24px rgba(0,0,0,.5);z-index:10
+}
+.wbt{
+    width:34px;height:34px;border:none;border-radius:50%;
+    background:transparent;color:var(--text);font-size:.9rem;
+    display:flex;align-items:center;justify-content:center;transition:.15s
+}
+.wbt:hover{background:rgba(255,255,255,.1)}
+.wbt.sel{background:rgba(249,171,0,.25);color:var(--gold)}
+#wb-color{width:28px;height:28px;border:2px solid rgba(255,255,255,.3);border-radius:50%;cursor:pointer;padding:0;background:none}
+#wb-size{width:64px;accent-color:var(--gold)}
+.wbt-sep{width:1px;height:22px;background:var(--border);margin:0 2px}
+
+/* Slides */
+#slide-area{flex-direction:column;background:#0d0d0d}
+#slide-viewer{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:8px}
+#slide-viewer embed,#slide-viewer img{max-width:100%;max-height:100%;border-radius:6px}
+#slide-strip{
+    display:flex;align-items:center;gap:8px;padding:8px 12px;
+    border-top:1px solid var(--border);background:rgba(32,33,36,.95);flex-shrink:0
+}
+#slide-thumbs{display:flex;gap:6px;overflow-x:auto;flex:1;padding:2px 0}
+#slide-thumbs::-webkit-scrollbar{height:4px}
+#slide-thumbs::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.s-thumb{
+    flex-shrink:0;width:72px;height:48px;border-radius:6px;
+    border:2px solid transparent;background:var(--surface2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:.65rem;color:var(--muted);cursor:pointer;overflow:hidden;transition:.15s
+}
+.s-thumb:hover{border-color:var(--muted)}
+.s-thumb.active{border-color:var(--gold)}
+.s-thumb img{width:100%;height:100%;object-fit:cover}
+
+/* ── BOTTOM CONTROL BAR ─────────────────────────────── */
+.bb-group{display:flex;align-items:center;gap:8px}
+.bb-info{display:flex;flex-direction:column}
+.bb-time{font-size:.78rem;color:var(--muted);font-feature-settings:'tnum'}
+.bb-room{font-size:.72rem;color:var(--muted)}
+.bb-room b{color:var(--gold);font-family:monospace;letter-spacing:.05em}
+
+/* Control buttons – pill style */
+.ctl-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ctl-label{font-size:.64rem;color:var(--muted)}
+.ctl{
+    width:48px;height:48px;border-radius:50%;border:none;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.1rem;color:var(--text);transition:.18s;position:relative
+}
+.ctl:hover{transform:scale(1.08)}
+.ctl-on{background:var(--surface2)}
+.ctl-on:hover{background:#4e5155}
+.ctl-off{background:rgba(234,67,53,.2);color:var(--danger)}
+.ctl-off:hover{background:rgba(234,67,53,.35)}
+.ctl-end{
+    width:56px;height:48px;border-radius:28px;background:var(--danger);color:#fff;
+    font-size:1rem;border:none;display:flex;align-items:center;justify-content:center;transition:.18s
+}
+.ctl-end:hover{background:#c62828;transform:scale(1.05)}
+.ctl-view{background:var(--surface);border-radius:10px;width:auto;padding:0 14px;height:40px;font-size:.8rem;font-weight:500;gap:6px}
+.ctl-view.active-view{background:rgba(26,115,232,.25);color:#74a7f5}
+.ctl-action{background:var(--surface2);border-radius:12px;width:auto;padding:0 14px;height:40px;font-size:.8rem;gap:6px}
+.ctl-action.active{background:rgba(249,171,0,.2);color:var(--gold)}
+
+/* ── RIGHT SIDE PANEL ───────────────────────────────── */
+#side-panel{
+    position:fixed;top:56px;right:0;bottom:88px;
+    width:var(--panel-w);background:var(--surface);
+    border-left:1px solid var(--border);
+    display:flex;flex-direction:column;
+    transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+    z-index:100;border-radius:12px 0 0 12px
+}
+#side-panel.open{transform:translateX(0)}
+#panel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.ptab{
+    flex:1;padding:.7rem .5rem;border:none;background:none;font-size:.8rem;font-weight:500;
+    color:var(--muted);border-bottom:2px solid transparent;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px
+}
+.ptab.active{color:var(--text);border-bottom-color:var(--gold)}
+.ptab:hover:not(.active){color:var(--text)}
+#panel-close{
+    position:absolute;top:10px;right:10px;width:28px;height:28px;
+    border:none;background:transparent;color:var(--muted);font-size:.9rem;border-radius:50%;
+    display:flex;align-items:center;justify-content:center
+}
+#panel-close:hover{background:var(--surface2);color:var(--text)}
+
+/* participants */
+#pane-people{flex:1;overflow-y:auto;padding:.5rem}
+.pi{
+    display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;margin-bottom:2px;transition:.15s
+}
+.pi:hover{background:rgba(255,255,255,.05)}
+.pi-av{
+    width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.8rem;font-weight:700;color:#fff
+}
+.pi-info{flex:1;min-width:0}
+.pi-name{font-size:.83rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-role{font-size:.7rem;color:var(--muted);margin-top:1px}
+.pi-acts{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.pi-badge{
+    padding:2px 7px;border-radius:10px;font-size:.68rem;font-weight:600;
+    background:rgba(52,168,83,.15);color:var(--success)
+}
+.att-btn{
+    padding:3px 9px;border-radius:8px;border:1px solid rgba(52,168,83,.4);
+    background:rgba(52,168,83,.1);color:var(--success);font-size:.72rem;font-weight:500;transition:.15s
+}
+.att-btn:hover{background:rgba(52,168,83,.25)}
+
+/* chat */
+#pane-chat{display:none;flex-direction:column;flex:1;overflow:hidden}
+#chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+#chat-msgs::-webkit-scrollbar{width:4px}
+#chat-msgs::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.cm{display:flex;gap:8px;align-items:flex-start}
+.cm.own{flex-direction:row-reverse}
+.cm-av{
+    width:28px;height:28px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#fff
+}
+.cm-body-wrap{display:flex;flex-direction:column;gap:2px;max-width:80%}
+.cm-meta{display:flex;gap:5px;align-items:baseline}
+.cm-name{font-size:.7rem;font-weight:600;color:var(--gold)}
+.cm.own .cm-name{color:var(--muted)}
+.cm-time{font-size:.62rem;color:var(--muted)}
+.cm-text{
+    font-size:.82rem;line-height:1.45;word-break:break-word;
+    background:rgba(255,255,255,.08);padding:8px 11px;border-radius:4px 14px 14px 14px
+}
+.cm.own .cm-text{background:rgba(26,115,232,.25);border-radius:14px 4px 14px 14px;text-align:left}
+.cm.system{justify-content:center}
+.cm.system .cm-text{
+    background:transparent;color:var(--muted);font-size:.72rem;font-style:italic;
+    padding:2px 0;text-align:center
+}
+#chat-footer{padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+#chat-input{
+    flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+    border-radius:22px;color:var(--text);padding:8px 14px;font-size:.83rem;
+    outline:none;resize:none;line-height:1.4;max-height:80px
+}
+#chat-input:focus{border-color:var(--gold)}
+#chat-send{
+    width:36px;height:36px;border-radius:50%;border:none;flex-shrink:0;
+    background:var(--blue);color:#fff;font-size:.9rem;
+    display:flex;align-items:center;justify-content:center;align-self:flex-end;transition:.15s
+}
+#chat-send:hover{background:#1558b0}
+#unread-dot{
+    position:absolute;top:4px;right:4px;width:8px;height:8px;
+    border-radius:50%;background:var(--danger);display:none
+}
+
+/* ── TOASTS ─────────────────────────────────────────── */
+#toasts{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+         display:flex;flex-direction:column;gap:6px;z-index:9999;pointer-events:none;align-items:center}
+.toast{
+    background:rgba(44,46,51,.95);border:1px solid var(--border);
+    padding:9px 16px;border-radius:10px;font-size:.8rem;backdrop-filter:blur(12px);
+    box-shadow:0 6px 24px rgba(0,0,0,.5);animation:toastin .2s ease;white-space:nowrap
+}
+@@keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── MODAL ──────────────────────────────────────────── */
+#modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;
+           display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#modal-box{background:var(--surface);border-radius:16px;padding:2rem;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ TOPBAR ══════════════════════════════════════════════════ -->
+  <header id="topbar">
+    <div class="tb-left">
+      <span class="tb-logo">LUMINA</span>
+      <div class="tb-sep"></div>
+      <span class="tb-title">@session?.Title</span>
+    </div>
+
+    <div class="tb-right">
+      @if (session?.Status == OnlineSessionStatus.Live)
+      {
+          <span class="tb-badge live">
+              <span class="live-dot"></span> LIVE
+          </span>
+      }
+      <span id="clock" class="tb-badge"></span>
+    </div>
+  </header>
+
+  <!-- ══ STAGE ════════════════════════════════════════════════════ -->
+  <div id="stage">
+
+    <!-- Video grid -->
+    <div id="video-grid">
+      <div class="vt" id="local-vt">
+        <video id="local-video" autoplay muted playsinline></video>
+        <div class="vt-avatar"><div class="av-circle" id="local-av-circle"></div></div>
+        <div class="vt-overlay"></div>
+        <div class="vt-name">
+          <span class="vn-badge"><i class="bi bi-person-fill"></i> @userName (Bạn)</span>
+        </div>
+        <div class="vt-muted"><i class="bi bi-mic-mute-fill"></i></div>
+      </div>
+    </div>
+
+    <!-- Whiteboard -->
+    <div id="wb-area">
+      <canvas id="wb-canvas"></canvas>
+      <div id="wb-toolbar-float">
+        <button class="wbt sel" id="wb-pen" title="Bút vẽ" onclick="setWbTool('pen')"><i class="bi bi-pencil-fill"></i></button>
+        <button class="wbt" id="wb-line" title="Đường thẳng" onclick="setWbTool('line')"><i class="bi bi-slash-lg"></i></button>
+        <button class="wbt" id="wb-rect" title="Hình chữ nhật" onclick="setWbTool('rect')"><i class="bi bi-square"></i></button>
+        <button class="wbt" id="wb-erase" title="Tẩy" onclick="setWbTool('erase')"><i class="bi bi-eraser-fill"></i></button>
+        <div class="wbt-sep"></div>
+        <input type="color" id="wb-color" value="#ffffff" title="Màu">
+        <input type="range" id="wb-size" min="1" max="20" value="3">
+        <div class="wbt-sep"></div>
+        <button class="wbt" title="Xóa bảng" onclick="clearBoard()" style="color:var(--danger)"><i class="bi bi-trash3-fill"></i></button>
+      </div>
+    </div>
+
+    <!-- Slides -->
+    <div id="slide-area" style="display:none;flex-direction:column">
+      <div id="slide-viewer">
+        <div id="slide-empty" style="color:#666;text-align:center">
+          <i class="bi bi-file-slides" style="font-size:3rem;display:block;margin-bottom:.75rem;opacity:.4"></i>
+          <div style="font-size:.88rem">@(isHost ? "Tải slide lên bằng nút ở thanh công cụ bên dưới" : "Chờ giáo viên tải slide")</div>
+        </div>
+      </div>
+      <div id="slide-strip">
+        <div id="slide-thumbs"></div>
+        @if (isHost)
+        {
+            <label class="ctl ctl-on" style="width:auto;padding:0 14px;height:36px;border-radius:8px;font-size:.8rem;gap:6px" title="Tải slide lên">
+                <i class="bi bi-upload"></i>
+                <input type="file" id="slide-file" accept=".pdf,.jpg,.jpeg,.png" style="display:none">
+            </label>
+        }
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ BOTTOM BAR ═══════════════════════════════════════════════ -->
+  <footer id="bottombar">
+
+    <!-- Left: info + view switches -->
+    <div class="bb-group" style="gap:12px">
+      <div class="bb-info">
+        <span class="bb-time" id="bb-clock"></span>
+        <span class="bb-room">Mã phòng: <b>@session?.RoomCode</b></span>
+      </div>
+      <div class="tb-sep"></div>
+      <button class="ctl ctl-view active-view" id="btn-v-video" onclick="switchView('video')" title="Video">
+          <i class="bi bi-camera-video-fill"></i> Video
+      </button>
+      <button class="ctl ctl-view" id="btn-v-wb" onclick="switchView('wb')" title="Bảng trắng">
+          <i class="bi bi-easel2-fill"></i> Bảng
+      </button>
+      <button class="ctl ctl-view" id="btn-v-slide" onclick="switchView('slide')" title="Slide">
+          <i class="bi bi-file-slides-fill"></i> Slide
+      </button>
+    </div>
+
+    <!-- Center: core controls -->
+    <div class="bb-group" style="justify-content:center;gap:12px">
+      <div class="ctl-wrap">
+        <button class="ctl ctl-on" id="btn-mic" onclick="toggleMic()" title="Micro">
+          <i class="bi bi-mic-fill"></i>
+        </button>
+        <span class="ctl-label">Micro</span>
+      </div>
+      <div class="ctl-wrap">
+        <button class="ctl ctl-on" id="btn-cam" onclick="toggleCam()" title="Camera">
+          <i class="bi bi-camera-video-fill"></i>
+        </button>
+        <span class="ctl-label">Camera</span>
+      </div>
+
+      @if (isHost)
+      {
+          <div class="ctl-wrap">
+            <form asp-action="End" asp-route-id="@session?.Id" method="post" id="end-form">
+              @Html.AntiForgeryToken()
+              <button type="button" class="ctl-end" onclick="confirmEnd()" title="Kết thúc buổi học">
+                <i class="bi bi-telephone-fill" style="transform:rotate(135deg)"></i>
+              </button>
+            </form>
+            <span class="ctl-label" style="color:var(--danger)">Kết thúc</span>
+          </div>
+      }
+      else
+      {
+          <div class="ctl-wrap">
+            <button class="ctl-end" onclick="leaveRoom()" title="Rời phòng">
+              <i class="bi bi-telephone-fill" style="transform:rotate(135deg)"></i>
+            </button>
+            <span class="ctl-label" style="color:var(--danger)">Rời phòng</span>
+          </div>
+      }
+
+      <div class="ctl-wrap">
+        <button class="ctl ctl-on" id="btn-hand" onclick="raiseHand()" title="Giơ tay">
+          <i class="bi bi-hand-index-thumb-fill"></i>
+        </button>
+        <span class="ctl-label">Giơ tay</span>
+      </div>
+      @if (isHost)
+      {
+          <div class="ctl-wrap">
+            <button class="ctl ctl-on" id="btn-screen" onclick="shareScreen()" title="Chia sẻ màn hình">
+              <i class="bi bi-display-fill"></i>
+            </button>
+            <span class="ctl-label">Màn hình</span>
+          </div>
+      }
+    </div>
+
+    <!-- Right: panel toggles -->
+    <div class="bb-group" style="justify-content:flex-end;gap:8px">
+      <div class="ctl-wrap">
+        <button class="ctl ctl-action" id="btn-people" onclick="togglePanel('people')" title="Thành viên">
+          <i class="bi bi-people-fill"></i>
+          <span id="people-count" style="font-size:.75rem;font-weight:600">0</span>
+        </button>
+        <span class="ctl-label">Thành viên</span>
+      </div>
+      <div class="ctl-wrap" style="position:relative">
+        <button class="ctl ctl-action" id="btn-chat" onclick="togglePanel('chat')" title="Chat">
+          <i class="bi bi-chat-dots-fill"></i>
+          <span id="unread-dot" class="unread-dot"
+                style="position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--danger);display:none"></span>
+        </button>
+        <span class="ctl-label">Chat</span>
+      </div>
+    </div>
+
+  </footer>
+
+</div><!-- #app -->
+
+<!-- ══ SIDE PANEL ══════════════════════════════════════════════════ -->
+<div id="side-panel">
+  <div id="panel-tabs">
+    <button class="ptab active" id="ptab-people" onclick="switchPanelTab('people')">
+      <i class="bi bi-people-fill"></i> Thành viên (<span id="p-count2">0</span>)
+    </button>
+    <button class="ptab" id="ptab-chat" onclick="switchPanelTab('chat')">
+      <i class="bi bi-chat-dots-fill"></i> Chat
+    </button>
+    <button id="panel-close" onclick="closePanel()"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <!-- People pane -->
+  <div id="pane-people"></div>
+
+  <!-- Chat pane -->
+  <div id="pane-chat">
+    <div id="chat-msgs"></div>
+    <div id="chat-footer">
+      <textarea id="chat-input" rows="1" placeholder="Nhập tin nhắn…"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+      <button id="chat-send" onclick="sendChat()"><i class="bi bi-send-fill"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOASTS ════════════════════════════════════════════════════════ -->
+<div id="toasts"></div>
+
+<!-- ══ END MODAL ════════════════════════════════════════════════════ -->
+<div id="modal-bg">
+  <div id="modal-box">
+    <div style="width:60px;height:60px;border-radius:50%;background:rgba(234,67,53,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
+      <i class="bi bi-stop-circle-fill" style="font-size:1.75rem;color:var(--danger)"></i>
+    </div>
+    <h3 style="font-size:1.05rem;font-weight:600;margin-bottom:.5rem">Buổi học đã kết thúc</h3>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem">Giáo viên đã kết thúc buổi học này.</p>
+    <a href="@Url.Action("Index","OnlineClassroom")"
+       style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:.7rem;border-radius:10px;background:var(--blue);color:#fff;text-decoration:none;font-weight:500;font-size:.88rem">
+       <i class="bi bi-house-fill"></i> Về trang chủ
+    </a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────
+const SESSION_ID = @(session?.Id ?? 0);
+const USER_ID    = @userId;
+const USER_NAME  = @Json.Serialize(userName);
+const IS_HOST    = @(isHost ? "true" : "false");
+const UPLOAD_URL = '@Url.Action("UploadSlide","OnlineClassroom")';
+const CSRF_TOKEN = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+
+// ── STATE ───────────────────────────────────────────────────────────
+let connection   = null;
+let localStream  = null;
+let peers        = {};
+let slides       = [];
+let curSlide     = 0;
+let micOn        = true;
+let camOn        = true;
+let curView      = 'video';
+let wbTool       = 'pen';
+let drawing      = false, lastX=0, lastY=0;
+let handRaised   = false;
+let panelOpen    = false;
+let panelTab     = 'people';
+let participants = {};
+let unreadCount  = 0;
+
+const COLORS = ['#1a73e8','#34a853','#ea4335','#f9ab00','#9c27b0','#ff5722','#00bcd4','#795548'];
+function avatarColor(name){ let h=0; for(let c of name) h=(h<<5)-h+c.charCodeAt(0); return COLORS[Math.abs(h)%COLORS.length]; }
+function initials(name){ return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+
+const iceConfig = { iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
+
+// ── CLOCK ───────────────────────────────────────────────────────────
+(function tick(){
+    const t = new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('clock').textContent = t;
+    document.getElementById('bb-clock').textContent = t;
+    setTimeout(tick,1000);
+})();
+
+// ── LOCAL AVATAR ────────────────────────────────────────────────────
+const localAv = document.getElementById('local-av-circle');
+localAv.textContent = initials(USER_NAME);
+localAv.style.background = avatarColor(USER_NAME);
+
+// ── TOAST ───────────────────────────────────────────────────────────
+function toast(msg, type='info'){
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.style.borderColor = type==='error' ? 'rgba(234,67,53,.5)' : type==='success' ? 'rgba(52,168,83,.5)' : 'rgba(249,171,0,.3)';
+    el.innerHTML = msg;
+    document.getElementById('toasts').append(el);
+    setTimeout(()=>el.remove(), 4000);
+}
+
+// ── VIEW SWITCH ─────────────────────────────────────────────────────
+function switchView(v){
+    curView = v;
+    document.getElementById('video-grid').style.display  = v==='video' ? 'grid' : 'none';
+    document.getElementById('wb-area').style.display     = v==='wb'    ? 'block' : 'none';
+    const sa = document.getElementById('slide-area');
+    sa.style.display = v==='slide' ? 'flex' : 'none';
+
+    ['video','wb','slide'].forEach(n=>{
+        document.getElementById('btn-v-'+n)?.classList.toggle('active-view', n===v);
+    });
+    if(v==='wb') initWhiteboard();
+}
+
+// ── PANEL ───────────────────────────────────────────────────────────
+function togglePanel(tab){
+    if(panelOpen && panelTab===tab){ closePanel(); return; }
+    panelOpen=true; panelTab=tab;
+    document.getElementById('side-panel').classList.add('open');
+    switchPanelTab(tab);
+    if(tab==='chat'){ unreadCount=0; document.getElementById('unread-dot').style.display='none'; }
+}
+function closePanel(){
+    panelOpen=false;
+    document.getElementById('side-panel').classList.remove('open');
+    ['btn-people','btn-chat'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+}
+function switchPanelTab(tab){
+    panelTab=tab;
+    document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('active'));
+    document.getElementById('ptab-'+tab)?.classList.add('active');
+    document.getElementById('pane-people').style.display = tab==='people' ? 'block' : 'none';
+    document.getElementById('pane-chat').style.display   = tab==='chat'   ? 'flex'  : 'none';
+    document.getElementById('btn-people')?.classList.toggle('active', tab==='people'&&panelOpen);
+    document.getElementById('btn-chat')?.classList.toggle('active', tab==='chat'&&panelOpen);
+    if(tab==='chat'){ unreadCount=0; document.getElementById('unread-dot').style.display='none'; }
+}
+
+// ── PARTICIPANTS RENDER ──────────────────────────────────────────────
+function renderParticipants(){
+    const list  = document.getElementById('pane-people');
+    const count = Object.values(participants).filter(p=>p.isOnline).length;
+    document.getElementById('people-count').textContent = count;
+    document.getElementById('p-count2').textContent     = count;
+
+    list.innerHTML='';
+    Object.values(participants)
+        .sort((a,b)=> a.isOnline===b.isOnline ? 0 : a.isOnline ? -1 : 1)
+        .forEach(p=>{
+            const av = document.createElement('div');
+            av.className = 'pi';
+            const ini  = initials(p.userName);
+            const col  = avatarColor(p.userName);
+            const role = p.role==='TEACHER' ? '🎓 Giáo viên' : p.role==='STUDENT' ? '👨‍🎓 Học sinh' : p.role;
+            const online = p.isOnline ? `<span style="font-size:.65rem;color:var(--success)">● online</span>`
+                                      : `<span style="font-size:.65rem;color:var(--muted)">○ offline</span>`;
+            let acts = '';
+            if(p.handRaised) acts += `<i class="bi bi-hand-index-thumb-fill" style="color:var(--gold);font-size:.85rem" title="Đang giơ tay"></i>`;
+            if(p.isAttended) acts += `<span class="pi-badge"><i class="bi bi-check2"></i> Có mặt</span>`;
+            if(IS_HOST && p.role!=='TEACHER' && !p.isAttended && p.isOnline)
+                acts += `<button class="att-btn" onclick="markAttendance(${p.userId})"><i class="bi bi-check2"></i> Điểm danh</button>`;
+
+            av.innerHTML = `
+              <div class="pi-av" style="background:${col}">${ini}</div>
+              <div class="pi-info">
+                <div class="pi-name">${p.userName}${p.userId===USER_ID?' <span style="color:var(--muted);font-size:.7rem">(Bạn)</span>':''}</div>
+                <div class="pi-role" style="display:flex;align-items:center;gap:6px">${role} ${online}</div>
+              </div>
+              <div class="pi-acts">${acts}</div>`;
+            list.append(av);
+        });
+}
+function markAttendance(uid){ connection?.invoke('MarkAttendance',SESSION_ID,uid).catch(e=>toast('Lỗi: '+e,'error')); }
+
+// ── CHAT ────────────────────────────────────────────────────────────
+function appendMsg(msg){
+    const box = document.getElementById('chat-msgs');
+    const own = msg.senderId === USER_ID;
+    const sys = msg.messageType === 2;
+    const t   = new Date(msg.sentAt).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+    const ini = sys ? '' : initials(msg.senderName??'?');
+    const col = sys ? '#666' : avatarColor(msg.senderName??'?');
+
+    const div = document.createElement('div');
+    div.className = 'cm' + (own?' own':'') + (sys?' system':'');
+    if(sys){
+        div.innerHTML = `<div class="cm-text">${msg.content}</div>`;
+    } else {
+        div.innerHTML = `
+          ${!own?`<div class="cm-av" style="background:${col}">${ini}</div>`:''}
+          <div class="cm-body-wrap">
+            <div class="cm-meta"><span class="cm-name">${msg.senderName??'?'}</span><span class="cm-time">${t}</span></div>
+            <div class="cm-text">${msg.content}</div>
+          </div>
+          ${own?`<div class="cm-av" style="background:${col}">${ini}</div>`:''}`;
+    }
+    box.append(div);
+    box.scrollTop = box.scrollHeight;
+
+    if(!panelOpen || panelTab!=='chat'){
+        unreadCount++;
+        document.getElementById('unread-dot').style.display='block';
+    }
+}
+function sendChat(){
+    const inp = document.getElementById('chat-input');
+    const txt = inp.value.trim(); if(!txt) return;
+    connection?.invoke('SendMessage',SESSION_ID,txt).catch(e=>toast('Lỗi gửi: '+e,'error'));
+    inp.value='';
+}
+
+// ── MEDIA ───────────────────────────────────────────────────────────
+async function initMedia(){
+    // getUserMedia chỉ hoạt động trên HTTPS hoặc localhost
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        showMediaError('Trình duyệt không hỗ trợ camera. Hãy dùng Chrome/Edge và truy cập qua HTTPS hoặc localhost.');
+        return;
+    }
+    // Thử cả video + audio
+    try{
+        localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+        document.getElementById('local-video').srcObject = localStream;
+        document.getElementById('local-vt').classList.remove('cam-off');
+        return;
+    }catch(e){ console.warn('video+audio failed:', e.name, e.message); }
+
+    // Fallback: chỉ audio (camera đang bị dùng bởi app khác)
+    try{
+        localStream = await navigator.mediaDevices.getUserMedia({video:false,audio:true});
+        document.getElementById('local-vt').classList.add('cam-off');
+        toast('⚠️ Camera không khả dụng — chỉ kết nối audio', 'error');
+        return;
+    }catch(e){ console.warn('audio-only failed:', e.name, e.message); }
+
+    // Hoàn toàn không có media
+    localStream = new MediaStream();
+    document.getElementById('local-vt').classList.add('cam-off');
+    showMediaError('Không thể truy cập camera/mic. Kiểm tra: (1) cấp quyền camera trong trình duyệt, (2) camera không bị app khác chiếm, (3) truy cập qua https://localhost:60480');
+}
+
+function showMediaError(msg){
+    // Hiển thị lỗi rõ ràng trong tile video thay vì chỉ toast
+    const av = document.getElementById('local-av-circle');
+    if(av){ av.style.background='rgba(234,67,53,.3)'; av.innerHTML='<i class="bi bi-camera-video-off-fill" style="font-size:1.6rem;color:var(--danger)"></i>'; }
+    toast('❌ ' + msg, 'error');
+    console.error('[Camera]', msg);
+}
+function toggleMic(){
+    micOn=!micOn;
+    localStream?.getAudioTracks().forEach(t=>t.enabled=micOn);
+    const btn=document.getElementById('btn-mic');
+    btn.innerHTML=micOn?'<i class="bi bi-mic-fill"></i>':'<i class="bi bi-mic-mute-fill"></i>';
+    btn.className='ctl '+(micOn?'ctl-on':'ctl-off');
+    document.getElementById('local-vt').classList.toggle('mic-off',!micOn);
+    toast(micOn?'🎙️ Micro bật':'🔇 Micro tắt');
+}
+function toggleCam(){
+    camOn=!camOn;
+    localStream?.getVideoTracks().forEach(t=>t.enabled=camOn);
+    const btn=document.getElementById('btn-cam');
+    btn.innerHTML=camOn?'<i class="bi bi-camera-video-fill"></i>':'<i class="bi bi-camera-video-off-fill"></i>';
+    btn.className='ctl '+(camOn?'ctl-on':'ctl-off');
+    document.getElementById('local-vt').classList.toggle('cam-off',!camOn);
+    toast(camOn?'📷 Camera bật':'📷 Camera tắt');
+}
+async function shareScreen(){
+    try{
+        const scr=await navigator.mediaDevices.getDisplayMedia({video:true});
+        const trk=scr.getVideoTracks()[0];
+        Object.values(peers).forEach(pc=>{
+            const s=pc.getSenders().find(s=>s.track?.kind==='video');
+            if(s) s.replaceTrack(trk);
+        });
+        document.getElementById('local-video').srcObject=scr;
+        document.getElementById('local-vt').classList.remove('cam-off');
+        document.getElementById('btn-screen').classList.add('active');
+        trk.onended=()=>{
+            const cam=localStream?.getVideoTracks()[0];
+            if(cam){ Object.values(peers).forEach(pc=>{ const s=pc.getSenders().find(s=>s.track?.kind==='video'); if(s)s.replaceTrack(cam); }); }
+            document.getElementById('local-video').srcObject=localStream;
+            document.getElementById('btn-screen').classList.remove('active');
+        };
+        toast('🖥️ Đang chia sẻ màn hình');
+    }catch(e){ toast('Không thể chia sẻ màn hình','error'); }
+}
+function raiseHand(){
+    handRaised=!handRaised;
+    const btn=document.getElementById('btn-hand');
+    if(handRaised){ connection?.invoke('RaiseHand',SESSION_ID).catch(()=>{}); btn.classList.add('active'); toast('🖐️ Bạn đã giơ tay'); }
+    else { connection?.invoke('LowerHand',SESSION_ID,USER_ID).catch(()=>{}); btn.classList.remove('active'); }
+}
+function confirmEnd(){ if(confirm('Kết thúc buổi học cho tất cả mọi người?')) document.getElementById('end-form').submit(); }
+function leaveRoom(){
+    connection?.invoke('LeaveRoom',SESSION_ID).catch(()=>{});
+    window.location='@Url.Action("Index","OnlineClassroom")';
+}
+
+// ── VIDEO GRID LAYOUT ────────────────────────────────────────────────
+function relayout(){
+    const grid = document.getElementById('video-grid');
+    const n = grid.children.length;
+    if(n===0) return;
+    let cols = n<=1?1: n<=4?2: n<=9?3:4;
+    grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+    grid.style.gridTemplateRows   = `repeat(${Math.ceil(n/cols)},1fr)`;
+}
+
+// ── WEBRTC ──────────────────────────────────────────────────────────
+function createPeer(uid){
+    const pc = new RTCPeerConnection(iceConfig);
+    peers[uid]=pc;
+    localStream?.getTracks().forEach(t=>pc.addTrack(t,localStream));
+    pc.onicecandidate = e=>{ if(e.candidate) connection?.invoke('SendWebRtcSignal',SESSION_ID,uid,'ice-candidate',JSON.stringify(e.candidate)); };
+    pc.ontrack = e=>addRemoteVideo(uid,e.streams[0]);
+    return pc;
+}
+function addRemoteVideo(uid,stream){
+    const ex=document.getElementById('vtile-'+uid);
+    if(ex){ ex.querySelector('video').srcObject=stream; return; }
+    const p=participants[uid]; const name=p?.userName??'Người dùng';
+    const tile=document.createElement('div'); tile.className='vt'; tile.id='vtile-'+uid;
+    const col=avatarColor(name); const ini=initials(name);
+    tile.innerHTML=`
+      <video autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>
+      <div class="vt-avatar"><div class="av-circle" style="background:${col}">${ini}</div></div>
+      <div class="vt-overlay"></div>
+      <div class="vt-name"><span class="vn-badge"><i class="bi bi-person-fill"></i> ${name}</span></div>
+      <div class="vt-muted"><i class="bi bi-mic-mute-fill"></i></div>`;
+    tile.querySelector('video').srcObject=stream;
+    document.getElementById('video-grid').append(tile);
+    relayout();
+}
+function removeRemoteVideo(uid){
+    document.getElementById('vtile-'+uid)?.remove();
+    if(peers[uid]){ peers[uid].close(); delete peers[uid]; }
+    relayout();
+}
+async function handleRtcSignal(from,to,type,data){
+    if(to!==USER_ID&&to!==0) return; if(from===USER_ID) return;
+    let pc=peers[from];
+    if(!pc&&type==='offer') pc=createPeer(from); if(!pc) return;
+    if(type==='offer'){ await pc.setRemoteDescription(JSON.parse(data)); const ans=await pc.createAnswer(); await pc.setLocalDescription(ans); connection.invoke('SendWebRtcSignal',SESSION_ID,from,'answer',JSON.stringify(pc.localDescription)); }
+    else if(type==='answer'){ await pc.setRemoteDescription(JSON.parse(data)); }
+    else if(type==='ice-candidate'){ await pc.addIceCandidate(JSON.parse(data)).catch(()=>{}); }
+}
+
+// ── WHITEBOARD ──────────────────────────────────────────────────────
+let wbInited=false;
+function initWhiteboard(){
+    if(wbInited) return; wbInited=true;
+    const canvas=document.getElementById('wb-canvas');
+    const ctx=canvas.getContext('2d');
+    function resize(){ const a=document.getElementById('wb-area'); canvas.width=a.clientWidth; canvas.height=a.clientHeight; }
+    new ResizeObserver(resize).observe(document.getElementById('wb-area')); resize();
+    function pos(e){ const r=canvas.getBoundingClientRect(); const s=e.touches?e.touches[0]:e; return{x:s.clientX-r.left,y:s.clientY-r.top}; }
+    let snap=null;
+    canvas.addEventListener('mousedown',e=>{ drawing=true; const{x,y}=pos(e); lastX=x;lastY=y; if(wbTool!=='pen'&&wbTool!=='erase') snap=ctx.getImageData(0,0,canvas.width,canvas.height); ctx.beginPath(); ctx.moveTo(x,y); },{passive:true});
+    canvas.addEventListener('mousemove',e=>{ if(!drawing) return; const{x,y}=pos(e); const col=document.getElementById('wb-color').value; const sz=+document.getElementById('wb-size').value;
+        if(wbTool==='erase'){ ctx.clearRect(x-sz,y-sz,sz*2,sz*2); }
+        else if(wbTool==='pen'){ ctx.strokeStyle=col;ctx.lineWidth=sz;ctx.lineCap='round';ctx.lineTo(x,y);ctx.stroke(); connection?.invoke('SyncWhiteboard',SESSION_ID,JSON.stringify({tool:'pen',x1:lastX,y1:lastY,x2:x,y2:y,color:col,size:sz})).catch(()=>{}); lastX=x;lastY=y; }
+        else{ if(snap)ctx.putImageData(snap,0,0); ctx.strokeStyle=col;ctx.lineWidth=sz; if(wbTool==='line'){ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(x,y);ctx.stroke();}else if(wbTool==='rect'){ctx.strokeRect(lastX,lastY,x-lastX,y-lastY);} }
+    },{passive:true});
+    canvas.addEventListener('mouseup',e=>{ if(!drawing)return;drawing=false; const{x,y}=pos(e); if(wbTool!=='pen'&&wbTool!=='erase'){const col=document.getElementById('wb-color').value;const sz=+document.getElementById('wb-size').value;connection?.invoke('SyncWhiteboard',SESSION_ID,JSON.stringify({tool:wbTool,x1:lastX,y1:lastY,x2:x,y2:y,color:col,size:sz})).catch(()=>{});} });
+    window._applyStroke=s=>{ s=JSON.parse(s);ctx.strokeStyle=s.color;ctx.lineWidth=s.size;ctx.lineCap='round'; if(s.tool==='pen'){ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();}else if(s.tool==='line'){ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();}else if(s.tool==='rect'){ctx.strokeRect(s.x1,s.y1,s.x2-s.x1,s.y2-s.y1);} };
+    window._clearBoard=()=>ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+function setWbTool(t){ wbTool=t; document.querySelectorAll('.wbt').forEach(b=>b.classList.remove('sel')); document.getElementById('wb-'+t)?.classList.add('sel'); }
+function clearBoard(){ window._clearBoard?.(); connection?.invoke('ClearWhiteboard',SESSION_ID).catch(()=>{}); }
+
+// ── SLIDES ──────────────────────────────────────────────────────────
+function renderSlides(){
+    const thumbs=document.getElementById('slide-thumbs'); thumbs.innerHTML='';
+    const empty=document.getElementById('slide-empty'); if(empty) empty.style.display=slides.length?'none':'block';
+    slides.forEach((s,i)=>{
+        const t=document.createElement('div'); t.className='s-thumb'+(i===curSlide?' active':''); t.title=s.fileName;
+        if(!s.fileUrl.endsWith('.pdf')){ const img=document.createElement('img');img.src=s.fileUrl;t.append(img); }
+        else t.textContent=s.fileName.slice(0,12);
+        t.onclick=()=>showSlide(i,true); thumbs.append(t);
+    });
+    if(slides.length) showSlide(curSlide,false);
+}
+function showSlide(idx,bc){
+    if(idx<0||idx>=slides.length) return; curSlide=idx;
+    document.querySelectorAll('.s-thumb').forEach((t,i)=>t.classList.toggle('active',i===idx));
+    const v=document.getElementById('slide-viewer'); const s=slides[idx];
+    const isPdf=s.fileUrl.endsWith('.pdf');
+    const el=document.createElement(isPdf?'embed':'img');
+    el.src=s.fileUrl; if(isPdf){el.type='application/pdf';el.style.cssText='width:100%;height:100%;border:none';}
+    else{el.style.cssText='max-width:100%;max-height:100%;object-fit:contain';}
+    Array.from(v.children).forEach(c=>{ if(c.id!=='slide-empty') c.remove(); });
+    v.append(el);
+    if(bc&&IS_HOST) connection?.invoke('SyncSlide',SESSION_ID,s.id,idx).catch(()=>{});
+}
+async function uploadSlide(file){
+    const fd=new FormData(); fd.append('sessionId',SESSION_ID); fd.append('file',file);
+    const resp=await fetch(UPLOAD_URL,{method:'POST',headers:{'RequestVerificationToken':CSRF_TOKEN},body:fd});
+    if(!resp.ok){toast('Tải slide thất bại','error');return;}
+    const dto=await resp.json(); slides.push(dto); renderSlides(); switchView('slide');
+    toast('✅ Đã tải slide: '+dto.fileName,'success');
+}
+document.getElementById('slide-file')?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) uploadSlide(f); e.target.value=''; });
+
+// ── SIGNALR ─────────────────────────────────────────────────────────
+async function initSignalR(){
+    connection=new signalR.HubConnectionBuilder().withUrl('/hubs/online-class').withAutomaticReconnect().build();
+    connection.on('ReceiveMessage',msg=>appendMsg(msg));
+    connection.on('UserJoined',data=>{
+        participants[data.userId]={...(participants[data.userId]??{}),userId:data.userId,userName:data.userName,isOnline:true};
+        renderParticipants();
+        appendMsg({senderId:-1,senderName:'',content:`${data.userName} đã tham gia`,messageType:2,sentAt:new Date().toISOString()});
+        if(IS_HOST||USER_ID<data.userId){ const pc=createPeer(data.userId); pc.createOffer().then(o=>{return pc.setLocalDescription(o);}).then(()=>{connection.invoke('SendWebRtcSignal',SESSION_ID,data.userId,'offer',JSON.stringify(pc.localDescription));}).catch(()=>{}); }
+    });
+    connection.on('UserLeft',data=>{
+        if(participants[data.userId]) participants[data.userId].isOnline=false;
+        removeRemoteVideo(data.userId); renderParticipants();
+        appendMsg({senderId:-1,senderName:'',content:`${data.userName} đã rời phòng`,messageType:2,sentAt:new Date().toISOString()});
+    });
+    connection.on('WhiteboardStroke',d=>{ if(d.senderId!==USER_ID) window._applyStroke?.(d.stroke); });
+    connection.on('WhiteboardCleared',()=>window._clearBoard?.());
+    connection.on('SlideChanged',d=>{ if(d.byUserId!==USER_ID) showSlide(d.pageIndex,false); });
+    connection.on('WebRtcSignal',async d=>await handleRtcSignal(d.fromUserId,d.targetUserId,d.type,d.data));
+    connection.on('AttendanceMarked',d=>{
+        if(participants[d.studentUserId]){participants[d.studentUserId].isAttended=true;renderParticipants();}
+        if(d.studentUserId===USER_ID) toast('✅ Đã được điểm danh!','success');
+    });
+    connection.on('HandRaised',d=>{ if(participants[d.userId]){participants[d.userId].handRaised=true;renderParticipants();} if(d.userId!==USER_ID) toast(`🖐️ ${d.userName} giơ tay`); });
+    connection.on('HandLowered',d=>{ if(participants[d.userId]){participants[d.userId].handRaised=false;renderParticipants();} });
+    connection.on('SessionEnded',()=>{ if(!IS_HOST) document.getElementById('modal-bg').style.display='flex'; });
+    connection.onreconnecting(()=>toast('🔄 Đang kết nối lại…'));
+    connection.onreconnected(()=>toast('✅ Đã kết nối lại','success'));
+    await connection.start();
+    await connection.invoke('JoinRoom',SESSION_ID);
+    if(IS_HOST) await connection.invoke('NotifySessionStarted',SESSION_ID).catch(()=>{});
+}
+
+// ── BOOTSTRAP ───────────────────────────────────────────────────────
+(async function init(){
+    relayout();
+    await initMedia();
+    await initSignalR();
+    setInterval(()=>{ if(connection?.state==='Connected') connection.invoke('JoinRoom',SESSION_ID).catch(()=>{}); },20000);
+    window.addEventListener('beforeunload',()=>{ connection?.invoke('LeaveRoom',SESSION_ID).catch(()=>{}); });
+})();
+</script>
+</body>
+</html>

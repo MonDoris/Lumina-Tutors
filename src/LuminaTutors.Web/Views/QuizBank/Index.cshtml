@@ -1,0 +1,239 @@
+@using LuminaTutors.Application.DTOs.Quiz
+@using LuminaTutors.Domain.Common
+@model PagedResult<QuizQuestionDto>
+@{
+    ViewData["Title"] = "Ngân hàng câu hỏi";
+    var filter = ViewBag.Filter as QuizQuestionFilterRequest;
+    var subjects    = ViewBag.Subjects    as IReadOnlyList<dynamic> ?? new List<dynamic>();
+    var gradeLevels = ViewBag.GradeLevels as IReadOnlyList<dynamic> ?? new List<dynamic>();
+
+    string DiffLabel(string d) => d switch {
+        "Easy"   => "Dễ",
+        "Medium" => "Trung bình",
+        "Hard"   => "Khó",
+        _        => d
+    };
+    string DiffColor(string d) => d switch {
+        "Easy"   => "var(--lt-success)",
+        "Medium" => "var(--lt-gold)",
+        "Hard"   => "var(--lt-danger)",
+        _        => "var(--lt-text-muted)"
+    };
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-collection-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Ngân hàng câu hỏi
+        </h1>
+        <p class="lt-page-subtitle">Quản lý câu hỏi trắc nghiệm theo từng môn học</p>
+    </div>
+    <div style="display:flex;gap:10px">
+        <a asp-controller="QuizExam" asp-action="Index"
+           class="lt-btn lt-btn--outline">
+            <i class="bi bi-file-earmark-text"></i> Đề thi
+        </a>
+        <a asp-action="Create" class="lt-btn lt-btn--primary">
+            <i class="bi bi-plus-lg"></i> Thêm câu hỏi
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4">
+        <i class="bi bi-check-circle-fill"></i> @ok
+    </div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i> @err
+    </div>
+}
+
+<!-- Filter bar -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body" style="padding:.85rem 1.1rem">
+        <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div class="lt-form-group" style="min-width:160px;margin:0">
+                <label class="lt-label" style="font-size:.75rem">Môn học</label>
+                <select name="subjectId" class="lt-select" style="height:36px;font-size:.82rem">
+                    <option value="">Tất cả môn</option>
+                    @foreach (dynamic s in subjects)
+                    {
+                        <option value="@s.SubjectId" selected="@(filter?.SubjectId == (int)s.SubjectId)">@s.SubjectName</option>
+                    }
+                </select>
+            </div>
+            <div class="lt-form-group" style="min-width:130px;margin:0">
+                <label class="lt-label" style="font-size:.75rem">Độ khó</label>
+                <select name="difficulty" class="lt-select" style="height:36px;font-size:.82rem">
+                    <option value="">Tất cả</option>
+                    <option value="Easy"   selected="@(filter?.Difficulty=="Easy")">Dễ</option>
+                    <option value="Medium" selected="@(filter?.Difficulty=="Medium")">Trung bình</option>
+                    <option value="Hard"   selected="@(filter?.Difficulty=="Hard")">Khó</option>
+                </select>
+            </div>
+            <div class="lt-form-group" style="flex:1;min-width:200px;margin:0">
+                <label class="lt-label" style="font-size:.75rem">Tìm kiếm</label>
+                <input name="keyword" class="lt-input" value="@filter?.Keyword"
+                       placeholder="Nhập từ khóa câu hỏi..." style="height:36px;font-size:.82rem"/>
+            </div>
+            <div class="lt-form-group" style="margin:0">
+                <label class="lt-label" style="font-size:.75rem">Trạng thái</label>
+                <select name="approvedOnly" class="lt-select" style="height:36px;font-size:.82rem">
+                    <option value="">Tất cả</option>
+                    <option value="true" selected="@(filter?.ApprovedOnly==true)">Đã duyệt</option>
+                </select>
+            </div>
+            <button type="submit" class="lt-btn lt-btn--primary" style="height:36px;padding:0 16px">
+                <i class="bi bi-search"></i> Lọc
+            </button>
+            <a href="/QuizBank" class="lt-btn lt-btn--outline" style="height:36px;padding:0 14px">
+                <i class="bi bi-x-lg"></i>
+            </a>
+        </form>
+    </div>
+</div>
+
+@if (Model == null || Model.Items.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <i class="bi bi-collection" style="font-size:3rem;color:var(--lt-navy-100)"></i>
+                <div class="lt-empty__title">Chưa có câu hỏi nào</div>
+                <div class="lt-empty__sub">Bắt đầu xây dựng ngân hàng câu hỏi bằng cách thêm câu hỏi mới.</div>
+                <a asp-action="Create" class="lt-btn lt-btn--primary lt-mt-3">
+                    <i class="bi bi-plus-lg"></i> Thêm câu hỏi đầu tiên
+                </a>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lt-card">
+        <div class="lt-card__header">
+            <h3 class="lt-card__title">
+                <i class="bi bi-list-check" style="color:var(--lt-gold);margin-right:6px"></i>
+                Danh sách câu hỏi
+            </h3>
+            <span class="lt-badge lt-badge--navy">@Model.TotalCount câu</span>
+        </div>
+        <div class="lt-card__body" style="padding:0">
+            <div style="overflow-x:auto">
+                <table class="lt-table">
+                    <thead>
+                        <tr>
+                            <th style="width:48px">#</th>
+                            <th>Câu hỏi</th>
+                            <th style="width:110px">Môn học</th>
+                            <th style="width:95px">Độ khó</th>
+                            <th style="width:90px">Loại</th>
+                            <th style="width:80px">Trạng thái</th>
+                            <th style="width:100px">Tác giả</th>
+                            <th style="width:110px;text-align:right">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (q, i) in Model.Items.Select((x, i) => (x, i)))
+                        {
+                            <tr>
+                                <td style="color:var(--lt-text-muted);font-size:.78rem">
+                                    @((Model.PageNumber - 1) * Model.PageSize + i + 1)
+                                </td>
+                                <td>
+                                    <div style="font-size:.85rem;font-weight:500;line-height:1.4;
+                                                max-width:420px;overflow:hidden;
+                                                display:-webkit-box;-webkit-line-clamp:2;
+                                                -webkit-box-orient:vertical">
+                                        @q.QuestionText
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(q.ChapterTag))
+                                    {
+                                        <span style="font-size:.72rem;color:var(--lt-text-muted)">
+                                            <i class="bi bi-bookmark-fill"></i> @q.ChapterTag
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <span style="font-size:.8rem;font-weight:500">@q.SubjectName</span>
+                                </td>
+                                <td>
+                                    <span class="lt-badge" style="background:@DiffColor(q.DifficultyLevel)22;
+                                          color:@DiffColor(q.DifficultyLevel);border:none;font-size:.72rem">
+                                        @DiffLabel(q.DifficultyLevel)
+                                    </span>
+                                </td>
+                                <td style="font-size:.78rem;color:var(--lt-text-muted)">
+                                    @(q.QuestionType == "MultipleChoice" ? "Trắc nghiệm" :
+                                      q.QuestionType == "TrueFalse" ? "Đúng/Sai" : q.QuestionType)
+                                </td>
+                                <td>
+                                    @if (q.IsApproved)
+                                    {
+                                        <span class="lt-pulse-dot lt-pulse-dot--success" style="margin-right:4px"></span>
+                                        <span style="font-size:.75rem;color:var(--lt-success)">Đã duyệt</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="font-size:.75rem;color:var(--lt-gold)">Chờ duyệt</span>
+                                    }
+                                </td>
+                                <td style="font-size:.78rem;color:var(--lt-text-muted)">
+                                    @q.TeacherName.Split(' ').Last()
+                                </td>
+                                <td style="text-align:right">
+                                    <div style="display:flex;gap:6px;justify-content:flex-end">
+                                        <a asp-action="Edit" asp-route-id="@q.QuestionId"
+                                           class="lt-btn lt-btn--sm lt-btn--outline" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        @if (!q.IsApproved)
+                                        {
+                                            <form asp-action="Approve" asp-route-id="@q.QuestionId" method="post" style="display:inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                        style="border-color:var(--lt-success);color:var(--lt-success)"
+                                                        title="Duyệt câu hỏi">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        <form asp-action="Delete" asp-route-id="@q.QuestionId" method="post" style="display:inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="lt-btn lt-btn--sm lt-btn--outline"
+                                                    style="border-color:var(--lt-danger);color:var(--lt-danger)"
+                                                    onclick="return confirm('Xóa câu hỏi này?')" title="Xóa">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="lt-card__footer" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                <span style="font-size:.8rem;color:var(--lt-text-muted)">
+                    Trang @Model.PageNumber / @Model.TotalPages · Tổng @Model.TotalCount câu
+                </span>
+                <div style="display:flex;gap:6px">
+                    @for (int p = 1; p <= Model.TotalPages; p++)
+                    {
+                        <a href="?page=@p&subjectId=@filter?.SubjectId&difficulty=@filter?.Difficulty&keyword=@filter?.Keyword&approvedOnly=@filter?.ApprovedOnly"
+                           class="lt-btn lt-btn--sm @(p == Model.PageNumber ? "lt-btn--primary" : "lt-btn--outline")">@p</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

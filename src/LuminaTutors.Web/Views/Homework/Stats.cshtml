@@ -1,0 +1,369 @@
+@using LuminaTutors.Application.DTOs.Homework
+@using LuminaTutors.Domain.Enums
+@model AssignmentStatsDto
+@{
+    ViewData["Title"] = "Thống kê bài nộp — " + Model.Assignment.Title;
+    var a           = Model.Assignment;
+    var submitted   = Model.Submissions;
+    var notSub      = Model.NotSubmitted;
+    var pctSubmit   = Model.TotalStudents > 0 ? (double)Model.SubmittedCount / Model.TotalStudents * 100 : 0;
+    var pctGraded   = Model.SubmittedCount > 0 ? (double)Model.GradedCount  / Model.SubmittedCount  * 100 : 0;
+    var avgScore    = submitted.Where(s => s.Score.HasValue).Select(s => s.Score!.Value).DefaultIfEmpty(0).Average();
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title" style="font-size:1.15rem">
+            <i class="bi bi-bar-chart-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            @a.Title
+        </h1>
+        <p class="lt-page-subtitle">
+            @a.SubjectName — @a.ClassName &nbsp;·&nbsp;
+            @if (a.DueDate.HasValue)
+            {
+                <span>Hạn: @a.DueDate.Value.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</span>
+            }
+            else { <span>Không giới hạn hạn nộp</span> }
+        </p>
+    </div>
+    <div style="display:flex;gap:8px">
+        <a asp-action="Edit" asp-route-id="@a.Id" class="lt-btn lt-btn--outline lt-btn--sm">
+            <i class="bi bi-pencil"></i> Sửa
+        </a>
+        <a asp-action="Teacher" class="lt-btn lt-btn--outline lt-btn--sm">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] is string ok)
+{ <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div> }
+
+@* ── KPI strip ───────────────────────────────────────────────────────────── *@
+<div class="row g-3 lt-mb-4">
+    <div class="col-6 col-md">
+        <div class="lt-card hw-kpi">
+            <div class="hw-kpi__num">@Model.TotalStudents</div>
+            <div class="hw-kpi__label">Tổng số HS</div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="lt-card hw-kpi">
+            <div class="hw-kpi__num" style="color:var(--lt-success)">@Model.SubmittedCount</div>
+            <div class="hw-kpi__label">Đã nộp</div>
+            <div class="hw-kpi__pct">@pctSubmit.ToString("0")%</div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="lt-card hw-kpi @(Model.NotSubmittedCount > 0 ? "hw-kpi--warn" : "")">
+            <div class="hw-kpi__num" style="color:@(Model.NotSubmittedCount>0?"var(--lt-danger)":"var(--lt-text-muted)")">
+                @Model.NotSubmittedCount
+            </div>
+            <div class="hw-kpi__label">Chưa nộp</div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="lt-card hw-kpi">
+            <div class="hw-kpi__num" style="color:#f59e0b">@Model.LateCount</div>
+            <div class="hw-kpi__label">Nộp muộn</div>
+        </div>
+    </div>
+    <div class="col-6 col-md">
+        <div class="lt-card hw-kpi">
+            <div class="hw-kpi__num" style="color:var(--lt-gold)">@Model.GradedCount</div>
+            <div class="hw-kpi__label">Đã chấm</div>
+            <div class="hw-kpi__pct">@pctGraded.ToString("0")%</div>
+        </div>
+    </div>
+    @if (Model.GradedCount > 0)
+    {
+        <div class="col-6 col-md">
+            <div class="lt-card hw-kpi">
+                <div class="hw-kpi__num" style="color:var(--lt-navy)">@avgScore.ToString("0.0")</div>
+                <div class="hw-kpi__label">Điểm TB / @a.MaxScore</div>
+            </div>
+        </div>
+    }
+</div>
+
+@* ── Progress bar ────────────────────────────────────────────────────────── *@
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body" style="padding:16px 20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:.8rem">
+            <span style="color:var(--lt-text-muted)">Tiến độ nộp bài</span>
+            <span style="font-weight:700;color:var(--lt-navy)">@Model.SubmittedCount / @Model.TotalStudents</span>
+        </div>
+        <div class="hw-progress">
+            <div class="hw-progress__fill hw-progress__fill--submit"
+                 style="width:@pctSubmit.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+            </div>
+            <div class="hw-progress__fill hw-progress__fill--graded"
+                 style="width:@((Model.TotalStudents>0?(double)Model.GradedCount/Model.TotalStudents*100:0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%">
+            </div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:.74rem;color:var(--lt-text-muted)">
+            <span><span class="hw-legend hw-legend--submit"></span> Đã nộp</span>
+            <span><span class="hw-legend hw-legend--graded"></span> Đã chấm</span>
+        </div>
+    </div>
+</div>
+
+@* ── Tabs ────────────────────────────────────────────────────────────────── *@
+<ul class="nav nav-tabs lt-mb-3" id="statsTabs">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-submitted">
+            <i class="bi bi-check2-circle"></i>
+            Đã nộp <span class="lt-badge lt-badge--navy" style="margin-left:4px">@Model.SubmittedCount</span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(Model.NotSubmittedCount>0?"text-danger":"")" data-bs-toggle="tab" data-bs-target="#tab-missing">
+            <i class="bi bi-x-circle"></i>
+            Chưa nộp <span class="lt-badge @(Model.NotSubmittedCount>0?"lt-badge--danger":"lt-badge--navy")"
+                           style="margin-left:4px">@Model.NotSubmittedCount</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    @* ── Tab: Submitted ────────────────────────────────────────────────── *@
+    <div class="tab-pane fade show active" id="tab-submitted">
+        @if (!submitted.Any())
+        {
+            <div class="lt-card">
+                <div class="lt-card__body">
+                    <div class="lt-empty">
+                        <i class="bi bi-inbox" style="font-size:2.5rem;color:var(--lt-navy-100)"></i>
+                        <div class="lt-empty__title">Chưa có học sinh nộp bài</div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="lt-card">
+                <div class="lt-card__body" style="padding:0">
+                    <table class="lt-table">
+                        <thead>
+                            <tr>
+                                <th>Học sinh</th>
+                                <th style="width:110px">Thời gian nộp</th>
+                                <th style="width:80px;text-align:center">Trạng thái</th>
+                                <th style="width:120px;text-align:center">Điểm / @a.MaxScore</th>
+                                <th style="width:100px;text-align:center">File</th>
+                                <th style="width:180px">Chấm điểm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in submitted.OrderBy(x => x.StudentName))
+                            {
+                                <tr id="row-@s.SubmissionId">
+                                    <td>
+                                        <div style="font-weight:600;font-size:.87rem">@s.StudentName</div>
+                                        <div style="font-size:.73rem;color:var(--lt-text-muted)">@s.StudentCode</div>
+                                    </td>
+                                    <td style="font-size:.78rem">
+                                        @if (s.SubmittedAt.HasValue)
+                                        {
+                                            <div>@s.SubmittedAt.Value.ToLocalTime().ToString("HH:mm")</div>
+                                            <div style="color:var(--lt-text-muted)">@s.SubmittedAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</div>
+                                        }
+                                        @if (s.IsLate)
+                                        {
+                                            <span class="lt-badge lt-badge--danger" style="font-size:.65rem">Muộn</span>
+                                        }
+                                    </td>
+                                    <td style="text-align:center">
+                                        @if (s.Status == SubmissionStatus.Graded)
+                                        {
+                                            <span class="lt-badge lt-badge--success">Đã chấm</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="lt-badge">Đã nộp</span>
+                                        }
+                                    </td>
+                                    <td style="text-align:center">
+                                        @if (s.Score.HasValue)
+                                        {
+                                            <span style="font-size:1rem;font-weight:800;color:var(--lt-navy)">@s.Score</span>
+                                        }
+                                        else { <span style="color:var(--lt-text-muted)">—</span> }
+                                    </td>
+                                    <td style="text-align:center">
+                                        @if (s.Files.Any())
+                                        {
+                                            <button class="lt-btn lt-btn--sm lt-btn--outline"
+                                                    onclick="showFiles(@s.SubmissionId)"
+                                                    title="Xem @s.Files.Count file">
+                                                <i class="bi bi-paperclip"></i> @s.Files.Count
+                                            </button>
+                                        }
+                                        else { <span style="color:var(--lt-text-muted);font-size:.78rem">—</span> }
+                                    </td>
+                                    <td>
+                                        <form asp-action="Grade" method="post" class="d-flex gap-1 align-items-center">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="submissionId" value="@s.SubmissionId" />
+                                            <input type="hidden" name="assignmentId"  value="@a.Id" />
+                                            <input name="score" type="number" class="lt-input"
+                                                   style="width:65px;padding:5px 8px;font-size:.82rem"
+                                                   value="@s.Score" min="0" max="@a.MaxScore" step="0.5"
+                                                   placeholder="Điểm" required />
+                                            <button type="submit" class="lt-btn lt-btn--sm lt-btn--primary" title="Chấm điểm">
+                                                <i class="bi bi-check2"></i>
+                                            </button>
+                                        </form>
+                                        @if (!string.IsNullOrEmpty(s.Feedback))
+                                        {
+                                            <div style="font-size:.72rem;color:var(--lt-text-muted);margin-top:4px;
+                                                        max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                                                 title="@s.Feedback">💬 @s.Feedback</div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ── Tab: Not submitted ─────────────────────────────────────────────── *@
+    <div class="tab-pane fade" id="tab-missing">
+        @if (!notSub.Any())
+        {
+            <div class="lt-card">
+                <div class="lt-card__body">
+                    <div class="lt-empty">
+                        <i class="bi bi-emoji-smile" style="font-size:2.5rem;color:var(--lt-success)"></i>
+                        <div class="lt-empty__title" style="color:var(--lt-success)">Tất cả học sinh đã nộp bài! 🎉</div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="lt-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title" style="color:var(--lt-danger)">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        @notSub.Count học sinh chưa nộp bài
+                    </h3>
+                    <span style="font-size:.78rem;color:var(--lt-text-muted)">
+                        Hạn nộp: @(a.DueDate.HasValue ? a.DueDate.Value.ToLocalTime().ToString("HH:mm dd/MM/yyyy") : "Không giới hạn")
+                    </span>
+                </div>
+                <div class="lt-card__body" style="padding:0">
+                    <table class="lt-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Họ tên học sinh</th>
+                                <th style="width:120px">Mã học sinh</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int idx = 1; }
+                            @foreach (var s in notSub)
+                            {
+                                <tr>
+                                    <td style="color:var(--lt-text-muted);font-size:.8rem">@(idx++)</td>
+                                    <td>
+                                        <div style="display:flex;align-items:center;gap:8px">
+                                            <div style="width:32px;height:32px;border-radius:50%;
+                                                        background:var(--lt-danger);opacity:.15;
+                                                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                            </div>
+                                            <span style="font-weight:600;font-size:.87rem">@s.StudentName</span>
+                                        </div>
+                                    </td>
+                                    <td style="font-family:monospace;font-size:.82rem;color:var(--lt-text-muted)">@s.StudentCode</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@* ── File modal ──────────────────────────────────────────────────────────── *@
+@foreach (var s in submitted.Where(x => x.Files.Any()))
+{
+    <div class="modal fade" id="files-@s.SubmissionId" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:14px;border:none">
+                <div class="modal-header" style="border-bottom:1px solid var(--lt-border)">
+                    <h5 class="modal-title" style="font-size:.95rem;font-weight:700">
+                        <i class="bi bi-paperclip" style="color:var(--lt-gold)"></i>
+                        File của @s.StudentName
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    @foreach (var f in s.Files)
+                    {
+                        <a href="@f.FileUrl" target="_blank"
+                           style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+                                  border-radius:8px;background:var(--lt-bg-subtle);
+                                  border:1px solid var(--lt-border);margin-bottom:8px;
+                                  text-decoration:none;color:var(--lt-navy)">
+                            <i class="bi bi-file-earmark" style="font-size:1.2rem;color:var(--lt-navy)"></i>
+                            <div style="flex:1;overflow:hidden">
+                                <div style="font-weight:600;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                    @f.FileName
+                                </div>
+                                <div style="font-size:.72rem;color:var(--lt-text-muted)">
+                                    @f.FileType · @(f.FileSizeKB.HasValue ? f.FileSizeKB + " KB" : "—")
+                                </div>
+                            </div>
+                            <i class="bi bi-download" style="color:var(--lt-navy-100)"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Styles {
+<style>
+.hw-kpi {
+    text-align: center; padding: 0;
+}
+.hw-kpi .lt-card__body { padding: 14px 10px; }
+.hw-kpi__num  { font-size: 1.7rem; font-weight: 800; color: var(--lt-navy); line-height: 1; }
+.hw-kpi__label{ font-size: .73rem; color: var(--lt-text-muted); margin-top: 3px; }
+.hw-kpi__pct  { font-size: .68rem; color: var(--lt-text-muted); }
+.hw-kpi--warn { border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.03); }
+
+.hw-progress {
+    height: 12px; background: var(--lt-bg-subtle); border-radius: 99px;
+    overflow: hidden; position: relative;
+}
+.hw-progress__fill {
+    position: absolute; left: 0; top: 0; height: 100%; border-radius: 99px;
+}
+.hw-progress__fill--submit { background: var(--lt-navy); opacity: .35; }
+.hw-progress__fill--graded { background: var(--lt-gold); }
+.hw-legend {
+    display: inline-block; width: 10px; height: 10px;
+    border-radius: 3px; margin-right: 4px; vertical-align: middle;
+}
+.hw-legend--submit { background: var(--lt-navy); opacity:.35; }
+.hw-legend--graded { background: var(--lt-gold); }
+</style>
+}
+
+@section Scripts {
+<script>
+function showFiles(id) {
+    const el = document.getElementById('files-' + id);
+    if (el) new bootstrap.Modal(el).show();
+}
+</script>
+}

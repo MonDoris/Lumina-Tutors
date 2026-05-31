@@ -1,0 +1,222 @@
+@model LuminaTutors.Domain.Common.PagedResult<LuminaTutors.Application.DTOs.Discipline.DisciplineRecordDto>
+@{
+    ViewData["Title"] = "Hồ sơ kỷ luật";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Hồ sơ kỷ luật</h1>
+        <p class="lt-page-subtitle">Ghi nhận và xử lý vi phạm nội quy học đường</p>
+    </div>
+    <button class="lt-btn lt-btn--gold" data-bs-toggle="modal" data-bs-target="#recordModal"
+            data-testid="btn-add-record">
+        <i class="bi bi-plus-lg"></i> Ghi vi phạm
+    </button>
+</div>
+
+<!-- Filters -->
+<div class="lt-card mb-3">
+    <div class="lt-card__body" style="padding:14px 24px">
+        <form method="get" data-testid="filter-form">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="lt-label">Trạng thái</label>
+                    <select name="status" class="lt-select" data-testid="select-status">
+                        <option value="">Tất cả</option>
+                        <option value="Pending"   selected="@(ViewBag.Status == "Pending"   ? "selected" : null)">Chờ xử lý</option>
+                        <option value="Resolved"  selected="@(ViewBag.Status == "Resolved"  ? "selected" : null)">Đã xử lý</option>
+                        <option value="Escalated" selected="@(ViewBag.Status == "Escalated" ? "selected" : null)">Đã chuyển cấp</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="lt-label">Từ ngày</label>
+                    <input type="date" name="from" class="lt-input"/>
+                </div>
+                <div class="col-md-2">
+                    <label class="lt-label">Đến ngày</label>
+                    <input type="date" name="to" class="lt-input"/>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-filter"></i> Lọc
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="lt-card">
+    <div class="lt-card__body" style="padding:0">
+        <table class="lt-table" data-testid="discipline-table">
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th>Học sinh</th>
+                    <th>Mô tả vi phạm</th>
+                    <th>Mức độ</th>
+                    <th>Trạng thái</th>
+                    <th>Người báo cáo</th>
+                    <th style="width:140px">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var rec in Model?.Items ?? new List<LuminaTutors.Application.DTOs.Discipline.DisciplineRecordDto>())
+                {
+                    <tr data-testid="discipline-row">
+                        <td style="font-size:.82rem;white-space:nowrap">@rec.RecordDate.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <div style="font-weight:600">@rec.StudentName</div>
+                            <div style="font-size:.75rem;color:#9ca3af">@rec.StudentCode</div>
+                        </td>
+                        <td style="max-width:240px">
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px" title="@rec.Description">
+                                @rec.Description
+                            </div>
+                        </td>
+                        <td>
+                            @{
+                                var (sev, lbl) = rec.Severity switch {
+                                    "Minor"    => ("lt-badge--warning", "Nhẹ"),
+                                    "Moderate" => ("lt-badge--danger",  "Vừa"),
+                                    "Severe"   => ("lt-badge--danger",  "Nghiêm trọng"),
+                                    _          => ("lt-badge--gray", rec.Severity)
+                                };
+                            }
+                            <span class="lt-badge @sev">@lbl</span>
+                        </td>
+                        <td>
+                            @{
+                                var (st, stl) = rec.Status switch {
+                                    "Pending"   => ("lt-badge--warning", "Chờ xử lý"),
+                                    "Resolved"  => ("lt-badge--success", "Đã xử lý"),
+                                    "Escalated" => ("lt-badge--info",    "Đã chuyển cấp"),
+                                    _           => ("lt-badge--gray", rec.Status)
+                                };
+                            }
+                            <span class="lt-badge @st">@stl</span>
+                        </td>
+                        <td style="font-size:.82rem;color:#6b7280">@rec.ReportedByName</td>
+                        <td>
+                            @if (rec.Status == "Pending")
+                            {
+                                <div style="display:flex;gap:4px">
+                                    <button class="lt-btn lt-btn--success lt-btn--sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#resolveModal"
+                                            onclick="setResolveId(@rec.RecordId)"
+                                            data-testid="btn-resolve">
+                                        <i class="bi bi-check-lg"></i> Xử lý
+                                    </button>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(rec.ActionTaken))
+                            {
+                                <div style="font-size:.75rem;color:#9ca3af;margin-top:4px" title="@rec.ActionTaken">
+                                    <i class="bi bi-check-circle" style="color:var(--lt-success)"></i>
+                                    Đã xử lý
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (Model?.TotalPages > 1)
+    {
+        <div class="lt-card__footer d-flex justify-content-end">
+            <div class="lt-pagination">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a asp-action="Records" asp-route-page="@i"
+                       class="lt-page-btn @(i == Model.PageNumber ? "active" : "")">@i</a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Record Violation Modal -->
+<div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none">
+            <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                <h5 class="modal-title lt-card__title">Ghi nhận vi phạm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="RecordViolation" method="post" data-testid="violation-form">
+                @Html.AntiForgeryToken()
+                <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:14px">
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">ID Học sinh <span style="color:var(--lt-danger)">*</span></label>
+                        <input type="number" name="model.StudentId" class="lt-input" required data-testid="input-student-id"/>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Ngày xảy ra</label>
+                        <input type="date" name="model.RecordDate" class="lt-input"
+                               value="@DateTime.Today.ToString("yyyy-MM-dd")" required/>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Mô tả vi phạm <span style="color:var(--lt-danger)">*</span></label>
+                        <textarea name="model.Description" class="lt-textarea" rows="3"
+                                  placeholder="Mô tả chi tiết vi phạm..." required
+                                  data-testid="input-description"></textarea>
+                    </div>
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Mức độ vi phạm</label>
+                        <select name="model.Severity" class="lt-select" data-testid="select-severity">
+                            <option value="Minor">Nhẹ</option>
+                            <option value="Moderate">Vừa</option>
+                            <option value="Severe">Nghiêm trọng</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--primary" data-testid="btn-submit-violation">
+                        <i class="bi bi-file-earmark-plus"></i> Ghi nhận
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Resolve Modal -->
+<div class="modal fade" id="resolveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none">
+            <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                <h5 class="modal-title lt-card__title">Xử lý vi phạm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="ResolveRecord" method="post" data-testid="resolve-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="resolveRecordId"/>
+                <div class="modal-body" style="padding:24px">
+                    <div class="lt-form-group" style="margin-bottom:0">
+                        <label class="lt-label">Biện pháp xử lý <span style="color:var(--lt-danger)">*</span></label>
+                        <textarea name="actionTaken" class="lt-textarea" rows="3"
+                                  placeholder="Mô tả biện pháp đã áp dụng..." required
+                                  data-testid="input-action"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--gold" data-testid="btn-confirm-resolve">
+                        <i class="bi bi-check-circle"></i> Xác nhận xử lý
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function setResolveId(id) {
+    document.getElementById('resolveRecordId').value = id;
+}
+</script>
+}

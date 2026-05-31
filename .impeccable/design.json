@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-27T00:00:00Z",
+  "title": "Design System: Lumina Tutors",
+  "extensions": {
+    "colorMeta": {
+      "navy":           { "role": "primary",   "displayName": "Headmaster's Navy",   "canonical": "oklch(16% 0.045 240)", "tonalRamp": ["#050d17","#0a1525","#0f1c2e","#1a2d45","#243650","#2e4460","#3d5a7a","#6b8aaa"] },
+      "navy-light":     { "role": "primary",   "displayName": "Council Room Navy",   "canonical": "oklch(22% 0.048 240)", "tonalRamp": ["#081221","#0f1c2e","#1a2d45","#243650","#2e4460","#3d5a7a","#6b8aaa","#9ab2c8"] },
+      "navy-muted":     { "role": "primary",   "displayName": "Archive Navy",        "canonical": "oklch(27% 0.045 240)", "tonalRamp": ["#0a1525","#1a2d45","#243650","#2e4460","#3d5a7a","#5070a0","#7090b8","#a0b8d0"] },
+      "gold":           { "role": "secondary", "displayName": "Honor Roll Gold",     "canonical": "oklch(72% 0.10 85)",  "tonalRamp": ["#5a3a00","#7a5200","#9a6e10","#b88828","#c9a84c","#d8ba70","#e2c97e","#f0dfa8"] },
+      "gold-light":     { "role": "secondary", "displayName": "Commendation Gold",   "canonical": "oklch(80% 0.09 85)",  "tonalRamp": ["#7a5200","#9a6e10","#b88828","#c9a84c","#d8ba70","#e2c97e","#ecd898","#f5ecd1"] },
+      "gold-pale":      { "role": "secondary", "displayName": "Diploma Cream",       "canonical": "oklch(94% 0.025 85)", "tonalRamp": ["#b88828","#c9a84c","#d8ba70","#e2c97e","#ecd898","#f0dfa8","#f5ecd1","#faf5e8"] },
+      "ivory":          { "role": "neutral",   "displayName": "Exam Paper Ivory",    "canonical": "oklch(97.5% 0.006 85)", "tonalRamp": ["#c8c0b0","#d8d0c0","#e5ddd0","#ede8e0","#f3efea","#f7f4f0","#faf8f4","#fdfcfa"] },
+      "surface":        { "role": "neutral",   "displayName": "Record Page White",   "canonical": "oklch(99.5% 0.002 85)", "tonalRamp": ["#d0ccc8","#dddad6","#e8e5e2","#f0eeec","#f5f3f2","#f9f8f7","#fcfcfb","#fefefe"] },
+      "success":        { "role": "tertiary",  "displayName": "Present Green",       "canonical": "oklch(55% 0.15 145)", "tonalRamp": ["#0d3a1e","#145c2e","#1a7a3e","#22a052","#27ae60","#4ec078","#78d098","#b0e8c8"] },
+      "danger":         { "role": "tertiary",  "displayName": "Absent Red",          "canonical": "oklch(55% 0.20 25)",  "tonalRamp": ["#5a0a04","#8a1008","#bc1c10","#d83020","#e74c3c","#ee6f62","#f59088","#fabdb8"] },
+      "warning":        { "role": "tertiary",  "displayName": "Tardy Amber",         "canonical": "oklch(68% 0.16 65)",  "tonalRamp": ["#5a2a00","#8a4400","#b86000","#d87800","#f39c12","#f7b445","#facc7a","#fce4b0"] },
+      "info":           { "role": "tertiary",  "displayName": "Reference Blue",      "canonical": "oklch(50% 0.15 250)", "tonalRamp": ["#0a1e3a","#103060","#184880","#2060a0","#2980b9","#4a98cc","#78b8de","#aad4ec"] },
+      "text-primary":   { "role": "neutral",   "displayName": "Ink Navy",            "canonical": "oklch(30% 0.04 240)", "tonalRamp": ["#0f1a28","#1c2d40","#243850","#2c3e50","#3d5570","#607090","#8898b0","#b0bece"] },
+      "text-secondary": { "role": "neutral",   "displayName": "Draft Grey",          "canonical": "oklch(32% 0.015 240)", "tonalRamp": ["#151820","#202530","#2c3340","#374151","#4c5568","#687080","#8898a8","#b0bac8"] },
+      "text-muted":     { "role": "neutral",   "displayName": "Faded Annotation",   "canonical": "oklch(65% 0.008 240)", "tonalRamp": ["#404850","#585e68","#707880","#848c98","#9ca3af","#b0b8c4","#c8cfd8","#e0e5ec"] },
+      "border-default": { "role": "neutral",   "displayName": "Column Line",         "canonical": "oklch(84% 0.006 240)", "tonalRamp": ["#909090","#a8a8a8","#bcbcc0","#cccdd0","#d1d5db","#dde0e6","#e5e7eb","#f0f2f5"] },
+      "ivory-bg":       { "role": "neutral",   "displayName": "Ledger Background",   "canonical": "oklch(96% 0.004 85)", "tonalRamp": ["#c0bdb8","#cccac6","#d8d6d2","#e4e2de","#eeeceb","#f3f4f6","#f8f8f9","#fcfcfd"] }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "Login hero and brand surface headlines. One per screen maximum. Playfair Display 700." },
+      "headline": { "displayName": "Headline", "purpose": "Page-level title (lt-page-title). Anchors the current section. One per view." },
+      "title":    { "displayName": "Title",    "purpose": "Topbar section label, card titles. Sub-section anchors. Always Playfair." },
+      "body":     { "displayName": "Body",     "purpose": "All prose, table cells, form values. Inter 400. Max 65-75ch on reading surfaces." },
+      "label":    { "displayName": "Label",    "purpose": "Table column headers, nav section dividers, badge text, stat card labels. Inter 600, uppercase, tracked." }
+    },
+    "shadows": [
+      { "name": "card-ambient",     "value": "0 2px 12px rgba(0,0,0,0.07)",         "purpose": "Resting cards and stat cards. Lifts white surface off ivory page." },
+      { "name": "topbar-position",  "value": "0 1px 4px rgba(0,0,0,0.08)",          "purpose": "Sticky topbar. Signals fixed layer above scrolling content." },
+      { "name": "button-lift",      "value": "0 4px 14px rgba(15,28,46,0.35)",      "purpose": "Primary navy button hover. Confirms interactivity." },
+      { "name": "button-gold-lift", "value": "0 4px 14px rgba(201,168,76,0.45)",    "purpose": "Gold button hover. Same role as button-lift, gold-tinted." },
+      { "name": "brand-glow",       "value": "0 8px 30px rgba(201,168,76,0.35)",    "purpose": "Login panel brand icon only. Ceremonial; does not transfer." }
+    ],
+    "motion": [
+      { "name": "ease-standard",  "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default easing for all state transitions (button hover, nav active, card lift)." },
+      { "name": "duration-fast",  "value": "150ms",                         "purpose": "Instant feedback: hover color changes, active states." },
+      { "name": "duration-base",  "value": "200ms",                         "purpose": "Default transition duration for most interactive elements." },
+      { "name": "duration-enter", "value": "350ms",                         "purpose": "Page content fade-up entrance animation." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "1024px", "purpose": "Sidebar collapses to off-canvas, main has no left margin, login right panel goes full-width." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action. Navy background, white text, lifts on hover.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\"><path d=\"M12 5v14M5 12l7 7 7-7\"/></svg> Lưu thay đổi</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; background: linear-gradient(135deg, #0f1c2e, #1a2d45); color: #fefefe; border: none; border-radius: 8px; font-family: 'Inter', -apple-system, sans-serif; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: box-shadow 0.2s cubic-bezier(0.4,0,0.2,1), transform 0.2s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 2px 8px rgba(15,28,46,0.25); white-space: nowrap; text-decoration: none; line-height: 1.4; } .ds-btn-primary:hover { box-shadow: 0 4px 14px rgba(15,28,46,0.35); transform: translateY(-1px); } .ds-btn-primary:active { transform: translateY(0); } .ds-btn-primary:focus-visible { outline: 2px solid #c9a84c; outline-offset: 2px; }"
+    },
+    {
+      "name": "Gold Button",
+      "kind": "button",
+      "refersTo": "button-gold",
+      "description": "Highest-priority CTA. Gold background, navy text. Use sparingly — one per screen.",
+      "html": "<button class=\"ds-btn-gold\">Tạo lớp học mới</button>",
+      "css": ".ds-btn-gold { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; background: linear-gradient(135deg, #c9a84c, #e2c97e); color: #0f1c2e; border: none; border-radius: 8px; font-family: 'Inter', -apple-system, sans-serif; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: box-shadow 0.2s cubic-bezier(0.4,0,0.2,1), transform 0.2s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 2px 8px rgba(201,168,76,0.3); white-space: nowrap; text-decoration: none; line-height: 1.4; } .ds-btn-gold:hover { box-shadow: 0 4px 14px rgba(201,168,76,0.45); transform: translateY(-1px); color: #0f1c2e; } .ds-btn-gold:active { transform: translateY(0); } .ds-btn-gold:focus-visible { outline: 2px solid #0f1c2e; outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action. Transparent background, border at rest. Navy border on hover.",
+      "html": "<button class=\"ds-btn-outline\">Hủy bỏ</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; background: transparent; color: #4b5563; border: 1.5px solid #d1d5db; border-radius: 8px; font-family: 'Inter', -apple-system, sans-serif; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s cubic-bezier(0.4,0,0.2,1); white-space: nowrap; text-decoration: none; line-height: 1.4; } .ds-btn-outline:hover { border-color: #0f1c2e; color: #0f1c2e; background: #f5ecd1; transform: translateY(-1px); } .ds-btn-outline:active { transform: translateY(0); } .ds-btn-outline:focus-visible { outline: 2px solid #c9a84c; outline-offset: 2px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Standard content container. White surface on ivory page. Subtle ambient shadow.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\"><h3 class=\"ds-card-title\">Danh sách học sinh</h3><button class=\"ds-card-action\">Xem tất cả</button></div><div class=\"ds-card-body\"><p style=\"color:#6b7280;font-size:0.875rem;margin:0\">Nội dung thẻ hiển thị ở đây.</p></div></div>",
+      "css": ".ds-card { background: #fefefe; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); overflow: hidden; font-family: 'Inter', -apple-system, sans-serif; } .ds-card-header { padding: 18px 24px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; gap: 12px; } .ds-card-title { font-family: 'Playfair Display', Georgia, serif; font-size: 1rem; font-weight: 700; color: #0f1c2e; margin: 0; } .ds-card-action { background: none; border: none; color: #c9a84c; font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 0; font-family: inherit; } .ds-card-body { padding: 24px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Standard text input. Gold focus ring marks interaction. 1.5px border at rest.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-label\" for=\"ds-input-demo\">Tên học sinh</label><input id=\"ds-input-demo\" class=\"ds-input\" type=\"text\" placeholder=\"Nguyễn Văn A\" /></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; font-family: 'Inter', -apple-system, sans-serif; } .ds-label { font-size: 0.8rem; font-weight: 600; color: #374151; letter-spacing: 0.02em; } .ds-input { width: 100%; padding: 10px 14px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 0.9rem; color: #111827; background: #fefefe; transition: border-color 0.2s, box-shadow 0.2s; outline: none; font-family: 'Inter', -apple-system, sans-serif; } .ds-input:focus { border-color: #c9a84c; box-shadow: 0 0 0 3px rgba(201,168,76,0.15); } .ds-input::placeholder { color: #9ca3af; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "card",
+      "description": "Soft-tinted pill for categorical status labels. Color is supplementary — always paired with text.",
+      "html": "<div style=\"display:flex;gap:8px;align-items:center;flex-wrap:wrap\"><span class=\"ds-badge ds-badge-success\">Có mặt</span><span class=\"ds-badge ds-badge-danger\">Vắng mặt</span><span class=\"ds-badge ds-badge-warning\">Đi trễ</span><span class=\"ds-badge ds-badge-gold\">Giáo viên</span><span class=\"ds-badge ds-badge-info\">Thông báo</span></div>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-family: 'Inter', -apple-system, sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; white-space: nowrap; } .ds-badge-success { background: rgba(39,174,96,0.1); color: #16a34a; } .ds-badge-danger { background: rgba(231,76,60,0.1); color: #dc2626; } .ds-badge-warning { background: rgba(243,156,18,0.12); color: #d97706; } .ds-badge-gold { background: rgba(201,168,76,0.15); color: #92620a; } .ds-badge-info { background: rgba(41,128,185,0.1); color: #1d4ed8; } .ds-badge-navy { background: rgba(15,28,46,0.08); color: #0f1c2e; } .ds-badge-gray { background: #f3f4f6; color: #6b7280; }"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Sidebar navigation item. Navy shell, gold active state with structural 3px left indicator.",
+      "html": "<nav style=\"background:#0f1c2e;padding:8px 0;border-radius:8px;width:220px\"><div class=\"ds-nav-section-label\">HỌC VỤ</div><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z\"/></svg> Lớp học</a><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75\"/></svg> Học sinh</a><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/></svg> Điểm danh QR</a></nav>",
+      "css": ".ds-nav-section-label { font-family: 'Inter', -apple-system, sans-serif; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.35); padding: 12px 20px 4px; } .ds-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; color: rgba(255,255,255,0.75); text-decoration: none; font-family: 'Inter', -apple-system, sans-serif; font-size: 0.875rem; font-weight: 500; transition: all 0.2s cubic-bezier(0.4,0,0.2,1); position: relative; cursor: pointer; } .ds-nav-item:hover { color: #ffffff; background: rgba(255,255,255,0.06); } .ds-nav-item-active { color: #c9a84c; background: rgba(201,168,76,0.12); } .ds-nav-item-active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #c9a84c; border-radius: 0 2px 2px 0; }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Dashboard metric display. Icon block + value + label. Lifts on hover. Not a hero-metric template.",
+      "html": "<div class=\"ds-stat\"><div class=\"ds-stat-icon ds-stat-icon-gold\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z\"/></svg></div><div><div class=\"ds-stat-value\">248</div><div class=\"ds-stat-label\">HỌC SINH</div></div></div>",
+      "css": ".ds-stat { display: flex; align-items: center; gap: 16px; padding: 20px 24px; background: #fefefe; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s; font-family: 'Inter', -apple-system, sans-serif; } .ds-stat:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); } .ds-stat-icon { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; } .ds-stat-icon-gold { background: rgba(201,168,76,0.12); color: #c9a84c; } .ds-stat-icon-navy { background: rgba(15,28,46,0.08); color: #0f1c2e; } .ds-stat-icon-success { background: rgba(39,174,96,0.1); color: #27ae60; } .ds-stat-icon-danger { background: rgba(231,76,60,0.1); color: #e74c3c; } .ds-stat-value { font-size: 1.65rem; font-weight: 800; color: #0f1c2e; line-height: 1; } .ds-stat-label { font-size: 0.78rem; color: #9ca3af; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }"
+    },
+    {
+      "name": "QR Attendance Box",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "High-stakes attendance moment. Navy-bordered frame, countdown timer that turns red when expiring.",
+      "html": "<div class=\"ds-qr-wrapper\"><div class=\"ds-qr-box\"><div style=\"width:160px;height:160px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:0.75rem\">QR CODE</div></div><div class=\"ds-qr-timer\">08:42</div><p style=\"color:#6b7280;font-size:0.875rem;margin:0\">Mã QR sẽ hết hạn sau</p></div>",
+      "css": ".ds-qr-wrapper { display: flex; flex-direction: column; align-items: center; gap: 16px; font-family: 'Inter', -apple-system, sans-serif; } .ds-qr-box { background: #fefefe; border: 3px solid #0f1c2e; border-radius: 16px; padding: 20px; display: inline-block; } .ds-qr-timer { font-size: 2rem; font-weight: 800; color: #0f1c2e; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; transition: color 0.3s; } .ds-qr-timer.expiring { color: #e74c3c; animation: ds-pulse 1s infinite; } @keyframes ds-pulse { 0%,100%{opacity:1} 50%{opacity:.5} } @media (prefers-reduced-motion: reduce) { .ds-qr-timer.expiring { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Headmaster's Register",
+    "overview": "A school register is an authoritative object: precise columns, institutional typography, a physical weight that signals seriousness. Every entry in it matters. Lumina Tutors' design system draws from this metaphor — a premium professional tool that carries the composure of an institution that has been trusted with real students and real accountability. The deep navy and restrained gold are ink and seal, not brand spray. Playfair Display headings land on the screen with the same gravity they would on an official certificate.\n\nThis is not a product that wants to look modern. It wants to look correct. The ivory content surfaces feel like quality paper; the navy sidebar feels like the binding of a serious book. Gold marks what matters (active states, primary call-to-action, the brand mark) and is used nowhere else. The system earns trust through consistency and precision, not through personality gestures.\n\nThe design explicitly rejects: generic SaaS bootstrapped dashboards with white backgrounds and blue primary buttons that could belong to any product; playful edtech aesthetics with gamification, bright primary colors, or Duolingo-style illustration; enterprise-grey SharePoint energy with no visual identity; neon dark fintech interfaces that belong to a trading platform, not a school.",
+    "keyCharacteristics": [
+      "Deep navy structural shell surrounding warm ivory content surfaces",
+      "Gold used at strict rarity: active navigation, primary CTA, brand mark only",
+      "Serif display typeface (Playfair Display) for all headings; neutral sans-serif (Inter) for everything else",
+      "Flat surfaces by default; depth appears only as a response to interaction or hierarchy",
+      "Vietnamese-first: formal institutional tone, not startup-casual",
+      "Role-differentiated density: teacher workflows are quick and tactical; accountant workflows are data-dense"
+    ],
+    "rules": [
+      { "name": "The Gold Scarcity Rule",     "body": "Honor Roll Gold appears on active navigation items, the brand mark, and the primary gold button variant. It does not appear on decorative elements, section headings, body text emphasis, or any surface not directly actionable or identity-bearing.",                     "section": "colors" },
+      { "name": "The Two-Surface Rule",       "body": "Content lives on Record Page White cards. The page itself is Exam Paper Ivory. The sidebar is Headmaster's Navy. Three surface levels, no more. Nesting a white card inside another white card collapses the hierarchy.",                                           "section": "colors" },
+      { "name": "The Playfair Discipline Rule","body": "Playfair Display is used exclusively for headings. It does not appear in body copy, table cells, labels, badges, or navigation items. Every Playfair occurrence on a screen must correspond to a named hierarchy level.",                                              "section": "typography" },
+      { "name": "The Scale Ratio Rule",       "body": "Adjacent heading steps must have at least a 1.25 ratio. A flat scale where all headings are the same size defeats the register metaphor.",                                                                                                                               "section": "typography" },
+      { "name": "The Flat-By-Default Rule",   "body": "Shadows appear only in response to state (hover, sticky position, modal overlay). Decorative box-shadows on decorative elements are prohibited. If an element is not interactive and not positionally fixed, it does not have a shadow beyond the card ambient minimum.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use Playfair Display for all heading levels and nothing else.",
+      "Do keep Honor Roll Gold to active navigation states, the brand mark, and the gold button variant.",
+      "Do use the Two-Surface Rule: Ivory page, White card, Navy sidebar.",
+      "Do use status badges (soft-tinted pills) for all categorical labels.",
+      "Do apply WCAG AA contrast to all text (4.5:1 for body text).",
+      "Do pair color-coded status indicators with a text label or icon — never color alone.",
+      "Do write Vietnamese copy as formal institutional prose.",
+      "Do respect prefers-reduced-motion: skip entrance animations and the QR timer pulse."
+    ],
+    "donts": [
+      "Don't build a generic SaaS bootstrapped dashboard with white background and blue primary buttons.",
+      "Don't use playful edtech aesthetics: bright primary colors, gamification badges, illustrated characters.",
+      "Don't produce enterprise-grey SharePoint energy: dense grey forms, no typographic hierarchy.",
+      "Don't use neon dark fintech aesthetics: dark backgrounds with cyan, green, or purple neon accents.",
+      "Don't use gradient text (background-clip: text). Emphasis through weight, scale, or color.",
+      "Don't use side-stripe borders greater than 1px as decorative accents on cards or callouts.",
+      "Don't place a white card inside another white card.",
+      "Don't use Honor Roll Gold on body text, decorative dividers, or section headings.",
+      "Don't animate CSS layout properties.",
+      "Don't use glassmorphism decoratively.",
+      "Don't use the hero-metric template: big number on a gradient card."
+    ]
+  }
+}

@@ -1,0 +1,121 @@
+@using LuminaTutors.Application.DTOs.Student
+@using LuminaTutors.Domain.Enums
+@model UpdateStudentRequest
+@{
+    ViewData["Title"] = "Chỉnh sửa học sinh";
+    var studentId = ViewBag.StudentId as int? ?? 0;
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Details" asp-route-id="@studentId"
+           class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
+            <i class="bi bi-arrow-left"></i> Quay lại hồ sơ
+        </a>
+        <h1 class="lt-page-title">Chỉnh sửa thông tin học sinh</h1>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="lt-alert lt-alert--danger lt-mb-4">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                    @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <div>@err.ErrorMessage</div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-pencil-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Cập nhật thông tin
+                </h3>
+            </div>
+            <div class="lt-card__body">
+                <form asp-action="Edit" asp-route-id="@studentId" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="lt-form-group">
+                                <label class="lt-label" asp-for="FullName">
+                                    Họ và tên <span class="lt-text-danger">*</span>
+                                </label>
+                                <input asp-for="FullName" class="lt-input"
+                                       placeholder="VD: Nguyễn Văn An" required maxlength="150"
+                                       data-testid="input-full-name"/>
+                                <span asp-validation-for="FullName" class="lt-form-error"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label" asp-for="PhoneNumber">Số điện thoại</label>
+                                <input asp-for="PhoneNumber" type="tel" class="lt-input"
+                                       placeholder="VD: 0901234567"/>
+                                <span asp-validation-for="PhoneNumber" class="lt-form-error"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label" asp-for="Gender">Giới tính</label>
+                                <select asp-for="Gender" class="lt-select">
+                                    <option value="">— Không chọn —</option>
+                                    <option value="@((int)Gender.Male)">Nam</option>
+                                    <option value="@((int)Gender.Female)">Nữ</option>
+                                    <option value="@((int)Gender.Other)">Khác</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label" asp-for="DateOfBirth">Ngày sinh</label>
+                                <input asp-for="DateOfBirth" type="date" class="lt-input"/>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label" asp-for="PlaceOfBirth">Nơi sinh</label>
+                                <input asp-for="PlaceOfBirth" class="lt-input"
+                                       placeholder="VD: Hà Nội"/>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="lt-form-group">
+                                <label class="lt-label" asp-for="EthnicGroup">Dân tộc</label>
+                                <input asp-for="EthnicGroup" class="lt-input"
+                                       placeholder="VD: Kinh"/>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="lt-form-group lt-mb-4">
+                                <label class="lt-label" asp-for="PermanentAddress">Địa chỉ thường trú</label>
+                                <input asp-for="PermanentAddress" class="lt-input"
+                                       placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lt-flex-between">
+                        <a asp-action="Details" asp-route-id="@studentId"
+                           class="lt-btn lt-btn--outline">Hủy</a>
+                        <button type="submit" class="lt-btn lt-btn--primary" data-testid="btn-submit-edit">
+                            <i class="bi bi-check-lg"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,76 @@
+@using LuminaTutors.Domain.Common
+@using LuminaTutors.Application.DTOs.Attendance
+@model Result<ScanQRResponse>
+@{
+    ViewData["Title"] = "Kết quả điểm danh";
+    var ok = Model?.IsSuccess == true && Model.Data != null;
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Kết quả điểm danh</h1>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+        <div class="lt-card">
+            <div class="lt-card__body" style="text-align:center;padding:40px 32px">
+                @if (ok)
+                {
+                    <div style="width:72px;height:72px;background:#e8f8f0;border-radius:50%;
+                                display:flex;align-items:center;justify-content:center;
+                                font-size:2.2rem;color:var(--lt-success);margin:0 auto 20px">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+
+                    <h2 style="font-size:1.4rem;color:var(--lt-success);margin-bottom:8px">
+                        Điểm danh thành công!
+                    </h2>
+                    <p class="lt-text-sm lt-text-muted lt-mb-4">@Model!.Data!.Message</p>
+
+                    <div class="lt-card" style="text-align:left;margin-bottom:24px;background:var(--lt-ivory)">
+                        <div class="lt-card__body lt-flex-col lt-gap-3">
+                            <div class="lt-flex-between">
+                                <span class="lt-text-sm lt-text-muted">Học sinh</span>
+                                <span class="lt-fw-600">@Model.Data.StudentName</span>
+                            </div>
+                            <div class="lt-flex-between">
+                                <span class="lt-text-sm lt-text-muted">Môn học</span>
+                                <span class="lt-fw-600">@Model.Data.SubjectName</span>
+                            </div>
+                            <div class="lt-flex-between">
+                                <span class="lt-text-sm lt-text-muted">Lớp</span>
+                                <span class="lt-fw-600">@Model.Data.ClassName</span>
+                            </div>
+                            <div class="lt-flex-between">
+                                <span class="lt-text-sm lt-text-muted">Thời gian</span>
+                                <span class="lt-fw-600 lt-text-xs">@Model.Data.CheckedInAt.ToString("HH:mm dd/MM/yyyy")</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="width:72px;height:72px;background:#fdf0ee;border-radius:50%;
+                                display:flex;align-items:center;justify-content:center;
+                                font-size:2.2rem;color:var(--lt-danger);margin:0 auto 20px">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </div>
+
+                    <h2 style="font-size:1.4rem;color:var(--lt-danger);margin-bottom:8px">
+                        Điểm danh thất bại
+                    </h2>
+                    <p class="lt-text-sm lt-text-muted lt-mb-4">
+                        @(Model?.Error ?? "Mã QR không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.")
+                    </p>
+                }
+
+                <a asp-controller="Dashboard" asp-action="Index"
+                   class="lt-btn lt-btn--outline lt-btn--full">
+                    <i class="bi bi-house"></i> Về trang chủ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

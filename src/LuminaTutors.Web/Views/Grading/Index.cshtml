@@ -1,0 +1,98 @@
+@using LuminaTutors.Application.DTOs.Homework
+@{
+    ViewData["Title"] = "Sổ điểm TT22";
+    var assignments = ViewBag.Assignments as IReadOnlyList<SubjectAssignmentOptionDto>
+                      ?? new List<SubjectAssignmentOptionDto>();
+    var isAdmin = User.IsInRole("ADMIN");
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Sổ điểm TT22</h1>
+        <p class="lt-page-subtitle">Chọn lớp–môn để nhập và quản lý điểm theo Thông tư 22/2021/TT-BGDĐT</p>
+    </div>
+</div>
+
+@if (!assignments.Any())
+{
+    <div class="lt-card">
+        <div class="lt-card__body" style="text-align:center;padding:3rem 1.5rem">
+            <i class="bi bi-journal-x" style="font-size:2.5rem;color:var(--lt-muted);display:block;margin-bottom:.75rem"></i>
+            <p class="lt-text-muted lt-mb-3">
+                @if (isAdmin)
+                {
+                    <span>Chưa có phân công môn học nào. Vào <a asp-controller="Class" asp-action="Index">Quản lý lớp</a> để phân công giáo viên.</span>
+                }
+                else
+                {
+                    <span>Bạn chưa được phân công dạy môn nào. Vui lòng liên hệ Admin.</span>
+                }
+            </p>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Nhập theo môn/lớp -->
+    <div class="row g-3 lt-mb-4">
+        @foreach (var a in assignments)
+        {
+            <div class="col-md-6 col-lg-4">
+                <a asp-action="GradeBook" asp-route-subjectAssignmentId="@a.Id"
+                   class="lt-card lt-card--link d-flex align-items-center gap-3"
+                   style="text-decoration:none;padding:1rem 1.25rem;transition:box-shadow .15s,transform .15s">
+                    <div style="width:46px;height:46px;border-radius:10px;background:rgba(201,168,76,.12);
+                                display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <i class="bi bi-journal-text" style="font-size:1.2rem;color:var(--lt-gold)"></i>
+                    </div>
+                    <div style="min-width:0">
+                        <div class="lt-fw-600" style="font-size:.925rem;color:var(--lt-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                            @a.SubjectName
+                        </div>
+                        <div class="lt-text-muted" style="font-size:.78rem">
+                            <i class="bi bi-people-fill me-1"></i>@a.ClassName
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right lt-text-muted ms-auto flex-shrink-0" style="font-size:.8rem"></i>
+                </a>
+            </div>
+        }
+    </div>
+}
+
+<!-- Hướng dẫn công thức -->
+<div class="lt-card" style="max-width:600px">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title">
+            <i class="bi bi-calculator" style="color:var(--lt-gold);margin-right:6px"></i>
+            Công thức tính ĐTBm (TT22/2021)
+        </h3>
+    </div>
+    <div class="lt-card__body lt-flex-col" style="gap:14px">
+        <div class="lt-alert lt-alert--info" style="margin:0">
+            <i class="bi bi-info-circle-fill"></i>
+            <span><strong>ĐTBm</strong> = (Σ ĐTX×1 + ĐGK×2 + ĐCK×3) ÷ (số ĐTX + 5)</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:.875rem">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+                <span class="lt-badge lt-badge--navy" style="flex-shrink:0;min-width:52px;text-align:center">ĐTX</span>
+                <span class="lt-text-secondary">Điểm thường xuyên — hệ số <strong>1</strong>. Tối thiểu 1 điểm/học kỳ.</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+                <span class="lt-badge lt-badge--warning" style="flex-shrink:0;min-width:52px;text-align:center">ĐGK</span>
+                <span class="lt-text-secondary">Điểm giữa kỳ — hệ số <strong>2</strong>. 1 điểm/học kỳ.</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px">
+                <span class="lt-badge lt-badge--danger" style="flex-shrink:0;min-width:52px;text-align:center">ĐCK</span>
+                <span class="lt-text-secondary">Điểm cuối kỳ — hệ số <strong>3</strong>. 1 điểm/học kỳ.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.lt-card--link:hover {
+    box-shadow: 0 6px 20px rgba(15,28,46,.12);
+    transform: translateY(-2px);
+}
+</style>

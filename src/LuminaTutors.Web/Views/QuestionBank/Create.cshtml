@@ -1,0 +1,233 @@
+@using LuminaTutors.Application.DTOs.QuestionBank
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Thêm câu hỏi";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-plus-circle-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Thêm câu hỏi mới
+        </h1>
+        <p class="lt-page-subtitle">Tạo câu hỏi cho ngân hàng đề thi</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form asp-action="Create" method="post" id="question-form">
+            @Html.AntiForgeryToken()
+
+            <!-- ── Basic Info ── -->
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">Thông tin câu hỏi</h3>
+                </div>
+                <div class="lt-card__body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="lt-label lt-required">Môn học (SubjectId)</label>
+                            <input type="number" name="SubjectId" class="lt-input" required min="1"
+                                   placeholder="ID môn học">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="lt-label lt-required">Dạng câu hỏi</label>
+                            <select name="QuestionType" class="lt-input" id="q-type" onchange="onTypeChange(this.value)">
+                                <option value="1">Trắc nghiệm (MCQ)</option>
+                                <option value="2">Đúng / Sai</option>
+                                <option value="3">Điền vào chỗ trống</option>
+                                <option value="4">Tự luận</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="lt-label lt-required">Độ khó</label>
+                            <select name="Difficulty" class="lt-input">
+                                <option value="1">Dễ</option>
+                                <option value="2" selected>Trung bình</option>
+                                <option value="3">Khó</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 lt-mt-3">
+                        <div class="col-md-6">
+                            <label class="lt-label">Chương / Chủ đề</label>
+                            <input type="text" name="ChapterTag" class="lt-input"
+                                   placeholder="Vd: Chương 3 - Hàm số">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="lt-label">Tags</label>
+                            <input type="text" name="Tags" class="lt-input"
+                                   placeholder="đạo hàm, giới hạn, ứng dụng">
+                        </div>
+                    </div>
+
+                    <div class="lt-form-group lt-mt-3">
+                        <label class="lt-label lt-required">Nội dung câu hỏi</label>
+                        <textarea name="QuestionText" class="lt-input lt-textarea" rows="4"
+                                  placeholder="Nhập nội dung câu hỏi..." required></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Options (MCQ / TrueFalse) ── -->
+            <div class="lt-card lt-mb-4" id="options-card">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">Các đáp án</h3>
+                    <button type="button" class="lt-btn lt-btn--sm lt-btn--outline" id="add-option-btn"
+                            onclick="addOption()">
+                        <i class="bi bi-plus-lg"></i> Thêm đáp án
+                    </button>
+                </div>
+                <div class="lt-card__body">
+                    <div id="options-list">
+                        <!-- Default 4 options for MCQ -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Answer / Explanation ── -->
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">Đáp án & Giải thích</h3>
+                </div>
+                <div class="lt-card__body">
+                    <div id="correct-answer-group" style="display:none" class="lt-mb-3">
+                        <label class="lt-label">Đáp án đúng</label>
+                        <input type="text" name="CorrectAnswer" class="lt-input"
+                               placeholder="Điền đáp án đúng (cho câu điền/tự luận)">
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Giải thích đáp án</label>
+                        <textarea name="ExplanationText" class="lt-input lt-textarea" rows="3"
+                                  placeholder="Giải thích tại sao đáp án đúng..."></textarea>
+                    </div>
+                    <div class="lt-form-group lt-mt-3">
+                        <label class="lt-label">Nguồn URL</label>
+                        <input type="url" name="SourceUrl" class="lt-input"
+                               placeholder="https://... (nguồn tham khảo)">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:8px">
+                <a asp-action="Index" class="lt-btn lt-btn--outline">Hủy</a>
+                <button type="submit" class="lt-btn lt-btn--primary">
+                    <i class="bi bi-check-lg"></i> Lưu câu hỏi
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="lt-card" style="background:rgba(201,169,110,.06);border-color:rgba(201,169,110,.3)">
+            <div class="lt-card__body">
+                <h4 style="font-size:.85rem;font-weight:700;margin-bottom:.75rem;color:var(--lt-navy)">
+                    <i class="bi bi-lightbulb-fill" style="color:var(--lt-gold)"></i> Hướng dẫn
+                </h4>
+                <div style="font-size:.8rem;color:var(--lt-text-muted);line-height:1.7">
+                    <p class="lt-mb-2">
+                        <strong>Trắc nghiệm (MCQ):</strong> Thêm 4 đáp án A–D, chọn đúng 1 đáp án đúng.
+                    </p>
+                    <p class="lt-mb-2">
+                        <strong>Đúng/Sai:</strong> Chỉ có 2 lựa chọn Đúng và Sai.
+                    </p>
+                    <p class="lt-mb-2">
+                        <strong>Điền chỗ trống:</strong> Nhập đáp án đúng vào ô "Đáp án đúng".
+                    </p>
+                    <p>
+                        <strong>Tự luận:</strong> Nhập gợi ý đáp án và giải thích.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let optionCount = 0;
+const LABELS = ['A','B','C','D','E','F'];
+
+function onTypeChange(type) {
+    const optCard = document.getElementById('options-card');
+    const ansGroup = document.getElementById('correct-answer-group');
+    const addBtn   = document.getElementById('add-option-btn');
+    const optList  = document.getElementById('options-list');
+
+    optList.innerHTML = '';
+    optionCount = 0;
+
+    if (type == 1) { // MCQ
+        optCard.style.display = 'block';
+        ansGroup.style.display = 'none';
+        addBtn.style.display = '';
+        addOption(); addOption(); addOption(); addOption();
+    } else if (type == 2) { // TrueFalse
+        optCard.style.display = 'block';
+        ansGroup.style.display = 'none';
+        addBtn.style.display = 'none';
+        addTrueFalseOptions();
+    } else { // FillBlank / Essay
+        optCard.style.display = 'none';
+        ansGroup.style.display = type == 3 ? 'block' : 'block';
+    }
+}
+
+function addOption() {
+    if (optionCount >= 6) return;
+    const idx   = optionCount++;
+    const label = LABELS[idx];
+    const div   = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px';
+    div.innerHTML = `
+      <span style="width:28px;height:28px;border-radius:50%;background:var(--lt-bg-subtle);
+                   display:flex;align-items:center;justify-content:center;font-weight:700;
+                   font-size:.8rem;flex-shrink:0">${label}</span>
+      <input type="hidden" name="Options[${idx}].OptionLabel" value="${label}">
+      <input type="text"   name="Options[${idx}].OptionText"
+             class="lt-input" style="flex:1" placeholder="Nội dung đáp án ${label}" required>
+      <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;white-space:nowrap;cursor:pointer">
+        <input type="checkbox" name="Options[${idx}].IsCorrect" value="true"
+               style="accent-color:var(--lt-gold)"> Đúng
+      </label>
+      <button type="button" onclick="this.closest('div').remove();optionCount--"
+              class="lt-btn lt-btn--sm lt-btn--outline"
+              style="border-color:var(--lt-danger);color:var(--lt-danger);flex-shrink:0">
+          <i class="bi bi-x-lg"></i>
+      </button>
+    `;
+    document.getElementById('options-list').append(div);
+}
+
+function addTrueFalseOptions() {
+    const list = document.getElementById('options-list');
+    ['Đúng','Sai'].forEach((text, i) => {
+        const label = i === 0 ? 'A' : 'B';
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px';
+        div.innerHTML = `
+          <span style="width:28px;height:28px;border-radius:50%;background:var(--lt-bg-subtle);
+                       display:flex;align-items:center;justify-content:center;font-weight:700;
+                       font-size:.8rem;flex-shrink:0">${label}</span>
+          <input type="hidden" name="Options[${i}].OptionLabel" value="${label}">
+          <input type="hidden" name="Options[${i}].OptionText"  value="${text}">
+          <span style="flex:1;font-size:.85rem">${text}</span>
+          <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer">
+            <input type="checkbox" name="Options[${i}].IsCorrect" value="true"
+                   style="accent-color:var(--lt-gold)"> Đây là đáp án đúng
+          </label>
+        `;
+        list.append(div);
+    });
+    optionCount = 2;
+}
+
+// Init with MCQ
+onTypeChange(1);
+</script>
+}

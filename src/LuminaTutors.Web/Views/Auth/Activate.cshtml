@@ -1,0 +1,115 @@
+@model LuminaTutors.Application.DTOs.Auth.ActivateInviteRequest
+@{
+    Layout = null;
+    var invite = ViewBag.InviteDto as LuminaTutors.Application.DTOs.Auth.InviteLinkDto;
+    ViewData["Title"] = "Kích hoạt tài khoản";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <title>Kích hoạt tài khoản — Lumina Tutors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/lumina.css" asp-append-version="true"/>
+</head>
+<body>
+
+<div class="lt-login-wrap">
+
+    <!-- Left branding -->
+    <div class="lt-login-left">
+        <div class="lt-login-left__logo">L</div>
+        <div class="lt-login-left__title">Chào mừng đến<br>Lumina Tutors</div>
+        @if (invite != null)
+        {
+            <p class="lt-login-left__subtitle">
+                Bạn được mời với vai trò <strong style="color:var(--lt-gold)">@invite.TargetRoleName</strong>.
+                Hoàn tất thiết lập tài khoản để bắt đầu.
+            </p>
+            <div style="background:rgba(255,255,255,0.07);border-radius:12px;padding:18px 20px;margin-top:32px;max-width:280px;width:100%">
+                <div style="color:rgba(255,255,255,0.5);font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Thông tin lời mời</div>
+                @if (invite.TargetEmail != null)
+                {
+                    <div style="color:var(--lt-white);font-size:0.875rem;margin-bottom:4px">
+                        <i class="bi bi-envelope" style="color:var(--lt-gold);margin-right:6px"></i>@invite.TargetEmail
+                    </div>
+                }
+                <div style="color:rgba(255,255,255,0.6);font-size:0.78rem">
+                    <i class="bi bi-clock" style="margin-right:6px"></i>
+                    Hết hạn: @invite.ExpiresAt.ToString("dd/MM/yyyy HH:mm")
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Right form -->
+    <div class="lt-login-right">
+        <div class="lt-login-form">
+            <h2 class="lt-login-form__heading">Tạo tài khoản</h2>
+            <p class="lt-login-form__sub">Điền thông tin để hoàn tất kích hoạt</p>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="lt-alert lt-alert--danger">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <div>@Html.ValidationSummary(true)</div>
+                </div>
+            }
+
+            <form asp-controller="Auth" asp-action="Activate" method="post" data-testid="activate-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Token"/>
+
+                <div class="lt-form-group">
+                    <label asp-for="FullName" class="lt-label">Họ và tên đầy đủ</label>
+                    <input asp-for="FullName" class="lt-input" placeholder="Nguyễn Văn A"
+                           autofocus data-testid="input-fullname"/>
+                    <span asp-validation-for="FullName" class="lt-input-error"><i class="bi bi-exclamation-circle"></i></span>
+                </div>
+
+                <div class="lt-form-group">
+                    <label asp-for="PhoneNumber" class="lt-label">Số điện thoại</label>
+                    <input asp-for="PhoneNumber" class="lt-input" placeholder="0901234567"
+                           data-testid="input-phone"/>
+                    <span asp-validation-for="PhoneNumber" class="lt-input-error"><i class="bi bi-exclamation-circle"></i></span>
+                </div>
+
+                <div class="lt-form-group">
+                    <label asp-for="Password" class="lt-label">Mật khẩu (tối thiểu 8 ký tự)</label>
+                    <input asp-for="Password" type="password" class="lt-input"
+                           placeholder="••••••••" data-testid="input-password"/>
+                    <span asp-validation-for="Password" class="lt-input-error"><i class="bi bi-exclamation-circle"></i></span>
+                </div>
+
+                <div class="lt-form-group">
+                    <label asp-for="ConfirmPassword" class="lt-label">Xác nhận mật khẩu</label>
+                    <input asp-for="ConfirmPassword" type="password" class="lt-input"
+                           placeholder="••••••••" data-testid="input-confirm-password"/>
+                    <span asp-validation-for="ConfirmPassword" class="lt-input-error"><i class="bi bi-exclamation-circle"></i></span>
+                </div>
+
+                <button type="submit" class="lt-btn lt-btn--gold lt-btn--lg w-100"
+                        style="justify-content:center;margin-top:8px"
+                        data-testid="btn-activate">
+                    <i class="bi bi-check-circle"></i>
+                    Kích hoạt tài khoản
+                </button>
+            </form>
+
+            <div class="divider"></div>
+            <p style="text-align:center;font-size:0.8rem;color:#9ca3af">
+                Đã có tài khoản?
+                <a asp-controller="Auth" asp-action="Login" style="color:var(--lt-gold)">Đăng nhập</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

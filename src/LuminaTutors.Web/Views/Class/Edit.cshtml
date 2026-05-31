@@ -1,0 +1,85 @@
+@using LuminaTutors.Application.DTOs.Class
+@model UpdateClassRequest
+@{
+    ViewData["Title"] = "Chỉnh sửa lớp học";
+    var teachers = ViewBag.Teachers as List<TeacherSummaryDto> ?? new List<TeacherSummaryDto>();
+    var classId  = ViewBag.ClassId as int? ?? 0;
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Details" asp-route-id="@classId"
+           class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
+            <i class="bi bi-arrow-left"></i> Quay lại chi tiết lớp
+        </a>
+        <h1 class="lt-page-title">Chỉnh sửa lớp học</h1>
+        <p class="lt-page-subtitle">Cập nhật thông tin lớp học</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">Thông tin lớp học</h3>
+            </div>
+            <div class="lt-card__body">
+                @if (TempData["Error"] != null)
+                {
+                    <div class="lt-alert lt-alert--danger lt-mb-4">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>@TempData["Error"]</span>
+                    </div>
+                }
+
+                <form asp-action="Edit" asp-route-id="@classId" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="lt-form-group">
+                        <label class="lt-label" asp-for="ClassName">
+                            Tên lớp <span class="lt-text-danger">*</span>
+                        </label>
+                        <input asp-for="ClassName" class="lt-input"
+                               placeholder="VD: 10A1" required data-testid="input-class-name"/>
+                        <span asp-validation-for="ClassName" class="lt-form-error"></span>
+                    </div>
+
+                    <div class="lt-form-group">
+                        <label class="lt-label" asp-for="HomeRoomTeacherId">Giáo viên chủ nhiệm</label>
+                        <select asp-for="HomeRoomTeacherId" class="lt-select">
+                            <option value="">— Chưa phân công —</option>
+                            @foreach (var t in teachers)
+                            {
+                                <option value="@t.UserId">@t.FullName (@t.TeacherCode)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="lt-form-group">
+                        <label class="lt-label" asp-for="MaxStudents">Sĩ số tối đa</label>
+                        <input asp-for="MaxStudents" type="number" class="lt-input"
+                               min="1" max="60"/>
+                        <span asp-validation-for="MaxStudents" class="lt-form-error"></span>
+                    </div>
+
+                    <div class="lt-form-group lt-mb-4">
+                        <label class="lt-label" asp-for="RoomNumber">Phòng học</label>
+                        <input asp-for="RoomNumber" class="lt-input" placeholder="VD: A101"/>
+                    </div>
+
+                    <div class="lt-flex-between">
+                        <a asp-action="Details" asp-route-id="@classId"
+                           class="lt-btn lt-btn--outline">Hủy</a>
+                        <button type="submit" class="lt-btn lt-btn--primary" data-testid="btn-submit-edit">
+                            <i class="bi bi-check-lg"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+}

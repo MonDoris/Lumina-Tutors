@@ -1,0 +1,218 @@
+@model LuminaTutors.Application.DTOs.Grading.SubjectGradeBookDto
+@{
+    ViewData["Title"] = $"Sổ điểm — {Model?.SubjectName}";
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+        <h1 class="lt-page-title">Sổ điểm: @Model?.SubjectName</h1>
+        <p class="lt-page-subtitle">
+            Lớp: <strong>@Model?.ClassName</strong>
+            &nbsp;&middot;&nbsp;
+            GV: @Model?.TeacherName
+        </p>
+    </div>
+    <div class="lt-page-header__actions">
+        <form asp-action="CalculateAllAverages" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="subjectAssignmentId" value="@Model?.SubjectAssignmentId"/>
+            <button type="submit" class="lt-btn lt-btn--gold"
+                    onclick="return confirm('Tính ĐTBm cho tất cả học sinh?')"
+                    data-testid="btn-calc-all">
+                <i class="bi bi-calculator"></i> Tính ĐTBm tất cả
+            </button>
+        </form>
+        @if (User.IsInRole("ADMIN"))
+        {
+            <form asp-action="LockGradeBook" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="subjectAssignmentId" value="@Model?.SubjectAssignmentId"/>
+                <button type="submit" class="lt-btn lt-btn--primary"
+                        onclick="return confirm('Khóa sổ điểm? Không thể chỉnh sửa sau khi khóa.')"
+                        data-testid="btn-lock">
+                    <i class="bi bi-lock-fill"></i> Khóa sổ điểm
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="lt-alert lt-alert--info lt-mb-4">
+    <i class="bi bi-info-circle-fill"></i>
+    <span>
+        <strong>TT22/2021:</strong>
+        ĐTBm = (Σ ĐTX&times;1 + ĐGK&times;2 + ĐCK&times;3) &divide; (số ĐTX + 5)
+        &nbsp;&middot;&nbsp; Điểm từ 0&ndash;10, tối đa 1 chữ số thập phân
+    </span>
+</div>
+
+<div class="lt-card">
+    <div class="lt-card__body" style="padding:0;overflow-x:auto">
+        <table class="lt-table" style="min-width:820px" data-testid="gradebook-table">
+            <thead>
+                <tr>
+                    <th>Mã HS</th>
+                    <th>Họ và tên</th>
+                    <th class="lt-score-cell lt-score-dtx-hd">ĐTX 1</th>
+                    <th class="lt-score-cell lt-score-dtx-hd">ĐTX 2</th>
+                    <th class="lt-score-cell lt-score-dtx-hd">ĐTX 3</th>
+                    <th class="lt-score-cell lt-score-dgk-hd">ĐGK</th>
+                    <th class="lt-score-cell lt-score-dck-hd">ĐCK</th>
+                    <th class="lt-score-cell lt-score-avg-hd">ĐTBm</th>
+                    <th class="lt-score-cell">Nhận xét</th>
+                    <th class="lt-td--actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model?.Rows ?? new List<LuminaTutors.Application.DTOs.Grading.GradeBookRowDto>())
+                {
+                    var dtx = row.RegularScores;
+                    var dgk = row.MidTermScore;
+                    var dck = row.FinalScore;
+
+                    <tr class="@(row.IsLocked ? "lt-score-locked" : "")" data-testid="gradebook-row">
+                        <td><code>@row.StudentCode</code></td>
+                        <td class="lt-fw-600">@row.StudentName</td>
+
+                        @for (int i = 0; i < 3; i++)
+                        {
+                            var entry = dtx.ElementAtOrDefault(i);
+                            <td class="lt-score-cell lt-score-dtx">
+                                @if (entry != null)
+                                {
+                                    <span data-testid="score-dtx-@(i+1)">@entry.Value.ToString("F1")</span>
+                                }
+                                else if (!row.IsLocked)
+                                {
+                                    <button class="lt-btn lt-btn--outline lt-btn--sm lt-score-enter"
+                                            onclick="openEnterScore(@row.StudentId, 1, @Model?.SubjectAssignmentId)"
+                                            data-testid="btn-enter-dtx">+</button>
+                                }
+                                else
+                                {
+                                    <span class="lt-text-muted">—</span>
+                                }
+                            </td>
+                        }
+
+                        <td class="lt-score-cell lt-score-dgk">
+                            @if (dgk != null)
+                            {
+                                <span data-testid="score-dgk">@dgk.Value.ToString("F1")</span>
+                            }
+                            else if (!row.IsLocked)
+                            {
+                                <button class="lt-btn lt-btn--outline lt-btn--sm lt-score-enter lt-text-gold"
+                                        onclick="openEnterScore(@row.StudentId, 2, @Model?.SubjectAssignmentId)"
+                                        data-testid="btn-enter-dgk">+ĐGK</button>
+                            }
+                        </td>
+
+                        <td class="lt-score-cell lt-score-dck">
+                            @if (dck != null)
+                            {
+                                <span data-testid="score-dck">@dck.Value.ToString("F1")</span>
+                            }
+                            else if (!row.IsLocked)
+                            {
+                                <button class="lt-btn lt-btn--outline lt-btn--sm lt-score-enter lt-text-danger"
+                                        onclick="openEnterScore(@row.StudentId, 3, @Model?.SubjectAssignmentId)"
+                                        data-testid="btn-enter-dck">+ĐCK</button>
+                            }
+                        </td>
+
+                        <td class="lt-score-cell lt-score-avg-col">
+                            @if (row.AverageScore.HasValue)
+                            {
+                                <span class="lt-score-avg" data-testid="score-avg">@row.AverageScore.Value.ToString("F1")</span>
+                            }
+                            else if (!row.IsLocked)
+                            {
+                                <form asp-action="CalculateAverage" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="studentId" value="@row.StudentId"/>
+                                    <input type="hidden" name="subjectAssignmentId" value="@Model?.SubjectAssignmentId"/>
+                                    <button type="submit" class="lt-btn lt-btn--outline lt-btn--sm lt-btn--icon"
+                                            title="Tính ĐTBm" data-testid="btn-calc-one">
+                                        <i class="bi bi-calculator"></i>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+
+                        <td class="lt-score-cell">
+                            @if (!string.IsNullOrEmpty(row.Remark))
+                            {
+                                <span class="lt-badge @(row.Remark == "Pass" ? "lt-badge--success" : "lt-badge--danger")">
+                                    @row.Remark
+                                </span>
+                            }
+                        </td>
+
+                        <td>
+                            @if (row.IsLocked)
+                            {
+                                <i class="bi bi-lock-fill lt-text-muted" title="Đã khóa"></i>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Enter Score Modal -->
+<div class="modal fade lt-modal" id="scoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scoreModalTitle">Nhập điểm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="EnterScore" method="post" id="scoreForm" data-testid="enter-score-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="model.StudentId"          id="scoreStudentId"/>
+                <input type="hidden" name="model.GradeCategoryId"    id="scoreCategoryId"/>
+                <input type="hidden" name="model.SubjectAssignmentId" id="scoreAssignmentId"/>
+                <div class="modal-body" style="padding:20px;gap:0">
+                    <div class="lt-form-group lt-mb-0">
+                        <label class="lt-label">Điểm số (0 – 10)</label>
+                        <input type="number" name="model.Score" id="scoreInput"
+                               class="lt-input lt-text-center lt-fw-700"
+                               style="font-size:1.2rem"
+                               step="0.1" min="0" max="10"
+                               placeholder="VD: 8.5" required autofocus
+                               data-testid="input-score"/>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="lt-btn lt-btn--outline lt-btn--sm" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--gold lt-btn--sm" data-testid="btn-save-score">
+                        <i class="bi bi-check"></i> Lưu điểm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const scoreModal = new bootstrap.Modal(document.getElementById('scoreModal'));
+const categoryLabels = { 1: 'ĐTX', 2: 'ĐGK', 3: 'ĐCK' };
+
+function openEnterScore(studentId, categoryId, assignmentId) {
+    document.getElementById('scoreStudentId').value    = studentId;
+    document.getElementById('scoreCategoryId').value   = categoryId;
+    document.getElementById('scoreAssignmentId').value = assignmentId;
+    document.getElementById('scoreModalTitle').textContent = 'Nhập điểm — ' + (categoryLabels[categoryId] || '');
+    document.getElementById('scoreInput').value = '';
+    scoreModal.show();
+    setTimeout(() => document.getElementById('scoreInput').focus(), 380);
+}
+</script>
+}

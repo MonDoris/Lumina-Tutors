@@ -1,0 +1,228 @@
+@model LuminaTutors.Application.DTOs.QuestionBank.QuestionDto
+@{
+    ViewData["Title"] = "Chỉnh sửa câu hỏi";
+    var subjects = ViewBag.Subjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+    var gradeLevels = ViewBag.GradeLevels as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-pencil-square me-2 text-warning"></i>Chỉnh sửa câu hỏi</h4>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Quay lại
+    </a>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post" id="editForm">
+    <div class="row">
+        <!-- Main content -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h6 class="mb-0"><i class="bi bi-question-circle me-2"></i>Nội dung câu hỏi</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Câu hỏi <span class="text-danger">*</span></label>
+                        <textarea name="QuestionText" class="form-control" rows="4" required>@Model.QuestionText</textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Loại câu hỏi <span class="text-danger">*</span></label>
+                            <select name="QuestionType" id="questionType" class="form-select" required onchange="handleTypeChange(this.value)">
+                                <option value="1" selected="@(Model.QuestionType == LuminaTutors.Domain.Enums.QuestionType.MultipleChoice)">Trắc nghiệm (MCQ)</option>
+                                <option value="2" selected="@(Model.QuestionType == LuminaTutors.Domain.Enums.QuestionType.TrueFalse)">Đúng / Sai</option>
+                                <option value="3" selected="@(Model.QuestionType == LuminaTutors.Domain.Enums.QuestionType.ShortAnswer)">Điền vào chỗ trống</option>
+                                <option value="4" selected="@(Model.QuestionType == LuminaTutors.Domain.Enums.QuestionType.Essay)">Tự luận</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Độ khó <span class="text-danger">*</span></label>
+                            <select name="Difficulty" class="form-select" required>
+                                <option value="1" selected="@(Model.Difficulty == LuminaTutors.Domain.Enums.DifficultyLevel.Easy)">Dễ</option>
+                                <option value="2" selected="@(Model.Difficulty == LuminaTutors.Domain.Enums.DifficultyLevel.Medium)">Trung bình</option>
+                                <option value="3" selected="@(Model.Difficulty == LuminaTutors.Domain.Enums.DifficultyLevel.Hard)">Khó</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- MCQ Options -->
+                    <div id="mcqSection">
+                        <label class="form-label fw-semibold">Các lựa chọn</label>
+                        <div id="optionsContainer">
+                            @if (Model.Options?.Any() == true)
+                            {
+                                @for (int i = 0; i < Model.Options.Count; i++)
+                                {
+                                    var opt = Model.Options[i];
+                                    <div class="input-group mb-2 option-row">
+                                        <span class="input-group-text fw-bold">@opt.OptionLabel</span>
+                                        <input type="hidden" name="Options[@i].OptionLabel" value="@opt.OptionLabel" />
+                                        <input type="text" name="Options[@i].OptionText" class="form-control"
+                                               placeholder="Nội dung đáp án" value="@opt.OptionText" required />
+                                        <div class="input-group-text">
+                                            <input type="checkbox" name="Options[@i].IsCorrect"
+                                                   value="true" @(opt.IsCorrect ? "checked" : "") class="form-check-input mt-0" />
+                                            <span class="ms-1 small">Đúng</span>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                }
+                            }
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="addOption()">
+                            <i class="bi bi-plus-circle me-1"></i>Thêm đáp án
+                        </button>
+                    </div>
+
+                    <!-- True/False Options -->
+                    <div id="tfSection" style="display:none">
+                        <label class="form-label fw-semibold">Đáp án đúng / sai</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="TrueFalseAnswer" value="true" id="tfTrue">
+                                <label class="form-check-label" for="tfTrue">Đúng</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="TrueFalseAnswer" value="false" id="tfFalse">
+                                <label class="form-check-label" for="tfFalse">Sai</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fill-blank / Essay correct answer -->
+                    <div id="correctAnswerSection" style="display:none">
+                        <label class="form-label fw-semibold" id="correctAnswerLabel">Đáp án mẫu</label>
+                        <textarea name="CorrectAnswer" id="correctAnswerInput" class="form-control" rows="3">@Model.CorrectAnswer</textarea>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label fw-semibold">Giải thích đáp án</label>
+                        <textarea name="ExplanationText" class="form-control" rows="2">@Model.ExplanationText</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">Phân loại</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Môn học <span class="text-danger">*</span></label>
+                        <select name="SubjectId" class="form-select" required>
+                            <option value="">-- Chọn môn học --</option>
+                            @foreach (var s in subjects)
+                            {
+                                <option value="@s.Value" selected="@(s.Value == Model.SubjectId.ToString())">@s.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Cấp độ</label>
+                        <select name="GradeLevelId" class="form-select">
+                            <option value="">-- Tất cả --</option>
+                            @foreach (var g in gradeLevels)
+                            {
+                                <option value="@g.Value" selected="@(g.Value == Model.GradeLevelId?.ToString())">@g.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chương / Bài</label>
+                        <input type="text" name="ChapterTag" class="form-control" value="@Model.ChapterTag" placeholder="VD: Chương 3 – Đại số" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tags</label>
+                        <input type="text" name="Tags" class="form-control" value="@Model.Tags" placeholder="lượng giác, hàm số, ..." />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Nguồn (URL)</label>
+                        <input type="url" name="SourceUrl" class="form-control" value="@Model.SourceUrl" placeholder="https://..." />
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-save me-1"></i>Lưu thay đổi
+                </button>
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Hủy</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    const currentType = @((int)Model.QuestionType);
+    let optionIndex = document.querySelectorAll('.option-row').length;
+    const labels = ['A','B','C','D','E','F'];
+
+    function handleTypeChange(val) {
+        const t = parseInt(val);
+        document.getElementById('mcqSection').style.display           = (t === 1) ? '' : 'none';
+        document.getElementById('tfSection').style.display            = (t === 2) ? '' : 'none';
+        document.getElementById('correctAnswerSection').style.display = (t === 3 || t === 4) ? '' : 'none';
+        if (t === 3) document.getElementById('correctAnswerLabel').textContent = 'Từ / cụm từ đúng';
+        if (t === 4) document.getElementById('correctAnswerLabel').textContent = 'Đáp án mẫu / Gợi ý chấm';
+    }
+
+    function addOption() {
+        if (optionIndex >= 6) return;
+        const label = labels[optionIndex];
+        const container = document.getElementById('optionsContainer');
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2 option-row';
+        div.innerHTML = `
+            <span class="input-group-text fw-bold">${label}</span>
+            <input type="hidden" name="Options[${optionIndex}].OptionLabel" value="${label}" />
+            <input type="text" name="Options[${optionIndex}].OptionText" class="form-control" placeholder="Nội dung đáp án" required />
+            <div class="input-group-text">
+                <input type="checkbox" name="Options[${optionIndex}].IsCorrect" value="true" class="form-check-input mt-0" />
+                <span class="ms-1 small">Đúng</span>
+            </div>
+            <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">
+                <i class="bi bi-x"></i>
+            </button>`;
+        container.appendChild(div);
+        optionIndex++;
+    }
+
+    function removeOption(btn) {
+        btn.closest('.option-row').remove();
+        rebuildOptionIndexes();
+    }
+
+    function rebuildOptionIndexes() {
+        document.querySelectorAll('.option-row').forEach((row, i) => {
+            row.querySelector('input[type=hidden]').name = `Options[${i}].OptionLabel`;
+            row.querySelector('input[type=hidden]').value = labels[i];
+            row.querySelector('span.input-group-text').textContent = labels[i];
+            row.querySelectorAll('input[type=text]')[0].name = `Options[${i}].OptionText`;
+            row.querySelector('input[type=checkbox]').name = `Options[${i}].IsCorrect`;
+        });
+        optionIndex = document.querySelectorAll('.option-row').length;
+    }
+
+    // Initialize on load
+    handleTypeChange(currentType);
+</script>
+}

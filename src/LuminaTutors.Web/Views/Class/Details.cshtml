@@ -1,0 +1,445 @@
+@using LuminaTutors.Application.DTOs.Class
+@model ClassDetailDto
+@{
+    ViewData["Title"] = $"Lớp {Model?.ClassName}";
+    var unassigned = ViewBag.UnassignedStudents as List<ClassStudentDto> ?? new List<ClassStudentDto>();
+}
+
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Index" asp-route-academicYearId="@Model?.AcademicYearId"
+           class="lt-btn lt-btn--outline lt-btn--sm lt-mb-3">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+        <h1 class="lt-page-title">@Model?.ClassName</h1>
+        <p class="lt-page-subtitle">
+            @Model?.GradeName &nbsp;&middot;&nbsp; @Model?.AcademicYearName
+            &nbsp;&middot;&nbsp;
+            <span class="lt-badge @(Model?.IsActive == true ? "lt-badge--success" : "lt-badge--gray")">
+                @(Model?.IsActive == true ? "Đang hoạt động" : "Không hoạt động")
+            </span>
+        </p>
+    </div>
+    @if (User.IsInRole("ADMIN"))
+    {
+        <div class="lt-page-header__actions">
+            <a asp-action="Edit" asp-route-id="@Model?.ClassId" class="lt-btn lt-btn--outline lt-btn--sm">
+                <i class="bi bi-pencil"></i> Chỉnh sửa
+            </a>
+            <form asp-action="Delete" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model?.ClassId"/>
+                <input type="hidden" name="academicYearId" value="@Model?.AcademicYearId"/>
+                <button type="submit" class="lt-btn lt-btn--outline lt-btn--sm lt-text-danger"
+                        onclick="return confirm('Xóa lớp học này?')"
+                        data-testid="btn-delete-class">
+                    <i class="bi bi-trash"></i> Xóa lớp
+                </button>
+            </form>
+        </div>
+    }
+</div>
+
+<!-- Info Cards Row -->
+<div class="row g-3 lt-mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--navy">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div>
+                <div class="lt-stat__value">@Model?.MaxStudents</div>
+                <div class="lt-stat__label">Sĩ số tối đa</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--gold">
+                <i class="bi bi-journal-text"></i>
+            </div>
+            <div>
+                <div class="lt-stat__value">@(Model?.SubjectAssignments.Count ?? 0)</div>
+                <div class="lt-stat__label">Môn học</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--success">
+                <i class="bi bi-calendar3"></i>
+            </div>
+            <div>
+                <div class="lt-stat__value">@(Model?.Schedule.Count ?? 0)</div>
+                <div class="lt-stat__label">Tiết trong tuần</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--info">
+                <i class="bi bi-geo-alt-fill"></i>
+            </div>
+            <div>
+                <div class="lt-stat__value">@(Model?.RoomNumber ?? "—")</div>
+                <div class="lt-stat__label">Phòng học</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Students Panel ──────────────────────────────────────────────────── -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title">
+            <i class="bi bi-people-fill" style="color:var(--lt-navy);margin-right:6px"></i>
+            Danh sách học sinh
+            <span class="lt-badge lt-badge--navy" style="margin-left:8px">@(Model?.Students.Count ?? 0) / @(Model?.MaxStudents ?? 0)</span>
+        </h3>
+        @if (User.IsInRole("ADMIN"))
+        {
+            <button class="lt-btn lt-btn--primary lt-btn--sm"
+                    data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                <i class="bi bi-person-plus-fill"></i> Thêm học sinh
+            </button>
+        }
+    </div>
+    <div class="lt-card__body" style="padding:0">
+        @if (!(Model?.Students.Any() == true))
+        {
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-people"></i></div>
+                <p class="lt-empty__title">Chưa có học sinh nào</p>
+                @if (User.IsInRole("ADMIN"))
+                {
+                    <p class="lt-empty__text">Nhấn <strong>Thêm học sinh</strong> để xếp học sinh vào lớp.</p>
+                }
+            </div>
+        }
+        else
+        {
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th>Học sinh</th>
+                        <th>Mã học sinh</th>
+                        <th>Số điện thoại</th>
+                        <th>Ngày vào lớp</th>
+                        @if (User.IsInRole("ADMIN"))
+                        {
+                            <th style="width:80px"></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model!.Students)
+                    {
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    @if (!string.IsNullOrEmpty(s.AvatarUrl))
+                                    {
+                                        <img src="@s.AvatarUrl" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover"/>
+                                    }
+                                    else
+                                    {
+                                        <div style="width:32px;height:32px;border-radius:50%;background:var(--lt-navy);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem;flex-shrink:0">
+                                            @s.FullName.FirstOrDefault()
+                                        </div>
+                                    }
+                                    <span class="lt-fw-600">@s.FullName</span>
+                                </div>
+                            </td>
+                            <td><code>@s.StudentCode</code></td>
+                            <td class="lt-text-muted">@(s.PhoneNumber ?? "—")</td>
+                            <td class="lt-text-sm lt-text-muted">@s.EnrolledDate.ToString("dd/MM/yyyy")</td>
+                            @if (User.IsInRole("ADMIN"))
+                            {
+                                <td>
+                                    <form asp-action="RemoveStudent" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="classId" value="@Model.ClassId"/>
+                                        <input type="hidden" name="studentUserId" value="@s.UserId"/>
+                                        <button type="submit" class="lt-btn lt-btn--sm"
+                                                style="background:#fee2e2;color:#dc2626;border:none"
+                                                onclick="return confirm('Xóa @s.FullName khỏi lớp?')">
+                                            <i class="bi bi-person-dash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Subject Assignments -->
+    <div class="col-lg-7">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-journal-text" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Phân công môn học
+                </h3>
+                @if (User.IsInRole("ADMIN"))
+                {
+                    <button class="lt-btn lt-btn--outline lt-btn--sm"
+                            data-bs-toggle="modal" data-bs-target="#assignSubjectModal">
+                        <i class="bi bi-plus-lg"></i> Phân công
+                    </button>
+                }
+            </div>
+            <div class="lt-card__body" style="padding:0">
+                @if (!(Model?.SubjectAssignments.Any() == true))
+                {
+                    <div class="lt-empty">
+                        <div class="lt-empty__icon"><i class="bi bi-journal"></i></div>
+                        <p class="lt-empty__title">Chưa có môn học nào</p>
+                    </div>
+                }
+                else
+                {
+                    <table class="lt-table">
+                        <thead>
+                            <tr>
+                                <th>Môn học</th>
+                                <th>Mã môn</th>
+                                <th>Giáo viên</th>
+                                <th>Tiết/tuần</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sa in Model!.SubjectAssignments)
+                            {
+                                <tr>
+                                    <td class="lt-fw-600">@sa.SubjectName</td>
+                                    <td><code>@sa.SubjectCode</code></td>
+                                    <td>@sa.TeacherName</td>
+                                    <td><span class="lt-badge lt-badge--navy">@sa.PeriodsPerWeek tiết</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="col-lg-5">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-calendar3" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Thời khóa biểu
+                </h3>
+                @if (User.IsInRole("ADMIN"))
+                {
+                    <button class="lt-btn lt-btn--outline lt-btn--sm"
+                            data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                        <i class="bi bi-plus-lg"></i> Thêm tiết
+                    </button>
+                }
+            </div>
+            <div class="lt-card__body" style="padding:0">
+                @if (!(Model?.Schedule.Any() == true))
+                {
+                    <div class="lt-empty">
+                        <div class="lt-empty__icon"><i class="bi bi-calendar-x"></i></div>
+                        <p class="lt-empty__title">Chưa có thời khóa biểu</p>
+                    </div>
+                }
+                else
+                {
+                    <table class="lt-table">
+                        <thead>
+                            <tr><th>Thứ</th><th>Môn học</th><th>Tiết</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var slot in Model!.Schedule.OrderBy(s => s.DayOfWeek).ThenBy(s => s.PeriodStart))
+                            {
+                                <tr>
+                                    <td><span class="lt-badge lt-badge--navy">@slot.DayName</span></td>
+                                    <td class="lt-fw-600">@slot.SubjectName</td>
+                                    <td class="lt-text-sm lt-text-muted">@slot.PeriodStart – @slot.PeriodEnd</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (User.IsInRole("ADMIN"))
+{
+<!-- Enroll Student Modal -->
+<div class="modal fade lt-modal" id="enrollStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus-fill" style="color:var(--lt-navy);margin-right:6px"></i>
+                    Thêm học sinh vào lớp
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="EnrollStudent" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="classId" value="@Model?.ClassId"/>
+                <div class="modal-body">
+                    @if (unassigned.Any())
+                    {
+                        <div class="lt-form-group lt-mb-0">
+                            <label class="lt-label">Chọn học sinh <span class="lt-text-danger">*</span></label>
+                            <select name="studentUserId" class="lt-select" required>
+                                <option value="">— Chọn học sinh —</option>
+                                @foreach (var s in unassigned)
+                                {
+                                    <option value="@s.UserId">@s.FullName (@s.StudentCode)</option>
+                                }
+                            </select>
+                            <span class="lt-form-hint">Chỉ hiển thị học sinh chưa thuộc lớp này</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="lt-alert lt-alert--warning" style="border-radius:8px;padding:12px;font-size:.85rem">
+                            <i class="bi bi-info-circle"></i>
+                            Tất cả học sinh đã được xếp vào lớp này hoặc chưa có học sinh nào trong hệ thống.
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    @if (unassigned.Any())
+                    {
+                        <button type="submit" class="lt-btn lt-btn--primary">
+                            <i class="bi bi-check"></i> Thêm vào lớp
+                        </button>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Subject Modal -->
+<div class="modal fade lt-modal" id="assignSubjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Phân công môn học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="AssignSubject" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="classId" value="@Model?.ClassId"/>
+                <div class="modal-body">
+                    @{
+                        var modalSubjects  = ViewBag.SubjectList  as List<LuminaTutors.Application.DTOs.Class.SubjectSelectDto>  ?? new();
+                        var modalTeachers  = ViewBag.TeacherList  as List<LuminaTutors.Application.DTOs.Class.TeacherSummaryDto> ?? new();
+                        var modalSemesters = ViewBag.SemesterList as List<LuminaTutors.Application.DTOs.Class.SemesterSelectDto> ?? new();
+                    }
+                    <div class="lt-form-group">
+                        <label class="lt-label">Học kỳ <span style="color:red">*</span></label>
+                        <select name="model.SemesterId" class="lt-input" required>
+                            <option value="">— Chọn học kỳ —</option>
+                            @foreach (var s in modalSemesters)
+                            {
+                                if (s.IsActive)
+                                {
+                                    <option value="@s.SemesterId" selected>@s.SemesterName (Hiện tại)</option>
+                                }
+                                else
+                                {
+                                    <option value="@s.SemesterId">@s.SemesterName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Môn học <span style="color:red">*</span></label>
+                        <select name="model.SubjectId" class="lt-input" required>
+                            <option value="">— Chọn môn —</option>
+                            @foreach (var s in modalSubjects)
+                            {
+                                <option value="@s.SubjectId">@s.SubjectName (@s.SubjectCode)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Giáo viên <span style="color:red">*</span></label>
+                        <select name="model.TeacherId" class="lt-input" required>
+                            <option value="">— Chọn giáo viên —</option>
+                            @foreach (var t in modalTeachers)
+                            {
+                                <option value="@t.UserId">@t.FullName (@t.TeacherCode)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="lt-form-group lt-mb-0">
+                        <label class="lt-label">Số tiết/tuần</label>
+                        <input type="number" name="model.PeriodsPerWeek" class="lt-input"
+                               min="1" max="10" value="3" required/>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-check"></i> Phân công
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Modal -->
+<div class="modal fade lt-modal" id="scheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm tiết học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CreateSchedule" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="classId" value="@Model?.ClassId"/>
+                <div class="modal-body">
+                    <div class="lt-form-group">
+                        <label class="lt-label">ID Phân công môn học</label>
+                        <input type="number" name="model.SubjectAssignmentId" class="lt-input" required/>
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Thứ (2–8)</label>
+                        <input type="number" name="model.DayOfWeek" class="lt-input"
+                               min="2" max="8" value="2" required/>
+                    </div>
+                    <div class="lt-form-group">
+                        <label class="lt-label">Tiết bắt đầu</label>
+                        <input type="number" name="model.PeriodStart" class="lt-input"
+                               min="1" max="10" value="1" required/>
+                    </div>
+                    <div class="lt-form-group lt-mb-0">
+                        <label class="lt-label">Tiết kết thúc</label>
+                        <input type="number" name="model.PeriodEnd" class="lt-input"
+                               min="1" max="10" value="2" required/>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-check"></i> Thêm tiết
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}

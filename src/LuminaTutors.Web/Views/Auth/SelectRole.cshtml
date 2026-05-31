@@ -1,0 +1,256 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Chọn vai trò — Lumina Tutors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            height: 100%; font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased; overflow: hidden;
+        }
+
+        /* ── Background video ── */
+        .bg-video {
+            position: fixed; inset: 0; z-index: 0;
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .bg-overlay {
+            position: fixed; inset: 0; z-index: 1;
+            background: linear-gradient(135deg,
+                rgba(6,13,31,.92) 0%,
+                rgba(13,26,53,.88) 50%,
+                rgba(14,31,74,.85) 100%);
+        }
+        .bg-grid {
+            position: fixed; inset: 0; z-index: 1;
+            background-image:
+                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+            background-size: 56px 56px;
+        }
+
+        /* ── Layout ── */
+        .page {
+            position: relative; z-index: 2;
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 24px 16px;
+        }
+
+        /* ── Back link ── */
+        .back-link {
+            position: fixed; top: 24px; left: 32px;
+            display: flex; align-items: center; gap: 6px;
+            font-size: .875rem; font-weight: 600;
+            color: rgba(255,255,255,.5); text-decoration: none;
+            transition: color .2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,.9); }
+
+        /* ── Logo ── */
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem; font-weight: 800;
+            color: #fff; margin-bottom: 32px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+
+        /* ── Heading ── */
+        .heading { text-align: center; margin-bottom: 40px; }
+        .heading h1 {
+            font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800;
+            color: #fff; letter-spacing: -.4px; margin-bottom: 8px;
+        }
+        .heading p { font-size: .9375rem; color: rgba(255,255,255,.5); line-height: 1.6; }
+
+        /* ── Role grid ── */
+        .role-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 16px; width: 100%; max-width: 560px;
+            margin-bottom: 24px;
+        }
+
+        .role-card {
+            position: relative; overflow: hidden;
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 20px; padding: 28px 22px;
+            text-decoration: none; color: inherit;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+            cursor: pointer;
+            transition: transform .2s, border-color .2s, background .2s, box-shadow .2s;
+            backdrop-filter: blur(8px);
+        }
+        .role-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255,255,255,.3);
+            background: rgba(255,255,255,.1);
+            box-shadow: 0 16px 48px rgba(0,0,0,.4);
+        }
+        .role-card:active { transform: translateY(-2px); }
+
+        /* Glow on hover */
+        .role-card::before {
+            content: ''; position: absolute;
+            inset: 0; border-radius: 20px;
+            opacity: 0; transition: opacity .3s;
+        }
+        .role-card:hover::before { opacity: 1; }
+
+        /* Per-role colors */
+        .rc-student  { --rc: #2563eb; --rc-l: #3b82f6; }
+        .rc-teacher  { --rc: #059669; --rc-l: #10b981; }
+        .rc-supervisor{ --rc: #d97706; --rc-l: #f59e0b; }
+        .rc-parent   { --rc: #7c3aed; --rc-l: #8b5cf6; }
+
+        .role-card::before {
+            background: radial-gradient(ellipse at 50% 0%, rgba(var(--rc-rgb),.15) 0%, transparent 70%);
+        }
+        .rc-student::before  { background: radial-gradient(ellipse at 50% 0%, rgba(37,99,235,.2)   0%, transparent 70%); }
+        .rc-teacher::before  { background: radial-gradient(ellipse at 50% 0%, rgba(5,150,105,.2)   0%, transparent 70%); }
+        .rc-supervisor::before{ background: radial-gradient(ellipse at 50% 0%, rgba(217,119,6,.2)  0%, transparent 70%); }
+        .rc-parent::before   { background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,.2)  0%, transparent 70%); }
+
+        .rc-student:hover  { border-color: rgba(59,130,246,.5); }
+        .rc-teacher:hover  { border-color: rgba(16,185,129,.5); }
+        .rc-supervisor:hover{ border-color: rgba(245,158,11,.5); }
+        .rc-parent:hover   { border-color: rgba(139,92,246,.5); }
+
+        /* Icon */
+        .role-icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; flex-shrink: 0;
+            transition: transform .2s;
+        }
+        .role-card:hover .role-icon { transform: scale(1.08); }
+        .rc-student  .role-icon { background: rgba(37,99,235,.2);  color: #60a5fa; border: 1px solid rgba(37,99,235,.3); }
+        .rc-teacher  .role-icon { background: rgba(5,150,105,.2);  color: #34d399; border: 1px solid rgba(5,150,105,.3); }
+        .rc-supervisor .role-icon { background: rgba(217,119,6,.2); color: #fcd34d; border: 1px solid rgba(217,119,6,.3); }
+        .rc-parent   .role-icon { background: rgba(124,58,237,.2); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); }
+
+        .role-label {
+            font-size: 1.0625rem; font-weight: 700; color: #fff;
+        }
+        .role-desc {
+            font-size: .8rem; color: rgba(255,255,255,.45); line-height: 1.5;
+        }
+        .role-arrow {
+            position: absolute; bottom: 16px; right: 18px;
+            font-size: 1rem; color: rgba(255,255,255,.25);
+            transition: color .2s, transform .2s;
+        }
+        .role-card:hover .role-arrow { color: rgba(255,255,255,.7); transform: translateX(3px); }
+
+        /* ── Admin link ── */
+        .admin-link {
+            display: flex; align-items: center; gap: 8px;
+            font-size: .8rem; font-weight: 500;
+            color: rgba(255,255,255,.3); text-decoration: none;
+            padding: 10px 20px; border-radius: 99px;
+            border: 1px solid rgba(255,255,255,.08);
+            transition: all .2s; margin-top: 4px;
+        }
+        .admin-link:hover {
+            color: rgba(255,255,255,.6);
+            border-color: rgba(255,255,255,.18);
+            background: rgba(255,255,255,.04);
+        }
+
+        /* ── Responsive ── */
+        @@media (max-width: 480px) {
+            .role-grid { grid-template-columns: 1fr; max-width: 320px; }
+            html, body { overflow: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Video background -->
+<video class="bg-video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+    <source src="~/videos/hero-bg.mp4" type="video/mp4"/>
+</video>
+<div class="bg-overlay"></div>
+<div class="bg-grid"></div>
+
+<!-- Back to home -->
+<a href="/" class="back-link" data-testid="back-home">
+    <i class="bi bi-arrow-left"></i> Trang chủ
+</a>
+
+<main class="page">
+    <a href="/" class="logo">Lumina<span class="logo-dot"></span></a>
+
+    <div class="heading">
+        <h1>Chào mừng! Bạn là ai?</h1>
+        <p>Chọn vai trò của bạn để tiếp tục đăng nhập vào hệ thống</p>
+    </div>
+
+    <div class="role-grid" data-testid="role-grid">
+
+        <!-- Học Sinh -->
+        <a asp-controller="Auth" asp-action="Login" asp-route-role="student"
+           class="role-card rc-student" data-testid="role-student">
+            <div class="role-icon"><i class="bi bi-mortarboard-fill"></i></div>
+            <div>
+                <div class="role-label">Học Sinh</div>
+                <div class="role-desc">Xem lịch học, điểm số và thông báo từ nhà trường</div>
+            </div>
+            <i class="bi bi-arrow-right role-arrow"></i>
+        </a>
+
+        <!-- Giáo Viên -->
+        <a asp-controller="Auth" asp-action="Login" asp-route-role="teacher"
+           class="role-card rc-teacher" data-testid="role-teacher">
+            <div class="role-icon"><i class="bi bi-person-video3"></i></div>
+            <div>
+                <div class="role-label">Giáo Viên</div>
+                <div class="role-desc">Quản lý lớp học, điểm danh và nhập điểm số học sinh</div>
+            </div>
+            <i class="bi bi-arrow-right role-arrow"></i>
+        </a>
+
+        <!-- Giám Thị -->
+        <a asp-controller="Auth" asp-action="Login" asp-route-role="supervisor"
+           class="role-card rc-supervisor" data-testid="role-supervisor">
+            <div class="role-icon"><i class="bi bi-shield-fill"></i></div>
+            <div>
+                <div class="role-label">Giám Thị</div>
+                <div class="role-desc">Giám sát kỷ luật, kiểm tra cổng và liên lạc phụ huynh</div>
+            </div>
+            <i class="bi bi-arrow-right role-arrow"></i>
+        </a>
+
+        <!-- Phụ Huynh -->
+        <a asp-controller="Auth" asp-action="Login" asp-route-role="parent"
+           class="role-card rc-parent" data-testid="role-parent">
+            <div class="role-icon"><i class="bi bi-people-fill"></i></div>
+            <div>
+                <div class="role-label">Phụ Huynh</div>
+                <div class="role-desc">Theo dõi học tập của con em và đóng học phí online</div>
+            </div>
+            <i class="bi bi-arrow-right role-arrow"></i>
+        </a>
+
+    </div>
+
+    <!-- Admin (ẩn, chỉ dành cho quản trị) -->
+    <a asp-controller="Auth" asp-action="Login" asp-route-role="admin"
+       class="admin-link" data-testid="role-admin">
+        <i class="bi bi-gear-fill"></i>
+        Đăng nhập với tài khoản Quản trị viên
+    </a>
+</main>
+
+</body>
+</html>

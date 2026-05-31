@@ -1,0 +1,74 @@
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Thêm môn học";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title"><i class="bi bi-plus-circle" style="color:var(--lt-gold);margin-right:8px"></i>Thêm môn học</h1>
+        <p class="lt-page-subtitle">Tạo môn học mới cho trường</p>
+    </div>
+    <a asp-action="Index" class="lt-btn lt-btn--outline"><i class="bi bi-arrow-left"></i> Quay lại</a>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4">
+        @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div><i class="bi bi-exclamation-triangle-fill"></i> @e.ErrorMessage</div>
+        }
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="lt-card">
+            <div class="lt-card__body">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="lt-label lt-required">Mã môn học</label>
+                            <input name="subjectCode" class="lt-input" required maxlength="20"
+                                   placeholder="VD: TOAN, VAN, ANH..."
+                                   style="text-transform:uppercase"
+                                   oninput="this.value=this.value.toUpperCase()">
+                            <div class="lt-hint">Mã viết tắt, không dấu, tối đa 20 ký tự</div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="lt-label lt-required">Tên môn học</label>
+                            <input name="subjectName" class="lt-input" required maxlength="200"
+                                   placeholder="VD: Toán học, Ngữ văn, Tiếng Anh...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="lt-label">Phân loại</label>
+                            <select name="subjectCategory" class="lt-input">
+                                <option value="@((int)SubjectCategory.Main)">📚 Môn bắt buộc</option>
+                                <option value="@((int)SubjectCategory.Elective)">🎯 Môn tự chọn</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="lt-label">Tùy chọn</label>
+                            <div style="display:flex;align-items:center;gap:10px;height:42px">
+                                <input type="checkbox" name="has3DLab" value="true" id="chk-lab"
+                                       style="width:18px;height:18px;accent-color:var(--lt-navy)">
+                                <label for="chk-lab" style="font-size:.88rem;cursor:pointer">
+                                    <i class="bi bi-vr" style="color:var(--lt-gold)"></i> Có phòng Lab 3D ảo
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lt-mt-4" style="display:flex;gap:10px">
+                        <button type="submit" class="lt-btn lt-btn--primary">
+                            <i class="bi bi-floppy-fill"></i> Lưu môn học
+                        </button>
+                        <a asp-action="Index" class="lt-btn lt-btn--outline">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

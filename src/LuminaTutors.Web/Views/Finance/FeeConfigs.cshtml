@@ -1,0 +1,195 @@
+@using LuminaTutors.Application.DTOs.Finance
+@model List<TuitionFeeConfigDto>
+@{
+    ViewData["Title"] = "Cấu hình học phí";
+    var academicYearId = ViewBag.AcademicYearId as int? ?? 0;
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Cấu hình học phí</h1>
+        <p class="lt-page-subtitle">Thiết lập mức học phí theo khối và loại phí</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <a asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm">
+            <i class="bi bi-bar-chart-fill"></i> Tổng quan
+        </a>
+        <button type="button" class="lt-btn lt-btn--gold lt-btn--sm"
+                data-bs-toggle="collapse" data-bs-target="#collapseCreateFee">
+            <i class="bi bi-plus-lg"></i> Thêm cấu hình
+        </button>
+    </div>
+</div>
+
+<!-- Create Fee Config Form -->
+<div class="collapse lt-mb-4" id="collapseCreateFee">
+    <div class="lt-card">
+        <div class="lt-card__header">
+            <h3 class="lt-card__title">Thêm cấu hình học phí mới</h3>
+        </div>
+        <div class="lt-card__body">
+            <form asp-action="CreateFeeConfig" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="AcademicYearId" value="@academicYearId"/>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Loại phí <span class="lt-text-danger">*</span></label>
+                            <input type="text" name="FeeType" class="lt-input"
+                                   placeholder="VD: Học phí, Bán trú, Ngoại khóa" required maxlength="100"/>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="lt-form-group">
+                            <label class="lt-label">ID Khối (để trống = tất cả)</label>
+                            <input type="number" name="GradeLevelId" class="lt-input"
+                                   placeholder="VD: 1" min="1"/>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Mức phí (đ) <span class="lt-text-danger">*</span></label>
+                            <input type="number" name="Amount" class="lt-input"
+                                   placeholder="VD: 2000000" required min="1000" max="100000000" step="1000"/>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Ngày thu (hàng tháng)</label>
+                            <input type="number" name="DueDayOfMonth" class="lt-input"
+                                   value="15" min="1" max="28"/>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <div class="lt-form-group">
+                            <label class="lt-label">Chu kỳ</label>
+                            <select name="BillingCycle" class="lt-select">
+                                <option value="Monthly">Tháng</option>
+                                <option value="Semester">Học kỳ</option>
+                                <option value="Annual">Năm</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="lt-form-group lt-mb-0">
+                            <label class="lt-label">Ghi chú</label>
+                            <input type="text" name="Description" class="lt-input"
+                                   placeholder="Mô tả thêm về loại phí này"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lt-flex-between lt-mt-4" style="justify-content:flex-end;gap:12px">
+                    <button type="button" class="lt-btn lt-btn--outline"
+                            data-bs-toggle="collapse" data-bs-target="#collapseCreateFee">Hủy</button>
+                    <button type="submit" class="lt-btn lt-btn--primary">
+                        <i class="bi bi-check-lg"></i> Thêm cấu hình
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="lt-alert lt-alert--success lt-mb-4">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="lt-alert lt-alert--danger lt-mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+@if (Model == null || Model.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-gear-x"></i></div>
+                <p class="lt-empty__title">Chưa có cấu hình</p>
+                <p class="lt-empty__text">Nhấn "Thêm cấu hình" để thiết lập mức học phí cho năm học này.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lt-card">
+        <div class="lt-card__body" style="padding:0;overflow-x:auto">
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th>Loại phí</th>
+                        <th>Khối áp dụng</th>
+                        <th class="lt-th--right">Mức phí</th>
+                        <th>Chu kỳ</th>
+                        <th>Ngày thu</th>
+                        <th>Trạng thái</th>
+                        <th>Ghi chú</th>
+                        <th class="lt-td--actions"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var cfg in Model.OrderByDescending(c => c.IsActive).ThenBy(c => c.FeeType))
+                    {
+                        <tr>
+                            <td class="lt-fw-600">@cfg.FeeType</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(cfg.GradeName))
+                                {
+                                    <span class="lt-badge lt-badge--navy">@cfg.GradeName</span>
+                                }
+                                else
+                                {
+                                    <span class="lt-text-muted lt-text-xs">Tất cả khối</span>
+                                }
+                            </td>
+                            <td class="lt-td--right lt-td--mono lt-fw-600">@cfg.Amount.ToString("N0")đ</td>
+                            <td>
+                                <span class="lt-badge lt-badge--navy">
+                                    @(cfg.BillingCycle == "Monthly" ? "Tháng" : cfg.BillingCycle == "Semester" ? "Học kỳ" : "Năm")
+                                </span>
+                            </td>
+                            <td class="lt-td--dim">Ngày @cfg.DueDayOfMonth</td>
+                            <td>
+                                <span class="lt-badge @(cfg.IsActive ? "lt-badge--success" : "lt-badge--danger")">
+                                    @(cfg.IsActive ? "Đang áp dụng" : "Đã tắt")
+                                </span>
+                            </td>
+                            <td class="lt-td--dim lt-text-xs">@(cfg.Description ?? "—")</td>
+                            <td>
+                                @if (cfg.IsActive)
+                                {
+                                    <form asp-action="DeactivateFeeConfig" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@cfg.ConfigId"/>
+                                        <input type="hidden" name="academicYearId" value="@academicYearId"/>
+                                        <button type="submit"
+                                                class="lt-btn lt-btn--outline lt-btn--sm lt-btn--icon"
+                                                title="Vô hiệu hóa"
+                                                onclick="return confirm('Vô hiệu hóa cấu hình này?')">
+                                            <i class="bi bi-pause-circle"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="lt-card__footer">
+            <span class="lt-text-sm lt-text-muted">
+                <strong class="lt-text-navy">@Model.Count(c => c.IsActive)</strong> cấu hình đang hoạt động
+                trong tổng số @Model.Count
+            </span>
+        </div>
+    </div>
+}
