@@ -130,7 +130,8 @@ try
         app.UseDeveloperExceptionPage();
     }
 
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsDevelopment())
+        app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseSerilogRequestLogging();
     app.UseCors("MobileApp");

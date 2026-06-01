@@ -182,12 +182,11 @@ public sealed class StudentService : IStudentService
     public async Task<Result<StudentDetailDto>> UpdateAsync(
         int schoolId, int studentId, UpdateStudentRequest request, CancellationToken ct = default)
     {
-        var profiles = await _uow.StudentProfiles.FindAsync(
+        var profile = await _uow.StudentProfiles.FindOneAsync(
             sp => sp.Id == studentId && sp.SchoolId == schoolId,
             include: q => q.Include(sp => sp.User),
             ct: ct);
 
-        var profile = profiles.FirstOrDefault();
         if (profile is null)
             return Result<StudentDetailDto>.Failure("NOT_FOUND", "Học sinh không tồn tại.");
 
@@ -207,12 +206,11 @@ public sealed class StudentService : IStudentService
 
     public async Task<Result> DeactivateAsync(int schoolId, int studentId, CancellationToken ct = default)
     {
-        var profiles = await _uow.StudentProfiles.FindAsync(
+        var profile = await _uow.StudentProfiles.FindOneAsync(
             sp => sp.Id == studentId && sp.SchoolId == schoolId,
             include: q => q.Include(sp => sp.User),
             ct: ct);
 
-        var profile = profiles.FirstOrDefault();
         if (profile is null)
             return Result.Failure("NOT_FOUND", "Học sinh không tồn tại.");
 
@@ -223,7 +221,10 @@ public sealed class StudentService : IStudentService
             ct: ct);
 
         foreach (var en in enrollments)
+        {
             en.Status = EnrollmentStatus.Withdrawn;
+            _uow.ClassEnrollments.Update(en);
+        }
 
         await _uow.SaveChangesAsync(ct);
         _logger.LogInformation("Deactivated student {StudentId} in school {SchoolId}", studentId, schoolId);
@@ -337,6 +338,28 @@ public sealed class StudentService : IStudentService
 
         var profiles = await _uow.StudentProfiles.FindAsync(
             sp => studentUserIds.Contains(sp.UserId),
+            include: q => q.Include(sp => sp.User),
+            ct: ct);
+
+        var dtos = _mapper.Map<List<StudentSummaryDto>>(profiles);
+        return Result<IReadOnlyList<StudentSummaryDto>>.Success(dtos);
+    }
+
+    // ─── GetChildrenOfParent ──────────────────────────────────────────────────
+
+    public async Task<Result<IReadOnlyList<StudentSummaryDto>>> GetChildrenOfParentAsync(
+        int parentUserId, int schoolId, CancellationToken ct = default)
+    {
+        var relations = await _uow.ParentStudentRelations.FindAsync(
+            r => r.ParentUserId == parentUserId,
+            ct: ct);
+
+        var studentIds = relations.Select(r => r.StudentUserId).ToList();
+        if (studentIds.Count == 0)
+            return Result<IReadOnlyList<StudentSummaryDto>>.Success(new List<StudentSummaryDto>());
+
+        var profiles = await _uow.StudentProfiles.FindAsync(
+            sp => studentIds.Contains(sp.UserId) && sp.User.SchoolId == schoolId,
             include: q => q.Include(sp => sp.User),
             ct: ct);
 

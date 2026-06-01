@@ -1,7 +1,7 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const BASE_URL = 'http://192.168.0.3:60481';
+export const BASE_URL = 'http://192.168.0.2:60481';
 
 export const api = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -11,7 +11,7 @@ export const api = axios.create({
 
 // Tự động đính JWT vào mỗi request
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('jwt_token');
+  const token = await AsyncStorage.getItem('jwt_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -32,14 +32,16 @@ export const studentApi = {
 
 // ── Teacher ───────────────────────────────────────────────────────────────────
 export const teacherApi = {
-  classes:       (academicYearId: number) => api.get(`/mobile/teacher/classes?academicYearId=${academicYearId}`),
-  gradeBook:     (subjectAssignmentId: number) => api.get(`/mobile/teacher/gradebook/${subjectAssignmentId}`),
+  classes:            (academicYearId: number) => api.get(`/mobile/teacher/classes?academicYearId=${academicYearId}`),
+  subjectAssignments: ()                        => api.get('/mobile/teacher/subject-assignments'),
+  gradeBook:          (subjectAssignmentId: number) => api.get(`/mobile/teacher/gradebook/${subjectAssignmentId}`),
   attendanceSessions: (classId: number, date?: string) =>
     api.get(`/mobile/teacher/attendance-sessions?classId=${classId}${date ? `&date=${date}` : ''}`),
 };
 
 // ── Parent ────────────────────────────────────────────────────────────────────
 export const parentApi = {
+  children:        ()                                      => api.get('/mobile/parent/children'),
   childGrades:     (studentId: number, semesterId: number) =>
     api.get(`/mobile/parent/child-grades?studentId=${studentId}&semesterId=${semesterId}`),
   childAttendance: (studentId: number, semesterId: number) =>

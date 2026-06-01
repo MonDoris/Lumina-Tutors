@@ -2,13 +2,28 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator,
-  ScrollView, Image,
+  ScrollView,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, radius, typography } from '../../theme';
 
-export default function LoginScreen() {
+const ROLE_LABELS: Record<string, { label: string; icon: string; accent: string }> = {
+  STUDENT:    { label: 'Học sinh',  icon: '🎓', accent: '#2563eb' },
+  PARENT:     { label: 'Phụ huynh',icon: '👨‍👩‍👧', accent: '#16a34a' },
+  TEACHER:    { label: 'Giáo viên',icon: '📚', accent: '#d97706' },
+  SUPERVISOR: { label: 'Giám thị', icon: '🛡️', accent: '#7c3aed' },
+  ACCOUNTANT: { label: 'Kế toán',  icon: '💼', accent: '#0891b2' },
+  ADMIN:      { label: 'Quản trị', icon: '⚙️', accent: '#dc2626' },
+};
+
+interface Props {
+  selectedRole: string;
+  onBack: () => void;
+}
+
+export default function LoginScreen({ selectedRole, onBack }: Props) {
   const { login } = useAuth();
+  const roleInfo = ROLE_LABELS[selectedRole] ?? { label: selectedRole, icon: '👤', accent: colors.navy };
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
@@ -44,6 +59,17 @@ export default function LoginScreen() {
 
         {/* Card */}
         <View style={s.card}>
+          {/* Role badge + back */}
+          <View style={s.roleBadgeRow}>
+            <TouchableOpacity style={s.backBtn} onPress={onBack}>
+              <Text style={s.backText}>← Đổi vai trò</Text>
+            </TouchableOpacity>
+            <View style={[s.roleBadge, { backgroundColor: roleInfo.accent + '18', borderColor: roleInfo.accent + '40' }]}>
+              <Text style={s.roleBadgeIcon}>{roleInfo.icon}</Text>
+              <Text style={[s.roleBadgeLabel, { color: roleInfo.accent }]}>{roleInfo.label}</Text>
+            </View>
+          </View>
+
           <Text style={s.cardTitle}>Đăng nhập</Text>
           <Text style={s.cardSub}>Nhập thông tin tài khoản của bạn</Text>
 
@@ -161,4 +187,15 @@ const s = StyleSheet.create({
   btnText:      { color: '#fff', fontSize: 16, fontWeight: '700' },
 
   hint:         { textAlign: 'center', color: colors.textMuted, fontSize: 12, marginTop: spacing.md, lineHeight: 18 },
+
+  roleBadgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+  backBtn:      { padding: 4 },
+  backText:     { fontSize: 13, color: colors.info, fontWeight: '500' },
+  roleBadge:    {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: radius.full, borderWidth: 1,
+  },
+  roleBadgeIcon:  { fontSize: 14 },
+  roleBadgeLabel: { fontSize: 12, fontWeight: '700' },
 });

@@ -141,11 +141,10 @@ public sealed class AttendanceService : IAttendanceService
     public async Task<Result> CloseSessionAsync(
         int sessionId, int teacherId, CancellationToken ct = default)
     {
-        var sessions = await _uow.AttendanceSessions.FindAsync(
+        var session = await _uow.AttendanceSessions.FindOneAsync(
             s => s.Id == sessionId && s.CreatedByTeacherId == teacherId,
             ct: ct);
 
-        var session = sessions.FirstOrDefault();
         if (session is null)
             return Result.Failure("NOT_FOUND", "Phiên điểm danh không tồn tại hoặc bạn không có quyền.");
 
@@ -182,12 +181,11 @@ public sealed class AttendanceService : IAttendanceService
         if (DateTime.UtcNow > session.QRExpiresAt)
             return Result<ScanQRResponse>.Failure("QR_EXPIRED", "Mã QR đã hết hạn. Vui lòng liên hệ giáo viên.");
 
-        var attendance = await _uow.StudentAttendances.FindAsync(
+        var record = await _uow.StudentAttendances.FindOneAsync(
             sa => sa.SessionId == session.Id && sa.StudentId == request.StudentId,
             include: q => q.Include(sa => sa.Student),
             ct: ct);
 
-        var record = attendance.FirstOrDefault();
         if (record is null)
             return Result<ScanQRResponse>.Failure("NOT_ENROLLED", "Học sinh không thuộc lớp này.");
 
@@ -232,11 +230,10 @@ public sealed class AttendanceService : IAttendanceService
         if (!sessions.Any())
             return Result.Failure("NOT_FOUND", "Phiên điểm danh không tồn tại hoặc bạn không có quyền.");
 
-        var attendance = await _uow.StudentAttendances.FindAsync(
+        var record = await _uow.StudentAttendances.FindOneAsync(
             sa => sa.SessionId == sessionId && sa.StudentId == request.StudentId,
             ct: ct);
 
-        var record = attendance.FirstOrDefault();
         if (record is null)
             return Result.Failure("NOT_FOUND", "Không tìm thấy bản ghi điểm danh.");
 

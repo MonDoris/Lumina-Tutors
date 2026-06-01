@@ -1,3 +1,21 @@
-.vs/ 
-bin/ 
-obj/ 
+# Build
+.vs/
+bin/
+obj/
+
+# Secrets — KHÔNG commit các file này
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/*.user
+
+# Node
+lumina-mobile/node_modules/
+lumina-mobile/.expo/
+
+# Logs
+logs/
+*.log
+
+# Upload files
+**/wwwroot/uploads/
+

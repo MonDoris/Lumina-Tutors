@@ -1,10 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import RoleSelectScreen     from './src/screens/auth/RoleSelectScreen';
 import LoginScreen          from './src/screens/auth/LoginScreen';
 import StudentHomeScreen    from './src/screens/student/StudentHomeScreen';
 import TeacherHomeScreen    from './src/screens/teacher/TeacherHomeScreen';
@@ -12,10 +9,9 @@ import ParentHomeScreen     from './src/screens/parent/ParentHomeScreen';
 import SupervisorHomeScreen from './src/screens/supervisor/SupervisorHomeScreen';
 import { colors } from './src/theme';
 
-const Stack = createNativeStackNavigator();
-
-function RootNavigator() {
+function RootApp() {
   const { user, isLoading } = useAuth();
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -25,33 +21,31 @@ function RootNavigator() {
     );
   }
 
-  return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {!user ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        ) : user.roleCode === 'STUDENT' ? (
-          <Stack.Screen name="StudentHome" component={StudentHomeScreen} />
-        ) : user.roleCode === 'TEACHER' || user.roleCode === 'ADMIN' ? (
-          <Stack.Screen name="TeacherHome" component={TeacherHomeScreen} />
-        ) : user.roleCode === 'PARENT' ? (
-          <Stack.Screen name="ParentHome" component={ParentHomeScreen} />
-        ) : user.roleCode === 'SUPERVISOR' ? (
-          <Stack.Screen name="SupervisorHome" component={SupervisorHomeScreen} />
-        ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+  if (!user) {
+    if (!selectedRole) {
+      return <RoleSelectScreen onSelect={setSelectedRole} />;
+    }
+    return (
+      <LoginScreen
+        selectedRole={selectedRole}
+        onBack={() => setSelectedRole(null)}
+      />
+    );
+  }
+
+  switch (user.roleCode) {
+    case 'STUDENT':    return <StudentHomeScreen    />;
+    case 'TEACHER':    return <TeacherHomeScreen    />;
+    case 'PARENT':     return <ParentHomeScreen     />;
+    case 'SUPERVISOR': return <SupervisorHomeScreen />;
+    default:           return <TeacherHomeScreen    />;
+  }
 }
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <AuthProvider>
+      <RootApp />
+    </AuthProvider>
   );
 }

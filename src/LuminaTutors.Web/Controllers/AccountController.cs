@@ -245,6 +245,29 @@ public sealed class AccountController : Controller
         return RedirectToAction(nameof(Detail), new { id });
     }
 
+    // ─── Set Password (inline from Edit page) ────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetPassword(int id, string newPassword, string confirmPassword)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+        {
+            TempData["Error"] = "Mật khẩu phải có ít nhất 6 ký tự.";
+        }
+        else if (newPassword != confirmPassword)
+        {
+            TempData["Error"] = "Mật khẩu xác nhận không khớp.";
+        }
+        else
+        {
+            var result = await _accountService.ResetPasswordAsync(SchoolId, id, newPassword);
+            TempData[result.IsSuccess ? "Success" : "Error"] =
+                result.IsSuccess ? "Đã cập nhật mật khẩu thành công!" : result.Error;
+        }
+        return RedirectToAction(nameof(Edit), new { id });
+    }
+
     // ─── Delete ───────────────────────────────────────────────────────────────
 
     [HttpPost]

@@ -22,6 +22,7 @@ public sealed class MobileApiController : ControllerBase
     private readonly INotificationService _notifications;
     private readonly IDisciplineService   _discipline;
     private readonly IStudentService      _studentService;
+    private readonly IHomeworkService     _homework;
 
     public MobileApiController(
         IGradingService      grading,
@@ -29,7 +30,8 @@ public sealed class MobileApiController : ControllerBase
         IClassService        classService,
         INotificationService notifications,
         IDisciplineService   discipline,
-        IStudentService      studentService)
+        IStudentService      studentService,
+        IHomeworkService     homework)
     {
         _grading        = grading;
         _attendance     = attendance;
@@ -37,6 +39,7 @@ public sealed class MobileApiController : ControllerBase
         _notifications  = notifications;
         _discipline     = discipline;
         _studentService = studentService;
+        _homework       = homework;
     }
 
     // ══════════════════════════════════════════════════════
@@ -71,6 +74,14 @@ public sealed class MobileApiController : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
 
+    /// <summary>GET /api/mobile/teacher/subject-assignments?academicYearId=1 — các lớp-môn giáo viên phụ trách</summary>
+    [HttpGet("teacher/subject-assignments")]
+    public async Task<IActionResult> TeacherSubjectAssignments()
+    {
+        var result = await _homework.GetTeacherSubjectAssignmentsAsync(SchoolId(), UserId());
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
     /// <summary>GET /api/mobile/teacher/gradebook/{id}</summary>
     [HttpGet("teacher/gradebook/{subjectAssignmentId:int}")]
     public async Task<IActionResult> TeacherGradeBook(int subjectAssignmentId)
@@ -99,6 +110,14 @@ public sealed class MobileApiController : ControllerBase
     // ══════════════════════════════════════════════════════
     // PARENT
     // ══════════════════════════════════════════════════════
+
+    /// <summary>GET /api/mobile/parent/children — danh sách con em liên kết với phụ huynh hiện tại</summary>
+    [HttpGet("parent/children")]
+    public async Task<IActionResult> ParentChildren()
+    {
+        var result = await _studentService.GetChildrenOfParentAsync(UserId(), SchoolId());
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
 
     /// <summary>GET /api/mobile/parent/child-grades?studentId=5&semesterId=1</summary>
     [HttpGet("parent/child-grades")]

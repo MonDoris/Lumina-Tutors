@@ -13,4 +13,5 @@ public interface IStudentService
     Task<Result>                                 EnrollAsync(int schoolId, int studentId, EnrollStudentRequest request, CancellationToken ct = default);
     Task<Result>                                 TransferAsync(int schoolId, int studentId, TransferStudentRequest request, CancellationToken ct = default);
     Task<Result<IReadOnlyList<StudentSummaryDto>>> GetByClassAsync(int classId, CancellationToken ct = default);
+    Task<Result<IReadOnlyList<StudentSummaryDto>>> GetChildrenOfParentAsync(int parentUserId, int schoolId, CancellationToken ct = default);
 }

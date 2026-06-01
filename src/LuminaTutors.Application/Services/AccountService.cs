@@ -359,7 +359,11 @@ public sealed class AccountService : IAccountService
                         {
                             var existing = await _uow.ClassEnrollments.FindAsync(
                                 e => e.StudentId == userId && e.Status == EnrollmentStatus.Active, ct: ct);
-                            foreach (var e in existing) e.Status = EnrollmentStatus.Withdrawn;
+                            foreach (var e in existing)
+                            {
+                                e.Status = EnrollmentStatus.Withdrawn;
+                                _uow.ClassEnrollments.Update(e);
+                            }
                             await _uow.SaveChangesAsync(ct);
 
                             var cls = await _uow.Classes.GetByIdAsync(req.ClassId.Value, ct);
@@ -444,9 +448,8 @@ public sealed class AccountService : IAccountService
 
     public async Task<Result> ToggleActiveAsync(int schoolId, int userId, CancellationToken ct = default)
     {
-        var users = await _uow.Users.FindAsync(
+        var user = await _uow.Users.FindOneAsync(
             u => u.Id == userId && u.SchoolId == schoolId, ct: ct);
-        var user = users.FirstOrDefault();
         if (user is null) return Result.Failure("NOT_FOUND", "Tài khoản không tồn tại.");
 
         user.IsActive = !user.IsActive;
@@ -459,9 +462,8 @@ public sealed class AccountService : IAccountService
 
     public async Task<Result> ResetPasswordAsync(int schoolId, int userId, string newPassword, CancellationToken ct = default)
     {
-        var users = await _uow.Users.FindAsync(
+        var user = await _uow.Users.FindOneAsync(
             u => u.Id == userId && u.SchoolId == schoolId, ct: ct);
-        var user = users.FirstOrDefault();
         if (user is null) return Result.Failure("NOT_FOUND", "Tài khoản không tồn tại.");
 
         user.PasswordHash = _hasher.HashPassword(user, newPassword);
@@ -474,11 +476,10 @@ public sealed class AccountService : IAccountService
 
     public async Task<Result> DeleteAccountAsync(int schoolId, int userId, CancellationToken ct = default)
     {
-        var users = await _uow.Users.FindAsync(
+        var user = await _uow.Users.FindOneAsync(
             u => u.Id == userId && u.SchoolId == schoolId,
             include: q => q.Include(u => u.Role),
             ct: ct);
-        var user = users.FirstOrDefault();
         if (user is null) return Result.Failure("NOT_FOUND", "Tài khoản không tồn tại.");
         if (!AllowedRoles.Contains(user.Role.RoleCode))
             return Result.Failure("FORBIDDEN", "Không thể xóa tài khoản này.");

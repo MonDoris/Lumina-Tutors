@@ -184,11 +184,12 @@ public sealed class ClassService : IClassService
     public async Task<Result<ClassDetailDto>> UpdateAsync(
         int schoolId, int classId, UpdateClassRequest request, CancellationToken ct = default)
     {
-        var classes = await _uow.Classes.FindAsync(
+        // Dùng FindOneAsync (tracked) thay vì FindAsync (AsNoTracking)
+        // để EF Core theo dõi thay đổi và sinh UPDATE SQL khi SaveChanges
+        var cls = await _uow.Classes.FindOneAsync(
             c => c.Id == classId && c.SchoolId == schoolId,
             ct: ct);
 
-        var cls = classes.FirstOrDefault();
         if (cls is null)
             return Result<ClassDetailDto>.Failure("NOT_FOUND", "Lớp học không tồn tại.");
 
