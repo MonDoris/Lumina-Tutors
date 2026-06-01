@@ -42,6 +42,26 @@ public sealed class HomeworkService : IHomeworkService
         return Result<IReadOnlyList<SubjectAssignmentOptionDto>>.Success(dtos);
     }
 
+    public async Task<Result<IReadOnlyList<SubjectAssignmentOptionDto>>> GetAllSubjectAssignmentsAsync(
+        int schoolId, CancellationToken ct = default)
+    {
+        var list = await _uow.SubjectAssignments.FindAsync(
+            sa => sa.SchoolId == schoolId,
+            q  => q.Include(sa => sa.Subject)
+                   .Include(sa => sa.Class)
+                   .Include(sa => sa.Teacher),
+            ct);
+
+        var dtos = list.Select(sa => new SubjectAssignmentOptionDto(
+            sa.Id,
+            $"{sa.Subject?.SubjectName ?? "—"} — GV: {sa.Teacher?.FullName ?? "?"}",
+            sa.Class?.ClassName ?? "—",
+            sa.Subject?.Id
+        )).OrderBy(x => x.ClassName).ThenBy(x => x.SubjectName).ToList();
+
+        return Result<IReadOnlyList<SubjectAssignmentOptionDto>>.Success(dtos);
+    }
+
     public async Task<Result<IReadOnlyList<AssignmentListDto>>> GetTeacherAssignmentsAsync(
         int schoolId, int teacherId, CancellationToken ct = default)
     {

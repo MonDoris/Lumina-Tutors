@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
+  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView,
 } from 'react-native';
 import AppShell from '../../components/AppShell';
+import BottomSheet, { FieldLabel, FieldInput, FieldSelect, ErrorMsg } from '../../components/BottomSheet';
 import {
   LoadingView, EmptyView, SectionTitle, StatCard,
   TabPage, Card, NotifItem, Badge,
@@ -46,7 +47,7 @@ export default function SupervisorHomeScreen() {
       { key: 'home',  label: 'Tổng quan', icon: '🏠',
         content: <DashboardTab report={report} violations={violations} refreshing={refreshing} onRefresh={onRefresh} /> },
       { key: 'viol',  label: 'Vi phạm',   icon: '⚠️',
-        content: <ViolationsTab violations={violations} refreshing={refreshing} onRefresh={onRefresh} /> },
+        content: <ViolationsTab violations={violations} refreshing={refreshing} onRefresh={onRefresh} onReload={loadAll} /> },
       { key: 'att',   label: 'Hôm nay',   icon: '📋',
         content: <TodayTab report={report} violations={violations} /> },
       { key: 'notif', label: 'Thông báo', icon: '🔔',
@@ -116,15 +117,73 @@ function DashboardTab({ report, violations, refreshing, onRefresh }: any) {
 }
 
 /* ── Violations ─────────────────────────────────────────────── */
-function ViolationsTab({ violations, refreshing, onRefresh }: any) {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+function ViolationsTab({ violations, refreshing, onRefresh, onReload }: any) {
+  const [filter,   setFilter]   = useState<'all' | 'pending' | 'resolved'>('all');
+  const [students, setStudents] = useState<any[]>([]);
+
+  // Create violation
+  const [showCreate, setShowCreate] = useState(false);
+  const [cvStudent,  setCvStudent]  = useState('');
+  const [cvType,     setCvType]     = useState('');
+  const [cvSeverity, setCvSeverity] = useState('Minor');
+  const [cvDesc,     setCvDesc]     = useState('');
+  const [cvAction,   setCvAction]   = useState('');
+  const [cvSubmit,   setCvSubmit]   = useState(false);
+  const [cvError,    setCvError]    = useState('');
+
+  // Resolve
+  const [showResolve, setShowResolve]   = useState(false);
+  const [resolveId,   setResolveId]     = useState(0);
+  const [resolveAct,  setResolveAct]    = useState('');
+  const [rSubmit,     setRSubmit]       = useState(false);
+
+  const openCreate = async () => {
+    if (!students.length) {
+      try { const r = await supervisorApi.students(); setStudents(r.data ?? []); } catch {}
+    }
+    setCvStudent(''); setCvType(''); setCvSeverity('Minor');
+    setCvDesc(''); setCvAction(''); setCvError('');
+    setShowCreate(true);
+  };
+
+  const submitCreate = async () => {
+    if (!cvStudent) { setCvError('Vui lòng chọn học sinh'); return; }
+    if (!cvType.trim()) { setCvError('Vui lòng nhập loại vi phạm'); return; }
+    setCvSubmit(true); setCvError('');
+    const d = new Date();
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    try {
+      await supervisorApi.createViolation({
+        studentId: parseInt(cvStudent), recordDate: dateStr,
+        violationType: cvType.trim(), severity: cvSeverity,
+        description: cvDesc || null, actionTaken: cvAction || null,
+      });
+      Alert.alert('✅ Đã ghi nhận vi phạm');
+      setShowCreate(false); onReload?.();
+    } catch (e: any) { setCvError(e?.response?.data?.message ?? 'Có lỗi xảy ra'); }
+    finally { setCvSubmit(false); }
+  };
+
+  const openResolve = (v: any) => {
+    setResolveId(v.recordId); setResolveAct(v.actionTaken ?? ''); setShowResolve(true);
+  };
+
+  const submitResolve = async () => {
+    if (!resolveAct.trim()) { Alert.alert('Lỗi','Vui lòng nhập hành động xử lý'); return; }
+    setRSubmit(true);
+    try {
+      await supervisorApi.resolveViolation(resolveId, resolveAct.trim());
+      Alert.alert('✅ Đã xử lý vi phạm');
+      setShowResolve(false); onReload?.();
+    } catch (e: any) { Alert.alert('Lỗi', e?.response?.data?.message ?? 'Có lỗi xảy ra'); }
+    finally { setRSubmit(false); }
+  };
 
   const filtered = violations.filter((v: any) => {
     if (filter === 'pending')  return v.status !== 'Resolved';
     if (filter === 'resolved') return v.status === 'Resolved';
     return true;
   });
-
   const counts = {
     all:      violations.length,
     pending:  violations.filter((v: any) => v.status !== 'Resolved').length,
@@ -133,14 +192,15 @@ function ViolationsTab({ violations, refreshing, onRefresh }: any) {
 
   return (
     <TabPage refreshing={refreshing} onRefresh={onRefresh}>
-      {/* Filter */}
+      <TouchableOpacity style={sv.addBtn} onPress={openCreate}>
+        <Text style={sv.addBtnText}>＋ Ghi nhận vi phạm mới</Text>
+      </TouchableOpacity>
+
       <View style={sv.filterRow}>
         {(['all', 'pending', 'resolved'] as const).map(f => (
-          <TouchableOpacity
-            key={f}
+          <TouchableOpacity key={f}
             style={[sv.filterBtn, filter === f && sv.filterActive]}
-            onPress={() => setFilter(f)}
-          >
+            onPress={() => setFilter(f)}>
             <Text style={[sv.filterText, filter === f && { color: '#fff' }]}>
               {f === 'all' ? 'Tất cả' : f === 'pending' ? 'Chưa xử lý' : 'Đã xử lý'}
             </Text>
@@ -153,8 +213,54 @@ function ViolationsTab({ violations, refreshing, onRefresh }: any) {
 
       {!filtered.length
         ? <EmptyView icon="✅" text="Không có vi phạm nào" />
-        : filtered.map((v: any, i: number) => <ViolationCard key={i} v={v} />)
+        : filtered.map((v: any, i: number) => (
+          <ViolationCard key={i} v={v}
+            onResolve={v.status !== 'Resolved' ? () => openResolve(v) : undefined}
+          />
+        ))
       }
+
+      {/* Modal ghi nhận */}
+      <BottomSheet visible={showCreate} title="Ghi nhận vi phạm"
+        onClose={() => setShowCreate(false)} onSubmit={submitCreate}
+        submitting={cvSubmit} submitLabel="Ghi nhận" accent="#dc2626">
+        <FieldLabel>Học sinh</FieldLabel>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+          {students.slice(0, 30).map((s: any) => (
+            <TouchableOpacity key={s.userId}
+              style={[{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, marginRight: 8,
+                backgroundColor: cvStudent === String(s.userId) ? '#dc2626' : '#f1f5f9' }]}
+              onPress={() => setCvStudent(String(s.userId))}>
+              <Text style={{ fontSize: 12, fontWeight: '600',
+                color: cvStudent === String(s.userId) ? '#fff' : '#64748b' }}>
+                {s.fullName}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        <FieldLabel>Loại vi phạm</FieldLabel>
+        <FieldInput value={cvType} onChange={setCvType} placeholder="VD: Nghỉ không phép, dùng điện thoại..." />
+        <FieldLabel>Mức độ</FieldLabel>
+        <FieldSelect value={cvSeverity} onChange={setCvSeverity} options={[
+          { label: '🟡 Nhẹ', value: 'Minor' },
+          { label: '🟠 Trung bình', value: 'Moderate' },
+          { label: '🔴 Nghiêm trọng', value: 'Severe' },
+        ]} />
+        <FieldLabel>Mô tả chi tiết</FieldLabel>
+        <FieldInput value={cvDesc} onChange={setCvDesc} placeholder="Chi tiết hành vi..." multiline />
+        <FieldLabel>Hành động xử lý (nếu có)</FieldLabel>
+        <FieldInput value={cvAction} onChange={setCvAction} placeholder="VD: Cảnh cáo, gọi phụ huynh..." />
+        <ErrorMsg text={cvError} />
+      </BottomSheet>
+
+      {/* Modal xử lý */}
+      <BottomSheet visible={showResolve} title="Xử lý vi phạm"
+        onClose={() => setShowResolve(false)} onSubmit={submitResolve}
+        submitting={rSubmit} submitLabel="Xác nhận xử lý" accent="#16a34a">
+        <FieldLabel>Hành động xử lý *</FieldLabel>
+        <FieldInput value={resolveAct} onChange={setResolveAct}
+          placeholder="VD: Gọi phụ huynh, cảnh cáo trước trường, viết kiểm điểm..." multiline />
+      </BottomSheet>
     </TabPage>
   );
 }
@@ -227,8 +333,7 @@ function NotifTab({ notifications, refreshing, onRefresh }: any) {
 }
 
 /* ── Violation card ─────────────────────────────────────────── */
-function ViolationCard({ v }: { v: any }) {
-  // DisciplineRecordDto: recordId, studentName, className, severity, description, violationType, status, recordDate, createdAt
+function ViolationCard({ v, onResolve }: { v: any; onResolve?: () => void }) {
   const isHigh   = v.severity === 'High' || v.severity === 'Severe';
   const resolved = v.status === 'Resolved';
 
@@ -260,6 +365,11 @@ function ViolationCard({ v }: { v: any }) {
           <Text style={sv.vActionLabel}>Xử lý: </Text>
           <Text style={sv.vActionText}>{v.actionTaken}</Text>
         </View>
+      )}
+      {!resolved && onResolve && (
+        <TouchableOpacity style={sv.resolveBtn} onPress={onResolve}>
+          <Text style={sv.resolveBtnText}>✅ Xử lý vi phạm này</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -301,4 +411,10 @@ const sv = StyleSheet.create({
   vAction:   { flexDirection: 'row', marginTop: 8, backgroundColor: '#f0fdf4', borderRadius: 8, padding: 8 },
   vActionLabel:{ fontSize: 12, fontWeight: '700', color: '#16a34a' },
   vActionText: { fontSize: 12, color: '#16a34a', flex: 1 },
+
+  addBtn:     { backgroundColor: '#dc2626', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginBottom: 14 },
+  addBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+
+  resolveBtn:     { marginTop: 10, backgroundColor: '#f0fdf4', borderRadius: 10, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: '#86efac' },
+  resolveBtnText: { fontSize: 13, fontWeight: '700', color: '#16a34a' },
 });

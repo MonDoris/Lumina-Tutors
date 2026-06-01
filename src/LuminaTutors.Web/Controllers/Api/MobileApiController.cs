@@ -1,9 +1,14 @@
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.Attendance;
+using LuminaTutors.Application.DTOs.Discipline;
+using LuminaTutors.Application.DTOs.Grading;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Domain.Enums;
+using LuminaTutors.Domain.Interfaces.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LuminaTutors.Web.Controllers.Api;
 
@@ -23,6 +28,7 @@ public sealed class MobileApiController : ControllerBase
     private readonly IDisciplineService   _discipline;
     private readonly IStudentService      _studentService;
     private readonly IHomeworkService     _homework;
+    private readonly IUnitOfWork          _uow;
 
     public MobileApiController(
         IGradingService      grading,
@@ -31,7 +37,8 @@ public sealed class MobileApiController : ControllerBase
         INotificationService notifications,
         IDisciplineService   discipline,
         IStudentService      studentService,
-        IHomeworkService     homework)
+        IHomeworkService     homework,
+        IUnitOfWork          uow)
     {
         _grading        = grading;
         _attendance     = attendance;
@@ -40,6 +47,7 @@ public sealed class MobileApiController : ControllerBase
         _discipline     = discipline;
         _studentService = studentService;
         _homework       = homework;
+        _uow            = uow;
     }
 
     // ══════════════════════════════════════════════════════
@@ -107,6 +115,77 @@ public sealed class MobileApiController : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
 
+    /// <summary>PATCH /api/mobile/teacher/attendance-sessions/{sessionId}/record — cập nhật 1 bản ghi điểm danh</summary>
+    [HttpPatch("teacher/attendance-sessions/{sessionId:int}/record")]
+    public async Task<IActionResult> UpdateAttendanceRecord(int sessionId, [FromBody] UpdateAttendanceRequest model)
+    {
+        var result = await _attendance.UpdateAttendanceAsync(sessionId, UserId(), model);
+        return result.IsSuccess ? Ok(new { success = true }) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/teacher/schedules?subjectAssignmentId=1 — lịch học của môn</summary>
+    [HttpGet("teacher/schedules")]
+    public async Task<IActionResult> TeacherSchedules([FromQuery] int subjectAssignmentId)
+    {
+        var schedules = await _uow.Schedules.FindAsync(
+            s => s.SubjectAssignmentId == subjectAssignmentId,
+            ct: default);
+
+        var result = schedules.Select(s => new
+        {
+            scheduleId     = s.Id,
+            dayOfWeek      = s.DayOfWeek,
+            dayName        = s.DayOfWeek switch { 2=>"Thứ 2",3=>"Thứ 3",4=>"Thứ 4",5=>"Thứ 5",6=>"Thứ 6",7=>"Thứ 7",_=>"CN" },
+            periodStart    = s.PeriodStart,
+            periodEnd      = s.PeriodEnd,
+            startTime      = s.StartTime.ToString("HH:mm"),
+            endTime        = s.EndTime.ToString("HH:mm"),
+        }).ToList();
+
+        return Ok(result);
+    }
+
+    /// <summary>GET /api/mobile/teacher/grade-categories — loại điểm theo trường</summary>
+    [HttpGet("teacher/grade-categories")]
+    public async Task<IActionResult> GradeCategories()
+    {
+        var cats = await _uow.GradeCategories.GetAllAsync(default);
+
+        var result = cats.OrderBy(c => c.Id).Select(c => new
+        {
+            id           = c.Id,
+            categoryCode = c.CategoryCode,
+            categoryName = c.CategoryName,
+            coefficient  = c.Coefficient,
+        }).ToList();
+
+        return Ok(result);
+    }
+
+    /// <summary>POST /api/mobile/teacher/enter-score — nhập điểm 1 học sinh</summary>
+    [HttpPost("teacher/enter-score")]
+    public async Task<IActionResult> EnterScore([FromBody] EnterScoreRequest model)
+    {
+        var result = await _grading.EnterScoreAsync(SchoolId(), UserId(), model);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/teacher/bulk-enter-scores — nhập điểm hàng loạt</summary>
+    [HttpPost("teacher/bulk-enter-scores")]
+    public async Task<IActionResult> BulkEnterScores([FromBody] BulkEnterScoreRequest model)
+    {
+        var result = await _grading.BulkEnterScoresAsync(SchoolId(), UserId(), model);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/teacher/calculate-averages/{id} — tính ĐTBm tất cả HS</summary>
+    [HttpPost("teacher/calculate-averages/{subjectAssignmentId:int}")]
+    public async Task<IActionResult> CalculateAverages(int subjectAssignmentId)
+    {
+        var result = await _grading.CalculateAllAveragesAsync(subjectAssignmentId);
+        return result.IsSuccess ? Ok(new { updated = result.Data }) : BadRequest(new { message = result.Error });
+    }
+
     // ══════════════════════════════════════════════════════
     // PARENT
     // ══════════════════════════════════════════════════════
@@ -161,6 +240,44 @@ public sealed class MobileApiController : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
 
+    /// <summary>POST /api/mobile/supervisor/violations — ghi nhận vi phạm</summary>
+    [HttpPost("supervisor/violations")]
+    public async Task<IActionResult> CreateViolation([FromBody] CreateDisciplineRecordRequest model)
+    {
+        var result = await _discipline.CreateRecordAsync(SchoolId(), UserId(), model);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/supervisor/violations/{id}/resolve — xử lý vi phạm</summary>
+    [HttpPost("supervisor/violations/{id:int}/resolve")]
+    public async Task<IActionResult> ResolveViolation(int id, [FromBody] ResolveViolationDto model)
+    {
+        var result = await _discipline.ResolveRecordAsync(id, model.ActionTaken, UserId());
+        return result.IsSuccess ? Ok(new { success = true }) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/supervisor/students — danh sách học sinh của trường để chọn khi ghi vi phạm</summary>
+    [HttpGet("supervisor/students")]
+    public async Task<IActionResult> SchoolStudents()
+    {
+        var profiles = await _uow.StudentProfiles.FindAsync(
+            sp => sp.SchoolId == SchoolId(),
+            include: q => q.Include(sp => sp.User),
+            ct: default);
+
+        var result = profiles
+            .Where(sp => sp.User.IsActive)
+            .OrderBy(sp => sp.User.FullName)
+            .Select(sp => new
+            {
+                userId      = sp.UserId,
+                fullName    = sp.User.FullName,
+                studentCode = sp.StudentCode,
+            }).ToList();
+
+        return Ok(result);
+    }
+
     // ══════════════════════════════════════════════════════
     // COMMON
     // ══════════════════════════════════════════════════════
@@ -194,3 +311,5 @@ public sealed class MobileApiController : ControllerBase
     private int UserId()   => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
     private int SchoolId() => int.Parse(User.FindFirstValue("SchoolId") ?? "0");
 }
+
+public record ResolveViolationDto(string ActionTaken);

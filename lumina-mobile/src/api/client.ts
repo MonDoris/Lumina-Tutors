@@ -34,9 +34,17 @@ export const studentApi = {
 export const teacherApi = {
   classes:            (academicYearId: number) => api.get(`/mobile/teacher/classes?academicYearId=${academicYearId}`),
   subjectAssignments: ()                        => api.get('/mobile/teacher/subject-assignments'),
-  gradeBook:          (subjectAssignmentId: number) => api.get(`/mobile/teacher/gradebook/${subjectAssignmentId}`),
+  gradeBook:          (saId: number)            => api.get(`/mobile/teacher/gradebook/${saId}`),
+  gradeCategories:    ()                        => api.get('/mobile/teacher/grade-categories'),
+  schedules:          (saId: number)            => api.get(`/mobile/teacher/schedules?subjectAssignmentId=${saId}`),
+  enterScore:         (body: object)            => api.post('/mobile/teacher/enter-score', body),
+  bulkEnterScores:    (body: object)            => api.post('/mobile/teacher/bulk-enter-scores', body),
+  calculateAverages:  (saId: number)            => api.post(`/mobile/teacher/calculate-averages/${saId}`, {}),
   attendanceSessions: (classId: number, date?: string) =>
     api.get(`/mobile/teacher/attendance-sessions?classId=${classId}${date ? `&date=${date}` : ''}`),
+  createSession:      (body: object)            => api.post('/mobile/teacher/attendance-sessions', body),
+  updateAttendance:   (sessionId: number, body: object) =>
+    api.patch(`/mobile/teacher/attendance-sessions/${sessionId}/record`, body),
 };
 
 // ── Parent ────────────────────────────────────────────────────────────────────
@@ -50,10 +58,14 @@ export const parentApi = {
 
 // ── Supervisor ────────────────────────────────────────────────────────────────
 export const supervisorApi = {
-  discipline:  (studentId?: number) =>
+  discipline:      (studentId?: number) =>
     api.get(`/mobile/supervisor/discipline${studentId ? `?studentId=${studentId}` : ''}`),
-  dailyReport: (date?: string) =>
+  dailyReport:     (date?: string) =>
     api.get(`/mobile/supervisor/daily-report${date ? `?date=${date}` : ''}`),
+  students:        ()               => api.get('/mobile/supervisor/students'),
+  createViolation: (body: object)   => api.post('/mobile/supervisor/violations', body),
+  resolveViolation:(id: number, actionTaken: string) =>
+    api.post(`/mobile/supervisor/violations/${id}/resolve`, { actionTaken }),
 };
 
 // ── Common ────────────────────────────────────────────────────────────────────

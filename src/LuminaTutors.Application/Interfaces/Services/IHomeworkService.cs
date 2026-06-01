@@ -16,6 +16,10 @@ public interface IHomeworkService
     Task<Result<IReadOnlyList<SubjectAssignmentOptionDto>>> GetTeacherSubjectAssignmentsAsync(
         int schoolId, int teacherId, CancellationToken ct = default);
 
+    /// <summary>Tất cả SubjectAssignment của trường (dùng cho Admin).</summary>
+    Task<Result<IReadOnlyList<SubjectAssignmentOptionDto>>> GetAllSubjectAssignmentsAsync(
+        int schoolId, CancellationToken ct = default);
+
     /// <summary>Chi tiết bài tập.</summary>
     Task<Result<AssignmentDetailDto>> GetAssignmentDetailAsync(
         int schoolId, int assignmentId, CancellationToken ct = default);

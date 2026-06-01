@@ -29,8 +29,14 @@ public sealed class GradingController : Controller
     {
         var schoolId  = int.Parse(User.FindFirstValue("SchoolId")                ?? "0");
         var teacherId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
-        var result    = await _homeworkService.GetTeacherSubjectAssignmentsAsync(schoolId, teacherId);
+        var isAdmin   = User.IsInRole("ADMIN");
+
+        var result = isAdmin
+            ? await _homeworkService.GetAllSubjectAssignmentsAsync(schoolId)
+            : await _homeworkService.GetTeacherSubjectAssignmentsAsync(schoolId, teacherId);
+
         ViewBag.Assignments = result.IsSuccess ? result.Data : new List<LuminaTutors.Application.DTOs.Homework.SubjectAssignmentOptionDto>();
+        ViewBag.IsAdmin     = isAdmin;
         return View();
     }
 
