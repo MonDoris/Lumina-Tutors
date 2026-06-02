@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using LuminaTutors.Application.DTOs.Attendance;
 using LuminaTutors.Application.DTOs.Communication;
 using LuminaTutors.Application.DTOs.Discipline;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Domain.Interfaces.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -13,20 +16,26 @@ namespace LuminaTutors.Web.Controllers;
 [Authorize(Policy = "SupervisorAccess")]
 public sealed class SupervisorController : Controller
 {
-    private readonly IDisciplineService  _disciplineService;
-    private readonly IMessageService     _messageService;
-    private readonly INotificationService _notificationService;
+    private readonly IDisciplineService    _disciplineService;
+    private readonly IMessageService       _messageService;
+    private readonly INotificationService  _notificationService;
+    private readonly ILeaveRequestService  _leaveRequestService;
+    private readonly IUnitOfWork           _uow;
     private readonly ILogger<SupervisorController> _logger;
 
     public SupervisorController(
-        IDisciplineService disciplineService,
-        IMessageService messageService,
-        INotificationService notificationService,
+        IDisciplineService    disciplineService,
+        IMessageService       messageService,
+        INotificationService  notificationService,
+        ILeaveRequestService  leaveRequestService,
+        IUnitOfWork           uow,
         ILogger<SupervisorController> logger)
     {
         _disciplineService   = disciplineService;
         _messageService      = messageService;
         _notificationService = notificationService;
+        _leaveRequestService = leaveRequestService;
+        _uow                 = uow;
         _logger              = logger;
     }
 
@@ -146,8 +155,52 @@ public sealed class SupervisorController : Controller
         if (!result.IsSuccess)
             return StatusCode(500);
 
+        // Load parent-student-class list for the new conversation dropdown
+        var parentItems = new List<ParentContactItem>();
+        try
+        {
+            var schoolId = GetCurrentSchoolId();
+
+            var parentRoleId = (await _uow.Roles.FindAsync(r => r.RoleCode == "PARENT")).FirstOrDefault()?.Id ?? 0;
+            var parentUsers  = await _uow.Users.FindAsync(
+                u => u.SchoolId == schoolId && u.RoleId == parentRoleId && u.IsActive);
+            var parentUserIds = parentUsers.Select(u => u.Id).ToHashSet();
+
+            if (parentUserIds.Any())
+            {
+                var relations = await _uow.ParentStudentRelations.FindAsync(
+                    r => parentUserIds.Contains(r.ParentUserId),
+                    include: q => q.Include(r => r.Parent).Include(r => r.Student));
+
+                var studentIds  = relations.Select(r => r.StudentUserId).Distinct().ToList();
+                var enrollments = await _uow.ClassEnrollments.FindAsync(
+                    e => studentIds.Contains(e.StudentId) && e.Status == Domain.Enums.EnrollmentStatus.Active,
+                    include: q => q.Include(e => e.Class));
+                var enrollmentMap = enrollments
+                    .GroupBy(e => e.StudentId)
+                    .ToDictionary(g => g.Key, g => g.First().Class?.ClassName ?? "—");
+
+                parentItems = relations
+                    .Select(r => new ParentContactItem(
+                        ParentUserId: r.ParentUserId,
+                        ParentName:   r.Parent.FullName,
+                        StudentName:  r.Student.FullName,
+                        ClassName:    enrollmentMap.GetValueOrDefault(r.StudentUserId, "—")))
+                    .OrderBy(x => x.ClassName)
+                    .ThenBy(x => x.StudentName)
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not load parent contacts for Messages dropdown.");
+        }
+
+        ViewBag.ParentContacts = parentItems;
         return View(result.Data);
     }
+
+    public record ParentContactItem(int ParentUserId, string ParentName, string StudentName, string ClassName);
 
     // ─── GET /Supervisor/Conversation/5 ──────────────────────────────────────
 
@@ -170,9 +223,42 @@ public sealed class SupervisorController : Controller
         var result = await _messageService.SendMessageAsync(GetCurrentUserId(), model);
 
         if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Error);
+        {
+            if (!result.IsSuccess) return BadRequest(result.Error);
+            return Ok(new {
+                messageId   = result.Data!.MessageId,
+                messageText = result.Data.MessageText,
+                sentAt      = result.Data.SentAt.ToString("HH:mm dd/MM"),
+                senderName  = result.Data.SenderName
+            });
+        }
 
         return RedirectToAction(nameof(Conversation), new { id = model.ConversationId });
+    }
+
+    // ─── GET /Supervisor/PollMessages?conversationId=5&afterMessageId=0 ───────
+
+    public async Task<IActionResult> PollMessages(int conversationId, long afterMessageId)
+    {
+        var result = await _messageService.GetMessagesAsync(
+            conversationId, GetCurrentUserId(), page: 1, pageSize: 50);
+
+        if (!result.IsSuccess)
+            return Forbid();
+
+        var newMsgs = result.Data!.Items
+            .Where(m => m.MessageId > afterMessageId)
+            .OrderBy(m => m.SentAt)
+            .Select(m => new {
+                messageId   = m.MessageId,
+                messageText = m.MessageText,
+                senderName  = m.SenderName,
+                isMine      = m.IsMine,
+                sentAt      = m.SentAt.ToString("HH:mm"),
+                isDeleted   = m.IsDeleted
+            });
+
+        return Json(newMsgs);
     }
 
     // ─── POST /Supervisor/StartConversation ───────────────────────────────────
@@ -186,7 +272,7 @@ public sealed class SupervisorController : Controller
 
         if (!result.IsSuccess)
         {
-            TempData["Error"] = result.Error;
+            TempData["Error"] = result.Error ?? "Không thể tạo cuộc trò chuyện. Vui lòng thử lại.";
             return RedirectToAction(nameof(Messages));
         }
 
@@ -213,6 +299,38 @@ public sealed class SupervisorController : Controller
             result.IsSuccess ? "Đã gửi thông báo thành công." : result.Error;
 
         return RedirectToAction(nameof(Index));
+    }
+
+    // ─── GET /Supervisor/LeaveRequests ───────────────────────────────────────
+
+    public async Task<IActionResult> LeaveRequests(string? status, int page = 1)
+    {
+        var result = await _leaveRequestService.GetBySchoolAsync(
+            GetCurrentSchoolId(), status, page, pageSize: 20);
+
+        if (!result.IsSuccess)
+            return StatusCode(500);
+
+        ViewBag.Status = status;
+        ViewBag.Page   = page;
+        return View(result.Data);
+    }
+
+    // ─── POST /Supervisor/ReviewLeaveRequest ──────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReviewLeaveRequest(ReviewLeaveRequestRequest model)
+    {
+        var result = await _leaveRequestService.ReviewAsync(
+            model.RequestId, GetCurrentUserId(), model);
+
+        TempData[result.IsSuccess ? "Success" : "Error"] =
+            result.IsSuccess
+                ? (model.Approved ? "Đã chấp thuận đơn xin nghỉ." : "Đã từ chối đơn xin nghỉ.")
+                : result.Error;
+
+        return RedirectToAction(nameof(LeaveRequests));
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────

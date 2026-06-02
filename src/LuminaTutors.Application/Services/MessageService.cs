@@ -37,7 +37,7 @@ public sealed class MessageService : IMessageService
 
         var dtos = conversations
             .OrderByDescending(c => c.Messages.Max(m => (DateTime?)m.SentAt) ?? c.CreatedAt)
-            .Select(c => _mapper.Map<ConversationDto>(c))
+            .Select(c => BuildConversationDto(c, userId))
             .ToList();
 
         return Result<IReadOnlyList<ConversationDto>>.Success(dtos);
@@ -126,62 +126,79 @@ public sealed class MessageService : IMessageService
         if (existing.Any())
             return Result<ConversationDto>.Success(_mapper.Map<ConversationDto>(existing.First()));
 
-        await _uow.BeginTransactionAsync(ct);
+        Conversation? conversation = null;
         try
         {
-            var conversation = new Conversation
+            await _uow.ExecuteInTransactionAsync(async () =>
             {
-                SchoolId         = schoolId,
-                ConversationType = ConversationType.Direct,
-                CreatedByUserId  = initiatorId
-            };
-
-            await _uow.Conversations.AddAsync(conversation, ct);
-            await _uow.SaveChangesAsync(ct);
-
-            var participants = new[]
-            {
-                new ConversationParticipant { ConversationId = conversation.Id, UserId = initiatorId,              JoinedAt = DateTime.UtcNow },
-                new ConversationParticipant { ConversationId = conversation.Id, UserId = request.RecipientUserId, JoinedAt = DateTime.UtcNow }
-            };
-
-            await _uow.ConversationParticipants.AddRangeAsync(participants, ct);
-            await _uow.SaveChangesAsync(ct);
-
-            // Send initial message if provided
-            if (!string.IsNullOrWhiteSpace(request.InitialMessage))
-            {
-                var initialMsg = new Message
+                conversation = new Conversation
                 {
-                    ConversationId = conversation.Id,
-                    SenderId       = initiatorId,
-                    MessageText    = request.InitialMessage.Trim(),
-                    SentAt         = DateTime.UtcNow,
-                    IsDeleted      = false
+                    SchoolId         = schoolId,
+                    ConversationType = ConversationType.Direct,
+                    CreatedByUserId  = initiatorId
                 };
-                await _uow.Messages.AddAsync(initialMsg, ct);
+
+                await _uow.Conversations.AddAsync(conversation, ct);
                 await _uow.SaveChangesAsync(ct);
-            }
 
-            await _uow.CommitTransactionAsync(ct);
+                var participants = new[]
+                {
+                    new ConversationParticipant { ConversationId = conversation.Id, UserId = initiatorId,              JoinedAt = DateTime.UtcNow },
+                    new ConversationParticipant { ConversationId = conversation.Id, UserId = request.RecipientUserId, JoinedAt = DateTime.UtcNow }
+                };
 
-            _logger.LogInformation(
-                "Conversation {Id} started by user {InitiatorId} with user {RecipientId}",
-                conversation.Id, initiatorId, request.RecipientUserId);
+                await _uow.ConversationParticipants.AddRangeAsync(participants, ct);
+                await _uow.SaveChangesAsync(ct);
 
-            var convs = await _uow.Conversations.FindAsync(
-                c => c.Id == conversation.Id,
-                include: q => q.Include(c => c.Participants).ThenInclude(p => p.User),
-                ct: ct);
-
-            return Result<ConversationDto>.Success(_mapper.Map<ConversationDto>(convs.First()));
+                if (!string.IsNullOrWhiteSpace(request.InitialMessage))
+                {
+                    var initialMsg = new Message
+                    {
+                        ConversationId = conversation.Id,
+                        SenderId       = initiatorId,
+                        MessageText    = request.InitialMessage.Trim(),
+                        SentAt         = DateTime.UtcNow,
+                        IsDeleted      = false
+                    };
+                    await _uow.Messages.AddAsync(initialMsg, ct);
+                    await _uow.SaveChangesAsync(ct);
+                }
+            }, ct);
         }
         catch (Exception ex)
         {
-            await _uow.RollbackTransactionAsync(ct);
             _logger.LogError(ex, "StartConversation failed");
-            return Result<ConversationDto>.Failure("INTERNAL_ERROR", "Có lỗi khi tạo cuộc trò chuyện.");
+            return Result<ConversationDto>.Failure("Có lỗi khi tạo cuộc trò chuyện.", "INTERNAL_ERROR");
         }
+
+        _logger.LogInformation(
+            "Conversation {Id} started by user {InitiatorId} with user {RecipientId}",
+            conversation!.Id, initiatorId, request.RecipientUserId);
+
+        var convs = await _uow.Conversations.FindAsync(
+            c => c.Id == conversation.Id,
+            include: q => q.Include(c => c.Participants).ThenInclude(p => p.User),
+            ct: ct);
+
+        return Result<ConversationDto>.Success(BuildConversationDto(convs.First(), initiatorId));
+    }
+
+    // ─── Helper: build ConversationDto with correct OtherPartyName ───────────
+
+    private static ConversationDto BuildConversationDto(Conversation c, int currentUserId)
+    {
+        var other      = c.Participants.FirstOrDefault(p => p.UserId != currentUserId)?.User;
+        var lastMsg    = c.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault();
+        return new ConversationDto(
+            ConversationId:   c.Id,
+            ConversationType: c.ConversationType.ToString(),
+            ConversationName: null,
+            OtherPartyName:   other?.FullName ?? "—",
+            OtherPartyAvatar: other?.AvatarUrl,
+            LastMessage:      lastMsg?.MessageText,
+            LastMessageAt:    lastMsg?.SentAt,
+            UnreadCount:      0
+        );
     }
 
     // ─── DeleteMessage ────────────────────────────────────────────────────────

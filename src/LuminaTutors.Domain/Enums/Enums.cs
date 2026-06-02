@@ -261,6 +261,15 @@ public enum GateCheckType
     Out = 2
 }
 
+// ─── Leave Request ───────────────────────────────────────────────────────────
+
+public enum LeaveRequestStatus
+{
+    Pending  = 1,
+    Approved = 2,
+    Rejected = 3
+}
+
 // ─── Communication ───────────────────────────────────────────────────────────
 
 public enum NotificationType

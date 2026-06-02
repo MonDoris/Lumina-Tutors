@@ -95,6 +95,7 @@ public class UnitOfWork : IUnitOfWork
 
     private IRepository<DisciplineRecord>? _disciplineRecords;
     private IRepository<GateCheckLog>?     _gateCheckLogs;
+    private IRepository<LeaveRequest>?     _leaveRequests;
 
     private IRepository<Notification>?            _notifications;
     private IRepository<NotificationRecipient>?   _notificationRecipients;
@@ -181,6 +182,7 @@ public class UnitOfWork : IUnitOfWork
 
     public IRepository<DisciplineRecord> DisciplineRecords => Get(ref _disciplineRecords);
     public IRepository<GateCheckLog>     GateCheckLogs     => Get(ref _gateCheckLogs);
+    public IRepository<LeaveRequest>     LeaveRequests     => Get(ref _leaveRequests);
 
     public IRepository<Notification>            Notifications            => Get(ref _notifications);
     public IRepository<NotificationRecipient>   NotificationRecipients   => Get(ref _notificationRecipients);

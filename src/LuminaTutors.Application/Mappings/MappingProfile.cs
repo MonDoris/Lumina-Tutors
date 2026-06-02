@@ -204,10 +204,34 @@ public class MappingProfile : Profile
             .ForMember(d => d.IsRead,          o => o.Ignore());  // Set separately per user
 
         CreateMap<Message, MessageDto>()
-            .ForMember(d => d.MessageId,    o => o.MapFrom(s => s.Id))
-            .ForMember(d => d.SenderName,   o => o.MapFrom(s => s.Sender.FullName))
-            .ForMember(d => d.SenderAvatar, o => o.MapFrom(s => s.Sender.AvatarUrl))
-            .ForMember(d => d.IsMine,       o => o.Ignore()); // Set per-request
+            .ConstructUsing((s, _) => new MessageDto(
+                MessageId:      s.Id,
+                SenderId:       s.SenderId,
+                SenderName:     s.Sender?.FullName ?? "—",
+                SenderAvatar:   s.Sender?.AvatarUrl,
+                MessageText:    s.IsDeleted ? null : s.MessageText,
+                AttachmentUrl:  s.AttachmentUrl,
+                AttachmentType: s.AttachmentType,
+                IsDeleted:      s.IsDeleted,
+                SentAt:         s.SentAt,
+                IsMine:         false   // overridden in service via `with { IsMine = ... }`
+            ))
+            .ForAllMembers(o => o.Ignore());
+
+        // Conversation → ConversationDto — OtherPartyName and LastMessage resolved at service layer
+        // via ConstructUsing so AutoMapper doesn't need to infer complex navigation paths.
+        CreateMap<Conversation, ConversationDto>()
+            .ConstructUsing((s, _) => new ConversationDto(
+                ConversationId:    s.Id,
+                ConversationType:  s.ConversationType.ToString(),
+                ConversationName:  null,
+                OtherPartyName:    s.Participants.FirstOrDefault()?.User?.FullName ?? "—",
+                OtherPartyAvatar:  s.Participants.FirstOrDefault()?.User?.AvatarUrl,
+                LastMessage:       s.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault()?.MessageText,
+                LastMessageAt:     s.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault()?.SentAt,
+                UnreadCount:       0
+            ))
+            .ForAllMembers(o => o.Ignore());
 
         CreateMap<NewsBoard, NewsBoardDto>()
             .ForMember(d => d.NewsId,          o => o.MapFrom(s => s.Id))

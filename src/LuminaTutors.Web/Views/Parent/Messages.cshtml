@@ -1,0 +1,70 @@
+@model IReadOnlyList<LuminaTutors.Application.DTOs.Communication.ConversationDto>
+@{
+    ViewData["Title"] = "Tin nhắn";
+}
+
+<style>
+.msg-page { background:#f0f4fa; min-height:calc(100vh - 56px); padding:28px 32px }
+.msg-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px }
+.msg-title { font-size:1.35rem; font-weight:700; color:#0f172a }
+.msg-sub { font-size:.8rem; color:#6b7280; margin-top:2px }
+.conv-list { background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,.06); overflow:hidden }
+.conv-item { display:flex; align-items:center; gap:14px; padding:16px 20px;
+             border-bottom:1px solid #f3f4f6; text-decoration:none; color:inherit;
+             transition:background .15s; cursor:pointer }
+.conv-item:last-child { border-bottom:none }
+.conv-item:hover { background:#f8fafc }
+.conv-avatar { width:48px; height:48px; border-radius:50%; flex-shrink:0;
+               background:linear-gradient(135deg,#7e22ce,#a855f7);
+               display:flex; align-items:center; justify-content:center;
+               color:#fff; font-weight:700; font-size:1rem }
+.conv-name { font-weight:600; color:#0f172a; font-size:.9rem }
+.conv-last { font-size:.78rem; color:#6b7280; white-space:nowrap; overflow:hidden;
+             text-overflow:ellipsis; max-width:300px }
+.conv-time { font-size:.72rem; color:#9ca3af; flex-shrink:0 }
+.empty-state { text-align:center; padding:64px 20px; color:#9ca3af }
+.empty-icon { font-size:3rem; display:block; margin-bottom:12px; color:#d1d5db }
+</style>
+
+<div class="msg-page">
+    <div class="msg-header">
+        <div>
+            <div class="msg-title"><i class="bi bi-chat-dots-fill" style="color:#7e22ce;margin-right:8px"></i>Tin nhắn</div>
+            <div class="msg-sub">Nhắn tin với giám thị và nhà trường</div>
+        </div>
+    </div>
+
+    <div class="conv-list">
+        @if (!Model?.Any() ?? true)
+        {
+            <div class="empty-state">
+                <span class="empty-icon">💬</span>
+                <div style="font-weight:600;color:#374151;margin-bottom:4px">Chưa có tin nhắn nào</div>
+                <div style="font-size:.83rem">Giám thị sẽ liên lạc với bạn qua đây khi có thông tin cần trao đổi.</div>
+            </div>
+        }
+        else
+        {
+            @foreach (var conv in Model!)
+            {
+                <a asp-action="Conversation" asp-route-id="@conv.ConversationId" class="conv-item">
+                    <div class="conv-avatar">
+                        @(conv.OtherPartyName.Length > 0 ? conv.OtherPartyName[0] : 'G')
+                    </div>
+                    <div style="flex:1;min-width:0">
+                        <div class="conv-name">@conv.OtherPartyName</div>
+                        <div class="conv-last">@(conv.LastMessage ?? "Bắt đầu cuộc trò chuyện")</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+                        <div class="conv-time">@conv.LastMessageAt?.ToString("HH:mm dd/MM")</div>
+                        @if (conv.UnreadCount > 0)
+                        {
+                            <span style="background:#7e22ce;color:#fff;border-radius:20px;font-size:.68rem;
+                                         font-weight:700;padding:2px 7px">@conv.UnreadCount</span>
+                        }
+                    </div>
+                </a>
+            }
+        }
+    </div>
+</div>

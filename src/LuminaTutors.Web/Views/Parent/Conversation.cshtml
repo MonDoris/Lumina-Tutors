@@ -2,20 +2,21 @@
 @using LuminaTutors.Application.DTOs.Communication
 @model PagedResult<MessageDto>
 @{
-    ViewData["Title"] = "Hội thoại";
+    ViewData["Title"] = "Tin nhắn";
     var conversationId = ViewBag.ConversationId as int? ?? 0;
     var lastId = Model?.Items?.Any() == true ? Model.Items.Max(m => m.MessageId) : 0;
 }
 
 <style>
-.chat-page { height:calc(100vh - 56px); display:flex; flex-direction:column; background:#f8f9fa }
+.chat-page { height:calc(100vh - 56px); display:flex; flex-direction:column; background:#f0f4fa }
 .chat-topbar { display:flex; align-items:center; gap:12px; padding:14px 20px;
                background:#fff; border-bottom:1px solid #e5e7eb; flex-shrink:0;
                box-shadow:0 1px 4px rgba(0,0,0,.06) }
 .chat-back { display:flex; align-items:center; gap:6px; font-size:.83rem; font-weight:600;
-             color:#6b7280; text-decoration:none; padding:6px 10px; border-radius:8px; transition:.15s }
+             color:#6b7280; text-decoration:none; padding:6px 10px; border-radius:8px;
+             transition:.15s }
 .chat-back:hover { background:#f3f4f6; color:#0f172a }
-.chat-avatar { width:38px; height:38px; border-radius:50%; background:var(--lt-navy);
+.chat-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#7e22ce,#a855f7);
                display:flex; align-items:center; justify-content:center; color:#fff;
                font-weight:700; font-size:.9rem; flex-shrink:0 }
 .chat-name { font-weight:700; color:#0f172a; font-size:.95rem }
@@ -25,13 +26,17 @@
 .msg-row { display:flex; flex-direction:column; gap:3px }
 .msg-row--mine { align-items:flex-end }
 .msg-row--other { align-items:flex-start }
-.msg-sender { font-size:.7rem; font-weight:600; color:#9ca3af; padding:0 4px }
+.msg-sender { font-size:.7rem; font-weight:600; color:#9ca3af; margin-bottom:2px; padding:0 4px }
 .msg-bubble { max-width:72%; padding:10px 14px; border-radius:18px;
-              font-size:.875rem; line-height:1.55; word-break:break-word }
-.msg-bubble--mine { background:var(--lt-navy); color:#fff; border-bottom-right-radius:4px }
+              font-size:.875rem; line-height:1.55; word-break:break-word;
+              position:relative }
+.msg-bubble--mine { background:linear-gradient(135deg,#7e22ce,#9333ea); color:#fff;
+                    border-bottom-right-radius:4px }
 .msg-bubble--other { background:#fff; color:#1f2937; border:1px solid #e5e7eb;
-                     border-bottom-left-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.06) }
-.msg-bubble--deleted { background:#f3f4f6; color:#9ca3af; font-style:italic; border:1px dashed #d1d5db }
+                     border-bottom-left-radius:4px;
+                     box-shadow:0 1px 3px rgba(0,0,0,.06) }
+.msg-bubble--deleted { background:#f3f4f6; color:#9ca3af; font-style:italic;
+                       border:1px dashed #d1d5db }
 .msg-time { font-size:.67rem; color:#9ca3af; padding:0 4px }
 .chat-footer { padding:12px 16px; background:#fff; border-top:1px solid #e5e7eb;
                flex-shrink:0; box-shadow:0 -1px 4px rgba(0,0,0,.04) }
@@ -41,25 +46,31 @@
               padding:10px 16px; font-size:.875rem; outline:none;
               transition:border-color .15s; line-height:1.4;
               font-family:inherit; background:#f8fafc }
-.send-input:focus { border-color:var(--lt-gold); background:#fff }
+.send-input:focus { border-color:#7e22ce; background:#fff }
 .send-btn { width:44px; height:44px; border-radius:50%; border:none;
-            background:var(--lt-gold); color:var(--lt-navy);
-            display:flex; align-items:center; justify-content:center;
+            background:linear-gradient(135deg,#7e22ce,#9333ea);
+            color:#fff; display:flex; align-items:center; justify-content:center;
             cursor:pointer; flex-shrink:0; transition:opacity .15s; font-size:1rem }
 .send-btn:hover { opacity:.88 }
 .send-btn:disabled { opacity:.5; cursor:not-allowed }
+.typing-indicator { display:none; font-size:.75rem; color:#9ca3af;
+                    padding:4px 8px; font-style:italic }
 </style>
 
 <div class="chat-page">
+    <!-- Top bar -->
     <div class="chat-topbar">
-        <a asp-action="Messages" class="chat-back"><i class="bi bi-arrow-left"></i></a>
-        <div class="chat-avatar">P</div>
+        <a asp-action="Messages" class="chat-back">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div class="chat-avatar" id="otherAvatar">G</div>
         <div>
-            <div class="chat-name">Phụ huynh</div>
-            <div class="chat-status">Đang trò chuyện</div>
+            <div class="chat-name" id="otherName">Giám thị</div>
+            <div class="chat-status" id="chatStatus">Đang trò chuyện</div>
         </div>
     </div>
 
+    <!-- Messages -->
     <div class="chat-body" id="msgBody">
         @if (Model?.HasPreviousPage == true)
         {
@@ -90,7 +101,10 @@
                     var mine = msg.IsMine;
                     <div class="msg-row @(mine ? "msg-row--mine" : "msg-row--other")"
                          data-msg-id="@msg.MessageId">
-                        @if (!mine) { <span class="msg-sender">@msg.SenderName</span> }
+                        @if (!mine)
+                        {
+                            <span class="msg-sender">@msg.SenderName</span>
+                        }
                         <div class="msg-bubble @(msg.IsDeleted ? "msg-bubble--deleted" : mine ? "msg-bubble--mine" : "msg-bubble--other")">
                             @(msg.IsDeleted ? "Tin nhắn đã bị xóa" : msg.MessageText)
                         </div>
@@ -99,13 +113,16 @@
                 }
             }
         </div>
+
+        <div class="typing-indicator" id="typingIndicator">Đang nhập...</div>
     </div>
 
+    <!-- Footer send form -->
     <div class="chat-footer">
         <form id="sendForm" class="send-form">
             @Html.AntiForgeryToken()
             <input type="hidden" id="convId" value="@conversationId" />
-            <textarea id="msgInput" class="send-input" placeholder="Nhắn tin... (Ctrl+Enter để gửi)" rows="1"></textarea>
+            <textarea id="msgInput" class="send-input" placeholder="Nhắn tin..." rows="1"></textarea>
             <button type="submit" class="send-btn" id="sendBtn">
                 <i class="bi bi-send-fill"></i>
             </button>
@@ -117,8 +134,8 @@
 <script>
 (function () {
     const convId   = @conversationId;
-    const pollUrl  = '@Url.Action("PollMessages",  "Supervisor")';
-    const sendUrl  = '@Url.Action("SendMessage",   "Supervisor")';
+    const pollUrl  = '@Url.Action("PollMessages", "Parent")';
+    const sendUrl  = '@Url.Action("SendMessage",  "Parent")';
     const token    = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
     const body     = document.getElementById('msgBody');
     const container= document.getElementById('msgContainer');
@@ -127,20 +144,20 @@
     const sendBtn  = document.getElementById('sendBtn');
 
     let lastId = @lastId;
+    let polling;
 
+    // ── Scroll to bottom ──────────────────────────────────────────────────────
     function scrollBottom(smooth) {
         body.scrollTo({ top: body.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
     }
     scrollBottom(false);
 
-    function esc(s) {
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
+    // ── Render a message bubble ───────────────────────────────────────────────
     function renderMsg(m) {
         const row = document.createElement('div');
         row.className = 'msg-row ' + (m.isMine ? 'msg-row--mine' : 'msg-row--other');
         row.dataset.msgId = m.messageId;
+
         let html = '';
         if (!m.isMine) html += `<span class="msg-sender">${esc(m.senderName)}</span>`;
         html += `<div class="msg-bubble ${m.isDeleted ? 'msg-bubble--deleted' : m.isMine ? 'msg-bubble--mine' : 'msg-bubble--other'}">
@@ -151,18 +168,27 @@
         return row;
     }
 
+    function esc(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // ── Auto-resize textarea ──────────────────────────────────────────────────
     input.addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 120) + 'px';
     });
 
+    // ── Send message (AJAX) ───────────────────────────────────────────────────
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         const text = input.value.trim();
         if (!text) return;
+
         sendBtn.disabled = true;
         input.value = '';
         input.style.height = 'auto';
+
         try {
             const res = await fetch(sendUrl, {
                 method: 'POST',
@@ -172,24 +198,32 @@
                     'RequestVerificationToken': token
                 },
                 body: new URLSearchParams({
-                    'ConversationId': convId, 'MessageText': text,
+                    'ConversationId': convId,
+                    'MessageText': text,
                     '__RequestVerificationToken': token
                 })
             });
+
             if (res.ok) {
                 const m = await res.json();
                 lastId = Math.max(lastId, m.messageId);
                 container.appendChild(renderMsg({ ...m, isMine: true }));
                 scrollBottom(true);
             }
-        } catch (err) { console.error(err); }
-        finally { sendBtn.disabled = false; input.focus(); }
+        } catch (err) {
+            console.error('Send failed', err);
+        } finally {
+            sendBtn.disabled = false;
+            input.focus();
+        }
     });
 
+    // ── Ctrl+Enter to send ────────────────────────────────────────────────────
     input.addEventListener('keydown', function (e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') form.requestSubmit();
     });
 
+    // ── Polling for new messages ──────────────────────────────────────────────
     async function poll() {
         try {
             const res = await fetch(`${pollUrl}?conversationId=${convId}&afterMessageId=${lastId}`);
@@ -205,10 +239,12 @@
                 });
                 if (atBottom) scrollBottom(true);
             }
-        } catch (err) {}
+        } catch (err) { /* network glitch — will retry */ }
     }
 
-    const polling = setInterval(poll, 4000);
+    polling = setInterval(poll, 4000); // poll every 4 seconds
+
+    // Stop polling when navigating away
     window.addEventListener('pagehide', () => clearInterval(polling));
 })();
 </script>

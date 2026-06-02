@@ -1,6 +1,9 @@
+@using LuminaTutors.Web.Controllers
 @model IReadOnlyList<LuminaTutors.Application.DTOs.Communication.ConversationDto>
 @{
     ViewData["Title"] = "Hộp thư — Giám thị";
+    var contacts = ViewBag.ParentContacts as List<SupervisorController.ParentContactItem> ?? [];
+    var grouped  = contacts.GroupBy(c => c.ClassName).OrderBy(g => g.Key).ToList();
 }
 
 <div class="lt-page-header">
@@ -63,10 +66,29 @@
                 @Html.AntiForgeryToken()
                 <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:14px">
                     <div class="lt-form-group" style="margin-bottom:0">
-                        <label class="lt-label">ID Phụ huynh <span style="color:var(--lt-danger)">*</span></label>
-                        <input type="number" name="model.RecipientUserId" class="lt-input"
-                               placeholder="Nhập User ID của phụ huynh" required
-                               data-testid="input-parent-id"/>
+                        <label class="lt-label">Phụ huynh — Học sinh <span style="color:var(--lt-danger)">*</span></label>
+                        @if (grouped.Any())
+                        {
+                            <select name="model.RecipientUserId" class="lt-select" required data-testid="input-parent-id">
+                                <option value="">— Chọn lớp / phụ huynh —</option>
+                                @foreach (var group in grouped)
+                                {
+                                    <optgroup label="Lớp @group.Key">
+                                        @foreach (var c in group)
+                                        {
+                                            <option value="@c.ParentUserId">@c.ParentName — HS: @c.StudentName</option>
+                                        }
+                                    </optgroup>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <input type="number" name="model.RecipientUserId" class="lt-input"
+                                   placeholder="Nhập User ID của phụ huynh" required
+                                   data-testid="input-parent-id"/>
+                            <small style="color:#9ca3af;font-size:.75rem">Chưa có dữ liệu liên kết phụ huynh-học sinh.</small>
+                        }
                     </div>
                     <div class="lt-form-group" style="margin-bottom:0">
                         <label class="lt-label">Tin nhắn đầu tiên</label>

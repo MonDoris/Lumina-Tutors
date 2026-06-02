@@ -61,7 +61,8 @@
           <div class="hero-title">@greeting, @firstName 👋</div>
           <div class="hero-sub">@today — Theo dõi kết quả học tập của con tại Lumina Tutors.</div>
           <div class="hero-actions">
-            <a href="/Grading" class="hero-btn hero-btn--primary"><i class="bi bi-bar-chart-fill"></i> Kết quả học tập</a>
+            <a href="/Parent/Grades" class="hero-btn hero-btn--primary"><i class="bi bi-bar-chart-fill"></i> Kết quả học tập</a>
+            <a href="/Parent/LeaveRequests" class="hero-btn hero-btn--outline"><i class="bi bi-calendar-x"></i> Xin nghỉ phép</a>
             <a href="/Dashboard/Notifications" class="hero-btn hero-btn--outline"><i class="bi bi-bell-fill"></i> Thông báo @(notifCount > 0 ? $"({notifCount})" : "")</a>
           </div>
         </div>
@@ -72,12 +73,17 @@
         <div class="info-row">
           <div style="width:36px;height:36px;border-radius:10px;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-bar-chart-fill"></i></div>
           <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Kết quả học tập của con</div><div style="font-size:.73rem;color:#94a3b8">Điểm số và nhận xét từ giáo viên</div></div>
-          <a href="/Grading" style="margin-left:auto;font-size:.75rem;color:#16a34a;text-decoration:none">Xem →</a>
+          <a href="/Parent/Grades" style="margin-left:auto;font-size:.75rem;color:#16a34a;text-decoration:none">Xem →</a>
         </div>
         <div class="info-row">
           <div style="width:36px;height:36px;border-radius:10px;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-calendar-check"></i></div>
           <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Điểm danh</div><div style="font-size:.73rem;color:#94a3b8">Lịch sử đi học của con</div></div>
-          <a href="/Attendance" style="margin-left:auto;font-size:.75rem;color:#2563eb;text-decoration:none">Xem →</a>
+          <a href="/Parent/Attendance" style="margin-left:auto;font-size:.75rem;color:#2563eb;text-decoration:none">Xem →</a>
+        </div>
+        <div class="info-row">
+          <div style="width:36px;height:36px;border-radius:10px;background:#fce7f3;color:#be185d;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-calendar-x-fill"></i></div>
+          <div><div style="font-size:.83rem;font-weight:600;color:#0f172a">Xin nghỉ phép</div><div style="font-size:.73rem;color:#94a3b8">Gửi và theo dõi đơn xin nghỉ cho con</div></div>
+          <a href="/Parent/LeaveRequests" style="margin-left:auto;font-size:.75rem;color:#be185d;text-decoration:none">Xem →</a>
         </div>
         <div class="info-row">
           <div style="width:36px;height:36px;border-radius:10px;background:#ede9fe;color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-bell-fill"></i></div>
@@ -116,8 +122,9 @@
       <div class="gcard">
         <div style="padding:14px 16px 4px;font-size:.78rem;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase">Thao tác nhanh</div>
         <div class="qa-grid">
-          <a href="/Grading" class="qa-btn"><div class="qa-icon"><i class="bi bi-bar-chart-fill"></i></div><span class="qa-label">Xem điểm</span></a>
-          <a href="/Attendance" class="qa-btn"><div class="qa-icon"><i class="bi bi-calendar-check"></i></div><span class="qa-label">Điểm danh</span></a>
+          <a href="/Parent/Grades" class="qa-btn"><div class="qa-icon"><i class="bi bi-bar-chart-fill"></i></div><span class="qa-label">Xem điểm</span></a>
+          <a href="/Parent/Attendance" class="qa-btn"><div class="qa-icon"><i class="bi bi-calendar-check"></i></div><span class="qa-label">Điểm danh</span></a>
+          <a href="/Parent/LeaveRequests" class="qa-btn"><div class="qa-icon"><i class="bi bi-calendar-x"></i></div><span class="qa-label">Xin nghỉ</span></a>
           <a href="/Dashboard/Notifications" class="qa-btn"><div class="qa-icon"><i class="bi bi-bell-fill"></i></div><span class="qa-label">Thông báo</span></a>
           <a href="/Dashboard/Notifications" class="qa-btn qa-dark"><div class="qa-icon"><i class="bi bi-chat-dots-fill"></i></div><span class="qa-label">Liên lạc</span></a>
         </div>

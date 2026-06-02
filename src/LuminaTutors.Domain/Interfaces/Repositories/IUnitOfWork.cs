@@ -95,6 +95,9 @@ public interface IUnitOfWork : IDisposable
     IRepository<DisciplineRecord> DisciplineRecords { get; }
     IRepository<GateCheckLog>     GateCheckLogs     { get; }
 
+    // ── Leave Requests ────────────────────────────────────────────────────────
+    IRepository<LeaveRequest> LeaveRequests { get; }
+
     // ── Communication ─────────────────────────────────────────────────────────
     IRepository<Notification>         Notifications         { get; }
     IRepository<NotificationRecipient> NotificationRecipients { get; }

@@ -1,0 +1,228 @@
+@model LuminaTutors.Application.DTOs.Attendance.LeaveRequestListDto
+@{
+    ViewData["Title"] = "Đơn xin nghỉ phép";
+    var statusFilter = ViewBag.Status as string;
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Đơn xin nghỉ phép</h1>
+        <p class="lt-page-subtitle">Xem và duyệt đơn xin nghỉ từ phụ huynh</p>
+    </div>
+</div>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert alert-success rounded-3 mb-3" style="background:#d1fae5;border:none;color:#065f46;font-size:.85rem;padding:12px 16px">
+        <i class="bi bi-check-circle-fill me-2"></i>@success
+    </div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger rounded-3 mb-3" style="background:#fee2e2;border:none;color:#991b1b;font-size:.85rem;padding:12px 16px">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@error
+    </div>
+}
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-4">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--gold"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+                <div class="lt-stat__value">@(Model?.PendingCount ?? 0)</div>
+                <div class="lt-stat__label">Chờ duyệt</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-4">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--success"><i class="bi bi-check-circle-fill"></i></div>
+            <div>
+                <div class="lt-stat__value">@(Model?.Items.Count(i => i.Status == "Approved") ?? 0)</div>
+                <div class="lt-stat__label">Đã chấp thuận</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-4">
+        <div class="lt-stat">
+            <div class="lt-stat__icon lt-stat__icon--danger"><i class="bi bi-x-circle-fill"></i></div>
+            <div>
+                <div class="lt-stat__value">@(Model?.Items.Count(i => i.Status == "Rejected") ?? 0)</div>
+                <div class="lt-stat__label">Từ chối</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter tabs -->
+<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <a asp-action="LeaveRequests" class="lt-btn @(statusFilter == null ? "lt-btn--primary" : "lt-btn--outline") lt-btn--sm">
+        Tất cả (@(Model?.TotalCount ?? 0))
+    </a>
+    <a asp-action="LeaveRequests" asp-route-status="Pending"
+       class="lt-btn @(statusFilter == "Pending" ? "lt-btn--gold" : "lt-btn--outline") lt-btn--sm">
+        Chờ duyệt (@(Model?.PendingCount ?? 0))
+    </a>
+    <a asp-action="LeaveRequests" asp-route-status="Approved"
+       class="lt-btn @(statusFilter == "Approved" ? "lt-btn--primary" : "lt-btn--outline") lt-btn--sm">
+        Đã duyệt
+    </a>
+    <a asp-action="LeaveRequests" asp-route-status="Rejected"
+       class="lt-btn @(statusFilter == "Rejected" ? "lt-btn--outline" : "lt-btn--outline") lt-btn--sm" style="@(statusFilter == "Rejected" ? "border-color:#ef4444;color:#ef4444" : "")">
+        Từ chối
+    </a>
+</div>
+
+<!-- Table -->
+<div class="lt-card">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title">
+            <i class="bi bi-calendar-x" style="color:var(--lt-gold);margin-right:6px"></i>
+            Danh sách đơn xin nghỉ
+        </h3>
+    </div>
+    <div class="lt-card__body" style="padding:0">
+        @if (!Model?.Items.Any() ?? true)
+        {
+            <div style="text-align:center;padding:48px;color:#9ca3af">
+                <i class="bi bi-calendar-check" style="font-size:2.5rem;display:block;margin-bottom:12px;color:#d1d5db"></i>
+                <div style="font-weight:600;color:#374151;margin-bottom:4px">Không có đơn xin nghỉ nào</div>
+                <div style="font-size:.8rem">Chưa có phụ huynh nào gửi đơn xin nghỉ.</div>
+            </div>
+        }
+        else
+        {
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th>Học sinh</th>
+                        <th>Phụ huynh</th>
+                        <th>Thời gian nghỉ</th>
+                        <th>Số ngày</th>
+                        <th>Lý do</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày gửi</th>
+                        <th style="text-align:center">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model!.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;color:#0f172a">@item.StudentName</div>
+                                <div style="font-size:.72rem;color:#9ca3af">@item.ClassName · @item.StudentCode</div>
+                            </td>
+                            <td style="color:#374151">@item.ParentName</td>
+                            <td>
+                                <div style="font-size:.82rem;color:#0f172a">@item.FromDate.ToString("dd/MM/yyyy")</div>
+                                @if (item.FromDate != item.ToDate)
+                                {
+                                    <div style="font-size:.72rem;color:#6b7280">→ @item.ToDate.ToString("dd/MM/yyyy")</div>
+                                }
+                            </td>
+                            <td style="text-align:center">
+                                <span style="font-weight:600;color:#374151">@item.DayCount</span>
+                                <span style="font-size:.72rem;color:#9ca3af"> ngày</span>
+                            </td>
+                            <td style="max-width:200px;font-size:.82rem;color:#374151">
+                                <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@item.Reason">
+                                    @item.Reason
+                                </div>
+                                @if (item.ReviewNote is not null)
+                                {
+                                    <div style="font-size:.72rem;color:#6b7280;margin-top:2px">GT: @item.ReviewNote</div>
+                                }
+                            </td>
+                            <td>
+                                @{
+                                    var (badgeCls, label) = item.Status switch {
+                                        "Approved" => ("lt-badge--success", "Đã duyệt"),
+                                        "Rejected" => ("lt-badge--danger",  "Từ chối"),
+                                        _          => ("lt-badge--warning",  "Chờ duyệt")
+                                    };
+                                }
+                                <span class="lt-badge @badgeCls">@label</span>
+                                @if (item.ReviewedBy is not null)
+                                {
+                                    <div style="font-size:.7rem;color:#9ca3af;margin-top:2px">@item.ReviewedBy</div>
+                                }
+                            </td>
+                            <td style="color:#6b7280;font-size:.78rem">@item.CreatedAt.ToString("dd/MM HH:mm")</td>
+                            <td style="text-align:center">
+                                @if (item.Status == "Pending")
+                                {
+                                    <div style="display:flex;gap:6px;justify-content:center">
+                                        <button class="lt-btn lt-btn--success lt-btn--sm"
+                                                onclick="openReview(@item.Id, '@item.StudentName', true)"
+                                                title="Chấp thuận">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        <button class="lt-btn lt-btn--danger lt-btn--sm"
+                                                onclick="openReview(@item.Id, '@item.StudentName', false)"
+                                                title="Từ chối">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color:#d1d5db;font-size:.75rem">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none">
+            <div class="modal-header" style="padding:20px 24px;border-bottom:1px solid #f0f0f0">
+                <h5 class="modal-title lt-card__title" id="reviewModalTitle">Xử lý đơn xin nghỉ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="ReviewLeaveRequest" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="RequestId" id="reviewRequestId" />
+                <input type="hidden" name="Approved"  id="reviewApproved"  />
+                <div class="modal-body" style="padding:24px;display:flex;flex-direction:column;gap:14px">
+                    <div id="reviewInfo" style="background:#f8fafc;border-radius:10px;padding:14px;font-size:.85rem;color:#374151"></div>
+                    <div>
+                        <label class="lt-label">Ghi chú (không bắt buộc)</label>
+                        <textarea name="Note" class="lt-textarea" rows="3"
+                                  placeholder="VD: Yêu cầu bổ sung giấy chứng nhận..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding:14px 24px;border-top:1px solid #f0f0f0;gap:8px">
+                    <button type="button" class="lt-btn lt-btn--outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" id="reviewSubmitBtn" class="lt-btn lt-btn--primary"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function openReview(id, studentName, approved) {
+    document.getElementById('reviewRequestId').value = id;
+    document.getElementById('reviewApproved').value  = approved;
+
+    const title = approved ? '✅ Chấp thuận đơn xin nghỉ' : '❌ Từ chối đơn xin nghỉ';
+    document.getElementById('reviewModalTitle').textContent = title;
+    document.getElementById('reviewInfo').innerHTML =
+        `Bạn đang <strong>${approved ? 'chấp thuận' : 'từ chối'}</strong> đơn xin nghỉ của học sinh <strong>${studentName}</strong>.`;
+
+    const btn = document.getElementById('reviewSubmitBtn');
+    btn.textContent = approved ? 'Chấp thuận' : 'Từ chối';
+    btn.className   = 'lt-btn ' + (approved ? 'lt-btn--success' : 'lt-btn--danger');
+
+    new bootstrap.Modal(document.getElementById('reviewModal')).show();
+}
+</script>}

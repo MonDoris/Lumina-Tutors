@@ -1,0 +1,237 @@
+@using LuminaTutors.Application.DTOs.Grading
+@using LuminaTutors.Application.DTOs.Class
+@using LuminaTutors.Web.Controllers
+@model StudentSemesterSummaryDto?
+@{
+    ViewData["Title"] = "Kết quả học tập";
+    var children   = ViewBag.Children  as List<ParentController.ChildItem> ?? [];
+    var semesters  = ViewBag.Semesters as IReadOnlyList<SemesterSelectDto>        ?? new List<SemesterSelectDto>();
+    var studentId  = ViewBag.StudentId  as int?;
+    var semesterId = ViewBag.SemesterId as int?;
+    var error      = ViewBag.Error as string;
+
+    string ScoreClass(decimal? s) => s switch {
+        >= 8.0m  => "score-good",
+        >= 5.0m  => "score-avg",
+        not null => "score-bad",
+        _        => ""
+    };
+    string Remark(decimal? s) => s switch {
+        >= 8.0m  => "Giỏi",
+        >= 6.5m  => "Khá",
+        >= 5.0m  => "TB",
+        not null => "Yếu",
+        _        => "—"
+    };
+}
+
+<style>
+.grades-page {
+    padding: 1.75rem 1.5rem 3rem;
+    background-color: #faf8f4;
+    background-image: radial-gradient(rgba(201,168,76,.12) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    min-height: calc(100vh - 60px);
+}
+.grades-card {
+    background: #fefefe; border: 1px solid #e5e7eb;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    margin-bottom: 1.25rem;
+}
+.grades-card-header {
+    background: #0f1c2e; padding: 1rem 1.5rem;
+    display: flex; align-items: center; gap: .75rem;
+}
+.grades-card-header h5 {
+    font-family: 'Playfair Display', Georgia, serif;
+    color: #faf8f4; margin: 0; font-size: 1.05rem;
+}
+.grades-card-body { padding: 1.25rem 1.5rem; }
+.filter-form { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.filter-select {
+    border: 1.5px solid #d1d5db; border-radius: 8px;
+    padding: 8px 12px; font-size: .9rem;
+    outline: none; background: #fefefe; min-width: 180px;
+    transition: border-color 200ms;
+}
+.filter-select:focus { border-color: #c9a84c; box-shadow: 0 0 0 3px rgba(201,168,76,.12); }
+.btn-view {
+    background: #0f1c2e; color: #fefefe;
+    border: none; border-radius: 8px; padding: 8px 18px;
+    font-size: .875rem; font-weight: 600; cursor: pointer;
+}
+.btn-view:hover { background: #1a2d45; }
+.gpa-strip {
+    display: flex; gap: 1.25rem; flex-wrap: wrap;
+    background: #f3f4f6; border-radius: 10px;
+    padding: .875rem 1.25rem; margin-bottom: 1.25rem;
+}
+.gpa-item { text-align: center; }
+.gpa-value { font-size: 1.4rem; font-weight: 800; line-height: 1; margin-bottom: 2px; }
+.gpa-label { font-size: .7rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #9ca3af; }
+.scores-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.scores-table thead tr { background: #f3f4f6; }
+.scores-table th { padding: 10px 14px; text-align: left; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b7280; border-bottom: 1px solid #e5e7eb; }
+.scores-table td { padding: 11px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.scores-table tbody tr:last-child td { border-bottom: none; }
+.scores-table tbody tr:hover td { background: #faf8f4; }
+.subject-name { font-weight: 600; color: #1f2937; }
+.score-pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: .8rem; font-weight: 700; min-width: 40px; text-align: center; }
+.score-good { background: rgba(39,174,96,.1); color: #16a34a; }
+.score-avg  { background: rgba(243,156,18,.12); color: #d97706; }
+.score-bad  { background: rgba(231,76,60,.1); color: #dc2626; }
+.score-none { color: #9ca3af; font-style: italic; font-size: .82rem; }
+.grades-empty { text-align: center; padding: 3rem 1.5rem; color: #9ca3af; }
+.grades-empty i { font-size: 2.5rem; display: block; margin-bottom: .75rem; color: #d1d5db; }
+</style>
+
+<div class="grades-page">
+<div style="max-width:900px;margin:0 auto">
+
+    <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:1.45rem;color:#1f2937;margin-bottom:1.5rem">
+        <i class="bi bi-bar-chart-fill me-2" style="color:#c9a84c"></i>Kết quả học tập của con
+    </h1>
+
+    <div class="grades-card mb-4">
+        <div class="grades-card-header">
+            <i class="bi bi-funnel" style="color:#c9a84c;font-size:1rem"></i>
+            <h5>Chọn học sinh & học kỳ</h5>
+        </div>
+        <div class="grades-card-body">
+            @{
+                var childList = children.ToList();
+                var singleChild = childList.Count == 1 ? (int?)childList[0].Id : null;
+            }
+            <form method="get" asp-action="Grades" class="filter-form">
+                @if (singleChild != null)
+                {
+                    <input type="hidden" name="studentId" value="@singleChild" />
+                    <span style="font-size:.875rem;font-weight:600;color:#1f2937;padding:8px 0">
+                        <i class="bi bi-person-fill me-1" style="color:#c9a84c"></i>@childList[0].FullName
+                    </span>
+                }
+                else
+                {
+                <select name="studentId" class="filter-select" onchange="this.form.submit()">
+                    @foreach (var child in childList)
+                    {
+                        if (studentId == child.Id)
+                        { <option value="@child.Id" selected>@child.FullName</option> }
+                        else
+                        { <option value="@child.Id">@child.FullName</option> }
+                    }
+                </select>
+                }
+                <select name="semesterId" class="filter-select" onchange="this.form.submit()">
+                    <option value="">-- Chọn học kỳ --</option>
+                    @foreach (var sem in semesters)
+                    {
+                        var label = sem.SemesterName + (sem.IsActive ? " (Đang học)" : "");
+                        if (semesterId == sem.SemesterId)
+                        { <option value="@sem.SemesterId" selected>@label</option> }
+                        else
+                        { <option value="@sem.SemesterId">@label</option> }
+                    }
+                </select>
+                <button type="submit" class="btn-view"><i class="bi bi-search me-1"></i>Xem điểm</button>
+            </form>
+        </div>
+    </div>
+
+    @if (!children.Any())
+    {
+        <div class="grades-card">
+            <div class="grades-empty">
+                <i class="bi bi-person-x"></i>
+                <p class="mb-0" style="font-size:.9rem">Tài khoản chưa được liên kết với học sinh nào.</p>
+            </div>
+        </div>
+    }
+    else if (error != null)
+    {
+        <div class="alert alert-warning d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill"></i><span>@error</span>
+        </div>
+    }
+    else if (Model == null)
+    {
+        <div class="grades-card">
+            <div class="grades-empty">
+                <i class="bi bi-journal-x"></i>
+                <p class="mb-0" style="font-size:.9rem">Chọn học kỳ để xem bảng điểm</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="grades-card">
+            <div class="grades-card-header">
+                <i class="bi bi-award" style="color:#c9a84c;font-size:1rem"></i>
+                <h5>@Model.SemesterName — @Model.StudentName</h5>
+            </div>
+            <div class="grades-card-body">
+                <div class="gpa-strip">
+                    <div class="gpa-item">
+                        <div class="gpa-value @ScoreClass(Model.SemesterGpa)">
+                            @(Model.SemesterGpa.HasValue ? Model.SemesterGpa.Value.ToString("F1") : "—")
+                        </div>
+                        <div class="gpa-label">ĐTB học kỳ</div>
+                    </div>
+                    <div class="gpa-item">
+                        <div class="gpa-value" style="color:#1f2937">@Model.SubjectAverages.Count</div>
+                        <div class="gpa-label">Môn học</div>
+                    </div>
+                    <div class="gpa-item">
+                        <div class="gpa-value @(Model.AbsenceCount > 5 ? "score-bad" : "score-good")">@Model.AbsenceCount</div>
+                        <div class="gpa-label">Vắng mặt</div>
+                    </div>
+                    @if (Model.SemesterGpa.HasValue)
+                    {
+                        <div class="gpa-item">
+                            <div class="gpa-value @ScoreClass(Model.SemesterGpa)">@Remark(Model.SemesterGpa)</div>
+                            <div class="gpa-label">Xếp loại</div>
+                        </div>
+                    }
+                </div>
+
+                @if (Model.SubjectAverages.Any())
+                {
+                    <table class="scores-table">
+                        <thead>
+                            <tr>
+                                <th>Môn học</th>
+                                <th>Điểm TB</th>
+                                <th>Xếp loại</th>
+                                <th>Nhận xét</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sub in Model.SubjectAverages.OrderBy(s => s.SubjectName))
+                            {
+                                <tr>
+                                    <td class="subject-name">@sub.SubjectName</td>
+                                    <td>
+                                        @if (sub.AverageScore.HasValue)
+                                        {
+                                            <span class="score-pill @ScoreClass(sub.AverageScore)">@sub.AverageScore.Value.ToString("F1")</span>
+                                        }
+                                        else { <span class="score-none">Chưa có</span> }
+                                    </td>
+                                    <td><span class="score-pill @ScoreClass(sub.AverageScore)" style="background:none;padding:0">@Remark(sub.AverageScore)</span></td>
+                                    <td style="color:#6b7280;font-size:.85rem">@(string.IsNullOrEmpty(sub.Remark) ? "—" : sub.Remark)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted mb-0" style="font-size:.875rem"><i class="bi bi-info-circle me-1"></i>Chưa có điểm nào được nhập cho học kỳ này.</p>
+                }
+            </div>
+        </div>
+    }
+
+</div>
+</div>

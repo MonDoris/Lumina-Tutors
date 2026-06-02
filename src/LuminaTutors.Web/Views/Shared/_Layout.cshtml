@@ -328,9 +328,37 @@
                     <span class="lt-nav__icon"><i class="bi bi-file-earmark-text-fill"></i></span>
                     Hồ sơ kỷ luật
                 </a>
+                <a asp-controller="Supervisor" asp-action="LeaveRequests" class="@Nav("Supervisor", "LeaveRequests")">
+                    <span class="lt-nav__icon"><i class="bi bi-calendar-x-fill"></i></span>
+                    Đơn xin nghỉ
+                </a>
                 <a asp-controller="Supervisor" asp-action="Messages" class="@Nav("Supervisor", "Messages")">
                     <span class="lt-nav__icon"><i class="bi bi-chat-dots-fill"></i></span>
                     Nhắn tin PH
+                </a>
+            </div>
+            }
+
+            <!-- Parent section -->
+            @if (roleCode == "PARENT")
+            {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">Theo dõi con</div>
+                <a asp-controller="Parent" asp-action="Grades" class="@Nav("Parent", "Grades")">
+                    <span class="lt-nav__icon"><i class="bi bi-bar-chart-fill"></i></span>
+                    Kết quả học tập
+                </a>
+                <a asp-controller="Parent" asp-action="Attendance" class="@Nav("Parent", "Attendance")">
+                    <span class="lt-nav__icon"><i class="bi bi-calendar-check-fill"></i></span>
+                    Điểm danh
+                </a>
+                <a asp-controller="Parent" asp-action="LeaveRequests" class="@Nav("Parent", "LeaveRequests")">
+                    <span class="lt-nav__icon"><i class="bi bi-calendar-x-fill"></i></span>
+                    Xin nghỉ phép
+                </a>
+                <a asp-controller="Parent" asp-action="Messages" class="@Nav("Parent", "Messages")">
+                    <span class="lt-nav__icon"><i class="bi bi-chat-dots-fill"></i></span>
+                    Tin nhắn
                 </a>
             </div>
             }

@@ -102,6 +102,9 @@ public class LuminaTutorsDbContext : DbContext
     public DbSet<DisciplineRecord> DisciplineRecords => Set<DisciplineRecord>();
     public DbSet<GateCheckLog>     GateCheckLogs     => Set<GateCheckLog>();
 
+    // ── Leave Requests ────────────────────────────────────────────────────────
+    public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+
     // ── Communication ─────────────────────────────────────────────────────────
     public DbSet<Notification>            Notifications            => Set<Notification>();
     public DbSet<NotificationRecipient>   NotificationRecipients   => Set<NotificationRecipient>();

@@ -1,0 +1,227 @@
+@using LuminaTutors.Application.DTOs.Attendance
+@using LuminaTutors.Application.DTOs.Class
+@using LuminaTutors.Web.Controllers
+@model StudentAttendanceSummaryDto?
+@{
+    ViewData["Title"] = "Điểm danh";
+    var children   = ViewBag.Children  as List<ParentController.ChildItem> ?? [];
+    var semesters  = ViewBag.Semesters as IReadOnlyList<SemesterSelectDto>        ?? new List<SemesterSelectDto>();
+    var studentId  = ViewBag.StudentId  as int?;
+    var semesterId = ViewBag.SemesterId as int?;
+    var error      = ViewBag.Error as string;
+}
+
+<style>
+.att-page {
+    padding: 1.75rem 1.5rem 3rem;
+    background-color: #f0f4fa;
+    min-height: calc(100vh - 60px);
+}
+.att-card {
+    background: #fff; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 1.25rem;
+    border: 1px solid #e5e7eb;
+}
+.att-card-header {
+    background: #0f1c2e; padding: 1rem 1.5rem;
+    display: flex; align-items: center; gap: .75rem;
+}
+.att-card-header h5 {
+    font-family: 'Playfair Display', Georgia, serif;
+    color: #faf8f4; margin: 0; font-size: 1.05rem;
+}
+.att-card-body { padding: 1.25rem 1.5rem; }
+.filter-form { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.filter-select {
+    border: 1.5px solid #d1d5db; border-radius: 8px;
+    padding: 8px 12px; font-size: .9rem; background: #fff; min-width: 180px;
+    transition: border-color 200ms;
+}
+.filter-select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.btn-view {
+    background: #0f1c2e; color: #fff;
+    border: none; border-radius: 8px; padding: 8px 18px;
+    font-size: .875rem; font-weight: 600; cursor: pointer;
+}
+.btn-view:hover { background: #1a2d45; }
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 12px; margin-bottom: 1.25rem; }
+.stat-box { background: #f8fafc; border-radius: 10px; padding: 14px 16px; text-align: center; border: 1px solid #e5e7eb; }
+.stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; }
+.stat-lbl { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; margin-top: 2px; }
+.att-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.att-table th { padding: 10px 14px; text-align: left; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b7280; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+.att-table td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+.att-table tbody tr:last-child td { border-bottom: none; }
+.att-table tbody tr:hover td { background: #f8fafc; }
+.badge-absent { background: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-late   { background: #fef3c7; color: #92400e; padding: 2px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.badge-excused{ background: #dbeafe; color: #1e40af; padding: 2px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; }
+.att-empty { text-align: center; padding: 3rem 1.5rem; color: #9ca3af; }
+.att-empty i { font-size: 2.5rem; display: block; margin-bottom: .75rem; color: #d1d5db; }
+</style>
+
+<div class="att-page">
+<div style="max-width:900px;margin:0 auto">
+
+    <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:1.45rem;color:#1f2937;margin-bottom:1.5rem">
+        <i class="bi bi-calendar-check-fill me-2" style="color:#2563eb"></i>Điểm danh của con
+    </h1>
+
+    <div class="att-card mb-4">
+        <div class="att-card-header">
+            <i class="bi bi-funnel" style="color:#c9a84c;font-size:1rem"></i>
+            <h5>Chọn học sinh & học kỳ</h5>
+        </div>
+        <div class="att-card-body">
+            @{
+                var childList = children.ToList();
+                var singleChild = childList.Count == 1 ? (int?)childList[0].Id : null;
+            }
+            <form method="get" asp-action="Attendance" class="filter-form">
+                @if (singleChild != null)
+                {
+                    <input type="hidden" name="studentId" value="@singleChild" />
+                    <span style="font-size:.875rem;font-weight:600;color:#1f2937;padding:8px 0">
+                        <i class="bi bi-person-fill me-1" style="color:#2563eb"></i>@childList[0].FullName
+                    </span>
+                }
+                else
+                {
+                <select name="studentId" class="filter-select" onchange="this.form.submit()">
+                    @foreach (var child in childList)
+                    {
+                        if (studentId == child.Id)
+                        { <option value="@child.Id" selected>@child.FullName</option> }
+                        else
+                        { <option value="@child.Id">@child.FullName</option> }
+                    }
+                </select>
+                }
+                <select name="semesterId" class="filter-select" onchange="this.form.submit()">
+                    <option value="">-- Chọn học kỳ --</option>
+                    @foreach (var sem in semesters)
+                    {
+                        var label = sem.SemesterName + (sem.IsActive ? " (Đang học)" : "");
+                        if (semesterId == sem.SemesterId)
+                        { <option value="@sem.SemesterId" selected>@label</option> }
+                        else
+                        { <option value="@sem.SemesterId">@label</option> }
+                    }
+                </select>
+                <button type="submit" class="btn-view"><i class="bi bi-search me-1"></i>Xem điểm danh</button>
+            </form>
+        </div>
+    </div>
+
+    @if (!children.Any())
+    {
+        <div class="att-card"><div class="att-empty"><i class="bi bi-person-x"></i><p class="mb-0" style="font-size:.9rem">Tài khoản chưa được liên kết với học sinh nào.</p></div></div>
+    }
+    else if (error != null)
+    {
+        <div class="alert alert-warning d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i><span>@error</span></div>
+    }
+    else if (Model == null)
+    {
+        <div class="att-card"><div class="att-empty"><i class="bi bi-calendar3"></i><p class="mb-0" style="font-size:.9rem">Chọn học kỳ để xem lịch sử điểm danh</p></div></div>
+    }
+    else
+    {
+        <!-- Stats -->
+        <div class="stat-row">
+            <div class="stat-box">
+                <div class="stat-val">@Model.TotalSessions</div>
+                <div class="stat-lbl">Tổng buổi</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" style="color:#16a34a">@Model.PresentCount</div>
+                <div class="stat-lbl">Có mặt</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" style="color:#dc2626">@Model.AbsentCount</div>
+                <div class="stat-lbl">Vắng mặt</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" style="color:#d97706">@Model.LateCount</div>
+                <div class="stat-lbl">Đi muộn</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" style="color:#2563eb">@Model.ExcusedCount</div>
+                <div class="stat-lbl">Có phép</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" style="color:@(Model.AttendanceRate >= 80 ? "#16a34a" : "#dc2626")">
+                    @Model.AttendanceRate.ToString("F0")%
+                </div>
+                <div class="stat-lbl">Tỷ lệ</div>
+            </div>
+        </div>
+
+        <!-- Absence details -->
+        <div class="att-card">
+            <div class="att-card-header">
+                <i class="bi bi-calendar-x" style="color:#c9a84c;font-size:1rem"></i>
+                <h5>@Model.SemesterName — @Model.StudentName</h5>
+            </div>
+            <div class="att-card-body" style="padding:0">
+                @if (!Model.AbsenceDates.Any())
+                {
+                    <div class="att-empty">
+                        <i class="bi bi-check-circle"></i>
+                        <p class="mb-0" style="font-size:.9rem;color:#16a34a;font-weight:600">Không có buổi vắng nào trong học kỳ này!</p>
+                    </div>
+                }
+                else
+                {
+                    <table class="att-table">
+                        <thead>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Môn học</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var abs in Model.AbsenceDates.OrderByDescending(a => a.SessionDate))
+                            {
+                                <tr>
+                                    <td style="font-weight:600;color:#0f172a">
+                                        @abs.SessionDate.ToString("dd/MM/yyyy")
+                                        <div style="font-size:.72rem;color:#6b7280">
+                                            @abs.SessionDate.DayOfWeek switch {
+                                                DayOfWeek.Monday    => "Thứ Hai",
+                                                DayOfWeek.Tuesday   => "Thứ Ba",
+                                                DayOfWeek.Wednesday => "Thứ Tư",
+                                                DayOfWeek.Thursday  => "Thứ Năm",
+                                                DayOfWeek.Friday    => "Thứ Sáu",
+                                                DayOfWeek.Saturday  => "Thứ Bảy",
+                                                _                   => "Chủ Nhật"
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@abs.SubjectName</td>
+                                    <td>
+                                        @if (abs.Status == "Absent")
+                                        {
+                                            <span class="badge-absent">Vắng mặt</span>
+                                        }
+                                        else if (abs.Status == "Late")
+                                        {
+                                            <span class="badge-late">Đi muộn</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-excused">Có phép</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    }
+
+</div>
+</div>
