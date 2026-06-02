@@ -3,24 +3,26 @@ using LuminaTutors.Domain.Enums;
 
 namespace LuminaTutors.Application.DTOs.HR;
 
-public record TeacherDetailDto(
-    int      UserId,
-    string   TeacherCode,
-    string   FullName,
-    string   Email,
-    string?  PhoneNumber,
-    string?  AvatarUrl,
-    DateOnly? DateOfBirth,
-    string?  Gender,
-    string?  Qualification,
-    string?  SpecializationSubject,
-    DateOnly? HireDate,
-    string?  ContractType,
-    string?  BankName,
-    bool     IsActive,
-    List<string> AssignedSubjects,
-    List<string> AssignedClasses
-);
+public class TeacherDetailDto
+{
+    public int       ProfileId             { get; init; }
+    public int       UserId                { get; init; }
+    public string    TeacherCode           { get; init; } = "";
+    public string    FullName              { get; init; } = "";
+    public string    Email                 { get; init; } = "";
+    public string?   PhoneNumber           { get; init; }
+    public string?   AvatarUrl             { get; init; }
+    public DateOnly? DateOfBirth           { get; init; }
+    public string?   Gender                { get; init; }
+    public string?   Qualification         { get; init; }
+    public string?   SpecializationSubject { get; init; }
+    public DateOnly? HireDate              { get; init; }
+    public string?   ContractType          { get; init; }
+    public string?   BankName              { get; init; }
+    public bool      IsActive              { get; init; }
+    public List<string> AssignedSubjects   { get; init; } = new();
+    public List<string> AssignedClasses    { get; init; } = new();
+}
 
 public record CreateTeacherRequest(
     [Required(ErrorMessage = "Vui lòng nhập họ tên."), MaxLength(150, ErrorMessage = "Họ tên tối đa 150 ký tự.")] string FullName,

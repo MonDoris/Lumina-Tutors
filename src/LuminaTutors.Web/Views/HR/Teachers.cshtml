@@ -1,0 +1,156 @@
+@model LuminaTutors.Domain.Common.PagedResult<LuminaTutors.Application.DTOs.HR.TeacherDetailDto>
+@{
+    ViewData["Title"] = "Quản lý giáo viên";
+    var keyword = ViewBag.Keyword as string ?? "";
+    var page    = (int)(ViewBag.Page ?? 1);
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Quản lý giáo viên</h1>
+        <p class="lt-page-subtitle">Danh sách và thông tin giáo viên trong trường</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <a asp-action="CreateTeacher" class="lt-btn lt-btn--primary">
+            <i class="bi bi-person-plus-fill"></i> Thêm giáo viên
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="lt-card mb-3">
+    <div class="lt-card__body">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <input type="text" name="keyword" value="@keyword"
+                       class="form-control" placeholder="Tìm theo tên, email, mã giáo viên..." />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="lt-btn lt-btn--primary">
+                    <i class="bi bi-search"></i> Tìm kiếm
+                </button>
+                @if (!string.IsNullOrEmpty(keyword))
+                {
+                    <a asp-action="Teachers" class="lt-btn lt-btn--outline ms-1">Xóa bộ lọc</a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model == null || Model.Items.Count == 0)
+{
+    <div class="lt-empty-state">
+        <i class="bi bi-people lt-empty-state__icon"></i>
+        <p class="lt-empty-state__text">Chưa có giáo viên nào.</p>
+        <a asp-action="CreateTeacher" class="lt-btn lt-btn--primary">Thêm giáo viên đầu tiên</a>
+    </div>
+}
+else
+{
+    <div class="lt-card">
+        <div class="lt-card__body p-0">
+            <div class="table-responsive">
+                <table class="lt-table">
+                    <thead>
+                        <tr>
+                            <th>Giáo viên</th>
+                            <th>Mã GV</th>
+                            <th>Email</th>
+                            <th>Điện thoại</th>
+                            <th>Chuyên môn</th>
+                            <th>Hợp đồng</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (!string.IsNullOrEmpty(t.AvatarUrl))
+                                        {
+                                            <img src="@t.AvatarUrl" class="rounded-circle" width="36" height="36"
+                                                 style="object-fit:cover" alt="" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                                 style="width:36px;height:36px;font-size:.8rem;font-weight:600;flex-shrink:0">
+                                                @(t.FullName.Length > 0 ? t.FullName[0].ToString().ToUpper() : "?")
+                                            </div>
+                                        }
+                                        <span class="fw-semibold">@t.FullName</span>
+                                    </div>
+                                </td>
+                                <td><span class="lt-badge lt-badge--info">@t.TeacherCode</span></td>
+                                <td>@t.Email</td>
+                                <td>@(t.PhoneNumber ?? "—")</td>
+                                <td>@(t.SpecializationSubject ?? "—")</td>
+                                <td>@(t.ContractType ?? "—")</td>
+                                <td>
+                                    @if (t.IsActive)
+                                    {
+                                        <span class="lt-badge lt-badge--success">Đang dạy</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="lt-badge lt-badge--danger">Đã nghỉ</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="TeacherDetail" asp-route-id="@t.ProfileId"
+                                       class="lt-btn lt-btn--outline lt-btn--sm">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @if (t.IsActive)
+                                    {
+                                        <form asp-action="DeactivateTeacher" method="post" class="d-inline"
+                                              onsubmit="return confirm('Xác nhận vô hiệu hóa giáo viên này?')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@t.ProfileId" />
+                                            <button type="submit" class="lt-btn lt-btn--danger lt-btn--sm">
+                                                <i class="bi bi-person-x"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")">
+                        <a class="page-link" asp-action="Teachers"
+                           asp-route-keyword="@keyword" asp-route-page="@i">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+}

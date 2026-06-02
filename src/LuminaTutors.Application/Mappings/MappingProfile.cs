@@ -91,6 +91,19 @@ public class MappingProfile : Profile
             .ForMember(d => d.StartTime,   o => o.MapFrom(s => s.StartTime.ToString("HH:mm")))
             .ForMember(d => d.EndTime,     o => o.MapFrom(s => s.EndTime.ToString("HH:mm")));
 
+        CreateMap<TeacherProfile, TeacherDetailDto>()
+            .ForMember(d => d.ProfileId,             o => o.MapFrom(s => s.Id))
+            .ForMember(d => d.UserId,                o => o.MapFrom(s => s.User.Id))
+            .ForMember(d => d.FullName,              o => o.MapFrom(s => s.User.FullName))
+            .ForMember(d => d.Email,                 o => o.MapFrom(s => s.User.Email))
+            .ForMember(d => d.PhoneNumber,           o => o.MapFrom(s => s.User.PhoneNumber))
+            .ForMember(d => d.AvatarUrl,             o => o.MapFrom(s => s.User.AvatarUrl))
+            .ForMember(d => d.IsActive,              o => o.MapFrom(s => s.User.IsActive))
+            .ForMember(d => d.Gender,                o => o.MapFrom(s => s.Gender.HasValue ? s.Gender.Value.ToString() : null))
+            .ForMember(d => d.ContractType,          o => o.MapFrom(s => s.ContractType.HasValue ? s.ContractType.Value.ToString() : null))
+            .ForMember(d => d.AssignedSubjects,      o => o.Ignore())
+            .ForMember(d => d.AssignedClasses,       o => o.Ignore());
+
         CreateMap<User, TeacherSummaryDto>()
             .ForMember(d => d.UserId,                o => o.MapFrom(s => s.Id))
             .ForMember(d => d.TeacherCode,           o => o.MapFrom(s => s.TeacherProfile != null ? s.TeacherProfile.TeacherCode : ""))
