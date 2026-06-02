@@ -6,9 +6,12 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "axios": "^1.7.2",
     "expo": "~54.0.0",
+    "expo-camera": "~17.0.10",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
-    "react-native": "0.81.5"
+    "react-native": "0.81.5",
+    "react-native-qrcode-svg": "^6.3.21",
+    "react-native-svg": "15.12.1"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

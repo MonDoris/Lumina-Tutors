@@ -1,0 +1,694 @@
+@using LuminaTutors.Application.DTOs.Finance
+@using LuminaTutors.Application.DTOs.Class
+@model CreateInvoiceRequest
+@{
+    ViewData["Title"] = "Tạo hóa đơn học phí";
+
+    var students      = ViewBag.Students      as IReadOnlyList<(int UserId, string FullName, string? ClassName)>
+                        ?? new List<(int, string, string?)>();
+    var feeConfigs    = ViewBag.FeeConfigs    as IReadOnlyList<TuitionFeeConfigDto>
+                        ?? new List<TuitionFeeConfigDto>();
+    var academicYears = ViewBag.AcademicYears as IReadOnlyList<AcademicYearSelectDto>
+                        ?? new List<AcademicYearSelectDto>();
+    var gradeLevels   = ViewBag.GradeLevels   as IReadOnlyList<LuminaTutors.Application.DTOs.Class.GradeLevelSelectDto>
+                        ?? new List<LuminaTutors.Application.DTOs.Class.GradeLevelSelectDto>();
+    var activeYear    = academicYears.FirstOrDefault(y => y.IsActive) ?? academicYears.FirstOrDefault();
+
+    var today      = DateTime.Today;
+    var schoolName = User.FindFirst("SchoolName")?.Value ?? "Lumina Tutors";
+}
+
+<style>
+/* ── Page layout ────────────────────────────────────────────── */
+.inv-layout   { display:grid; grid-template-columns:1fr 420px; gap:28px; align-items:start; }
+
+/* ── Form card ──────────────────────────────────────────────── */
+.inv-section  {
+    background:#fff; border-radius:16px; padding:28px;
+    border:1px solid #e8edf2;
+    box-shadow:0 1px 4px rgba(0,0,0,.04);
+    margin-bottom:20px;
+}
+.inv-section__head {
+    display:flex; align-items:center; gap:10px;
+    padding-bottom:18px; margin-bottom:22px;
+    border-bottom:1px solid #f1f5f9;
+}
+.inv-section__icon {
+    width:36px; height:36px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:1rem;
+}
+.inv-section__title { font-size:.95rem; font-weight:700; color:#1e293b; }
+
+/* ── Field rows ─────────────────────────────────────────────── */
+.inv-grid-2   { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.inv-grid-3   { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.inv-field    { display:flex; flex-direction:column; gap:6px; }
+.inv-label    {
+    font-size:.72rem; font-weight:700; color:#64748b;
+    text-transform:uppercase; letter-spacing:.5px;
+}
+.inv-label span { color:#dc2626; margin-left:2px; }
+.inv-input, .inv-select {
+    border:1.5px solid #e2e8f0; border-radius:10px;
+    padding:10px 14px; font-size:.875rem; color:#1e293b;
+    background:#fff; transition:border-color .15s, box-shadow .15s;
+    width:100%;
+}
+.inv-input:focus, .inv-select:focus {
+    outline:none; border-color:#c9a84c; box-shadow:0 0 0 3px rgba(201,168,76,.12);
+}
+.inv-input--readonly { background:#f8fafc; color:#94a3b8; cursor:not-allowed; }
+.inv-hint     { font-size:.72rem; color:#94a3b8; }
+.inv-error    { font-size:.75rem; color:#dc2626; }
+
+/* ── Amount highlight ───────────────────────────────────────── */
+.inv-amount-row {
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;
+    background:#f8fafc; border-radius:12px; padding:16px 18px;
+    border:1px solid #e8edf2;
+}
+.inv-amount-item { text-align:center; }
+.inv-amount-label { font-size:.7rem; font-weight:700; color:#94a3b8;
+    text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+.inv-amount-value { font-size:1.2rem; font-weight:800; }
+
+/* ── Preview panel ──────────────────────────────────────────── */
+.inv-preview {
+    background:#0f1c2e;
+    border-radius:20px;
+    overflow:hidden;
+    position:sticky; top:80px;
+    box-shadow:0 12px 40px rgba(15,28,46,.25);
+}
+.inv-preview__header {
+    background:linear-gradient(135deg, #1a2d45 0%, #0f1c2e 100%);
+    padding:24px 24px 20px;
+    border-bottom:1px solid rgba(201,168,76,.2);
+}
+.inv-preview__school { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.inv-preview__logo {
+    width:42px; height:42px; border-radius:12px;
+    background:linear-gradient(135deg,#c9a84c,#e2c97e);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.1rem; font-weight:800; color:#0f1c2e;
+    flex-shrink:0;
+}
+.inv-preview__school-name { font-size:.9rem; font-weight:700; color:#faf8f4; }
+.inv-preview__school-sub  { font-size:.7rem; color:rgba(250,248,244,.4); margin-top:1px; }
+.inv-preview__title {
+    font-size:1.15rem; font-weight:800; color:#c9a84c;
+    letter-spacing:.04em; text-transform:uppercase;
+    margin-bottom:4px;
+}
+.inv-preview__code { font-size:.78rem; color:rgba(250,248,244,.5); }
+
+.inv-preview__body { padding:20px 24px; }
+.inv-preview__row  {
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:9px 0; border-bottom:1px solid rgba(255,255,255,.05);
+    gap:12px;
+}
+.inv-preview__row:last-child { border-bottom:none; }
+.inv-preview__key   { font-size:.75rem; color:rgba(250,248,244,.4); flex-shrink:0; }
+.inv-preview__val   { font-size:.82rem; font-weight:600; color:#faf8f4; text-align:right; }
+.inv-preview__val--gold { color:#c9a84c; }
+
+.inv-preview__footer {
+    background:rgba(201,168,76,.08);
+    border-top:1px solid rgba(201,168,76,.2);
+    padding:18px 24px;
+    display:flex; justify-content:space-between; align-items:center;
+}
+.inv-preview__total-label { font-size:.75rem; color:rgba(250,248,244,.5);
+    text-transform:uppercase; letter-spacing:.5px; }
+.inv-preview__total-amount { font-size:1.5rem; font-weight:900; color:#c9a84c; }
+
+.inv-preview__stamp {
+    display:inline-flex; align-items:center; gap:6px;
+    margin-top:14px; padding:5px 12px; border-radius:20px;
+    background:rgba(234,179,8,.12); border:1px solid rgba(234,179,8,.3);
+}
+.inv-preview__stamp-text { font-size:.68rem; font-weight:700; color:#c9a84c; letter-spacing:.04em; }
+
+/* ── Action bar ─────────────────────────────────────────────── */
+.inv-actions  {
+    display:flex; justify-content:flex-end; gap:12px;
+    background:#f8fafc; border-radius:0 0 16px 16px;
+    padding:18px 28px; border-top:1px solid #e8edf2;
+}
+.inv-btn-cancel {
+    padding:10px 22px; border:1.5px solid #e2e8f0; border-radius:10px;
+    color:#64748b; font-size:.875rem; font-weight:600;
+    text-decoration:none; background:#fff; transition:border-color .15s;
+}
+.inv-btn-cancel:hover { border-color:#cbd5e1; color:#374151; }
+.inv-btn-save {
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 28px; border-radius:10px;
+    background:linear-gradient(135deg,#c9a84c,#e2c97e);
+    color:#0f1c2e; font-size:.875rem; font-weight:800;
+    border:none; cursor:pointer;
+    box-shadow:0 3px 12px rgba(201,168,76,.35);
+    transition:filter .15s, transform .1s;
+}
+.inv-btn-save:hover  { filter:brightness(1.07); }
+.inv-btn-save:active { transform:scale(.97); }
+
+@@media (max-width:1100px) {
+    .inv-layout { grid-template-columns:1fr; }
+    .inv-preview { position:static; }
+}
+</style>
+
+<!-- Page header -->
+<div class="lt-page-header">
+    <div>
+        <a asp-action="Invoices" class="lt-btn lt-btn--outline lt-btn--sm mb-2">
+            <i class="bi bi-arrow-left"></i> Danh sách hóa đơn
+        </a>
+        <h1 class="lt-page-title">Tạo hóa đơn học phí</h1>
+        <p class="lt-page-subtitle">Tạo hóa đơn thủ công cho học sinh</p>
+    </div>
+</div>
+
+<form asp-action="CreateInvoice" method="post" id="invoiceForm">
+@Html.AntiForgeryToken()
+
+<div class="inv-layout">
+
+    <!-- ── LEFT: Form ─────────────────────────────────────────── -->
+    <div>
+
+        <!-- Validation summary -->
+        <div asp-validation-summary="ModelOnly" class="lt-alert lt-alert--danger mb-3" style="display:none" id="valSummary"></div>
+
+        <!-- 1. Thông tin học sinh -->
+        <div class="inv-section">
+            <div class="inv-section__head">
+                <div class="inv-section__icon" style="background:#eff6ff">
+                    <i class="bi bi-person-fill" style="color:#2563eb"></i>
+                </div>
+                <span class="inv-section__title">Thông tin học sinh</span>
+            </div>
+
+            <div class="inv-grid-2">
+                <div class="inv-field" style="grid-column:1/-1">
+                    <label class="inv-label" for="StudentId">Học sinh <span>*</span></label>
+                    <select asp-for="StudentId" class="inv-select" id="StudentId" onchange="syncStudentPreview(this)">
+                        <option value="0">— Chọn học sinh —</option>
+                        @foreach (var s in students)
+                        {
+                            <option value="@s.UserId"
+                                    data-name="@s.FullName"
+                                    data-class="@(s.ClassName ?? "Chưa xếp lớp")"
+                                    selected="@(Model?.StudentId == s.UserId ? "selected" : null)">
+                                @s.FullName
+                                @if (!string.IsNullOrEmpty(s.ClassName)) { <text>— @s.ClassName</text> }
+                            </option>
+                        }
+                    </select>
+                    <span asp-validation-for="StudentId" class="inv-error"></span>
+                </div>
+
+                <div class="inv-field">
+                    <label class="inv-label">Học sinh đã chọn</label>
+                    <input type="text" id="preview-student-name" class="inv-input inv-input--readonly" readonly value="—"/>
+                </div>
+                <div class="inv-field">
+                    <label class="inv-label">Lớp học</label>
+                    <input type="text" id="preview-student-class" class="inv-input inv-input--readonly" readonly value="—"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Loại phí & Kỳ thu -->
+        <div class="inv-section">
+            <div class="inv-section__head">
+                <div class="inv-section__icon" style="background:#fffbeb">
+                    <i class="bi bi-receipt" style="color:#d97706"></i>
+                </div>
+                <span class="inv-section__title">Loại phí & Kỳ thu</span>
+            </div>
+
+            <div class="inv-grid-2" style="margin-bottom:18px">
+                <div class="inv-field" style="grid-column:1/-1">
+                    <label class="inv-label" for="ConfigId">Loại phí <span>*</span></label>
+                    <div style="display:flex; gap:8px; align-items:flex-start">
+                        <div style="flex:1">
+                            @if (!feeConfigs.Any())
+                            {
+                                <div class="lt-alert lt-alert--warning" style="margin:0 0 8px">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <span>Chưa có loại phí nào. Nhấn <strong>+ Tạo loại phí</strong> để thêm.</span>
+                                </div>
+                            }
+                            <select asp-for="ConfigId" class="inv-select" id="ConfigId" onchange="syncConfigPreview(this)">
+                                <option value="0">— Chọn loại phí —</option>
+                                @foreach (var cfg in feeConfigs)
+                                {
+                                    <option value="@cfg.ConfigId"
+                                            data-amount="@cfg.Amount"
+                                            data-feetype="@cfg.FeeType"
+                                            data-cycle="@cfg.BillingCycle"
+                                            selected="@(Model?.ConfigId == cfg.ConfigId ? "selected" : null)">
+                                        @cfg.FeeType — @cfg.Amount.ToString("N0")đ/@cfg.BillingCycle
+                                        @if (!string.IsNullOrEmpty(cfg.GradeName)) { <text>(Khối @cfg.GradeName)</text> }
+                                    </option>
+                                }
+                            </select>
+                            <span asp-validation-for="ConfigId" class="inv-error"></span>
+                        </div>
+                        <button type="button"
+                                data-bs-toggle="modal" data-bs-target="#modalCreateFeeType"
+                                title="Tạo loại phí mới"
+                                style="flex-shrink:0; padding:10px 14px; border-radius:10px;
+                                       background:linear-gradient(135deg,#c9a84c,#e2c97e);
+                                       color:#0f1c2e; border:none; font-weight:800;
+                                       font-size:.85rem; cursor:pointer; white-space:nowrap;
+                                       box-shadow:0 2px 8px rgba(201,168,76,.3); transition:filter .15s"
+                                onmouseover="this.style.filter='brightness(1.08)'"
+                                onmouseout="this.style.filter=''">
+                            <i class="bi bi-plus-lg"></i> Tạo loại phí
+                        </button>
+                    </div>
+                </div>
+
+                <div class="inv-field">
+                    <label class="inv-label" for="BillingPeriod">Kỳ thu <span>*</span></label>
+                    <input asp-for="BillingPeriod" class="inv-input" id="BillingPeriod"
+                           placeholder="VD: @today.ToString("yyyy-MM") hoặc HK1-2025-2026"
+                           oninput="updatePreview()"
+                           value="@(Model?.BillingPeriod ?? today.ToString("yyyy-MM"))"/>
+                    <span class="inv-hint">Định dạng: yyyy-MM (tháng) hoặc HK1-2025-2026 (học kỳ)</span>
+                    <span asp-validation-for="BillingPeriod" class="inv-error"></span>
+                </div>
+
+                <div class="inv-field">
+                    <label class="inv-label" for="DueDate">Hạn thanh toán <span>*</span></label>
+                    <input asp-for="DueDate" type="date" class="inv-input" id="DueDate"
+                           min="@today.ToString("yyyy-MM-dd")"
+                           oninput="updatePreview()"/>
+                    <span asp-validation-for="DueDate" class="inv-error"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Số tiền -->
+        <div class="inv-section">
+            <div class="inv-section__head">
+                <div class="inv-section__icon" style="background:#f0fdf4">
+                    <i class="bi bi-currency-dollar" style="color:#16a34a"></i>
+                </div>
+                <span class="inv-section__title">Số tiền</span>
+            </div>
+
+            <div class="inv-grid-2" style="margin-bottom:20px">
+                <div class="inv-field">
+                    <label class="inv-label" for="Amount">Số tiền phát sinh <span>*</span></label>
+                    <input asp-for="Amount" type="number" class="inv-input" id="Amount"
+                           min="1000" max="100000000" step="1000"
+                           oninput="calcFinal()"
+                           placeholder="0"/>
+                    <span class="inv-hint" id="amount-hint"></span>
+                    <span asp-validation-for="Amount" class="inv-error"></span>
+                </div>
+
+                <div class="inv-field">
+                    <label class="inv-label" for="Discount">Giảm giá / Miễn giảm</label>
+                    <input asp-for="Discount" type="number" class="inv-input" id="Discount"
+                           min="0" max="100000000" step="1000" value="@(Model?.Discount ?? 0)"
+                           oninput="calcFinal()"
+                           placeholder="0"/>
+                    <span class="inv-hint">Để trống hoặc 0 nếu không có giảm giá</span>
+                    <span asp-validation-for="Discount" class="inv-error"></span>
+                </div>
+            </div>
+
+            <!-- Amount summary bar -->
+            <div class="inv-amount-row">
+                <div class="inv-amount-item">
+                    <div class="inv-amount-label">Phát sinh</div>
+                    <div class="inv-amount-value" id="disp-amount" style="color:#0f172a">0đ</div>
+                </div>
+                <div class="inv-amount-item">
+                    <div class="inv-amount-label">Giảm giá</div>
+                    <div class="inv-amount-value" id="disp-discount" style="color:#dc2626">0đ</div>
+                </div>
+                <div class="inv-amount-item">
+                    <div class="inv-amount-label">Thành tiền</div>
+                    <div class="inv-amount-value" id="disp-final" style="color:#16a34a">0đ</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Ghi chú -->
+        <div class="inv-section" style="margin-bottom:0">
+            <div class="inv-section__head">
+                <div class="inv-section__icon" style="background:#f5f3ff">
+                    <i class="bi bi-chat-text-fill" style="color:#7c3aed"></i>
+                </div>
+                <span class="inv-section__title">Ghi chú</span>
+            </div>
+            <div class="inv-field">
+                <label class="inv-label" for="Notes">Ghi chú nội bộ (không bắt buộc)</label>
+                <textarea asp-for="Notes" class="inv-input" id="Notes" rows="3"
+                          placeholder="VD: Hỗ trợ học sinh diện chính sách, giảm 50% học kỳ 1..."
+                          style="resize:vertical; min-height:80px"></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="inv-actions" style="margin:20px -28px -28px; border-radius:0 0 16px 16px">
+                <a asp-action="Invoices" class="inv-btn-cancel">Hủy</a>
+                <button type="submit" class="inv-btn-save" id="btnSubmit">
+                    <i class="bi bi-file-earmark-check-fill"></i>
+                    Tạo hóa đơn
+                </button>
+            </div>
+        </div>
+
+    </div><!-- /LEFT -->
+
+    <!-- ── RIGHT: Preview ─────────────────────────────────────── -->
+    <div>
+        <div style="font-size:.72rem; font-weight:700; color:#94a3b8; text-transform:uppercase;
+                    letter-spacing:.5px; margin-bottom:12px">
+            <i class="bi bi-eye" style="margin-right:5px"></i>Xem trước hóa đơn
+        </div>
+        <div class="inv-preview">
+            <!-- Header -->
+            <div class="inv-preview__header">
+                <div class="inv-preview__school">
+                    <div class="inv-preview__logo">✦</div>
+                    <div>
+                        <div class="inv-preview__school-name">@schoolName</div>
+                        <div class="inv-preview__school-sub">Hệ thống quản lý giáo dục</div>
+                    </div>
+                </div>
+                <div class="inv-preview__title">Hóa đơn học phí</div>
+                <div class="inv-preview__code">Mã: <span id="prev-code">INV-XXXXX</span>
+                    &nbsp;·&nbsp; Ngày: @today.ToString("dd/MM/yyyy")
+                </div>
+            </div>
+
+            <!-- Body rows -->
+            <div class="inv-preview__body">
+                <div class="inv-preview__row">
+                    <span class="inv-preview__key">Học sinh</span>
+                    <span class="inv-preview__val" id="prev-student">—</span>
+                </div>
+                <div class="inv-preview__row">
+                    <span class="inv-preview__key">Lớp</span>
+                    <span class="inv-preview__val" id="prev-class">—</span>
+                </div>
+                <div class="inv-preview__row">
+                    <span class="inv-preview__key">Loại phí</span>
+                    <span class="inv-preview__val inv-preview__val--gold" id="prev-feetype">—</span>
+                </div>
+                <div class="inv-preview__row">
+                    <span class="inv-preview__key">Kỳ thu</span>
+                    <span class="inv-preview__val" id="prev-period">—</span>
+                </div>
+                <div class="inv-preview__row">
+                    <span class="inv-preview__key">Hạn thanh toán</span>
+                    <span class="inv-preview__val" id="prev-due">—</span>
+                </div>
+                <div class="inv-preview__row">
+                    <span class="inv-preview__key">Số tiền</span>
+                    <span class="inv-preview__val" id="prev-amount">0đ</span>
+                </div>
+                <div class="inv-preview__row" id="prev-discount-row" style="display:none">
+                    <span class="inv-preview__key">Giảm giá</span>
+                    <span class="inv-preview__val" style="color:#ef4444" id="prev-discount">0đ</span>
+                </div>
+                <div class="inv-preview__row" id="prev-note-row" style="display:none">
+                    <span class="inv-preview__key">Ghi chú</span>
+                    <span class="inv-preview__val" id="prev-note" style="font-size:.75rem;max-width:200px;word-break:break-word;text-align:right"></span>
+                </div>
+            </div>
+
+            <!-- Footer total -->
+            <div class="inv-preview__footer">
+                <div>
+                    <div class="inv-preview__total-label">Thành tiền</div>
+                    <div style="margin-top:4px">
+                        <div class="inv-preview__stamp">
+                            <i class="bi bi-hourglass-split" style="color:#c9a84c;font-size:.75rem"></i>
+                            <span class="inv-preview__stamp-text">CHỜ THANH TOÁN</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="inv-preview__total-amount" id="prev-final">0đ</div>
+            </div>
+        </div>
+
+        <!-- Tip -->
+        <div style="margin-top:14px;padding:12px 14px;background:#fffbeb;border-radius:10px;
+                    border:1px solid #fde68a;font-size:.78rem;color:#92400e">
+            <i class="bi bi-lightbulb-fill" style="color:#f59e0b;margin-right:5px"></i>
+            Hóa đơn được tạo với trạng thái <strong>Chờ thanh toán</strong>.
+            Sau khi tạo, vào chi tiết hóa đơn để ghi nhận thanh toán.
+        </div>
+    </div><!-- /RIGHT -->
+
+</div><!-- /layout -->
+</form>
+
+<!-- ══ Modal: Tạo loại phí mới ══════════════════════════════ -->
+<div class="modal fade" id="modalCreateFeeType" tabindex="-1" aria-labelledby="modalFeeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:560px">
+        <div class="modal-content" style="border-radius:20px; border:none; overflow:hidden">
+
+            <!-- Header -->
+            <div class="modal-header" style="background:#0f1c2e; border:none; padding:20px 24px">
+                <div style="display:flex; align-items:center; gap:10px">
+                    <div style="width:34px;height:34px;border-radius:10px;background:rgba(201,168,76,.15);
+                                display:flex;align-items:center;justify-content:center">
+                        <i class="bi bi-receipt" style="color:#c9a84c"></i>
+                    </div>
+                    <h5 class="modal-title" id="modalFeeLabel"
+                        style="color:#faf8f4; font-size:1rem; font-weight:700; margin:0">
+                        Tạo loại phí mới
+                    </h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Form -->
+            <form asp-action="CreateFeeConfig" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="AcademicYearId" value="@(activeYear?.AcademicYearId ?? 0)"/>
+                <!-- Quay lại trang tạo hóa đơn sau khi submit -->
+                <input type="hidden" name="returnUrl" value="@Url.Action("CreateInvoice", "Finance")"/>
+
+                <div class="modal-body" style="padding:24px; display:flex; flex-direction:column; gap:18px">
+
+                    <!-- Fee type name -->
+                    <div>
+                        <label class="inv-label">Tên loại phí <span style="color:#dc2626">*</span></label>
+                        <input type="text" name="FeeType" class="inv-input" required maxlength="100"
+                               placeholder="VD: Học phí, Bán trú, Ngoại khóa, Đồng phục..."/>
+                    </div>
+
+                    <!-- Amount + Cycle -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+                        <div>
+                            <label class="inv-label">Mức phí (đ) <span style="color:#dc2626">*</span></label>
+                            <input type="number" name="Amount" class="inv-input" required
+                                   min="1000" max="100000000" step="1000"
+                                   placeholder="VD: 2.000.000"
+                                   oninput="previewFeeAmount(this.value)"/>
+                            <span id="feeAmountPreview" style="font-size:.75rem; color:#16a34a; margin-top:4px; display:block"></span>
+                        </div>
+                        <div>
+                            <label class="inv-label">Chu kỳ thu</label>
+                            <select name="BillingCycle" class="inv-select">
+                                <option value="Monthly">Hàng tháng</option>
+                                <option value="Semester">Học kỳ</option>
+                                <option value="Annual">Cả năm</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Grade + Due day -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+                        <div>
+                            <label class="inv-label">Áp dụng cho khối</label>
+                            <select name="GradeLevelId" class="inv-select">
+                                <option value="">Tất cả các khối</option>
+                                @foreach (var gl in gradeLevels)
+                                {
+                                    <option value="@gl.GradeLevelId">@gl.GradeName</option>
+                                }
+                            </select>
+                            <span class="inv-hint">Để "Tất cả" nếu áp dụng chung</span>
+                        </div>
+                        <div>
+                            <label class="inv-label">Ngày thu hàng tháng</label>
+                            <input type="number" name="DueDayOfMonth" class="inv-input"
+                                   value="15" min="1" max="28"/>
+                            <span class="inv-hint">Ngày trong tháng (1–28)</span>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label class="inv-label">Ghi chú / Mô tả</label>
+                        <input type="text" name="Description" class="inv-input"
+                               placeholder="VD: Học phí bậc THPT, bao gồm phí cơ sở vật chất..."/>
+                    </div>
+
+                    <!-- Summary preview -->
+                    <div id="feeConfigSummary" style="display:none; background:#f0fdf4; border-radius:12px;
+                         padding:14px 16px; border:1px solid #bbf7d0">
+                        <div style="font-size:.75rem; font-weight:700; color:#16a34a; margin-bottom:4px">
+                            <i class="bi bi-check-circle-fill"></i> Xem trước
+                        </div>
+                        <div id="feeConfigSummaryText" style="font-size:.875rem; color:#166534; font-weight:600"></div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="modal-footer" style="border:none; padding:16px 24px; gap:10px; background:#f8fafc">
+                    <button type="button" class="inv-btn-cancel" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="inv-btn-save">
+                        <i class="bi bi-plus-circle-fill"></i> Tạo loại phí
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// ── Format number ────────────────────────────────────────────
+function fmt(n) {
+    return new Intl.NumberFormat('vi-VN').format(Math.max(0, n || 0)) + 'đ';
+}
+function fmtDate(d) {
+    if (!d) return '—';
+    const parts = d.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return d;
+}
+
+// ── Sync student selection ───────────────────────────────────
+function syncStudentPreview(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const name  = opt?.dataset.name  || '—';
+    const cls   = opt?.dataset.class || '—';
+    document.getElementById('preview-student-name').value  = name;
+    document.getElementById('preview-student-class').value = cls;
+    document.getElementById('prev-student').textContent    = name;
+    document.getElementById('prev-class').textContent      = cls;
+}
+
+// ── Sync config (fee type) selection ────────────────────────
+function syncConfigPreview(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const amount  = parseFloat(opt?.dataset.amount || '0');
+    const feeType = opt?.dataset.feetype || '—';
+
+    // Pre-fill amount field with config amount
+    const amountInput = document.getElementById('Amount');
+    if (amount > 0) {
+        amountInput.value = amount;
+        document.getElementById('amount-hint').textContent = 'Tự động điền từ cấu hình — có thể chỉnh sửa';
+    }
+
+    document.getElementById('prev-feetype').textContent = feeType;
+    calcFinal();
+}
+
+// ── Calculate final amount ───────────────────────────────────
+function calcFinal() {
+    const amount   = parseFloat(document.getElementById('Amount').value)   || 0;
+    const discount = parseFloat(document.getElementById('Discount').value) || 0;
+    const final    = Math.max(0, amount - discount);
+
+    document.getElementById('disp-amount').textContent   = fmt(amount);
+    document.getElementById('disp-discount').textContent = fmt(discount);
+    document.getElementById('disp-final').textContent    = fmt(final);
+    document.getElementById('prev-amount').textContent   = fmt(amount);
+    document.getElementById('prev-final').textContent    = fmt(final);
+
+    const discRow = document.getElementById('prev-discount-row');
+    if (discount > 0) {
+        discRow.style.display = 'flex';
+        document.getElementById('prev-discount').textContent = '−' + fmt(discount);
+    } else {
+        discRow.style.display = 'none';
+    }
+}
+
+// ── Update preview on typing ─────────────────────────────────
+function updatePreview() {
+    const period = document.getElementById('BillingPeriod').value;
+    const due    = document.getElementById('DueDate').value;
+    const notes  = document.getElementById('Notes')?.value;
+
+    document.getElementById('prev-period').textContent = period || '—';
+    document.getElementById('prev-due').textContent    = fmtDate(due);
+
+    const noteRow = document.getElementById('prev-note-row');
+    if (notes?.trim()) {
+        noteRow.style.display = 'flex';
+        document.getElementById('prev-note').textContent = notes.trim();
+    } else {
+        noteRow.style.display = 'none';
+    }
+}
+
+// ── Init on page load ────────────────────────────────────────
+(function init() {
+    syncStudentPreview(document.getElementById('StudentId'));
+    syncConfigPreview(document.getElementById('ConfigId'));
+    updatePreview();
+    calcFinal();
+
+    // Notes live update
+    document.getElementById('Notes')?.addEventListener('input', updatePreview);
+
+    // Show validation summary if errors
+    const vs = document.getElementById('valSummary');
+    if (vs && vs.children.length > 0) vs.style.display = 'block';
+})();
+
+// ── Pre-fill billing period from today ───────────────────────
+const bpInput = document.getElementById('BillingPeriod');
+if (bpInput && !bpInput.value) {
+    const n = new Date();
+    bpInput.value = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+    updatePreview();
+}
+
+// ── Fee config modal: live preview ───────────────────────────
+function previewFeeAmount(val) {
+    const n    = parseFloat(val) || 0;
+    const span = document.getElementById('feeAmountPreview');
+    const sum  = document.getElementById('feeConfigSummary');
+    const txt  = document.getElementById('feeConfigSummaryText');
+    if (n > 0) {
+        span.textContent = new Intl.NumberFormat('vi-VN').format(n) + 'đ';
+        const feeType = document.querySelector('[name="FeeType"]')?.value || '(loại phí)';
+        const cycle   = document.querySelector('[name="BillingCycle"]')?.value || '';
+        const cycleVi = cycle === 'Monthly' ? 'tháng' : cycle === 'Semester' ? 'học kỳ' : 'năm';
+        txt.textContent = `"${feeType}" — ${new Intl.NumberFormat('vi-VN').format(n)}đ/${cycleVi}`;
+        sum.style.display = 'block';
+    } else {
+        span.textContent  = '';
+        sum.style.display = 'none';
+    }
+}
+
+// Update summary preview on fee type name or cycle change
+document.querySelector('[name="FeeType"]')?.addEventListener('input', () => {
+    previewFeeAmount(document.querySelector('[name="Amount"]')?.value);
+});
+document.querySelector('[name="BillingCycle"]')?.addEventListener('change', () => {
+    previewFeeAmount(document.querySelector('[name="Amount"]')?.value);
+});
+</script>
+<partial name="_ValidationScriptsPartial" />
+}

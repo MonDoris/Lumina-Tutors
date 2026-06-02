@@ -3,18 +3,27 @@ using LuminaTutors.Application.DTOs.Finance;
 using LuminaTutors.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LuminaTutors.Web.Controllers;
 
 [Authorize(Policy = "FinanceAccess")]
 public sealed class FinanceController : Controller
 {
-    private readonly IFinanceService _financeService;
+    private readonly IFinanceService   _financeService;
+    private readonly IAccountService   _accountService;
+    private readonly IClassService     _classService;
     private readonly ILogger<FinanceController> _logger;
 
-    public FinanceController(IFinanceService financeService, ILogger<FinanceController> logger)
+    public FinanceController(
+        IFinanceService  financeService,
+        IAccountService  accountService,
+        IClassService    classService,
+        ILogger<FinanceController> logger)
     {
         _financeService = financeService;
+        _accountService = accountService;
+        _classService   = classService;
         _logger         = logger;
     }
 
@@ -69,6 +78,44 @@ public sealed class FinanceController : Controller
             return StatusCode(500);
 
         return View(result.Data);
+    }
+
+    // ─── GET /Finance/CreateInvoice ──────────────────────────────────────────
+
+    [HttpGet]
+    [Authorize(Policy = "AdminOnly")]
+    public async Task<IActionResult> CreateInvoice()
+    {
+        await LoadCreateInvoiceSelectListsAsync();
+        return View(new CreateInvoiceRequest(0, 0, DateTime.Now.ToString("yyyy-MM"), 0, 0,
+            DateOnly.FromDateTime(DateTime.Today.AddDays(15))));
+    }
+
+    // ─── POST /Finance/CreateInvoice ─────────────────────────────────────────
+
+    [HttpPost]
+    [Authorize(Policy = "AdminOnly")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateInvoice(CreateInvoiceRequest model)
+    {
+        if (!ModelState.IsValid)
+        {
+            await LoadCreateInvoiceSelectListsAsync();
+            return View(model);
+        }
+
+        var result = await _financeService.CreateInvoiceAsync(
+            GetCurrentSchoolId(), GetCurrentUserId(), model);
+
+        if (!result.IsSuccess)
+        {
+            ModelState.AddModelError(string.Empty, result.Error ?? "Có lỗi khi tạo hóa đơn.");
+            await LoadCreateInvoiceSelectListsAsync();
+            return View(model);
+        }
+
+        TempData["Success"] = $"Đã tạo hóa đơn {result.Data!.InvoiceCode} thành công!";
+        return RedirectToAction(nameof(InvoiceDetails), new { id = result.Data.InvoiceId });
     }
 
     // ─── POST /Finance/GenerateInvoices ───────────────────────────────────────
@@ -137,11 +184,13 @@ public sealed class FinanceController : Controller
     [HttpPost]
     [Authorize(Policy = "AdminOnly")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateFeeConfig(CreateFeeConfigRequest model)
+    public async Task<IActionResult> CreateFeeConfig(CreateFeeConfigRequest model, string? returnUrl = null)
     {
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Dữ liệu cấu hình học phí không hợp lệ.";
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
             return RedirectToAction(nameof(FeeConfigs), new { academicYearId = model.AcademicYearId });
         }
 
@@ -150,9 +199,11 @@ public sealed class FinanceController : Controller
 
         TempData[result.IsSuccess ? "Success" : "Error"] =
             result.IsSuccess
-                ? $"Đã tạo cấu hình học phí {result.Data!.Amount:N0}đ/kỳ cho khối {model.GradeLevelId}."
+                ? $"Đã tạo loại phí \"{model.FeeType}\" — {result.Data!.Amount:N0}đ/{model.BillingCycle}."
                 : result.Error;
 
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
         return RedirectToAction(nameof(FeeConfigs), new { academicYearId = model.AcademicYearId });
     }
 
@@ -171,6 +222,36 @@ public sealed class FinanceController : Controller
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
+
+    private async Task LoadCreateInvoiceSelectListsAsync()
+    {
+        var sid = GetCurrentSchoolId();
+
+        // Students
+        var students = await _accountService.GetStudentSelectListAsync(sid);
+        ViewBag.Students = students.IsSuccess ? students.Data : new List<(int, string, string?)>();
+
+        // Academic years + grade levels
+        var years       = await _classService.GetAcademicYearsAsync(sid);
+        var gradeLevels = await _classService.GetGradeLevelsAsync(sid);
+        ViewBag.AcademicYears = years.IsSuccess ? years.Data
+            : new List<LuminaTutors.Application.DTOs.Class.AcademicYearSelectDto>();
+        ViewBag.GradeLevels   = gradeLevels.IsSuccess ? gradeLevels.Data
+            : new List<LuminaTutors.Application.DTOs.Class.GradeLevelSelectDto>();
+
+        // Fee configs for the active/latest year
+        var activeYear = years.Data?.FirstOrDefault(y => y.IsActive) ?? years.Data?.FirstOrDefault();
+        if (activeYear != null)
+        {
+            var configs = await _financeService.GetFeeConfigsAsync(sid, activeYear.AcademicYearId);
+            ViewBag.FeeConfigs = configs.IsSuccess ? configs.Data
+                : new List<LuminaTutors.Application.DTOs.Finance.TuitionFeeConfigDto>();
+        }
+        else
+        {
+            ViewBag.FeeConfigs = new List<LuminaTutors.Application.DTOs.Finance.TuitionFeeConfigDto>();
+        }
+    }
 
     private int GetCurrentUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");

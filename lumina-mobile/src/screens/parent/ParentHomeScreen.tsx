@@ -84,6 +84,8 @@ export default function ParentHomeScreen() {
         content: <GradesTab {...shared} /> },
       { key: 'att',   label: 'Điểm danh', icon: '📅',
         content: <AttendanceTab {...shared} /> },
+      { key: 'hw',    label: 'Bài tập',   icon: '📖',
+        content: <HomeworkTab activeChild={activeChild} /> },
       { key: 'notif', label: 'Thông báo', icon: '🔔',
         content: <NotifTab notifications={notifications} refreshing={refreshing} onRefresh={onRefresh} /> },
     ]} />
@@ -333,6 +335,92 @@ function AttendanceTab({ children, activeChild, switchChild, semesters, activeSe
           )}
         </>
       ) : <EmptyView icon="📅" text="Chưa có dữ liệu điểm danh" />}
+    </TabPage>
+  );
+}
+
+/* ── Homework Tab (read-only for parent) ────────────────────── */
+function HomeworkTab({ activeChild }: any) {
+  const [courses,    setCourses]    = useState<any[]>([]);
+  const [selected,   setSelected]   = useState<any>(null);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [loading,    setLoading]    = useState(true);
+
+  useEffect(() => {
+    if (!activeChild?.userId) { setLoading(false); return; }
+    parentApi.childCourses(activeChild.userId)
+      .then(r => setCourses(r.data ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [activeChild?.userId]);
+
+  const openCourse = async (c: any) => {
+    setSelected(c); setLoading(true);
+    try {
+      const r = await parentApi.childHomework(activeChild.userId, c.subjectAssignmentId);
+      setAssignments(r.data ?? []);
+    } catch {}
+    finally { setLoading(false); }
+  };
+
+  if (loading) return <LoadingView />;
+  if (!activeChild) return <EmptyView icon="👨‍👩‍👧" text="Chưa có học sinh liên kết" />;
+
+  if (selected) {
+    return (
+      <TabPage>
+        <TouchableOpacity style={{ marginBottom: 12 }} onPress={() => setSelected(null)}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#7c3aed' }}>← Danh sách môn</Text>
+        </TouchableOpacity>
+        <View style={{ backgroundColor: '#7c3aed', borderRadius: 14, padding: 16, marginBottom: 14 }}>
+          <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{selected.subjectName}</Text>
+          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>GV: {selected.teacherName}</Text>
+        </View>
+        {!assignments.length ? <EmptyView text="Chưa có bài tập" />
+          : assignments.map((a: any, i: number) => (
+            <View key={i} style={{ backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b', marginBottom: 4 }}>{a.title}</Text>
+              {a.dueDate && <Text style={{ fontSize: 11, color: '#d97706', fontWeight: '600' }}>📅 Hạn: {new Date(a.dueDate).toLocaleDateString('vi-VN')}</Text>}
+              <View style={{ marginTop: 8 }}>
+                {a.mySubmission ? (
+                  <Badge text={`Đã nộp${a.mySubmission.score != null ? ` · ${a.mySubmission.score}đ` : ''}`} color="#16a34a" bg="#f0fdf4" />
+                ) : (
+                  <Badge text={a.dueDate && new Date(a.dueDate) < new Date() ? 'Quá hạn' : 'Chưa nộp'}
+                    color={a.dueDate && new Date(a.dueDate) < new Date() ? '#dc2626' : '#d97706'}
+                    bg={a.dueDate && new Date(a.dueDate) < new Date() ? '#fef2f2' : '#fffbeb'} />
+                )}
+              </View>
+            </View>
+          ))
+        }
+      </TabPage>
+    );
+  }
+
+  return (
+    <TabPage>
+      <View style={{ backgroundColor: '#7c3aed', borderRadius: 14, padding: 14, marginBottom: 14 }}>
+        <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>Bài tập của {activeChild?.fullName}</Text>
+        <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{activeChild?.className}</Text>
+      </View>
+      <SectionTitle>Các môn học ({courses.length})</SectionTitle>
+      {!courses.length ? <EmptyView icon="📖" text="Chưa có bài tập" />
+        : courses.map((c: any) => (
+          <TouchableOpacity key={c.subjectAssignmentId} onPress={() => openCourse(c)} activeOpacity={0.8}>
+            <Card style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#f5f3ff', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                <Text style={{ fontSize: 20 }}>📖</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b' }}>{c.subjectName}</Text>
+                <Text style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>GV: {c.teacherName}</Text>
+              </View>
+              {c.pendingCount > 0 && <Badge text={`${c.pendingCount} chưa nộp`} color="#d97706" bg="#fffbeb" />}
+              <Text style={{ fontSize: 18, color: '#94a3b8', marginLeft: 8 }}>›</Text>
+            </Card>
+          </TouchableOpacity>
+        ))
+      }
     </TabPage>
   );
 }

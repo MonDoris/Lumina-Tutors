@@ -129,6 +129,62 @@ public sealed class FinanceService : IFinanceService
         return Result<PagedResult<InvoiceDto>>.Success(result);
     }
 
+    // ─── CreateInvoice (thủ công 1 học sinh) ─────────────────────────────────
+
+    public async Task<Result<InvoiceDto>> CreateInvoiceAsync(
+        int schoolId, int createdByUserId, CreateInvoiceRequest request, CancellationToken ct = default)
+    {
+        // Validate config belongs to school
+        var config = await _uow.TuitionFeeConfigs.GetByIdAsync(request.ConfigId, ct);
+        if (config is null || config.SchoolId != schoolId)
+            return Result<InvoiceDto>.Failure("CFG_NOT_FOUND", "Loại phí không tồn tại.");
+
+        // Validate student belongs to school
+        var student = await _uow.Users.GetByIdAsync(request.StudentId, ct);
+        if (student is null || student.SchoolId != schoolId)
+            return Result<InvoiceDto>.Failure("STU_NOT_FOUND", "Học sinh không tồn tại.");
+
+        // Check duplicate invoice for same student + period + fee type
+        var duplicate = await _uow.TuitionInvoices.AnyAsync(
+            i => i.SchoolId == schoolId &&
+                 i.StudentId == request.StudentId &&
+                 i.ConfigId  == request.ConfigId  &&
+                 i.BillingPeriod == request.BillingPeriod, ct);
+
+        if (duplicate)
+            return Result<InvoiceDto>.Failure("DUPLICATE",
+                $"Học sinh đã có hóa đơn cho loại phí '{config.FeeType}' kỳ {request.BillingPeriod}.");
+
+        // Generate invoice code
+        var count = await _uow.TuitionInvoices.CountAsync(i => i.SchoolId == schoolId, ct);
+        var code  = $"INV{schoolId:D3}-{DateTime.UtcNow:yyyyMM}-{count + 1:D4}";
+
+        var invoice = new TuitionInvoice
+        {
+            SchoolId       = schoolId,
+            StudentId      = request.StudentId,
+            ConfigId       = request.ConfigId,
+            InvoiceCode    = code,
+            BillingPeriod  = request.BillingPeriod.Trim(),
+            Amount         = request.Amount,
+            Discount       = request.Discount,
+            DueDate        = request.DueDate,
+            Status         = InvoiceStatus.Pending,
+            Notes          = request.Notes?.Trim(),
+            CreatedByUserId= createdByUserId,
+        };
+
+        await _uow.TuitionInvoices.AddAsync(invoice, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Manual invoice {Code} created for student {StudentId} by user {UserId}",
+            code, request.StudentId, createdByUserId);
+
+        var created = await GetInvoiceAsync(invoice.Id, ct);
+        return created;
+    }
+
     public async Task<Result<int>> GenerateInvoicesAsync(
         int schoolId, int createdByUserId, GenerateInvoicesRequest request, CancellationToken ct = default)
     {
@@ -238,13 +294,15 @@ public sealed class FinanceService : IFinanceService
                 "Payment recorded: Invoice={InvoiceId}, Amount={Amount}, By={UserId}",
                 request.InvoiceId, request.AmountPaid, processedByUserId);
 
-            var summary = new PaymentSummaryDto(
-                PaymentId:       payment.Id,
-                AmountPaid:      payment.AmountPaid,
-                PaymentMethod:   payment.PaymentMethod.ToString(),
-                PaymentStatus:   payment.PaymentStatus.ToString(),
-                TransactionCode: payment.TransactionCode,
-                PaymentDate:     payment.PaymentDate);
+            var summary = new PaymentSummaryDto
+            {
+                PaymentId       = payment.Id,
+                AmountPaid      = payment.AmountPaid,
+                PaymentMethod   = payment.PaymentMethod.ToString(),
+                PaymentStatus   = payment.PaymentStatus.ToString(),
+                TransactionCode = payment.TransactionCode,
+                PaymentDate     = payment.PaymentDate
+            };
 
             return Result<PaymentSummaryDto>.Success(summary);
         }

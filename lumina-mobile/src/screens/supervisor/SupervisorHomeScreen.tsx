@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput,
 } from 'react-native';
 import AppShell from '../../components/AppShell';
 import BottomSheet, { FieldLabel, FieldInput, FieldSelect, ErrorMsg } from '../../components/BottomSheet';
@@ -50,6 +50,8 @@ export default function SupervisorHomeScreen() {
         content: <ViolationsTab violations={violations} refreshing={refreshing} onRefresh={onRefresh} onReload={loadAll} /> },
       { key: 'att',   label: 'Hôm nay',   icon: '📋',
         content: <TodayTab report={report} violations={violations} /> },
+      { key: 'gate',  label: 'Cổng',      icon: '🚪',
+        content: <GateCheckTab onReload={loadAll} /> },
       { key: 'notif', label: 'Thông báo', icon: '🔔',
         content: <NotifTab notifications={notifications} refreshing={refreshing} onRefresh={onRefresh} /> },
     ]} />
@@ -318,6 +320,107 @@ function TodayTab({ report, violations }: any) {
   );
 }
 
+/* ── Gate Check Tab ─────────────────────────────────────────── */
+function GateCheckTab({ onReload }: any) {
+  const [students, setStudents] = useState<any[]>([]);
+  const [studentId, setStudentId] = useState('');
+  const [checkType, setCheckType] = useState('In');
+  const [isLate,    setIsLate]    = useState(false);
+  const [note,      setNote]      = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error,     setError]     = useState('');
+
+  useEffect(() => {
+    supervisorApi.students().then(r => setStudents(r.data ?? [])).catch(() => {});
+  }, []);
+
+  const submit = async () => {
+    if (!studentId) { setError('Vui lòng chọn học sinh'); return; }
+    setSubmitting(true); setError('');
+    try {
+      await supervisorApi.gateCheck({
+        studentId: parseInt(studentId),
+        checkType,
+        isLate,
+        note: note || null,
+      });
+      Alert.alert('✅ Đã ghi nhận', `Đã ghi nhận ${checkType === 'In' ? 'vào' : 'ra'} trường${isLate ? ' (muộn)' : ''}`);
+      setStudentId(''); setNote(''); setIsLate(false);
+      onReload?.();
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? 'Có lỗi xảy ra');
+    }
+    finally { setSubmitting(false); }
+  };
+
+  return (
+    <TabPage>
+      <View style={sv.gateCard}>
+        <Text style={sv.gateTitle}>🚪 Kiểm tra cổng trường</Text>
+        <Text style={sv.gateSub}>{new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+      </View>
+
+      <SectionTitle>Loại kiểm tra</SectionTitle>
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+        {[{ v: 'In', l: '🏫 Vào trường' }, { v: 'Out', l: '🏠 Ra về' }].map(opt => (
+          <TouchableOpacity key={opt.v}
+            style={[sv.gateTypeBtn, checkType === opt.v && sv.gateTypeBtnActive]}
+            onPress={() => setCheckType(opt.v)}>
+            <Text style={[sv.gateTypeText, checkType === opt.v && { color: '#fff' }]}>{opt.l}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <SectionTitle>Học sinh</SectionTitle>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+        {students.slice(0, 40).map((s: any) => (
+          <TouchableOpacity key={s.userId}
+            style={[sv.stuChip, studentId === String(s.userId) && sv.stuChipActive]}
+            onPress={() => setStudentId(String(s.userId))}>
+            <Text style={[sv.stuChipText, studentId === String(s.userId) && { color: '#fff' }]}>
+              {s.fullName}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <TouchableOpacity
+          style={[sv.lateToggle, isLate && sv.lateToggleOn]}
+          onPress={() => setIsLate(!isLate)}>
+          <Text style={{ fontSize: 16 }}>{isLate ? '🔴' : '🟢'}</Text>
+          <Text style={[{ fontSize: 13, fontWeight: '700', color: '#64748b' }, isLate && { color: '#dc2626' }]}>
+            {isLate ? 'Đến muộn' : 'Đúng giờ'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <SectionTitle>Ghi chú (tùy chọn)</SectionTitle>
+      <TextInput
+        style={sv.gateNote}
+        value={note}
+        onChangeText={setNote}
+        placeholder="Ghi chú..."
+        placeholderTextColor="#94a3b8"
+        multiline
+        numberOfLines={2}
+      />
+
+      {error ? <Text style={{ color: '#dc2626', fontSize: 13, marginBottom: 8 }}>⚠ {error}</Text> : null}
+
+      <TouchableOpacity
+        style={[sv.gateSubmitBtn, submitting && { opacity: 0.6 }]}
+        onPress={submit}
+        disabled={submitting}
+      >
+        <Text style={sv.gateSubmitText}>
+          {submitting ? 'Đang lưu...' : `✅ Xác nhận ${checkType === 'In' ? 'Vào' : 'Ra'} trường`}
+        </Text>
+      </TouchableOpacity>
+    </TabPage>
+  );
+}
+
 /* ── Notifications ──────────────────────────────────────────── */
 function NotifTab({ notifications, refreshing, onRefresh }: any) {
   const unread = notifications.filter((n: any) => !n.isRead).length;
@@ -367,9 +470,17 @@ function ViolationCard({ v, onResolve }: { v: any; onResolve?: () => void }) {
         </View>
       )}
       {!resolved && onResolve && (
-        <TouchableOpacity style={sv.resolveBtn} onPress={onResolve}>
-          <Text style={sv.resolveBtnText}>✅ Xử lý vi phạm này</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+          <TouchableOpacity style={[sv.resolveBtn, { flex: 1 }]} onPress={onResolve}>
+            <Text style={sv.resolveBtnText}>✅ Xử lý</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[sv.resolveBtn, { flex: 1, borderColor: '#fbbf24', backgroundColor: '#fffbeb' }]}
+            onPress={() => Alert.alert('Chuyển cấp', 'Tính năng chuyển vi phạm lên ban giám hiệu đang được phát triển.')}
+          >
+            <Text style={[sv.resolveBtnText, { color: '#d97706' }]}>⬆ Chuyển cấp</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -415,6 +526,21 @@ const sv = StyleSheet.create({
   addBtn:     { backgroundColor: '#dc2626', borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginBottom: 14 },
   addBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
 
-  resolveBtn:     { marginTop: 10, backgroundColor: '#f0fdf4', borderRadius: 10, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: '#86efac' },
+  resolveBtn:     { backgroundColor: '#f0fdf4', borderRadius: 10, paddingVertical: 9, alignItems: 'center', borderWidth: 1, borderColor: '#86efac' },
   resolveBtnText: { fontSize: 13, fontWeight: '700', color: '#16a34a' },
+
+  gateCard:        { backgroundColor: '#6d28d9', borderRadius: 16, padding: 18, marginBottom: 14 },
+  gateTitle:       { fontSize: 18, fontWeight: '800', color: '#fff' },
+  gateSub:         { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 4 },
+  gateTypeBtn:     { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#f1f5f9', alignItems: 'center' },
+  gateTypeBtnActive:{ backgroundColor: '#6d28d9' },
+  gateTypeText:    { fontSize: 14, fontWeight: '700', color: '#64748b' },
+  stuChip:         { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9', marginRight: 8 },
+  stuChipActive:   { backgroundColor: '#6d28d9' },
+  stuChipText:     { fontSize: 12, fontWeight: '600', color: '#64748b' },
+  lateToggle:      { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
+  lateToggleOn:    { backgroundColor: '#fef2f2', borderColor: '#fca5a5' },
+  gateNote:        { borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#1e293b', marginBottom: 14, minHeight: 60, textAlignVertical: 'top' },
+  gateSubmitBtn:   { backgroundColor: '#6d28d9', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  gateSubmitText:  { fontSize: 15, fontWeight: '800', color: '#fff' },
 });

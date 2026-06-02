@@ -501,9 +501,20 @@ public sealed class AccountService : IAccountService
             include: q => q.Include(sp => sp.User),
             ct: ct);
 
+        // Lấy enrollment đang active của từng học sinh để có tên lớp
+        var userIds = profiles.Select(sp => sp.UserId).ToList();
+        var enrollments = await _uow.ClassEnrollments.FindAsync(
+            e => userIds.Contains(e.StudentId) && e.Status == Domain.Enums.EnrollmentStatus.Active,
+            include: q => q.Include(e => e.Class),
+            ct: ct);
+
+        var classMap = enrollments
+            .GroupBy(e => e.StudentId)
+            .ToDictionary(g => g.Key, g => g.First().Class?.ClassName);
+
         var list = profiles
             .OrderBy(sp => sp.User.FullName)
-            .Select(sp => (sp.UserId, sp.User.FullName, (string?)null))
+            .Select(sp => (sp.UserId, sp.User.FullName, classMap.GetValueOrDefault(sp.UserId)))
             .ToList() as IReadOnlyList<(int, string, string?)>;
 
         return Result<IReadOnlyList<(int, string, string?)>>.Success(list);

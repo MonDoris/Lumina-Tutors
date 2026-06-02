@@ -2,6 +2,7 @@ using System.Security.Claims;
 using LuminaTutors.Application.DTOs.Attendance;
 using LuminaTutors.Application.DTOs.Discipline;
 using LuminaTutors.Application.DTOs.Grading;
+using LuminaTutors.Application.DTOs.AI;
 using LuminaTutors.Application.Interfaces.Services;
 using LuminaTutors.Domain.Enums;
 using LuminaTutors.Domain.Interfaces.Repositories;
@@ -28,6 +29,7 @@ public sealed class MobileApiController : ControllerBase
     private readonly IDisciplineService   _discipline;
     private readonly IStudentService      _studentService;
     private readonly IHomeworkService     _homework;
+    private readonly IAiTutorService      _aiTutor;
     private readonly IUnitOfWork          _uow;
 
     public MobileApiController(
@@ -38,6 +40,7 @@ public sealed class MobileApiController : ControllerBase
         IDisciplineService   discipline,
         IStudentService      studentService,
         IHomeworkService     homework,
+        IAiTutorService      aiTutor,
         IUnitOfWork          uow)
     {
         _grading        = grading;
@@ -47,6 +50,7 @@ public sealed class MobileApiController : ControllerBase
         _discipline     = discipline;
         _studentService = studentService;
         _homework       = homework;
+        _aiTutor        = aiTutor;
         _uow            = uow;
     }
 
@@ -67,6 +71,63 @@ public sealed class MobileApiController : ControllerBase
     public async Task<IActionResult> StudentAttendance([FromQuery] int semesterId)
     {
         var result = await _attendance.GetStudentSummaryAsync(UserId(), semesterId);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/student/scan-qr — quét QR điểm danh</summary>
+    [HttpPost("student/scan-qr")]
+    public async Task<IActionResult> ScanQR([FromBody] ScanQRRequest model)
+    {
+        var req    = model with { StudentId = UserId() };
+        var result = await _attendance.ScanQRAsync(req);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/student/courses — các môn học (để xem bài tập)</summary>
+    [HttpGet("student/courses")]
+    public async Task<IActionResult> StudentCourses()
+    {
+        var result = await _homework.GetStudentCoursesAsync(SchoolId(), UserId());
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/student/homework/{saId} — bài tập theo môn</summary>
+    [HttpGet("student/homework/{subjectAssignmentId:int}")]
+    public async Task<IActionResult> StudentHomework(int subjectAssignmentId)
+    {
+        var result = await _homework.GetStudentAssignmentsAsync(SchoolId(), UserId(), subjectAssignmentId);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/student/ai-tutor/sessions</summary>
+    [HttpGet("student/ai-tutor/sessions")]
+    public async Task<IActionResult> AiTutorSessions()
+    {
+        var result = await _aiTutor.GetStudentSessionsAsync(SchoolId(), UserId());
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/student/ai-tutor/sessions — tạo phiên mới</summary>
+    [HttpPost("student/ai-tutor/sessions")]
+    public async Task<IActionResult> CreateAiSession([FromBody] CreateAiSessionDto dto)
+    {
+        var result = await _aiTutor.CreateSessionAsync(SchoolId(), UserId(), dto.Title ?? "Câu hỏi mới");
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/student/ai-tutor/{sessionId}/messages</summary>
+    [HttpGet("student/ai-tutor/{sessionId:int}/messages")]
+    public async Task<IActionResult> AiTutorMessages(int sessionId)
+    {
+        var result = await _aiTutor.GetMessagesAsync(sessionId);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/student/ai-tutor/{sessionId}/messages — gửi tin nhắn</summary>
+    [HttpPost("student/ai-tutor/{sessionId:int}/messages")]
+    public async Task<IActionResult> SendAiMessage(int sessionId, [FromBody] SendMessageRequest dto)
+    {
+        var result = await _aiTutor.SendMessageAsync(SchoolId(), sessionId, UserId(), dto.Content);
         return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
 
@@ -121,6 +182,30 @@ public sealed class MobileApiController : ControllerBase
     {
         var result = await _attendance.UpdateAttendanceAsync(sessionId, UserId(), model);
         return result.IsSuccess ? Ok(new { success = true }) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/teacher/sessions/{sessionId} — lấy session + QR token</summary>
+    [HttpGet("teacher/sessions/{sessionId:int}")]
+    public async Task<IActionResult> GetAttendanceSession(int sessionId)
+    {
+        var result = await _attendance.GetSessionAsync(sessionId);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/teacher/sessions/{sessionId}/notify — thông báo phụ huynh HS vắng</summary>
+    [HttpPost("teacher/sessions/{sessionId:int}/notify")]
+    public async Task<IActionResult> NotifyAbsent(int sessionId)
+    {
+        var result = await _attendance.NotifyAbsentParentsAsync(sessionId);
+        return result.IsSuccess ? Ok(new { success = true }) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/teacher/homework — danh sách bài tập giáo viên đã tạo</summary>
+    [HttpGet("teacher/homework")]
+    public async Task<IActionResult> TeacherHomework()
+    {
+        var result = await _homework.GetTeacherAssignmentsAsync(SchoolId(), UserId());
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
 
     /// <summary>GET /api/mobile/teacher/schedules?subjectAssignmentId=1 — lịch học của môn</summary>
@@ -198,6 +283,22 @@ public sealed class MobileApiController : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
 
+    /// <summary>GET /api/mobile/parent/child-homework?studentId=5&saId=1 — bài tập của con</summary>
+    [HttpGet("parent/child-homework")]
+    public async Task<IActionResult> ChildHomework([FromQuery] int studentId, [FromQuery] int subjectAssignmentId)
+    {
+        var result = await _homework.GetStudentAssignmentsAsync(SchoolId(), studentId, subjectAssignmentId);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/parent/child-courses?studentId=5 — các môn của con</summary>
+    [HttpGet("parent/child-courses")]
+    public async Task<IActionResult> ChildCourses([FromQuery] int studentId)
+    {
+        var result = await _homework.GetStudentCoursesAsync(SchoolId(), studentId);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
     /// <summary>GET /api/mobile/parent/child-grades?studentId=5&semesterId=1</summary>
     [HttpGet("parent/child-grades")]
     public async Task<IActionResult> ChildGrades([FromQuery] int studentId, [FromQuery] int semesterId)
@@ -253,6 +354,23 @@ public sealed class MobileApiController : ControllerBase
     public async Task<IActionResult> ResolveViolation(int id, [FromBody] ResolveViolationDto model)
     {
         var result = await _discipline.ResolveRecordAsync(id, model.ActionTaken, UserId());
+        return result.IsSuccess ? Ok(new { success = true }) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/supervisor/violations/{id}/escalate — chuyển lên cấp trên</summary>
+    [HttpPost("supervisor/violations/{id:int}/escalate")]
+    public async Task<IActionResult> EscalateViolation(int id, [FromBody] EscalateDto dto)
+    {
+        var result = await _discipline.EscalateRecordAsync(id, dto.EscalateToUserId);
+        return result.IsSuccess ? Ok(new { success = true }) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/supervisor/gate-check — ghi nhận kiểm tra cổng</summary>
+    [HttpPost("supervisor/gate-check")]
+    public async Task<IActionResult> GateCheck([FromBody] GateCheckDto dto)
+    {
+        var result = await _discipline.RecordGateCheckAsync(
+            SchoolId(), dto.StudentId, dto.CheckType, UserId(), dto.IsLate, dto.Note);
         return result.IsSuccess ? Ok(new { success = true }) : BadRequest(new { message = result.Error });
     }
 
@@ -313,3 +431,6 @@ public sealed class MobileApiController : ControllerBase
 }
 
 public record ResolveViolationDto(string ActionTaken);
+public record EscalateDto(int EscalateToUserId);
+public record GateCheckDto(int StudentId, string CheckType, bool IsLate, string? Note);
+public record CreateAiSessionDto(string? Title);

@@ -13,6 +13,7 @@ public interface IFinanceService
     // Invoices
     Task<Result<InvoiceDto>>                         GetInvoiceAsync(int invoiceId, CancellationToken ct = default);
     Task<Result<PagedResult<InvoiceDto>>>            GetInvoicesAsync(int schoolId, string? status, int? studentId, string? billingPeriod, int page, int pageSize, CancellationToken ct = default);
+    Task<Result<InvoiceDto>>                         CreateInvoiceAsync(int schoolId, int createdByUserId, CreateInvoiceRequest request, CancellationToken ct = default);
     Task<Result<int>>                                GenerateInvoicesAsync(int schoolId, int createdByUserId, GenerateInvoicesRequest request, CancellationToken ct = default);
     Task<Result<IReadOnlyList<StudentDebtDto>>>      GetOutstandingDebtsAsync(int schoolId, CancellationToken ct = default);
 

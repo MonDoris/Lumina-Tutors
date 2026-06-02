@@ -477,6 +477,30 @@ if (sidebarToggle && ltSidebar) {
     });
 }
 
+// ── Giữ vị trí cuộn sidebar qua các lần chuyển trang ────────
+(function () {
+    const KEY = 'lt_sidebar_scroll';
+    const nav = document.querySelector('.lt-nav');
+    if (!nav) return;
+
+    // Khôi phục vị trí cuộn ngay khi DOM sẵn sàng
+    const saved = sessionStorage.getItem(KEY);
+    if (saved) nav.scrollTop = parseInt(saved, 10);
+
+    // Lưu vị trí trước khi rời trang (cả click link lẫn submit form)
+    function saveScroll() { sessionStorage.setItem(KEY, nav.scrollTop); }
+
+    document.addEventListener('click', e => {
+        const a = e.target.closest('a[href]');
+        if (!a) return;
+        const href = a.getAttribute('href') || '';
+        if (href.startsWith('#') || href.startsWith('javascript') || a.target === '_blank') return;
+        saveScroll();
+    });
+
+    document.addEventListener('submit', () => saveScroll());
+})();
+
 // Auto-dismiss alerts after 5 s
 document.querySelectorAll('.lt-alert').forEach(el => {
     setTimeout(() => {

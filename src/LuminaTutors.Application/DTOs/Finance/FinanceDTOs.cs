@@ -5,16 +5,17 @@ namespace LuminaTutors.Application.DTOs.Finance;
 
 // ─── Fee Config ───────────────────────────────────────────────────────────────
 
-public record TuitionFeeConfigDto(
-    int     ConfigId,
-    string  FeeType,
-    string? GradeName,
-    decimal Amount,
-    byte    DueDayOfMonth,
-    string  BillingCycle,
-    string? Description,
-    bool    IsActive
-);
+public class TuitionFeeConfigDto
+{
+    public int     ConfigId      { get; init; }
+    public string  FeeType       { get; init; } = "";
+    public string? GradeName     { get; init; }
+    public decimal Amount        { get; init; }
+    public byte    DueDayOfMonth { get; init; }
+    public string  BillingCycle  { get; init; } = "";
+    public string? Description   { get; init; }
+    public bool    IsActive      { get; init; }
+}
 
 public record CreateFeeConfigRequest(
     [Required(ErrorMessage = "Vui lòng nhập loại phí."), MaxLength(100, ErrorMessage = "Loại phí tối đa 100 ký tự.")] string FeeType,
@@ -28,33 +29,58 @@ public record CreateFeeConfigRequest(
 
 // ─── Invoice ──────────────────────────────────────────────────────────────────
 
-public record InvoiceDto(
-    int      InvoiceId,
-    string   InvoiceCode,
-    int      StudentId,
-    string   StudentName,
-    string   StudentCode,
-    string   ClassName,
-    string   FeeType,
-    string   BillingPeriod,
-    decimal  Amount,
-    decimal  Discount,
-    decimal  FinalAmount,
-    DateOnly DueDate,
-    string   Status,
-    bool     IsOverdue,
-    string?  QRCodeData,
-    DateTime CreatedAt,
-    List<PaymentSummaryDto> Payments
-);
+public class InvoiceDto
+{
+    public int      InvoiceId     { get; init; }
+    public string   InvoiceCode   { get; init; } = "";
+    public int      StudentId     { get; init; }
+    public string   StudentName   { get; init; } = "";
+    public string   StudentCode   { get; init; } = "";
+    public string   ClassName     { get; init; } = "";
+    public string   FeeType       { get; init; } = "";
+    public string   BillingPeriod { get; init; } = "";
+    public decimal  Amount        { get; init; }
+    public decimal  Discount      { get; init; }
+    public decimal  FinalAmount   { get; init; }
+    public DateOnly DueDate       { get; init; }
+    public string   Status        { get; init; } = "";
+    public bool     IsOverdue     { get; init; }
+    public string?  QRCodeData    { get; init; }
+    public DateTime CreatedAt     { get; init; }
+    public List<PaymentSummaryDto> Payments { get; init; } = new();
+}
 
-public record PaymentSummaryDto(
-    int      PaymentId,
-    decimal  AmountPaid,
-    string   PaymentMethod,
-    string   PaymentStatus,
-    string?  TransactionCode,
-    DateTime PaymentDate
+public class PaymentSummaryDto
+{
+    public int      PaymentId       { get; init; }
+    public decimal  AmountPaid      { get; init; }
+    public string   PaymentMethod   { get; init; } = "";
+    public string   PaymentStatus   { get; init; } = "";
+    public string?  TransactionCode { get; init; }
+    public DateTime PaymentDate     { get; init; }
+}
+
+public record CreateInvoiceRequest(
+    [Required(ErrorMessage = "Vui lòng chọn học sinh.")]
+    int      StudentId,
+
+    [Required(ErrorMessage = "Vui lòng chọn loại phí.")]
+    int      ConfigId,
+
+    [Required(ErrorMessage = "Vui lòng nhập kỳ thu."), MaxLength(20)]
+    string   BillingPeriod,
+
+    [Required(ErrorMessage = "Vui lòng nhập số tiền."),
+     Range(1000, 100_000_000, ErrorMessage = "Số tiền phải từ 1.000 đến 100.000.000.")]
+    decimal  Amount,
+
+    [Range(0, 100_000_000, ErrorMessage = "Giảm giá không hợp lệ.")]
+    decimal  Discount,
+
+    [Required(ErrorMessage = "Vui lòng nhập hạn thanh toán.")]
+    DateOnly DueDate,
+
+    string?  Notes = null
 );
 
 public record GenerateInvoicesRequest(
@@ -110,12 +136,13 @@ public record StudentDebtDto(
     List<InvoiceSummaryDto> UnpaidInvoices
 );
 
-public record InvoiceSummaryDto(
-    int      InvoiceId,
-    string   InvoiceCode,
-    string   FeeType,
-    string   BillingPeriod,
-    decimal  FinalAmount,
-    DateOnly DueDate,
-    string   Status
-);
+public class InvoiceSummaryDto
+{
+    public int      InvoiceId     { get; init; }
+    public string   InvoiceCode   { get; init; } = "";
+    public string   FeeType       { get; init; } = "";
+    public string   BillingPeriod { get; init; } = "";
+    public decimal  FinalAmount   { get; init; }
+    public DateOnly DueDate       { get; init; }
+    public string   Status        { get; init; } = "";
+}

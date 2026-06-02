@@ -11,8 +11,14 @@
         <p class="lt-page-subtitle">Quản lý và theo dõi tình trạng thu học phí</p>
     </div>
     <div class="lt-page-header__actions">
+        @if (User.IsInRole("ADMIN"))
+        {
+            <a asp-action="CreateInvoice" class="lt-btn lt-btn--primary">
+                <i class="bi bi-file-earmark-plus-fill"></i> Tạo hóa đơn
+            </a>
+        }
         <button class="lt-btn lt-btn--outline" data-bs-toggle="modal" data-bs-target="#generateModal">
-            <i class="bi bi-file-earmark-plus"></i> Phát sinh hóa đơn
+            <i class="bi bi-lightning-charge-fill"></i> Phát sinh hàng loạt
         </button>
         <a asp-action="OutstandingDebts" class="lt-btn lt-btn--gold">
             <i class="bi bi-exclamation-triangle"></i> Công nợ

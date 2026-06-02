@@ -9,7 +9,6 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Tự động đính JWT vào mỗi request
 api.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem('jwt_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -20,14 +19,21 @@ api.interceptors.request.use(async (config) => {
 export const authApi = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
-
   me: () => api.get('/auth/me'),
 };
 
 // ── Student ───────────────────────────────────────────────────────────────────
 export const studentApi = {
-  grades:     (semesterId: number) => api.get(`/mobile/student/grades?semesterId=${semesterId}`),
-  attendance: (semesterId: number) => api.get(`/mobile/student/attendance?semesterId=${semesterId}`),
+  grades:         (semesterId: number) => api.get(`/mobile/student/grades?semesterId=${semesterId}`),
+  attendance:     (semesterId: number) => api.get(`/mobile/student/attendance?semesterId=${semesterId}`),
+  scanQR:         (qrToken: string)    => api.post('/mobile/student/scan-qr', { qrToken }),
+  courses:        ()                   => api.get('/mobile/student/courses'),
+  homework:       (saId: number)       => api.get(`/mobile/student/homework/${saId}`),
+  aiSessions:     ()                   => api.get('/mobile/student/ai-tutor/sessions'),
+  createSession:  (title: string)      => api.post('/mobile/student/ai-tutor/sessions', { title }),
+  getMessages:    (sid: number)        => api.get(`/mobile/student/ai-tutor/${sid}/messages`),
+  sendMessage:    (sid: number, content: string) =>
+    api.post(`/mobile/student/ai-tutor/${sid}/messages`, { content }),
 };
 
 // ── Teacher ───────────────────────────────────────────────────────────────────
@@ -42,9 +48,12 @@ export const teacherApi = {
   calculateAverages:  (saId: number)            => api.post(`/mobile/teacher/calculate-averages/${saId}`, {}),
   attendanceSessions: (classId: number, date?: string) =>
     api.get(`/mobile/teacher/attendance-sessions?classId=${classId}${date ? `&date=${date}` : ''}`),
+  getSession:         (sessionId: number)       => api.get(`/mobile/teacher/sessions/${sessionId}`),
   createSession:      (body: object)            => api.post('/mobile/teacher/attendance-sessions', body),
   updateAttendance:   (sessionId: number, body: object) =>
     api.patch(`/mobile/teacher/attendance-sessions/${sessionId}/record`, body),
+  notifyAbsent:       (sessionId: number)       => api.post(`/mobile/teacher/sessions/${sessionId}/notify`, {}),
+  homework:           ()                        => api.get('/mobile/teacher/homework'),
 };
 
 // ── Parent ────────────────────────────────────────────────────────────────────
@@ -54,23 +63,30 @@ export const parentApi = {
     api.get(`/mobile/parent/child-grades?studentId=${studentId}&semesterId=${semesterId}`),
   childAttendance: (studentId: number, semesterId: number) =>
     api.get(`/mobile/parent/child-attendance?studentId=${studentId}&semesterId=${semesterId}`),
+  childCourses:    (studentId: number)                     =>
+    api.get(`/mobile/parent/child-courses?studentId=${studentId}`),
+  childHomework:   (studentId: number, saId: number)       =>
+    api.get(`/mobile/parent/child-homework?studentId=${studentId}&subjectAssignmentId=${saId}`),
 };
 
 // ── Supervisor ────────────────────────────────────────────────────────────────
 export const supervisorApi = {
-  discipline:      (studentId?: number) =>
+  discipline:       (studentId?: number) =>
     api.get(`/mobile/supervisor/discipline${studentId ? `?studentId=${studentId}` : ''}`),
-  dailyReport:     (date?: string) =>
+  dailyReport:      (date?: string) =>
     api.get(`/mobile/supervisor/daily-report${date ? `?date=${date}` : ''}`),
-  students:        ()               => api.get('/mobile/supervisor/students'),
-  createViolation: (body: object)   => api.post('/mobile/supervisor/violations', body),
-  resolveViolation:(id: number, actionTaken: string) =>
+  students:         ()                             => api.get('/mobile/supervisor/students'),
+  createViolation:  (body: object)                 => api.post('/mobile/supervisor/violations', body),
+  resolveViolation: (id: number, actionTaken: string) =>
     api.post(`/mobile/supervisor/violations/${id}/resolve`, { actionTaken }),
+  escalateViolation:(id: number, escalateToUserId: number) =>
+    api.post(`/mobile/supervisor/violations/${id}/escalate`, { escalateToUserId }),
+  gateCheck:        (body: object)                 => api.post('/mobile/supervisor/gate-check', body),
 };
 
 // ── Common ────────────────────────────────────────────────────────────────────
 export const commonApi = {
-  notifications: (page = 1)    => api.get(`/mobile/notifications?page=${page}`),
-  semesters:     ()            => api.get('/mobile/semesters'),
-  academicYears: ()            => api.get('/mobile/academic-years'),
+  notifications: (page = 1) => api.get(`/mobile/notifications?page=${page}`),
+  semesters:     ()         => api.get('/mobile/semesters'),
+  academicYears: ()         => api.get('/mobile/academic-years'),
 };

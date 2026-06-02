@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, TextInput,
+  Alert, TextInput, Modal,
 } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import AppShell from '../../components/AppShell';
 import BottomSheet, {
   FieldLabel, FieldInput, FieldSelect, ErrorMsg,
@@ -21,22 +22,25 @@ export default function TeacherHomeScreen() {
   const [academicYears,    setAcademicYears]    = useState<any[]>([]);
   const [activeYear,       setActiveYear]       = useState<any>(null);
   const [notifications,    setNotifications]    = useState<any[]>([]);
+  const [homeworkList,     setHomeworkList]     = useState<any[]>([]);
   const [loading,          setLoading]          = useState(true);
   const [refreshing,       setRefreshing]       = useState(false);
 
   const loadAll = useCallback(async () => {
     try {
-      const [yearRes, notifRes, saRes, catRes] = await Promise.all([
+      const [yearRes, notifRes, saRes, catRes, hwRes] = await Promise.all([
         commonApi.academicYears(),
         commonApi.notifications(),
         teacherApi.subjectAssignments(),
         teacherApi.gradeCategories(),
+        teacherApi.homework(),
       ]);
       const years = yearRes.data ?? [];
       setAcademicYears(years);
       setNotifications(notifRes.data?.items ?? notifRes.data ?? []);
       setSubjectAssignments(saRes.data ?? []);
       setGradeCategories(catRes.data ?? []);
+      setHomeworkList(hwRes.data ?? []);
 
       const year = years.find((y: any) => y.isActive) ?? years[0];
       if (year) {
@@ -64,6 +68,8 @@ export default function TeacherHomeScreen() {
                              setActiveYear={setActiveYear} setClasses={setClasses} /> },
       { key: 'grades',  label: 'Sổ điểm',  icon: '📝',
         content: <GradeBookTab subjectAssignments={subjectAssignments} gradeCategories={gradeCategories} /> },
+      { key: 'hw',      label: 'Bài tập',   icon: '📖',
+        content: <HomeworkTab homeworkList={homeworkList} /> },
       { key: 'notif',   label: 'Thông báo', icon: '🔔',
         content: <NotifTab notifications={notifications} refreshing={refreshing} onRefresh={onRefresh} /> },
     ]} />
@@ -97,6 +103,9 @@ function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClas
   const [report,     setReport]     = useState<any>(null);
   const [schedules,  setSchedules]  = useState<any[]>([]);
   const [loading,    setLoading]    = useState(false);
+
+  // QR modal
+  const [qrSessionId, setQrSessionId] = useState<number | null>(null);
 
   // Create session modal
   const [showCreate, setShowCreate] = useState(false);
@@ -149,9 +158,10 @@ function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClas
         topicNote: csTopic || null,
       });
       if (res.data) {
-        Alert.alert('✅ Thành công', 'Đã tạo phiên điểm danh. Mã QR đã sẵn sàng.');
         setShowCreate(false); setCsSchedule(''); setCsTopic('');
         if (selected) openClass(selected);
+        // Mở QR ngay sau khi tạo
+        if (res.data.sessionId) setQrSessionId(res.data.sessionId);
       }
     } catch (e: any) {
       setCsError(e?.response?.data?.message ?? 'Có lỗi xảy ra');
@@ -215,11 +225,18 @@ function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClas
             )}
 
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-              <TouchableOpacity style={[t.actionBtn, { backgroundColor: '#16a34a' }]}
+              <TouchableOpacity style={[t.actionBtn, { backgroundColor: '#16a34a', flex: 1 }]}
                 onPress={() => { setSchedules([]); setShowCreate(true); }}>
                 <Text style={t.actionBtnText}>＋ Tạo điểm danh</Text>
               </TouchableOpacity>
+              {report?.sessionId && (
+                <TouchableOpacity style={[t.actionBtn, { backgroundColor: '#2563eb', flex: 1 }]}
+                  onPress={() => setQrSessionId(report.sessionId)}>
+                  <Text style={t.actionBtnText}>📷 Xem mã QR</Text>
+                </TouchableOpacity>
+              )}
             </View>
+            {qrSessionId && <QRModal sessionId={qrSessionId} onClose={() => setQrSessionId(null)} />}
 
             <SectionTitle>Điểm danh hôm nay</SectionTitle>
             {!report?.records?.length
@@ -547,6 +564,116 @@ function ClassCard({ cls, showArrow }: { cls: any; showArrow?: boolean }) {
   );
 }
 
+/* ── QR Code Modal ─────────────────────────────────────────── */
+function QRModal({ sessionId, onClose }: { sessionId: number; onClose: () => void }) {
+  const [session,  setSession]  = useState<any>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [notified, setNotified] = useState(false);
+
+  useEffect(() => {
+    teacherApi.getSession(sessionId)
+      .then(r => setSession(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [sessionId]);
+
+  const notify = async () => {
+    try {
+      await teacherApi.notifyAbsent(sessionId);
+      Alert.alert('✅ Đã gửi', 'Thông báo vắng học đã được gửi tới phụ huynh');
+      setNotified(true);
+    } catch (e: any) {
+      Alert.alert('Lỗi', e?.response?.data?.message ?? 'Có lỗi xảy ra');
+    }
+  };
+
+  return (
+    <Modal visible animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#0b1628', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <TouchableOpacity style={{ position: 'absolute', top: 50, right: 20 }} onPress={onClose}>
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>✕ Đóng</Text>
+        </TouchableOpacity>
+        <Text style={{ color: '#c9a84c', fontSize: 13, fontWeight: '800', letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase' }}>
+          Mã QR Điểm Danh
+        </Text>
+        {loading ? <LoadingView /> : session ? (
+          <>
+            <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 20, marginBottom: 20 }}>
+              <QRCode
+                value={session.qrToken ?? 'invalid'}
+                size={220}
+                color="#0b1628"
+                backgroundColor="#fff"
+              />
+            </View>
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 4 }}>
+              {session.className ?? ''}
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 6 }}>
+              {session.isQRExpired ? '❌ Mã QR đã hết hạn' : `✅ Hết hạn lúc ${new Date(session.qrExpiresAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: session.sessionStatus === 'Open' ? '#16a34a' : '#dc2626' }} />
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>
+                {session.sessionStatus === 'Open' ? 'Phiên đang mở' : 'Phiên đã đóng'}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={{ backgroundColor: notified ? '#475569' : '#d97706', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28 }}
+              onPress={notify}
+              disabled={notified}
+            >
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                {notified ? '✅ Đã thông báo' : '📱 Thông báo phụ huynh HS vắng'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <Text style={{ color: '#ef4444' }}>Không tải được phiên điểm danh</Text>
+        )}
+      </View>
+    </Modal>
+  );
+}
+
+/* ── Homework Tab ───────────────────────────────────────────── */
+function HomeworkTab({ homeworkList }: any) {
+  return (
+    <TabPage>
+      <SectionTitle>Bài tập đã tạo ({homeworkList.length})</SectionTitle>
+      {!homeworkList.length ? (
+        <EmptyView icon="📖" text="Chưa có bài tập nào. Tạo bài tập trên web để quản lý." />
+      ) : (
+        homeworkList.map((a: any, i: number) => (
+          <View key={i} style={t.hwCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={t.hwTitle}>{a.title}</Text>
+              <Text style={t.hwMeta}>{a.subjectName} · {a.className}</Text>
+              {a.dueDate && (
+                <Text style={t.hwDue}>
+                  📅 {new Date(a.dueDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              )}
+            </View>
+            <View style={{ alignItems: 'flex-end', gap: 6 }}>
+              <Badge
+                text={a.isPublished ? 'Đã đăng' : 'Nháp'}
+                color={a.isPublished ? '#16a34a' : '#64748b'}
+                bg={a.isPublished ? '#f0fdf4' : '#f1f5f9'}
+              />
+              {a.submittedCount != null && (
+                <Text style={{ fontSize: 11, color: '#94a3b8' }}>
+                  {a.submittedCount}/{a.totalStudents ?? '?'} nộp
+                </Text>
+              )}
+            </View>
+          </View>
+        ))
+      )}
+    </TabPage>
+  );
+}
+
 function greetingTime() {
   const h = new Date().getHours();
   if (h < 12) return 'sáng'; if (h < 18) return 'chiều'; return 'tối';
@@ -600,4 +727,10 @@ const t = StyleSheet.create({
   gbScoreLabel:{ fontSize: 9, fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' },
   gbAddBtn:    { backgroundColor: '#eff6ff', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   gbAddBtnText:{ fontSize: 12, fontWeight: '700', color: '#2563eb' },
+
+  hwCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  hwTitle:{ fontSize: 14, fontWeight: '700', color: '#1e293b', marginBottom: 4 },
+  hwMeta: { fontSize: 11, color: '#94a3b8', marginBottom: 3 },
+  hwDue:  { fontSize: 11, color: '#d97706', fontWeight: '600' },
 });

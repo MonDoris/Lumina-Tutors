@@ -153,6 +153,12 @@ public class MappingProfile : Profile
             .ForMember(d => d.Status,       o => o.MapFrom(s => s.Status.ToString()))
             .ForMember(d => d.Payments,     o => o.MapFrom(s => s.Payments));
 
+        CreateMap<TuitionInvoice, InvoiceSummaryDto>()
+            .ForMember(d => d.InvoiceId,     o => o.MapFrom(s => s.Id))
+            .ForMember(d => d.FeeType,       o => o.MapFrom(s => s.Config.FeeType))
+            .ForMember(d => d.FinalAmount,   o => o.MapFrom(s => s.FinalAmount))
+            .ForMember(d => d.Status,        o => o.MapFrom(s => s.Status.ToString()));
+
         CreateMap<TuitionPayment, PaymentSummaryDto>()
             .ForMember(d => d.PaymentId,     o => o.MapFrom(s => s.Id))
             .ForMember(d => d.PaymentMethod, o => o.MapFrom(s => s.PaymentMethod.ToString()))
