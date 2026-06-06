@@ -10,6 +10,10 @@ public interface IAuthService
     Task<Result> ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken ct = default);
     Task<Result> LogoutAsync(int userId, string token, CancellationToken ct = default);
 
+    // Phone-based password reset
+    Task<Result<string>> FindUserByPhoneAsync(string phoneNumber, CancellationToken ct = default);
+    Task<Result> ResetPasswordByPhoneAsync(string phoneNumber, string newPassword, CancellationToken ct = default);
+
     // Invite Link flow
     Task<Result<InviteLinkDto>> CreateInviteLinkAsync(int schoolId, int createdByUserId, CreateInviteLinkRequest request, CancellationToken ct = default);
     Task<Result<InviteLinkDto>> GetInviteLinkByTokenAsync(Guid token, CancellationToken ct = default);

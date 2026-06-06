@@ -56,20 +56,33 @@ input,textarea{cursor:text}
 @@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 #clock{font-size:.82rem;color:var(--muted);font-feature-settings:'tnum'}
 
+/* ── BACKGROUND THEMES ─────────────────────────────── */
+body.theme-default{--bg:#202124;--surface:#292a2d;--surface2:#3c4043;--accent-tile:#1c1c2e}
+body.theme-navy   {--bg:#060e1c;--surface:#0d1f3c;--surface2:#162f56;--accent-tile:#0a1628}
+body.theme-forest {--bg:#081410;--surface:#0f2018;--surface2:#1a3224;--accent-tile:#0d1e14}
+body.theme.purple {--bg:#120e1c;--surface:#1e1530;--surface2:#2d2248;--accent-tile:#16102a}
+body.theme-slate  {--bg:#0e1520;--surface:#182030;--surface2:#243046;--accent-tile:#121c2c}
+body.theme-warm   {--bg:#1a1208;--surface:#261c10;--surface2:#38281a;--accent-tile:#1e1510}
+body{background:var(--bg)}
+
 /* ── VIDEO GRID ─────────────────────────────────────── */
 #video-grid{
     position:absolute;inset:0;
-    display:grid;gap:6px;padding:6px;
+    display:grid;gap:8px;padding:8px;
     background:#000;overflow:hidden;align-content:center
 }
+/* ── Google Meet equal tile ── */
 .vt{
-    border-radius:10px;overflow:hidden;position:relative;
-    background:#1a1a1a;min-height:120px
+    border-radius:14px;overflow:hidden;position:relative;
+    background:var(--accent-tile,#1c1c2e);min-height:80px;
+    box-shadow:0 2px 12px rgba(0,0,0,.45);
+    transition:box-shadow .2s
 }
+.vt:hover{box-shadow:0 4px 24px rgba(0,0,0,.7)}
 .vt video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
 .vt-overlay{
     position:absolute;inset:0;
-    background:linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 45%)
+    background:linear-gradient(to top, rgba(0,0,0,.72) 0%, transparent 42%)
 }
 .vt-name{
     position:absolute;bottom:10px;left:12px;right:12px;
@@ -77,32 +90,53 @@ input,textarea{cursor:text}
     display:flex;align-items:center;gap:6px;
 }
 .vt-name .vn-badge{
-    background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
-    padding:2px 8px;border-radius:4px;font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px
+    background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+    padding:3px 9px;border-radius:6px;font-size:.75rem;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px
 }
 .vt-muted{
-    position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;
-    background:rgba(234,67,53,.85);display:none;align-items:center;justify-content:center;font-size:.75rem;color:#fff
+    position:absolute;top:9px;right:9px;width:28px;height:28px;border-radius:50%;
+    background:rgba(234,67,53,.9);display:none;align-items:center;justify-content:center;font-size:.8rem;color:#fff
 }
 .vt.mic-off .vt-muted{display:flex}
+/* Gradient avatar background when camera is off */
 .vt-avatar{
     position:absolute;inset:0;display:none;align-items:center;justify-content:center;
-    background:var(--surface2)
+    background:var(--vt-grad,linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%))
 }
 .vt.cam-off .vt-avatar{display:flex}
 .vt.cam-off video{display:none}
 .av-circle{
-    width:72px;height:72px;border-radius:50%;
+    width:76px;height:76px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    font-size:1.6rem;font-weight:700;color:#fff
+    font-size:1.7rem;font-weight:700;color:#fff;
+    box-shadow:0 0 0 4px rgba(255,255,255,.12)
 }
-.vt-pin-btn{
-    position:absolute;top:8px;left:8px;display:none;
-    width:28px;height:28px;border-radius:6px;border:none;
-    background:rgba(0,0,0,.55);color:#fff;font-size:.8rem;align-items:center;justify-content:center
+#local-vt{outline:2px solid rgba(249,171,0,.55);outline-offset:2px}
+
+/* ── SPOTLIGHT MODE (2-person: 1 large + 1 PiP) ───── */
+#video-grid.spotlight-mode{
+    display:block;padding:0;
 }
-.vt:hover .vt-pin-btn{display:flex}
-#local-vt{outline:2px solid rgba(249,171,0,.5)}
+#video-grid.spotlight-mode .spotlight-main{
+    position:absolute;inset:0;border-radius:0;z-index:1;box-shadow:none
+}
+#video-grid.spotlight-mode .spotlight-pip{
+    position:absolute;
+    width:170px;height:118px;
+    bottom:18px;right:18px;
+    border-radius:14px;
+    border:2.5px solid rgba(255,255,255,.28);
+    box-shadow:0 8px 32px rgba(0,0,0,.7);
+    z-index:10;cursor:pointer;
+    transition:transform .15s
+}
+#video-grid.spotlight-mode .spotlight-pip:hover{transform:scale(1.04)}
+/* Mobile: smaller PiP */
+@@media(max-width:640px){
+    #video-grid.spotlight-mode .spotlight-pip{width:110px;height:80px;bottom:10px;right:10px}
+}
+html.in-webview #video-grid.spotlight-mode .spotlight-pip{width:110px;height:80px;bottom:10px;right:10px}
 
 /* ── CONTENT VIEWS (wb / slides) ────────────────────── */
 #wb-area,#slide-area{
@@ -345,6 +379,64 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
 }
 @@keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
+/* ── BACKGROUND PICKER PANEL ────────────────────────── */
+#bg-panel{
+    position:fixed;bottom:0;left:0;right:0;z-index:500;
+    background:var(--surface);
+    border-radius:20px 20px 0 0;
+    box-shadow:0 -8px 40px rgba(0,0,0,.7);
+    transform:translateY(110%);
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    max-height:75vh;overflow-y:auto;
+    padding-bottom:env(safe-area-inset-bottom,16px)
+}
+#bg-panel.open{transform:translateY(0)}
+.bp-drag{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.2);margin:14px auto 0}
+.bp-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px 10px;font-size:.9rem;font-weight:700;color:var(--text)
+}
+.bp-close{width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:var(--muted);font-size:.85rem;display:flex;align-items:center;justify-content:center}
+.bp-close:hover{background:rgba(255,255,255,.2)}
+.bp-section{padding:10px 20px 14px}
+.bp-section-title{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+/* Layout buttons */
+.bp-layouts{display:flex;gap:8px}
+.bp-layout-btn{
+    flex:1;height:54px;border:2px solid rgba(255,255,255,.12);border-radius:12px;
+    background:transparent;color:var(--muted);font-size:.78rem;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    cursor:pointer;transition:.15s
+}
+.bp-layout-btn i{font-size:1.1rem}
+.bp-layout-btn:hover{border-color:rgba(255,255,255,.3);color:var(--text);background:rgba(255,255,255,.05)}
+.bp-layout-btn.sel{border-color:var(--gold);color:var(--gold);background:rgba(249,171,0,.1)}
+/* Theme swatches */
+.bp-themes{display:flex;gap:10px;flex-wrap:wrap}
+.theme-sw{
+    width:46px;height:46px;border-radius:12px;border:2.5px solid transparent;cursor:pointer;
+    transition:.15s;flex-shrink:0
+}
+.theme-sw:hover{transform:scale(1.1)}
+.theme-sw.sel{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.3)}
+/* Virtual background grid */
+.bp-vbgs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@@media(max-width:400px){.bp-vbgs{grid-template-columns:repeat(3,1fr)}}
+.bp-vbg-btn{
+    border-radius:10px;overflow:hidden;border:2.5px solid transparent;
+    cursor:pointer;background:transparent;display:flex;flex-direction:column;
+    align-items:center;gap:4px;transition:.15s
+}
+.bp-vbg-btn:hover{transform:scale(1.05)}
+.bp-vbg-btn.sel{border-color:var(--gold)}
+.bp-vbg-prev{width:100%;aspect-ratio:16/9;border-radius:7px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.bp-vbg-prev img{width:100%;height:100%;object-fit:cover}
+.bp-vbg-label{font-size:.65rem;color:var(--muted);text-align:center;padding:0 2px}
+.bp-vbg-btn.sel .bp-vbg-label{color:var(--gold)}
+/* Overlay when bg panel open */
+#bg-overlay{position:fixed;inset:0;z-index:499;background:rgba(0,0,0,.5);display:none}
+#bg-overlay.show{display:block}
+
 /* ── MODAL ──────────────────────────────────────────── */
 #modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;
            display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -502,7 +594,7 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
       }
     </div>
 
-    <!-- Right: panel toggles -->
+    <!-- Right: panel toggles + background -->
     <div class="bb-group" style="justify-content:flex-end;gap:8px">
       <div class="ctl-wrap">
         <button class="ctl ctl-action" id="btn-people" onclick="togglePanel('people')" title="Thành viên">
@@ -518,6 +610,12 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
                 style="position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--danger);display:none"></span>
         </button>
         <span class="ctl-label">Chat</span>
+      </div>
+      <div class="ctl-wrap">
+        <button class="ctl ctl-action" id="btn-bg" onclick="openBgPanel()" title="Nền & Bố cục">
+          <i class="bi bi-palette-fill"></i>
+        </button>
+        <span class="ctl-label">Nền</span>
       </div>
     </div>
 
@@ -547,6 +645,84 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
       <textarea id="chat-input" rows="1" placeholder="Nhập tin nhắn…"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
       <button id="chat-send" onclick="sendChat()"><i class="bi bi-send-fill"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BACKGROUND / LAYOUT PICKER PANEL ════════════════════════════ -->
+<div id="bg-overlay" onclick="closeBgPanel()"></div>
+<div id="bg-panel">
+  <div class="bp-drag"></div>
+  <div class="bp-header">
+    <span>🎨 Nền &amp; Bố cục</span>
+    <button class="bp-close" onclick="closeBgPanel()"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <!-- Layout mode -->
+  <div class="bp-section">
+    <div class="bp-section-title">Bố cục video</div>
+    <div class="bp-layouts">
+      <button class="bp-layout-btn sel" id="ly-auto"  onclick="setLayoutMode('auto')">
+        <i class="bi bi-layout-sidebar-reverse"></i> Tự động
+      </button>
+      <button class="bp-layout-btn" id="ly-grid"      onclick="setLayoutMode('grid')">
+        <i class="bi bi-grid-3x3-gap-fill"></i> Lưới đều
+      </button>
+      <button class="bp-layout-btn" id="ly-spotlight" onclick="setLayoutMode('spotlight')">
+        <i class="bi bi-pip-fill"></i> Tiêu điểm
+      </button>
+    </div>
+  </div>
+
+  <!-- Room theme -->
+  <div class="bp-section">
+    <div class="bp-section-title">Màu nền phòng học</div>
+    <div class="bp-themes">
+      <button class="theme-sw sel" style="background:linear-gradient(135deg,#202124,#303134)" onclick="applyTheme('default')" id="th-default" title="Tối mặc định"></button>
+      <button class="theme-sw"     style="background:linear-gradient(135deg,#060e1c,#0d2244)" onclick="applyTheme('navy')"    id="th-navy"    title="Đêm xanh"></button>
+      <button class="theme-sw"     style="background:linear-gradient(135deg,#081410,#1a3224)" onclick="applyTheme('forest')"  id="th-forest"  title="Xanh rừng"></button>
+      <button class="theme-sw"     style="background:linear-gradient(135deg,#120e1c,#2d2248)" onclick="applyTheme('purple')"  id="th-purple"  title="Tím thẫm"></button>
+      <button class="theme-sw"     style="background:linear-gradient(135deg,#0e1520,#243046)" onclick="applyTheme('slate')"   id="th-slate"   title="Xanh đá"></button>
+      <button class="theme-sw"     style="background:linear-gradient(135deg,#1a1208,#38281a)" onclick="applyTheme('warm')"    id="th-warm"    title="Nâu ấm"></button>
+    </div>
+  </div>
+
+  <!-- Virtual background (camera-off background) -->
+  <div class="bp-section">
+    <div class="bp-section-title">Nền avatar (khi tắt camera)</div>
+    <div class="bp-vbgs">
+      <button class="bp-vbg-btn sel" id="vbg-default" onclick="setAvatarBg('default')">
+        <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)"></div>
+        <span class="bp-vbg-label">Mặc định</span>
+      </button>
+      <button class="bp-vbg-btn" id="vbg-ocean" onclick="setAvatarBg('ocean')">
+        <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#004e92,#000428)"></div>
+        <span class="bp-vbg-label">Đại dương</span>
+      </button>
+      <button class="bp-vbg-btn" id="vbg-forest" onclick="setAvatarBg('forest')">
+        <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#134e5e,#71b280)"></div>
+        <span class="bp-vbg-label">Thiên nhiên</span>
+      </button>
+      <button class="bp-vbg-btn" id="vbg-sunset" onclick="setAvatarBg('sunset')">
+        <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#f093fb,#f5576c)"></div>
+        <span class="bp-vbg-label">Hoàng hôn</span>
+      </button>
+      <button class="bp-vbg-btn" id="vbg-galaxy" onclick="setAvatarBg('galaxy')">
+        <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#4e54c8,#8f94fb)"></div>
+        <span class="bp-vbg-label">Thiên hà</span>
+      </button>
+      <button class="bp-vbg-btn" id="vbg-gold" onclick="setAvatarBg('gold')">
+        <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#f6d365,#fda085)"></div>
+        <span class="bp-vbg-label">Vàng cam</span>
+      </button>
+      <button class="bp-vbg-btn" id="vbg-mint" onclick="setAvatarBg('mint')">
+        <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#43e97b,#38f9d7)"></div>
+        <span class="bp-vbg-label">Xanh lá</span>
+      </button>
+      <button class="bp-vbg-btn" id="vbg-dark" onclick="setAvatarBg('dark')">
+        <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#232526,#414345)"></div>
+        <span class="bp-vbg-label">Tối giản</span>
+      </button>
     </div>
   </div>
 </div>
@@ -614,6 +790,13 @@ const iceConfig = { iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
 const localAv = document.getElementById('local-av-circle');
 localAv.textContent = initials(USER_NAME);
 localAv.style.background = avatarColor(USER_NAME);
+// Apply saved avatar gradient
+try{
+    const _ab = localStorage.getItem('lt-avatar-bg')||'default';
+    const _gr = AVATAR_GRADS[_ab]||AVATAR_GRADS.default;
+    const _el = document.querySelector('#local-vt .vt-avatar');
+    if(_el) _el.style.background = _gr;
+}catch(e){}
 
 // ── TOAST ───────────────────────────────────────────────────────────
 function toast(msg, type='info'){
@@ -822,15 +1005,104 @@ function leaveRoom(){
     window.location='@Url.Action("Index","OnlineClassroom")';
 }
 
-// ── VIDEO GRID LAYOUT ────────────────────────────────────────────────
+// ── VIDEO GRID LAYOUT (spotlight + grid) ─────────────────────────────
+let layoutMode = 'auto'; // 'auto' | 'grid' | 'spotlight'
+
+const AVATAR_GRADS = {
+    default:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)',
+    ocean:  'linear-gradient(135deg,#004e92,#000428)',
+    forest: 'linear-gradient(135deg,#134e5e,#71b280)',
+    sunset: 'linear-gradient(135deg,#f093fb,#f5576c)',
+    galaxy: 'linear-gradient(135deg,#4e54c8,#8f94fb)',
+    gold:   'linear-gradient(135deg,#f6d365,#fda085)',
+    mint:   'linear-gradient(135deg,#43e97b,#38f9d7)',
+    dark:   'linear-gradient(135deg,#232526,#414345)',
+};
+let currentAvatarBg = 'default';
+
 function relayout(){
     const grid = document.getElementById('video-grid');
-    const n = grid.children.length;
-    if(n===0) return;
-    let cols = n<=1?1: n<=4?2: n<=9?3:4;
+    const tiles = [...grid.children];
+    const n = tiles.length;
+    if(!n) return;
+
+    const localVt  = document.getElementById('local-vt');
+    const remoteTiles = tiles.filter(t => t.id !== 'local-vt');
+
+    // Decide mode
+    const useSpotlight = (layoutMode === 'spotlight') ||
+                         (layoutMode === 'auto' && n === 2 && remoteTiles.length === 1);
+
+    if(useSpotlight && remoteTiles.length >= 1){
+        // Spotlight: first remote fills stage, local is PiP overlay
+        grid.classList.add('spotlight-mode');
+        tiles.forEach(t=>t.classList.remove('spotlight-main','spotlight-pip'));
+        remoteTiles[0].classList.add('spotlight-main');
+        if(localVt) localVt.classList.add('spotlight-pip');
+        // Non-first remotes: hide in spotlight
+        remoteTiles.slice(1).forEach(t=>{ t.style.display='none'; });
+        return;
+    }
+
+    // Grid mode
+    grid.classList.remove('spotlight-mode');
+    tiles.forEach(t=>{ t.classList.remove('spotlight-main','spotlight-pip'); t.style.display=''; });
+    let cols = n<=1?1: n<=2?2: n<=4?2: n<=6?3: n<=9?3:4;
+    let rows = Math.ceil(n/cols);
     grid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
-    grid.style.gridTemplateRows   = `repeat(${Math.ceil(n/cols)},1fr)`;
+    grid.style.gridTemplateRows   = `repeat(${rows},1fr)`;
 }
+
+// ── BACKGROUND PICKER ────────────────────────────────────────────────
+function openBgPanel(){
+    document.getElementById('bg-panel').classList.add('open');
+    document.getElementById('bg-overlay').classList.add('show');
+}
+function closeBgPanel(){
+    document.getElementById('bg-panel').classList.remove('open');
+    document.getElementById('bg-overlay').classList.remove('show');
+}
+
+// Room color themes
+function applyTheme(name){
+    document.body.className = document.body.className.replace(/theme-\w+/g,'').trim();
+    document.body.classList.add('theme-'+name);
+    document.querySelectorAll('.theme-sw').forEach(b=>b.classList.remove('sel'));
+    document.getElementById('th-'+name)?.classList.add('sel');
+    try{localStorage.setItem('lt-room-theme',name);}catch(e){}
+}
+
+// Layout mode
+function setLayoutMode(mode){
+    layoutMode = mode;
+    document.querySelectorAll('.bp-layout-btn').forEach(b=>b.classList.remove('sel'));
+    document.getElementById('ly-'+mode)?.classList.add('sel');
+    relayout();
+    try{localStorage.setItem('lt-layout-mode',mode);}catch(e){}
+}
+
+// Avatar gradient (camera-off background)
+function setAvatarBg(name){
+    currentAvatarBg = name;
+    const grad = AVATAR_GRADS[name] || AVATAR_GRADS.default;
+    // Apply to all current avatar divs
+    document.querySelectorAll('.vt-avatar').forEach(el=>el.style.background=grad);
+    document.querySelectorAll('.bp-vbg-btn').forEach(b=>b.classList.remove('sel'));
+    document.getElementById('vbg-'+name)?.classList.add('sel');
+    try{localStorage.setItem('lt-avatar-bg',name);}catch(e){}
+}
+
+// Restore saved preferences
+(function restorePrefs(){
+    try{
+        const th = localStorage.getItem('lt-room-theme');
+        if(th) applyTheme(th);
+        const lm = localStorage.getItem('lt-layout-mode');
+        if(lm) setLayoutMode(lm);
+        const ab = localStorage.getItem('lt-avatar-bg');
+        if(ab) setAvatarBg(ab);
+    }catch(e){}
+})();
 
 // ── WEBRTC ──────────────────────────────────────────────────────────
 function createPeer(uid){
@@ -847,9 +1119,10 @@ function addRemoteVideo(uid,stream){
     const p=participants[uid]; const name=p?.userName??'Người dùng';
     const tile=document.createElement('div'); tile.className='vt'; tile.id='vtile-'+uid;
     const col=avatarColor(name); const ini=initials(name);
+    const grad = AVATAR_GRADS[currentAvatarBg] || AVATAR_GRADS.default;
     tile.innerHTML=`
       <video autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>
-      <div class="vt-avatar"><div class="av-circle" style="background:${col}">${ini}</div></div>
+      <div class="vt-avatar" style="background:${grad}"><div class="av-circle" style="background:${col}">${ini}</div></div>
       <div class="vt-overlay"></div>
       <div class="vt-name"><span class="vn-badge"><i class="bi bi-person-fill"></i> ${name}</span></div>
       <div class="vt-muted"><i class="bi bi-mic-mute-fill"></i></div>`;

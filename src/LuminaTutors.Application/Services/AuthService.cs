@@ -313,7 +313,52 @@ public sealed class AuthService : IAuthService
         return Result.Success();
     }
 
+    // ─── FindUserByPhone ──────────────────────────────────────────────────────
+
+    public async Task<Result<string>> FindUserByPhoneAsync(string phoneNumber, CancellationToken ct = default)
+    {
+        var normalized = NormalizePhone(phoneNumber);
+        if (normalized.Length < 9)
+            return Result<string>.Failure("INVALID_PHONE", "Số điện thoại không hợp lệ (tối thiểu 9 chữ số).");
+
+        var users = await _uow.Users.FindAsync(
+            u => u.PhoneNumber == normalized && u.IsActive,
+            ct: ct);
+
+        var user = users.FirstOrDefault();
+        if (user is null)
+            return Result<string>.Failure("NOT_FOUND", "Không tìm thấy tài khoản với số điện thoại này.");
+
+        return Result<string>.Success(MaskPhone(normalized));
+    }
+
+    // ─── ResetPasswordByPhone ─────────────────────────────────────────────────
+
+    public async Task<Result> ResetPasswordByPhoneAsync(string phoneNumber, string newPassword, CancellationToken ct = default)
+    {
+        var normalized = NormalizePhone(phoneNumber);
+        var users = await _uow.Users.FindAsync(
+            u => u.PhoneNumber == normalized && u.IsActive,
+            ct: ct);
+
+        var user = users.FirstOrDefault();
+        if (user is null)
+            return Result.Failure("NOT_FOUND", "Tài khoản không tồn tại.");
+
+        user.PasswordHash = _hasher.HashPassword(user, newPassword);
+        await _uow.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Password reset via phone for user {UserId}", user.Id);
+        return Result.Success();
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────────
+
+    private static string NormalizePhone(string phone) =>
+        new string(phone.Where(char.IsDigit).ToArray());
+
+    private static string MaskPhone(string phone) =>
+        phone.Length >= 6 ? phone[..3] + "****" + phone[^2..] : "****";
 
     private static InviteLinkDto MapInviteLinkDto(InviteLink invite) => new(
         InviteId:          invite.Id,

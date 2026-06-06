@@ -1,21 +1,33 @@
+using System.Linq;
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.Auth;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Hosting;
 
 namespace LuminaTutors.Web.Controllers;
 
 public sealed class AuthController : Controller
 {
-    private readonly IAuthService _authService;
+    private readonly IAuthService            _authService;
+    private readonly IMemoryCache            _cache;
+    private readonly IHostEnvironment        _env;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService            authService,
+        IMemoryCache            cache,
+        IHostEnvironment        env,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
+        _cache       = cache;
+        _env         = env;
         _logger      = logger;
     }
 
@@ -93,10 +105,12 @@ public sealed class AuthController : Controller
     // ─── GET /Auth/ForgotPassword ─────────────────────────────────────────────
 
     [HttpGet]
-    public IActionResult ForgotPassword()
+    public IActionResult ForgotPassword(string? role = null)
     {
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction("Index", "Dashboard");
+
+        ViewBag.Role = (role ?? "student").ToLower();
         return View();
     }
 
@@ -104,26 +118,50 @@ public sealed class AuthController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult ForgotPassword(string email)
+    public async Task<IActionResult> ForgotPassword(string phone, string? role = null)
     {
-        if (string.IsNullOrWhiteSpace(email))
+        role = (role ?? "student").ToLower();
+        ViewBag.Role = role;
+
+        var normalized = NormalizePhone(phone ?? string.Empty);
+        if (normalized.Length < 9)
         {
-            ModelState.AddModelError("email", "Vui lòng nhập địa chỉ email.");
+            ViewData["PhoneError"] = "Vui lòng nhập số điện thoại hợp lệ (ít nhất 9 chữ số).";
             return View();
         }
-        // TODO: integrate OTP email service; redirecting to OTP page for UI demonstration
-        TempData["Info"] = $"Nếu '{email}' tồn tại trong hệ thống, mã OTP đã được gửi đến hộp thư của bạn.";
-        return RedirectToAction(nameof(VerifyOtp), new { email });
+
+        var lookup = await _authService.FindUserByPhoneAsync(normalized);
+        if (!lookup.IsSuccess)
+        {
+            ViewData["PhoneError"] = lookup.Error;
+            return View();
+        }
+
+        // Generate 6-digit OTP and store in cache (5-minute TTL)
+        var otp   = Random.Shared.Next(100_000, 999_999).ToString();
+        var entry = new OtpEntry { Code = otp, ExpiresAt = DateTime.UtcNow.AddMinutes(5) };
+        _cache.Set($"fp:otp:{normalized}", entry, TimeSpan.FromMinutes(5));
+
+        // DEV: log OTP so testers can see it (remove in production)
+        _logger.LogWarning("[DEV] OTP for {Phone} → {Otp}", MaskPhone(normalized), otp);
+        if (_env.IsDevelopment()) TempData["OtpDev"] = otp;
+
+        TempData["MaskedPhone"] = lookup.Data;
+        return RedirectToAction(nameof(VerifyOtp), new { phone = normalized, role });
     }
 
     // ─── GET /Auth/VerifyOtp ─────────────────────────────────────────────────
 
     [HttpGet]
-    public IActionResult VerifyOtp(string? email = null)
+    public IActionResult VerifyOtp(string? phone = null, string? role = null)
     {
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction("Index", "Dashboard");
-        ViewData["Email"] = email;
+
+        ViewBag.Role        = (role ?? "student").ToLower();
+        ViewBag.Phone       = phone ?? string.Empty;
+        ViewBag.MaskedPhone = TempData["MaskedPhone"];
+        if (_env.IsDevelopment()) ViewBag.OtpDev = TempData["OtpDev"];
         return View();
     }
 
@@ -131,11 +169,116 @@ public sealed class AuthController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult VerifyOtp(string otp, string? email = null)
+    public IActionResult VerifyOtp(string phone, string otp, string? role = null)
     {
-        // TODO: validate OTP against stored token; placeholder response for now
-        TempData["Error"] = "Tính năng đặt lại mật khẩu qua OTP đang được hoàn thiện. Vui lòng liên hệ quản trị viên.";
-        return RedirectToAction(nameof(Login));
+        role = (role ?? "student").ToLower();
+        ViewBag.Role  = role;
+        ViewBag.Phone = phone;
+
+        var normalized = NormalizePhone(phone ?? string.Empty);
+
+        if (!_cache.TryGetValue<OtpEntry>($"fp:otp:{normalized}", out var entry) || entry is null)
+        {
+            TempData["Error"] = "Mã OTP đã hết hạn. Vui lòng yêu cầu lại.";
+            return RedirectToAction(nameof(ForgotPassword), new { role });
+        }
+
+        if (DateTime.UtcNow > entry.ExpiresAt)
+        {
+            _cache.Remove($"fp:otp:{normalized}");
+            TempData["Error"] = "Mã OTP đã hết hạn. Vui lòng yêu cầu lại.";
+            return RedirectToAction(nameof(ForgotPassword), new { role });
+        }
+
+        entry.Attempts++;
+        if (entry.Attempts > 5)
+        {
+            _cache.Remove($"fp:otp:{normalized}");
+            TempData["Error"] = "Quá nhiều lần nhập sai. Vui lòng yêu cầu mã mới.";
+            return RedirectToAction(nameof(ForgotPassword), new { role });
+        }
+
+        var remaining = TimeSpan.FromSeconds((entry.ExpiresAt - DateTime.UtcNow).TotalSeconds);
+
+        if (entry.Code != (otp ?? string.Empty).Trim())
+        {
+            _cache.Set($"fp:otp:{normalized}", entry, remaining > TimeSpan.Zero ? remaining : TimeSpan.FromSeconds(1));
+            ViewData["OtpError"] = $"Mã OTP không đúng. Còn {5 - entry.Attempts} lần thử.";
+            return View();
+        }
+
+        // OTP valid — issue reset token (10-minute TTL)
+        _cache.Remove($"fp:otp:{normalized}");
+        var resetToken = Guid.NewGuid().ToString("N");
+        _cache.Set($"fp:reset:{resetToken}", normalized, TimeSpan.FromMinutes(10));
+
+        return RedirectToAction(nameof(ResetPassword), new { token = resetToken, role });
+    }
+
+    // ─── GET /Auth/ResetPassword ──────────────────────────────────────────────
+
+    [HttpGet]
+    public IActionResult ResetPassword(string? token = null, string? role = null)
+    {
+        if (User.Identity?.IsAuthenticated == true)
+            return RedirectToAction("Index", "Dashboard");
+
+        role = (role ?? "student").ToLower();
+
+        if (string.IsNullOrWhiteSpace(token) ||
+            !_cache.TryGetValue<string>($"fp:reset:{token}", out _))
+        {
+            TempData["Error"] = "Phiên đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.";
+            return RedirectToAction(nameof(ForgotPassword), new { role });
+        }
+
+        ViewBag.Role  = role;
+        ViewBag.Token = token;
+        return View();
+    }
+
+    // ─── POST /Auth/ResetPassword ─────────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(
+        string token, string newPassword, string confirmPassword, string? role = null)
+    {
+        role = (role ?? "student").ToLower();
+        ViewBag.Role  = role;
+        ViewBag.Token = token;
+
+        if (newPassword != confirmPassword)
+        {
+            ViewData["PwError"] = "Mật khẩu xác nhận không khớp.";
+            return View();
+        }
+
+        if ((newPassword ?? string.Empty).Length < 6)
+        {
+            ViewData["PwError"] = "Mật khẩu phải có ít nhất 6 ký tự.";
+            return View();
+        }
+
+        if (!_cache.TryGetValue<string>($"fp:reset:{token}", out var normalizedPhone)
+            || string.IsNullOrEmpty(normalizedPhone))
+        {
+            TempData["Error"] = "Phiên đặt lại mật khẩu đã hết hạn. Vui lòng thử lại.";
+            return RedirectToAction(nameof(ForgotPassword), new { role });
+        }
+
+        var result = await _authService.ResetPasswordByPhoneAsync(normalizedPhone, newPassword!);
+        if (!result.IsSuccess)
+        {
+            ViewData["PwError"] = result.Error;
+            return View();
+        }
+
+        _cache.Remove($"fp:reset:{token}");
+        _logger.LogInformation("Password reset completed for phone {Phone}", MaskPhone(normalizedPhone));
+
+        TempData["Success"] = "Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập.";
+        return RedirectToAction(nameof(Login), new { role });
     }
 
     // ─── GET /Auth/AccessDenied ───────────────────────────────────────────────
@@ -308,4 +451,10 @@ public sealed class AuthController : Controller
 
     private int GetCurrentSchoolId() =>
         int.Parse(User.FindFirstValue("SchoolId") ?? "0");
+
+    private static string NormalizePhone(string phone) =>
+        new string(phone.Where(char.IsDigit).ToArray());
+
+    private static string MaskPhone(string phone) =>
+        phone.Length >= 6 ? phone[..3] + "****" + phone[^2..] : "****";
 }

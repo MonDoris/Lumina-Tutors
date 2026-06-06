@@ -24,19 +24,16 @@ export default function VirtualLabWebViewScreen({ sessionCode, labName, onClose 
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
   const [url,       setUrl]       = useState<string | null>(null);
-  const [infoVisible, setInfoVisible] = useState(true);
 
   const infoOpacity = useRef(new Animated.Value(1)).current;
   const hideTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ── Auto-hide info overlay after 4s ───────────────────────────── */
+  /* ── Auto-hide info overlay after 4s (fades to 15% so exit btn stays visible) */
   const flashInfo = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
     Animated.timing(infoOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
-    setInfoVisible(true);
     hideTimer.current = setTimeout(() => {
-      Animated.timing(infoOpacity, { toValue: 0, duration: 500, useNativeDriver: true })
-        .start(() => setInfoVisible(false));
+      Animated.timing(infoOpacity, { toValue: 0.15, duration: 600, useNativeDriver: true }).start();
     }, 4000);
   }, [infoOpacity]);
 
@@ -127,28 +124,29 @@ export default function VirtualLabWebViewScreen({ sessionCode, labName, onClose 
         </View>
       )}
 
-      {/* ── Lab name pill (auto-hides) ── */}
+      {/* ── Floating overlay: box-none → touches pass through to WebView ── */}
       <Animated.View
-        style={[s.infoStrip, { opacity: infoOpacity }]}
-        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { opacity: infoOpacity }]}
+        pointerEvents="box-none"
       >
-        <Text style={s.infoIcon}>🔬</Text>
-        <Text style={s.infoText} numberOfLines={1}>
-          {labName ?? 'Phòng Lab 3D'}
-        </Text>
+        {/* Lab name pill — non-interactive */}
+        <View style={s.infoStrip} pointerEvents="none">
+          <Text style={s.infoIcon}>🔬</Text>
+          <Text style={s.infoText} numberOfLines={1}>
+            {labName ?? 'Phòng Lab 3D'}
+          </Text>
+        </View>
+
+        {/* Exit button — stays tappable */}
+        <TouchableOpacity
+          style={s.exitBtnFixed}
+          onPress={onClose}
+          hitSlop={HIT_SLOP}
+          activeOpacity={0.75}
+        >
+          <Text style={s.exitX}>✕</Text>
+        </TouchableOpacity>
       </Animated.View>
-
-      {/* ── Always-visible exit button ── */}
-      <TouchableOpacity style={s.exitBtnFixed} onPress={onClose} hitSlop={HIT_SLOP} activeOpacity={0.75}>
-        <Text style={s.exitX}>✕</Text>
-      </TouchableOpacity>
-
-      {/* Tap zone to re-show info */}
-      <TouchableOpacity
-        style={s.tapZone}
-        activeOpacity={1}
-        onPress={flashInfo}
-      />
     </View>
   );
 }
@@ -202,13 +200,6 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   exitX: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
-  /* Tap zone ────────────────────────────────────────────────── */
-  tapZone: {
-    position: 'absolute',
-    top: TOP_OFFSET + 50,
-    left: 60, right: 60, bottom: 60,
-  },
 
   /* Spinner ─────────────────────────────────────────────────── */
   spinnerOverlay: {

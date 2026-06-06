@@ -23,19 +23,16 @@ export default function ClassroomWebViewScreen({ roomCode, onClose }: Props) {
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState<string | null>(null);
   const [url,      setUrl]      = useState<string | null>(null);
-  const [infoVisible, setInfoVisible] = useState(true);
 
   const infoOpacity = useRef(new Animated.Value(1)).current;
   const hideTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ── Auto-hide info overlay after 4s ───────────────────────────── */
+  /* ── Auto-hide info overlay after 4s (exit button stays visible via opacity) */
   const flashInfo = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
     Animated.timing(infoOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
-    setInfoVisible(true);
     hideTimer.current = setTimeout(() => {
-      Animated.timing(infoOpacity, { toValue: 0, duration: 500, useNativeDriver: true })
-        .start(() => setInfoVisible(false));
+      Animated.timing(infoOpacity, { toValue: 0.15, duration: 600, useNativeDriver: true }).start();
     }, 4000);
   }, [infoOpacity]);
 
@@ -132,26 +129,27 @@ export default function ClassroomWebViewScreen({ roomCode, onClose }: Props) {
         </View>
       )}
 
-      {/* ── Floating info strip (top-left, auto-hides) ── */}
+      {/* ── Floating overlay: box-none → touches pass through to WebView ── */}
       <Animated.View
-        style={[s.infoStrip, { opacity: infoOpacity }]}
-        pointerEvents={infoVisible ? 'none' : 'none'}
+        style={[StyleSheet.absoluteFill, { opacity: infoOpacity }]}
+        pointerEvents="box-none"
       >
-        <View style={s.liveDot} />
-        <Text style={s.infoText}>Phòng {roomCode}</Text>
+        {/* Info pill — non-interactive (pointer-events none) */}
+        <View style={s.infoStrip} pointerEvents="none">
+          <View style={s.liveDot} />
+          <Text style={s.infoText}>Phòng {roomCode}</Text>
+        </View>
+
+        {/* Exit button — stays tappable because it's a child with its own touch */}
+        <TouchableOpacity
+          style={s.exitBtnFixed}
+          onPress={onClose}
+          hitSlop={HIT_SLOP}
+          activeOpacity={0.75}
+        >
+          <Text style={s.exitX}>✕</Text>
+        </TouchableOpacity>
       </Animated.View>
-
-      {/* ── Always-visible exit button (top-right) ── */}
-      <TouchableOpacity style={s.exitBtnFixed} onPress={onClose} hitSlop={HIT_SLOP} activeOpacity={0.75}>
-        <Text style={s.exitX}>✕</Text>
-      </TouchableOpacity>
-
-      {/* Tap zone — tapping shows info strip again */}
-      <TouchableOpacity
-        style={s.tapZone}
-        activeOpacity={1}
-        onPress={flashInfo}
-      />
     </View>
   );
 }
@@ -207,15 +205,6 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   exitX: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
-  /* Tap zone — covers center of screen, won't block edge buttons */
-  tapZone: {
-    position: 'absolute',
-    top: TOP_OFFSET + 50,
-    left: 60,
-    right: 60,
-    bottom: 100,
-  },
 
   /* Loading / spinner ───────────────────────────────────────── */
   spinnerOverlay: {
