@@ -28,7 +28,13 @@ public sealed class AuthApiController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginRequest model)
     {
         if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault() ?? "Dữ liệu không hợp lệ.";
+            return BadRequest(new { message = errors });
+        }
 
         var result = await _auth.LoginAsync(model);
         if (!result.IsSuccess)

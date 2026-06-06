@@ -73,6 +73,7 @@ public record UpdateAttendanceRequest(
 public record DailyAttendanceReportDto(
     DateOnly  ReportDate,
     string    ClassName,
+    int?      SessionId,        // ID phiên điểm danh gần nhất trong ngày (dùng cho mobile)
     int       TotalStudents,
     int       PresentCount,
     int       AbsentCount,

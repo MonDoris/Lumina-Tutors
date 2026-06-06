@@ -32,11 +32,28 @@
                     @Html.AntiForgeryToken()
 
                     <div class="lt-form-group">
-                        <label class="lt-label">ID Lịch học <span class="lt-text-danger">*</span></label>
-                        <input type="number" name="ScheduleId" class="lt-input"
-                               placeholder="VD: 1" required min="1"
-                               data-testid="input-schedule-id"/>
-                        <p class="lt-form-hint">Lấy từ trang chi tiết lớp học, mục Lịch học</p>
+                        <label class="lt-label">Lịch học <span class="lt-text-danger">*</span></label>
+                        @{
+                            var schedules = ViewBag.TeacherSchedules as IEnumerable<dynamic>;
+                        }
+                        @if (schedules != null && schedules.Any())
+                        {
+                            <select name="ScheduleId" class="lt-select" required data-testid="input-schedule-id">
+                                <option value="">-- Chọn buổi học --</option>
+                                @foreach (var s in schedules)
+                                {
+                                    <option value="@s.Id">@s.Label</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <div class="lt-alert lt-alert--warning">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <span>Bạn chưa có lịch dạy nào được phân công. Liên hệ quản trị viên.</span>
+                            </div>
+                            <input type="hidden" name="ScheduleId" value="0" />
+                        }
                     </div>
 
                     <div class="lt-form-group">

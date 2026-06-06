@@ -1,9 +1,13 @@
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.Lab;
+using LuminaTutors.Web.Models;
 using LuminaTutors.Application.Interfaces.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -12,15 +16,18 @@ public sealed class VirtualLabController : Controller
 {
     private readonly IVirtualLabService _labService;
     private readonly IAccountService   _accountService;
+    private readonly IMemoryCache      _cache;
     private readonly ILogger<VirtualLabController> _logger;
 
     public VirtualLabController(
         IVirtualLabService labService,
         IAccountService accountService,
+        IMemoryCache cache,
         ILogger<VirtualLabController> logger)
     {
         _labService     = labService;
         _accountService = accountService;
+        _cache          = cache;
         _logger         = logger;
     }
 
@@ -155,9 +162,53 @@ public sealed class VirtualLabController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // ─── GET /VirtualLab/MobileEntry?sessionCode=ABC123&token=eyJ... ─────────
+    // WebView bridge: validates JWT từ mobile → ký cookie → redirect vào Lab
+
+    [AllowAnonymous]
+    [HttpGet]
+    public async Task<IActionResult> MobileEntry(string sessionCode, string code)
+    {
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(sessionCode))
+            return Content(HtmlError("Thiếu code hoặc mã phòng lab."), "text/html");
+
+        var cacheKey = $"webview:{code}";
+        if (!_cache.TryGetValue(cacheKey, out List<WebViewBridgeClaim>? bridgeClaims) || bridgeClaims is null)
+            return Content(HtmlError("Mã xác thực hết hạn.<br>Đóng màn hình này và thử lại trong ứng dụng."), "text/html");
+
+        _cache.Remove(cacheKey);
+
+        var claims = bridgeClaims
+            .Select(c => new Claim(c.Type, c.Value))
+            .ToList();
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identity),
+            new AuthenticationProperties { IsPersistent = false, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2) });
+
+        var schoolId = int.Parse(claims.FirstOrDefault(c => c.Type == "SchoolId")?.Value ?? "0");
+
+        var result = await _labService.GetByCodeAsync(schoolId, sessionCode.ToUpperInvariant());
+        if (!result.IsSuccess)
+            return Content(HtmlError(result.Error ?? "Không tìm thấy phòng lab."), "text/html");
+
+        if (!result.Data!.IsActive)
+            return Content(HtmlError("Phòng lab này đã kết thúc."), "text/html");
+
+        return RedirectToAction(nameof(Lab), new { id = result.Data.Id });
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────────
 
     private int  GetCurrentUserId()   => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
     private int  GetCurrentSchoolId() => int.Parse(User.FindFirstValue("SchoolId") ?? "0");
     private bool IsTeacher()          => User.IsInRole("TEACHER") || User.IsInRole("ADMIN");
+
+    private static string HtmlError(string msg) =>
+        $"<html><body style='font-family:sans-serif;padding:30px;background:#fff'>" +
+        $"<h3 style='color:#c0392b'>⚠️ {msg}</h3>" +
+        $"<p style='color:#64748b'>Đóng màn hình này và thử lại.</p>" +
+        $"</body></html>";
 }

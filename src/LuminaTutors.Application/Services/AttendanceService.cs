@@ -287,9 +287,15 @@ public sealed class AttendanceService : IAttendanceService
         var excused   = allRecords.Count(r => r.Status == AttendanceStatus.Excused);
         var rate      = total > 0 ? Math.Round((decimal)present / total * 100, 1) : 0m;
 
+        var latestSessionId = sessions
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => (int?)s.Id)
+            .FirstOrDefault();
+
         var dto = new DailyAttendanceReportDto(
             ReportDate:     date,
             ClassName:      className,
+            SessionId:      latestSessionId,
             TotalStudents:  total,
             PresentCount:   present,
             AbsentCount:    absent,

@@ -346,10 +346,7 @@ public sealed class OnlineClassroomService : IOnlineClassroomService
 
     private static string GenerateRoomCode()
     {
-        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        var rng  = new Random();
-        var part1 = new string(Enumerable.Range(0, 4).Select(_ => chars[rng.Next(chars.Length)]).ToArray());
-        var part2 = new string(Enumerable.Range(0, 4).Select(_ => chars[rng.Next(chars.Length)]).ToArray());
-        return $"{part1}-{part2}";
+        // 6 chữ số thuần số — dễ nhập trên điện thoại
+        return Random.Shared.Next(100_000, 999_999).ToString();
     }
 }

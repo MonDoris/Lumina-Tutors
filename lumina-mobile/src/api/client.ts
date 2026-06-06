@@ -1,7 +1,18 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const BASE_URL = 'http://192.168.0.2:60481';
+// ── Cấu hình kết nối ──────────────────────────────────────────────────────────
+// Chọn 1 trong 3 tùy theo môi trường:
+//
+// [A] Laptop Hotspot (KHUYẾN NGHỊ - không cần cài thêm gì):
+//     Bật Mobile Hotspot trên Windows → điện thoại kết nối vào hotspot laptop
+export const BASE_URL = 'http://192.168.137.1:60481';
+//
+// [B] Radmin VPN (cần cài Radmin VPN app trên điện thoại):
+// export const BASE_URL = 'http://26.42.69.95:60481';
+//
+// [C] WiFi cùng mạng (không dùng WiFi trường vì AP Isolation):
+// export const BASE_URL = 'http://10.21.3.60:60481';
 
 export const api = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -82,6 +93,20 @@ export const supervisorApi = {
   escalateViolation:(id: number, escalateToUserId: number) =>
     api.post(`/mobile/supervisor/violations/${id}/escalate`, { escalateToUserId }),
   gateCheck:        (body: object)                 => api.post('/mobile/supervisor/gate-check', body),
+};
+
+// ── Online Classroom ──────────────────────────────────────────────────────────
+export const onlineApi = {
+  sessions:       ()                 => api.get('/mobile/online-sessions'),
+  joinByCode:     (roomCode: string) => api.post('/mobile/online-sessions/join', { roomCode }),
+  chatHistory:    (sessionId: number)=> api.get(`/mobile/online-sessions/${sessionId}/chat`),
+  // Tạo bridge code ngắn hạn để mở WebView (tránh truyền JWT dài qua URL)
+  webviewToken:   ()                 => api.post('/mobile/webview-token'),
+};
+
+// ── Virtual Lab ───────────────────────────────────────────────────────────────
+export const virtualLabApi = {
+  sessions: () => api.get('/mobile/virtual-lab/sessions'),
 };
 
 // ── Common ────────────────────────────────────────────────────────────────────

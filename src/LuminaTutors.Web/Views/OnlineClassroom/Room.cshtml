@@ -273,6 +273,68 @@ input,textarea{cursor:text}
     border-radius:50%;background:var(--danger);display:none
 }
 
+/* ══════════════════════════════════════════════════════
+   MOBILE / WEBVIEW  — Zoom-style compact layout
+   Applied when screen ≤ 640 px  OR  html.in-webview
+   ══════════════════════════════════════════════════════ */
+@@media (max-width:640px){
+  :root { --panel-w: 100vw; }
+  /* Layout */
+  #app { grid-template-rows: 44px 1fr 76px; }
+  /* Topbar: compact */
+  #topbar { padding: 0 10px; gap: 6px; }
+  .tb-logo { display: none; }
+  .tb-sep  { display: none; }
+  .tb-title { font-size: .78rem; }
+  .tb-badge { font-size: .68rem; padding: 2px 7px; }
+  #clock { font-size: .7rem; }
+  /* Bottombar: icons only, bigger touch targets */
+  #bottombar { padding: 0 6px; justify-content: space-around; }
+  .bb-info   { display: none; }
+  .ctl-label { display: none; }
+  .ctl-wrap  { gap: 0; }
+  .ctl  { width: 52px; height: 52px; font-size: 1.15rem; }
+  .ctl-end { width: 60px; height: 52px; font-size: 1.1rem; }
+  /* View-switcher pills → compact icon buttons */
+  .ctl-view {
+    width: 38px; height: 38px; border-radius: 10px;
+    padding: 0; font-size: .95rem; gap: 0;
+  }
+  /* hide text labels inside view + action buttons */
+  .ctl-btn-label { display: none; }
+  /* Action buttons */
+  .ctl-action { width: 42px; height: 42px; border-radius: 10px; padding: 0; font-size: 1rem; }
+  /* Side panel: full-width drawer */
+  #side-panel {
+    top: 44px; bottom: 76px;
+    border-radius: 16px 16px 0 0; width: 100%;
+  }
+  /* Auto-hide bars (JS toggles .bars-hidden on #app) */
+  #app.bars-hidden #topbar,
+  #app.bars-hidden #bottombar {
+    opacity: 0; pointer-events: none; transition: opacity .35s ease;
+  }
+  #topbar, #bottombar { transition: opacity .2s ease; }
+}
+/* Same rules for in-webview on any screen size */
+html.in-webview #app { grid-template-rows: 44px 1fr 76px; }
+html.in-webview .tb-logo,
+html.in-webview .tb-sep,
+html.in-webview .bb-info,
+html.in-webview .ctl-label,
+html.in-webview .ctl-btn-label { display: none; }
+html.in-webview .ctl      { width: 52px; height: 52px; font-size: 1.15rem; }
+html.in-webview .ctl-end  { width: 60px; height: 52px; }
+html.in-webview .ctl-wrap { gap: 0; }
+html.in-webview .ctl-view { width: 38px; height: 38px; border-radius: 10px; padding: 0; font-size: .95rem; }
+html.in-webview .ctl-action { width: 42px; height: 42px; border-radius: 10px; padding: 0; font-size: 1rem; }
+html.in-webview #bottombar { padding: 0 6px; justify-content: space-around; }
+html.in-webview #topbar { padding: 0 10px; }
+html.in-webview #side-panel { top: 44px; bottom: 76px; border-radius: 16px 16px 0 0; width: 100%; }
+html.in-webview #topbar, html.in-webview #bottombar { transition: opacity .2s ease; }
+html.in-webview #app.bars-hidden #topbar,
+html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; transition: opacity .35s ease; }
+
 /* ── TOASTS ─────────────────────────────────────────── */
 #toasts{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
          display:flex;flex-direction:column;gap:6px;z-index:9999;pointer-events:none;align-items:center}
@@ -376,13 +438,13 @@ input,textarea{cursor:text}
       </div>
       <div class="tb-sep"></div>
       <button class="ctl ctl-view active-view" id="btn-v-video" onclick="switchView('video')" title="Video">
-          <i class="bi bi-camera-video-fill"></i> Video
+          <i class="bi bi-camera-video-fill"></i><span class="ctl-btn-label"> Video</span>
       </button>
       <button class="ctl ctl-view" id="btn-v-wb" onclick="switchView('wb')" title="Bảng trắng">
-          <i class="bi bi-easel2-fill"></i> Bảng
+          <i class="bi bi-easel2-fill"></i><span class="ctl-btn-label"> Bảng</span>
       </button>
       <button class="ctl ctl-view" id="btn-v-slide" onclick="switchView('slide')" title="Slide">
-          <i class="bi bi-file-slides-fill"></i> Slide
+          <i class="bi bi-file-slides-fill"></i><span class="ctl-btn-label"> Slide</span>
       </button>
     </div>
 
@@ -897,6 +959,36 @@ async function initSignalR(){
     await connection.invoke('JoinRoom',SESSION_ID);
     if(IS_HOST) await connection.invoke('NotifySessionStarted',SESSION_ID).catch(()=>{});
 }
+
+// ── MOBILE TAP-TO-HIDE / SHOW CONTROLS ─────────────────────────────
+(function initMobileAutoHide(){
+    var isMobile = window.innerWidth <= 640 || document.documentElement.classList.contains('in-webview');
+    if (!isMobile) return;
+    var app = document.getElementById('app');
+    var hideTimer = null;
+    function showBars(){
+        app.classList.remove('bars-hidden');
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(function(){ app.classList.add('bars-hidden'); }, 3500);
+    }
+    var stage = document.getElementById('stage');
+    if (stage) {
+        stage.addEventListener('click', function(e){
+            if (e.target.closest && e.target.closest('button,a,input,canvas,select')) return;
+            if (app.classList.contains('bars-hidden')) showBars();
+            else { clearTimeout(hideTimer); app.classList.add('bars-hidden'); }
+        }, { passive: true });
+    }
+    ['topbar','bottombar'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('touchstart', function(){ clearTimeout(hideTimer); }, { passive: true });
+            el.addEventListener('touchend', showBars, { passive: true });
+        }
+    });
+    // Initial auto-hide after 4s
+    hideTimer = setTimeout(function(){ app.classList.add('bars-hidden'); }, 4000);
+})();
 
 // ── BOOTSTRAP ───────────────────────────────────────────────────────
 (async function init(){

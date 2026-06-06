@@ -1,8 +1,12 @@
 using System.Security.Claims;
+using LuminaTutors.Web.Models;
+using Microsoft.Extensions.Caching.Memory;
 using LuminaTutors.Application.DTOs.Attendance;
 using LuminaTutors.Application.DTOs.Discipline;
 using LuminaTutors.Application.DTOs.Grading;
 using LuminaTutors.Application.DTOs.AI;
+using LuminaTutors.Application.DTOs.Lab;
+using LuminaTutors.Application.DTOs.OnlineClassroom;
 using LuminaTutors.Application.Interfaces.Services;
 using LuminaTutors.Domain.Enums;
 using LuminaTutors.Domain.Interfaces.Repositories;
@@ -22,36 +26,45 @@ namespace LuminaTutors.Web.Controllers.Api;
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public sealed class MobileApiController : ControllerBase
 {
-    private readonly IGradingService      _grading;
-    private readonly IAttendanceService   _attendance;
-    private readonly IClassService        _classService;
-    private readonly INotificationService _notifications;
-    private readonly IDisciplineService   _discipline;
-    private readonly IStudentService      _studentService;
-    private readonly IHomeworkService     _homework;
-    private readonly IAiTutorService      _aiTutor;
-    private readonly IUnitOfWork          _uow;
+    private readonly IGradingService           _grading;
+    private readonly IAttendanceService        _attendance;
+    private readonly IClassService             _classService;
+    private readonly INotificationService      _notifications;
+    private readonly IDisciplineService        _discipline;
+    private readonly IStudentService           _studentService;
+    private readonly IHomeworkService          _homework;
+    private readonly IAiTutorService           _aiTutor;
+    private readonly IOnlineClassroomService   _onlineClassroom;
+    private readonly IVirtualLabService        _virtualLab;
+    private readonly IMemoryCache              _cache;
+    private readonly IUnitOfWork               _uow;
 
     public MobileApiController(
-        IGradingService      grading,
-        IAttendanceService   attendance,
-        IClassService        classService,
-        INotificationService notifications,
-        IDisciplineService   discipline,
-        IStudentService      studentService,
-        IHomeworkService     homework,
-        IAiTutorService      aiTutor,
-        IUnitOfWork          uow)
+        IGradingService          grading,
+        IAttendanceService       attendance,
+        IClassService            classService,
+        INotificationService     notifications,
+        IDisciplineService       discipline,
+        IStudentService          studentService,
+        IHomeworkService         homework,
+        IAiTutorService          aiTutor,
+        IOnlineClassroomService  onlineClassroom,
+        IVirtualLabService       virtualLab,
+        IMemoryCache             cache,
+        IUnitOfWork              uow)
     {
-        _grading        = grading;
-        _attendance     = attendance;
-        _classService   = classService;
-        _notifications  = notifications;
-        _discipline     = discipline;
-        _studentService = studentService;
-        _homework       = homework;
-        _aiTutor        = aiTutor;
-        _uow            = uow;
+        _grading         = grading;
+        _attendance      = attendance;
+        _classService    = classService;
+        _notifications   = notifications;
+        _discipline      = discipline;
+        _studentService  = studentService;
+        _homework        = homework;
+        _aiTutor         = aiTutor;
+        _onlineClassroom = onlineClassroom;
+        _virtualLab      = virtualLab;
+        _cache           = cache;
+        _uow             = uow;
     }
 
     // ══════════════════════════════════════════════════════
@@ -424,6 +437,62 @@ public sealed class MobileApiController : ControllerBase
         return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
 
+    // ══════════════════════════════════════════════════════
+    // ONLINE CLASSROOM
+    // ══════════════════════════════════════════════════════
+
+    /// <summary>GET /api/mobile/online-sessions — danh sách phòng học online</summary>
+    [HttpGet("online-sessions")]
+    public async Task<IActionResult> OnlineSessions()
+    {
+        var result = await _onlineClassroom.GetSessionsAsync(SchoolId());
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>POST /api/mobile/online-sessions/join — tham gia bằng mã phòng</summary>
+    [HttpPost("online-sessions/join")]
+    public async Task<IActionResult> JoinOnlineSession([FromBody] JoinByCodeDto dto)
+    {
+        var result = await _onlineClassroom.JoinByCodeAsync(SchoolId(), UserId(), dto.RoomCode);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    /// <summary>GET /api/mobile/online-sessions/{id}/chat — lịch sử chat</summary>
+    [HttpGet("online-sessions/{sessionId:int}/chat")]
+    public async Task<IActionResult> OnlineChatHistory(int sessionId)
+    {
+        var result = await _onlineClassroom.GetChatHistoryAsync(sessionId);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    // ══ Virtual Lab ══════════════════════════════════════════════════════════
+
+    /// <summary>GET /api/mobile/virtual-lab/sessions — danh sách phòng lab đang hoạt động</summary>
+    [HttpGet("virtual-lab/sessions")]
+    public async Task<IActionResult> VirtualLabSessions()
+    {
+        var result = await _virtualLab.GetActiveSessionsAsync(SchoolId());
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    // ══ WebView bridge token ═════════════════════════════════════════════════
+    // Mobile đã xác thực qua JWT, tạo bridge code ngắn hạn để mở WebView
+    // mà không cần truyền JWT dài qua URL (tránh lỗi encoding)
+
+    /// <summary>POST /api/mobile/webview-token — tạo one-time bridge code (60s)</summary>
+    [HttpPost("webview-token")]
+    public IActionResult CreateWebViewToken()
+    {
+        // Collect all claims from current (JWT-authenticated) user
+        var claims = User.Claims.Select(c => new WebViewBridgeClaim(c.Type, c.Value)).ToList();
+
+        // Generate a short random code, store in cache for 90 seconds
+        var code = Guid.NewGuid().ToString("N"); // 32 hex chars, no hyphens
+        _cache.Set($"webview:{code}", claims, TimeSpan.FromSeconds(90));
+
+        return Ok(new { code });
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private int UserId()   => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
@@ -433,4 +502,5 @@ public sealed class MobileApiController : ControllerBase
 public record ResolveViolationDto(string ActionTaken);
 public record EscalateDto(int EscalateToUserId);
 public record GateCheckDto(int StudentId, string CheckType, bool IsLate, string? Note);
+public record JoinByCodeDto(string RoomCode);
 public record CreateAiSessionDto(string? Title);

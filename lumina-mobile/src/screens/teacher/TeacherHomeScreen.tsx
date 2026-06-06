@@ -65,7 +65,8 @@ export default function TeacherHomeScreen() {
         content: <DashboardTab classes={classes} totalStudents={totalStudents} refreshing={refreshing} onRefresh={onRefresh} /> },
       { key: 'classes', label: 'Lớp & ĐD',  icon: '🏫',
         content: <ClassesTab classes={classes} academicYears={academicYears} activeYear={activeYear}
-                             setActiveYear={setActiveYear} setClasses={setClasses} /> },
+                             setActiveYear={setActiveYear} setClasses={setClasses}
+                             subjectAssignments={subjectAssignments} /> },
       { key: 'grades',  label: 'Sổ điểm',  icon: '📝',
         content: <GradeBookTab subjectAssignments={subjectAssignments} gradeCategories={gradeCategories} /> },
       { key: 'hw',      label: 'Bài tập',   icon: '📖',
@@ -98,7 +99,7 @@ function DashboardTab({ classes, totalStudents, refreshing, onRefresh }: any) {
 }
 
 /* ── Classes & Attendance ───────────────────────────────────── */
-function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClasses }: any) {
+function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClasses, subjectAssignments }: any) {
   const [selected,   setSelected]   = useState<any>(null);
   const [report,     setReport]     = useState<any>(null);
   const [schedules,  setSchedules]  = useState<any[]>([]);
@@ -124,19 +125,30 @@ function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClas
   const openClass = async (cls: any) => {
     setSelected(cls); setReport(null); setLoading(true);
     try {
-      const [rRes, sRes] = await Promise.all([
+      // Load daily attendance report + schedules for this class in parallel
+      const classSAs = (subjectAssignments ?? []).filter(
+        (sa: any) => sa.className === cls.className
+      );
+      const scheduleRequests = classSAs.map((sa: any) =>
+        teacherApi.schedules(sa.id).then((r: any) =>
+          (r.data ?? []).map((s: any) => ({
+            ...s,
+            subjectName: sa.subjectName,
+            displayLabel: `${sa.subjectName} — ${s.dayName} T${s.periodStart}-${s.periodEnd} (${s.startTime})`,
+          }))
+        ).catch(() => [])
+      );
+      const [rRes, ...scheduleArrays] = await Promise.all([
         teacherApi.attendanceSessions(cls.classId),
-        // find schedules by getting subject assignment for this class
-        // we pass classId=0 as placeholder since schedules endpoint needs subjectAssignmentId
-        Promise.resolve({ data: [] }),
+        ...scheduleRequests,
       ]);
       setReport(rRes.data);
-      // Load schedules for subject assignments of this class
-      // This would need more context; for now show create button
+      setSchedules((scheduleArrays as any[][]).flat());
     } catch {}
     finally { setLoading(false); }
   };
 
+  // kept for potential future use
   const openSchedules = async (sa: any) => {
     try {
       const res = await teacherApi.schedules(sa.id);
@@ -226,7 +238,7 @@ function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClas
 
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
               <TouchableOpacity style={[t.actionBtn, { backgroundColor: '#16a34a', flex: 1 }]}
-                onPress={() => { setSchedules([]); setShowCreate(true); }}>
+                onPress={() => { setCsSchedule(''); setCsTopic(''); setCsError(''); setShowCreate(true); }}>
                 <Text style={t.actionBtnText}>＋ Tạo điểm danh</Text>
               </TouchableOpacity>
               {report?.sessionId && (
@@ -266,8 +278,9 @@ function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClas
         <BottomSheet
           visible={showCreate} title="Tạo phiên điểm danh"
           onClose={() => setShowCreate(false)}
-          onSubmit={createSession} submitting={csSubmit}
-          submitLabel="Tạo điểm danh" accent="#16a34a"
+          onSubmit={schedules.length > 0 ? createSession : undefined}
+          submitting={csSubmit}
+          submitLabel={schedules.length > 0 ? "Tạo điểm danh" : "Chưa có lịch học"} accent="#16a34a"
         >
           {schedules.length > 0 && (
             <>
@@ -276,17 +289,21 @@ function ClassesTab({ classes, academicYears, activeYear, setActiveYear, setClas
                 value={csSchedule}
                 onChange={setCsSchedule}
                 options={schedules.map((s: any) => ({
-                  label: `${s.dayName} - T${s.periodStart}-${s.periodEnd} (${s.startTime})`,
+                  label: s.displayLabel ?? `${s.dayName} - T${s.periodStart}-${s.periodEnd} (${s.startTime})`,
                   value: String(s.scheduleId),
                 }))}
               />
             </>
           )}
           {schedules.length === 0 && (
-            <Text style={{ color: '#94a3b8', fontSize: 13, marginBottom: 8 }}>
-              Phiên điểm danh sẽ được tạo cho lớp {selected?.className} hôm nay.{'\n'}
-              Vui lòng đảm bảo lớp đã có lịch học.
-            </Text>
+            <View style={{ backgroundColor: '#fffbeb', borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: '#fde68a' }}>
+              <Text style={{ color: '#92400e', fontSize: 13, fontWeight: '600' }}>
+                ⚠️ Lớp này chưa có lịch học được phân công.
+              </Text>
+              <Text style={{ color: '#92400e', fontSize: 12, marginTop: 4 }}>
+                Vui lòng thêm lịch học cho lớp {selected?.className} trên trang web trước khi tạo phiên điểm danh.
+              </Text>
+            </View>
           )}
           <FieldLabel>Chủ đề / Ghi chú (tùy chọn)</FieldLabel>
           <FieldInput value={csTopic} onChange={setCsTopic} placeholder="VD: Ôn tập chương 3" />

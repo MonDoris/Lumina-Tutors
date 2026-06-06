@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, StatusBar, Dimensions, Animated,
+  SafeAreaView, StatusBar, Dimensions, Animated, Platform,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
@@ -97,7 +97,8 @@ const s = StyleSheet.create({
   header: {
     backgroundColor: '#0b1628',
     paddingHorizontal: 20,
-    paddingTop: 14,
+    // Android: thêm chiều cao status bar để không bị che
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) + 10 : 14,
     paddingBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',

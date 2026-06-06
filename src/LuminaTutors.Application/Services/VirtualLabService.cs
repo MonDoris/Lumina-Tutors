@@ -164,10 +164,8 @@ public sealed class VirtualLabService : IVirtualLabService
 
     private static string GenerateCode()
     {
-        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I, O, 0, 1
-        return new string(Enumerable.Range(0, 6)
-            .Select(_ => chars[Random.Shared.Next(chars.Length)])
-            .ToArray());
+        // 6 chữ số thuần số — dễ nhập trên điện thoại
+        return Random.Shared.Next(100_000, 999_999).ToString();
     }
 
     private static LabSessionDto MapToDto(VirtualLabSession s) => new(

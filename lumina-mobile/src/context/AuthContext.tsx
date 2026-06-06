@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '../api/client';
 
+const MOBILE_ROLES = ['STUDENT', 'TEACHER', 'PARENT', 'SUPERVISOR'];
+
 interface User {
   userId: number;
   fullName: string;
@@ -47,6 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await authApi.login(email, password);
       const data = res.data;
 
+      if (!MOBILE_ROLES.includes(data.roleCode)) {
+        return `Tài khoản "${data.roleCode}" không được hỗ trợ trên ứng dụng di động. Vui lòng liên hệ quản trị viên.`;
+      }
+
       await AsyncStorage.setItem('jwt_token', data.token);
       await AsyncStorage.setItem('user_data', JSON.stringify({
         userId:     data.userId,
@@ -64,6 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 schoolName: data.schoolName, avatarUrl: data.avatarUrl });
       return null; // null = thành công
     } catch (err: any) {
+      if (!err?.response) {
+        return 'Không thể kết nối đến máy chủ. Kiểm tra kết nối mạng và thử lại.';
+      }
       return err?.response?.data?.message ?? 'Email hoặc mật khẩu không đúng.';
     }
   };

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -33,7 +34,8 @@ try
 
     // ── MVC ───────────────────────────────────────────────────────────────────
     builder.Services.AddControllersWithViews()
-        .AddViewOptions(o => o.HtmlHelperOptions.ClientValidationEnabled = true);
+        .AddViewOptions(o => o.HtmlHelperOptions.ClientValidationEnabled = true)
+        .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
     // ── Authentication (Cookie for MVC + JWT for API) ────────────────────────
     var jwtKey    = builder.Configuration["JwtSettings:SecretKey"]!;
@@ -66,9 +68,12 @@ try
             options.AccessDeniedPath  = "/Auth/AccessDenied";
             options.ExpireTimeSpan    = TimeSpan.FromHours(8);
             options.SlidingExpiration = true;
-            options.Cookie.HttpOnly   = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            options.Cookie.SameSite   = SameSiteMode.Strict;
+            options.Cookie.HttpOnly     = true;
+            // SameAsRequest: HTTPS → Secure cookie, HTTP → non-secure cookie
+            // (cần thiết khi mobile WebView dùng http://192.168.x.x)
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            // Lax cho phép cookie gửi kèm redirect (Strict chặn cả redirect WebView)
+            options.Cookie.SameSite     = SameSiteMode.Lax;
         });
 
     builder.Services.AddAuthorization(options =>

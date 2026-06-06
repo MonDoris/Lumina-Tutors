@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.Attendance;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Domain.Interfaces.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -10,18 +12,55 @@ namespace LuminaTutors.Web.Controllers;
 public sealed class AttendanceController : Controller
 {
     private readonly IAttendanceService _attendanceService;
+    private readonly IUnitOfWork        _uow;
     private readonly ILogger<AttendanceController> _logger;
 
-    public AttendanceController(IAttendanceService attendanceService, ILogger<AttendanceController> logger)
+    public AttendanceController(
+        IAttendanceService attendanceService,
+        IUnitOfWork uow,
+        ILogger<AttendanceController> logger)
     {
         _attendanceService = attendanceService;
+        _uow               = uow;
         _logger            = logger;
     }
 
     // ─── GET /Attendance ──────────────────────────────────────────────────────
-    // Teacher's active sessions list
 
-    public IActionResult Index() => View();
+    public async Task<IActionResult> Index()
+    {
+        // Load teacher's schedules for dropdown
+        var teacherId = GetCurrentUserId();
+        var schoolId  = GetCurrentSchoolId();
+
+        var schedules = await _uow.Schedules.FindAsync(
+            s => s.SubjectAssignment.TeacherId == teacherId &&
+                 s.SubjectAssignment.Class.SchoolId == schoolId,
+            include: q => q
+                .Include(s => s.SubjectAssignment)
+                    .ThenInclude(sa => sa.Subject)
+                .Include(s => s.SubjectAssignment)
+                    .ThenInclude(sa => sa.Class));
+
+        ViewBag.TeacherSchedules = schedules
+            .OrderBy(s => s.DayOfWeek)
+            .ThenBy(s => s.PeriodStart)
+            .Select(s => new
+            {
+                Id    = s.Id,
+                Label = $"{s.SubjectAssignment.Subject?.SubjectName ?? "?"} — " +
+                        $"{s.SubjectAssignment.Class?.ClassName ?? "?"} — " +
+                        $"{DayName(s.DayOfWeek)} T{s.PeriodStart}-{s.PeriodEnd}"
+            })
+            .ToList();
+
+        return View();
+    }
+
+    private static string DayName(byte d) => d switch {
+        2 => "T2", 3 => "T3", 4 => "T4", 5 => "T5",
+        6 => "T6", 7 => "T7", 1 => "CN", _ => $"D{d}"
+    };
 
     // ─── GET /Attendance/Session/5 ────────────────────────────────────────────
 

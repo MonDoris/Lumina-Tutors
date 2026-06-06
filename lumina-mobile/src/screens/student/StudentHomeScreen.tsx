@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, KeyboardAvoidingView, Platform, FlatList,
+  TextInput, Alert, KeyboardAvoidingView, Platform, FlatList, Modal,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import AppShell from '../../components/AppShell';
@@ -9,7 +9,9 @@ import {
   LoadingView, EmptyView, SectionTitle, StatCard,
   TabPage, Card, ScorePill, NotifItem, Badge, scoreColor,
 } from '../../components/ui';
-import { studentApi, commonApi } from '../../api/client';
+import { studentApi, commonApi, onlineApi, virtualLabApi } from '../../api/client';
+import ClassroomWebViewScreen from '../shared/ClassroomWebViewScreen';
+import VirtualLabWebViewScreen from '../shared/VirtualLabWebViewScreen';
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  STUDENT — 5 tabs                                          */
@@ -66,6 +68,10 @@ export default function StudentHomeScreen() {
         content: <AttendanceTab {...shared} /> },
       { key: 'hw',     label: 'Bài tập',   icon: '📖',
         content: <HomeworkTab courses={courses} /> },
+      { key: 'online', label: 'Học online', icon: '🖥️',
+        content: <OnlineLearningTab /> },
+      { key: 'lab',    label: 'Lab 3D',    icon: '🔬',
+        content: <VirtualLabTab /> },
       { key: 'ai',     label: 'Gia sư AI', icon: '🤖',
         content: <AiTutorTab /> },
     ]} />
@@ -544,6 +550,265 @@ function AiTutorTab() {
   );
 }
 
+/* ── Online Learning ────────────────────────────────────────── */
+function OnlineLearningTab() {
+  const [sessions,        setSessions]        = useState<any[]>([]);
+  const [loading,         setLoading]         = useState(true);
+  const [roomCode,        setRoomCode]        = useState('');
+  const [joining,         setJoining]         = useState(false);
+  const [webViewRoomCode, setWebViewRoomCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    onlineApi.sessions()
+      .then(r => setSessions(r.data ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const joinByCode = async () => {
+    const code = roomCode.trim().toUpperCase();
+    if (!code) { Alert.alert('Lỗi', 'Vui lòng nhập mã phòng học'); return; }
+    setJoining(true);
+    try {
+      // Verify code exists first, then open WebView
+      await onlineApi.joinByCode(code);
+      setRoomCode('');
+      setWebViewRoomCode(code);
+    } catch (e: any) {
+      Alert.alert('Không tham gia được', e?.response?.data?.message ?? 'Mã phòng không hợp lệ hoặc phòng đã đóng');
+    }
+    finally { setJoining(false); }
+  };
+
+  if (loading) return <LoadingView />;
+
+  const activeSessions   = sessions.filter((s: any) => s.status === 'Active');
+  const upcomingSessions = sessions.filter((s: any) => s.status === 'Scheduled');
+
+  return (
+    <>
+    {/* Full-screen Modal — covers AppShell header + tab bar */}
+    <Modal
+      visible={!!webViewRoomCode}
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={() => setWebViewRoomCode(null)}
+    >
+      {webViewRoomCode ? (
+        <ClassroomWebViewScreen
+          roomCode={webViewRoomCode}
+          onClose={() => setWebViewRoomCode(null)}
+        />
+      ) : null}
+    </Modal>
+
+    <TabPage>
+      <View style={s.onlineBanner}>
+        <Text style={s.onlineBannerTitle}>🖥️ Học trực tuyến</Text>
+        <Text style={s.onlineBannerSub}>Tham gia lớp học online với đầy đủ video, whiteboard</Text>
+      </View>
+
+      {/* Nhập mã phòng */}
+      <View style={s.joinCard}>
+        <Text style={s.joinTitle}>Nhập mã phòng học</Text>
+        <View style={s.joinRow}>
+          <TextInput
+            style={s.joinInput}
+            value={roomCode}
+            onChangeText={t => setRoomCode(t.replace(/\D/g, ''))}
+            placeholder="VD: 123456"
+            placeholderTextColor="#94a3b8"
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+          <TouchableOpacity
+            style={[s.joinBtn, joining && { opacity: 0.6 }]}
+            onPress={joinByCode}
+            disabled={joining}
+          >
+            <Text style={s.joinBtnText}>{joining ? '⏳' : 'Vào'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Đang diễn ra */}
+      {activeSessions.length > 0 && (
+        <>
+          <SectionTitle>🔴 Đang diễn ra ({activeSessions.length})</SectionTitle>
+          {activeSessions.map((sess: any) => (
+            <OnlineSessionCard
+              key={sess.id}
+              session={sess}
+              onOpen={() => setWebViewRoomCode(sess.roomCode)}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Sắp diễn ra */}
+      {upcomingSessions.length > 0 && (
+        <>
+          <SectionTitle>📅 Sắp diễn ra ({upcomingSessions.length})</SectionTitle>
+          {upcomingSessions.map((sess: any) => (
+            <OnlineSessionCard key={sess.id} session={sess} />
+          ))}
+        </>
+      )}
+
+      {activeSessions.length === 0 && upcomingSessions.length === 0 && (
+        <EmptyView icon="🖥️" text="Không có buổi học nào đang mở. Nhập mã phòng để tham gia." />
+      )}
+    </TabPage>
+    </>
+  );
+}
+
+function OnlineSessionCard({ session, onOpen }: { session: any; onOpen?: (s: any) => void }) {
+  const isActive = session.status === 'Active';
+  return (
+    <View style={[s.sessionCard, isActive && s.sessionCardActive]}>
+      <View style={{ flex: 1 }}>
+        <Text style={s.sessionTitle} numberOfLines={1}>{session.title}</Text>
+        <Text style={s.sessionTeacher}>👨‍🏫 {session.teacherName}</Text>
+        {session.scheduledAt && (
+          <Text style={s.sessionTime}>
+            🕐 {new Date(session.scheduledAt).toLocaleString('vi-VN', {
+              hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit',
+            })}
+          </Text>
+        )}
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 6, alignItems: 'center' }}>
+          <View style={s.roomCodeBadge}>
+            <Text style={s.roomCodeText}>{session.roomCode}</Text>
+          </View>
+          <Text style={{ fontSize: 11, color: '#94a3b8' }}>
+            {session.participantCount ?? 0}/{session.maxParticipants} người
+          </Text>
+        </View>
+      </View>
+      {isActive && onOpen && (
+        <TouchableOpacity style={s.enterBtn} onPress={() => onOpen(session)}>
+          <Text style={s.enterBtnText}>Vào lớp →</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+/* ── Virtual Lab ────────────────────────────────────────────── */
+function VirtualLabTab() {
+  const [sessions,       setSessions]       = useState<any[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [sessionCode,    setSessionCode]    = useState('');
+  const [activeLabCode,  setActiveLabCode]  = useState<string | null>(null);
+  const [activeLabName,  setActiveLabName]  = useState<string | undefined>(undefined);
+  const [joining,        setJoining]        = useState(false);
+
+  useEffect(() => {
+    virtualLabApi.sessions()
+      .then(r => setSessions(r.data ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const joinByCode = async () => {
+    const code = sessionCode.trim().toUpperCase();
+    if (!code) { Alert.alert('Lỗi', 'Vui lòng nhập mã phòng lab'); return; }
+    setJoining(true);
+    setActiveLabCode(code);
+    setActiveLabName(undefined);
+    setJoining(false);
+  };
+
+  if (loading) return <LoadingView />;
+
+  return (
+    <>
+    {/* Full-screen Modal — covers AppShell header + tab bar */}
+    <Modal
+      visible={!!activeLabCode}
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={() => { setActiveLabCode(null); setActiveLabName(undefined); }}
+    >
+      {activeLabCode ? (
+        <VirtualLabWebViewScreen
+          sessionCode={activeLabCode}
+          labName={activeLabName}
+          onClose={() => { setActiveLabCode(null); setActiveLabName(undefined); }}
+        />
+      ) : null}
+    </Modal>
+
+    <TabPage>
+      <View style={[s.onlineBanner, { backgroundColor: '#0f172a' }]}>
+        <Text style={s.onlineBannerTitle}>🔬 Phòng Lab 3D</Text>
+        <Text style={s.onlineBannerSub}>Thí nghiệm hóa học, vật lý, sinh học trong không gian 3D</Text>
+      </View>
+
+      {/* Nhập mã phòng */}
+      <View style={s.joinCard}>
+        <Text style={s.joinTitle}>Nhập mã phòng lab</Text>
+        <View style={s.joinRow}>
+          <TextInput
+            style={s.joinInput}
+            value={sessionCode}
+            onChangeText={t => setSessionCode(t.replace(/\D/g, ''))}
+            placeholder="VD: 123456"
+            placeholderTextColor="#94a3b8"
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+          <TouchableOpacity
+            style={[s.joinBtn, { backgroundColor: '#10b981' }, joining && { opacity: 0.6 }]}
+            onPress={joinByCode}
+            disabled={joining}
+          >
+            <Text style={s.joinBtnText}>{joining ? '⏳' : 'Vào'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Phòng lab đang mở */}
+      {sessions.length > 0 && (
+        <>
+          <SectionTitle>🟢 Phòng lab đang mở ({sessions.length})</SectionTitle>
+          {sessions.map((lab: any) => (
+            <TouchableOpacity
+              key={lab.id}
+              activeOpacity={0.85}
+              onPress={() => { setActiveLabCode(lab.sessionCode); setActiveLabName(lab.title ?? lab.subjectTag); }}
+            >
+              <View style={[s.sessionCard, { borderLeftColor: '#10b981' }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.sessionTitle}>{lab.title ?? `Lab ${lab.subjectTag}`}</Text>
+                  <Text style={s.sessionTeacher}>👨‍🏫 {lab.teacherName}</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 6, alignItems: 'center' }}>
+                    <View style={[s.roomCodeBadge, { backgroundColor: '#ecfdf5' }]}>
+                      <Text style={[s.roomCodeText, { color: '#10b981' }]}>{lab.sessionCode}</Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>
+                      {lab.participantCount ?? 0} người tham gia
+                    </Text>
+                  </View>
+                </View>
+                <View style={[s.enterBtn, { backgroundColor: '#10b981' }]}>
+                  <Text style={s.enterBtnText}>Vào lab →</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
+
+      {sessions.length === 0 && (
+        <EmptyView icon="🔬" text="Không có phòng lab nào đang mở. Nhập mã phòng để tham gia." />
+      )}
+    </TabPage>
+    </>
+  );
+}
+
 /* ── Shared helpers ─────────────────────────────────────────── */
 function SemPicker({ semesters, active, onSelect, accent }: any) {
   return (
@@ -634,6 +899,39 @@ const s = StyleSheet.create({
 
   semBtn:  { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, backgroundColor: '#f1f5f9', marginRight: 8 },
   semText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
+
+  // Online Learning
+  onlineBanner:    { backgroundColor: '#0f172a', borderRadius: 16, padding: 18, marginBottom: 14 },
+  onlineBannerTitle:{ fontSize: 18, fontWeight: '800', color: '#fff' },
+  onlineBannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+
+  joinCard:  { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 3 },
+  joinTitle: { fontSize: 13, fontWeight: '700', color: '#64748b', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  joinRow:   { flexDirection: 'row', gap: 10 },
+  joinInput: { flex: 1, borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 11, fontSize: 16, fontWeight: '800',
+    color: '#1e293b', letterSpacing: 2, backgroundColor: '#f8fafc' },
+  joinBtn:   { backgroundColor: '#2563eb', borderRadius: 12, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  joinBtnText:{ fontSize: 15, fontWeight: '800', color: '#fff' },
+
+  resultCard: { backgroundColor: '#f0fdf4', borderRadius: 14, padding: 16, marginBottom: 14,
+    borderWidth: 1.5, borderColor: '#86efac' },
+  openWebBtn: { marginTop: 12, backgroundColor: '#2563eb', borderRadius: 10, paddingVertical: 11, alignItems: 'center' },
+  openWebBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+
+  sessionCard: { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+    borderLeftWidth: 4, borderLeftColor: '#e2e8f0' },
+  sessionCardActive: { borderLeftColor: '#dc2626', backgroundColor: '#fff9f9' },
+  sessionTitle:  { fontSize: 14, fontWeight: '800', color: '#1e293b', marginBottom: 3 },
+  sessionTeacher:{ fontSize: 12, color: '#64748b', marginBottom: 2 },
+  sessionTime:   { fontSize: 11, color: '#94a3b8' },
+  roomCodeBadge: { backgroundColor: '#eff6ff', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  roomCodeText:  { fontSize: 12, fontWeight: '800', color: '#2563eb', letterSpacing: 1 },
+  enterBtn:      { backgroundColor: '#dc2626', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14 },
+  enterBtnText:  { fontSize: 12, fontWeight: '800', color: '#fff' },
 
   // QR screen
   qrScreen: { flex: 1, backgroundColor: '#0b1628' },

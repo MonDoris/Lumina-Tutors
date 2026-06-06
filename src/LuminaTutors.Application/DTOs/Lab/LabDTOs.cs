@@ -12,7 +12,10 @@ public record CreateLabSessionRequest(
 );
 
 public record JoinLabSessionRequest(
-    [Required(ErrorMessage = "Vui lòng nhập mã phòng thực hành."), MinLength(6, ErrorMessage = "Tối thiểu 6 ký tự."), MaxLength(6, ErrorMessage = "Tối đa 6 ký tự.")] string SessionCode
+    [Required(ErrorMessage = "Vui lòng nhập mã phòng thực hành."),
+     MinLength(6, ErrorMessage = "Mã phòng 6 chữ số."),
+     MaxLength(6, ErrorMessage = "Mã phòng 6 chữ số."),
+     RegularExpression(@"^\d{6}$", ErrorMessage = "Mã phòng gồm 6 chữ số.")] string SessionCode
 );
 
 // ─── Responses ────────────────────────────────────────────────────────────────

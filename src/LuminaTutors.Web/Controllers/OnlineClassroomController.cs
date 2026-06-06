@@ -1,8 +1,12 @@
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.OnlineClassroom;
+using LuminaTutors.Web.Models;
 using LuminaTutors.Application.Interfaces.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -10,21 +14,18 @@ namespace LuminaTutors.Web.Controllers;
 public sealed class OnlineClassroomController : Controller
 {
     private readonly IOnlineClassroomService _service;
+    private readonly IMemoryCache            _cache;
     private readonly ILogger<OnlineClassroomController> _logger;
 
     public OnlineClassroomController(
         IOnlineClassroomService service,
+        IMemoryCache            cache,
         ILogger<OnlineClassroomController> logger)
     {
         _service = service;
+        _cache   = cache;
         _logger  = logger;
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private int UserId   => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
-    private int SchoolId => int.Parse(User.FindFirstValue("SchoolId") ?? "0");
-    private string RoleCode => User.FindFirstValue(ClaimTypes.Role) ?? "";
 
     // ── GET /OnlineClassroom ──────────────────────────────────────────────────
 
@@ -229,4 +230,57 @@ public sealed class OnlineClassroomController : Controller
         if (!result.IsSuccess) return BadRequest(new { error = result.Error });
         return Json(result.Data);
     }
+
+    // ── GET /OnlineClassroom/MobileEntry?roomCode=ABC&code=GUID ─────────────
+    // WebView bridge: dùng one-time bridge code (không truyền JWT qua URL)
+
+    [AllowAnonymous]
+    [HttpGet]
+    public async Task<IActionResult> MobileEntry(string roomCode, string code)
+    {
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(roomCode))
+            return Content(HtmlError("Thiếu code hoặc mã phòng."), "text/html");
+
+        // Lấy claims từ cache (một lần dùng rồi xóa)
+        var cacheKey = $"webview:{code}";
+        if (!_cache.TryGetValue(cacheKey, out List<WebViewBridgeClaim>? bridgeClaims) || bridgeClaims is null)
+            return Content(HtmlError("Mã xác thực hết hạn hoặc không hợp lệ.<br>Vui lòng đóng và thử lại trong ứng dụng."), "text/html");
+
+        _cache.Remove(cacheKey); // one-time use
+
+        var claims = bridgeClaims
+            .Select(c => new Claim(c.Type, c.Value))
+            .ToList();
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identity),
+            new AuthenticationProperties
+            {
+                IsPersistent = false,
+                ExpiresUtc   = DateTimeOffset.UtcNow.AddHours(2)
+            });
+
+        var schoolId = int.Parse(claims.FirstOrDefault(c => c.Type == "SchoolId")?.Value ?? "0");
+        var userId   = int.Parse(claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+        var joinResult = await _service.JoinByCodeAsync(schoolId, userId, roomCode.ToUpperInvariant());
+        if (!joinResult.IsSuccess)
+            return Content(HtmlError(joinResult.Error ?? "Không tham gia được phòng học."), "text/html");
+
+        return RedirectToAction(nameof(Room), new { id = joinResult.Data!.Session.Id });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private int UserId    => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
+    private int SchoolId  => int.Parse(User.FindFirstValue("SchoolId") ?? "0");
+    private string RoleCode => User.FindFirstValue(ClaimTypes.Role) ?? "";
+
+    private static string HtmlError(string msg) =>
+        $"<html><body style='font-family:sans-serif;padding:30px;background:#fff'>" +
+        $"<h3 style='color:#c0392b'>⚠️ {msg}</h3>" +
+        $"<p style='color:#64748b'>Đóng màn hình này và thử lại.</p>" +
+        $"</body></html>";
 }

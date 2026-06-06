@@ -37,7 +37,7 @@ export function EmptyView({ icon = '📭', text = 'Không có dữ liệu' }: { 
 }
 
 /* ── Section title ──────────────────────────────────────────── */
-export function SectionTitle({ children }: { children: string }) {
+export function SectionTitle({ children }: { children: React.ReactNode }) {
   return <Text style={u.sectionTitle}>{children}</Text>;
 }
 

@@ -437,7 +437,7 @@ function NotifTab({ notifications, refreshing, onRefresh }: any) {
 
 /* ── Violation card ─────────────────────────────────────────── */
 function ViolationCard({ v, onResolve }: { v: any; onResolve?: () => void }) {
-  const isHigh   = v.severity === 'High' || v.severity === 'Severe';
+  const isHigh   = v.severity === 'Severe';
   const resolved = v.status === 'Resolved';
 
   return (
