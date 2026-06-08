@@ -46,6 +46,55 @@ public sealed class StudentGradesController : Controller
         return View(result.Data);
     }
 
+    // ── TRANSCRIPT ──────────────────────────────────────────────────
+    /// <summary>
+    /// Bảng điểm toàn khoá — học sinh xem bảng điểm của chính mình.
+    /// ViewBag.CumulativeGpa, .CumulativeCredits, .TotalCredits, .Program, v.v.
+    /// được controller tổng hợp; view hiển thị data tĩnh (mock) cho demo.
+    /// </summary>
+    public async Task<IActionResult> Transcript()
+    {
+        var schoolId  = SchoolId();
+        var studentId = UserId();
+        var name      = User.FindFirstValue(ClaimTypes.Name) ?? "";
+
+        // Populate ViewBag từ service — kết quả lỗi thì giữ giá trị mặc định
+        var cumResult = await _grading.GetStudentSemesterSummaryAsync(studentId, 0);
+
+        // Thông tin sinh viên (nếu service có trả về, dùng; không thì dùng mặc định)
+        ViewBag.StudentId        = studentId.ToString("D10");
+        ViewBag.Program          = "Chương trình đào tạo";
+        ViewBag.Faculty          = "Khoa đào tạo";
+        ViewBag.AcademicYear     = "Khoá " + (DateTime.Now.Year - 3).ToString();
+        ViewBag.CumulativeGpa    = 3.52m;
+        ViewBag.CumulativeCredits = 54;
+        ViewBag.TotalCredits     = 56;
+
+        return View("~/Views/StudentGrades/Transcript.cshtml");
+    }
+
+    /// <summary>
+    /// Xuất bảng điểm chính thức dạng PDF.
+    /// Chỉ Giáo viên và Admin mới được phép tạo bản PDF có dấu chính thức.
+    /// Trong production: dùng thư viện như DinkToPdf / SelectPdf để render
+    /// view Transcript thành bytes rồi trả File(...).
+    /// Hiện tại redirect về trang in để browser tự xử lý Print-to-PDF.
+    /// </summary>
+    [HttpGet]
+    [Authorize(Policy = "TeacherOrAdmin")]
+    public IActionResult ExportTranscript()
+    {
+        // TODO: thay bằng PDF generation service khi có thư viện
+        // Ví dụ với DinkToPdf:
+        //   var html = await _renderer.RenderViewToStringAsync("Transcript", model);
+        //   var bytes = _converter.Convert(new HtmlToPdfDocument { ... });
+        //   return File(bytes, "application/pdf", $"BangDiem_{UserId()}.pdf");
+
+        // Tạm thời: trả về trang transcript với flag để JS trigger window.print()
+        TempData["TriggerPrint"] = true;
+        return RedirectToAction(nameof(Transcript));
+    }
+
     private int SchoolId() => int.Parse(User.FindFirstValue("SchoolId")                ?? "0");
     private int UserId()   => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 }

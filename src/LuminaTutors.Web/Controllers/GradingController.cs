@@ -175,6 +175,19 @@ public sealed class GradingController : Controller
         return RedirectToAction(nameof(GradeBook), new { subjectAssignmentId });
     }
 
+    // ─── GET /Grading/ExportGradeBook ────────────────────────────────────────
+    // Inherited TeacherOrAdmin policy from class attribute.
+    // Triggers browser print dialog (print-to-PDF).  Replace body with a real
+    // PDF library (DinkToPdf / SelectPdf) when available.
+
+    [HttpGet]
+    public IActionResult ExportGradeBook(int subjectAssignmentId)
+    {
+        // TODO: render view to HTML then convert with DinkToPdf / SelectPdf
+        TempData["TriggerPrint"] = true;
+        return RedirectToAction(nameof(GradeBook), new { subjectAssignmentId });
+    }
+
     // ─── GET /Grading/Exams ───────────────────────────────────────────────────
 
     [Authorize(Policy = "AdminOnly")]

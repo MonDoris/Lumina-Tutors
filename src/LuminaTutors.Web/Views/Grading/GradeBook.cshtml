@@ -25,6 +25,17 @@
                 <i class="bi bi-calculator"></i> Tính ĐTBm tất cả
             </button>
         </form>
+        <a asp-action="ExportGradeBook"
+           asp-route-subjectAssignmentId="@Model?.SubjectAssignmentId"
+           class="lt-btn lt-btn--export"
+           id="btn-export-gradebook"
+           data-testid="btn-export-gradebook">
+            <i class="bi bi-file-earmark-arrow-down"></i>
+            <span class="btn-export-label">Xuất sổ điểm</span>
+            <span class="btn-export-loading" hidden>
+                <span class="export-spinner"></span> Đang xuất…
+            </span>
+        </a>
         @if (User.IsInRole("ADMIN"))
         {
             <form asp-action="LockGradeBook" method="post" class="d-inline">
@@ -38,6 +49,50 @@
             </form>
         }
     </div>
+
+<style>
+.lt-btn--export {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .45rem 1rem;
+    border-radius: 8px;
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .18s, box-shadow .18s, transform .12s;
+    background: oklch(36% .08 255);
+    color: oklch(92% .04 255);
+    border: 1.5px solid oklch(46% .12 255);
+    box-shadow: 0 1px 4px oklch(0% 0 0 / .18);
+}
+.lt-btn--export:hover {
+    background: oklch(42% .1 255);
+    box-shadow: 0 3px 10px oklch(0% 0 0 / .28);
+    transform: translateY(-1px);
+    color: #fff;
+    text-decoration: none;
+}
+.lt-btn--export:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+.lt-btn--export.is-loading {
+    pointer-events: none;
+    opacity: .8;
+}
+.export-spinner {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    border: 2px solid oklch(70% .05 255 / .4);
+    border-top-color: oklch(92% .04 255);
+    border-radius: 50%;
+    animation: gb-spin .7s linear infinite;
+}
+@@keyframes gb-spin { to { transform: rotate(360deg); } }
+</style>
 </div>
 
 <div class="lt-alert lt-alert--info lt-mb-4">
@@ -214,5 +269,29 @@ function openEnterScore(studentId, categoryId, assignmentId) {
     scoreModal.show();
     setTimeout(() => document.getElementById('scoreInput').focus(), 380);
 }
+
+// Export button — loading state
+(function () {
+    const btn    = document.getElementById('btn-export-gradebook');
+    if (!btn) return;
+    const label  = btn.querySelector('.btn-export-label');
+    const loader = btn.querySelector('.btn-export-loading');
+
+    btn.addEventListener('click', function () {
+        btn.classList.add('is-loading');
+        label.hidden  = true;
+        loader.hidden = false;
+        // Re-enable after 4 s in case navigation is slow or PDF opens in new tab
+        setTimeout(function () {
+            btn.classList.remove('is-loading');
+            label.hidden  = false;
+            loader.hidden = true;
+        }, 4000);
+    });
+
+    // If server set TriggerPrint (redirect-back path), auto-print
+    const triggerPrint = '@(TempData["TriggerPrint"] != null ? "1" : "")';
+    if (triggerPrint === '1') window.print();
+})();
 </script>
 }

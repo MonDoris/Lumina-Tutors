@@ -1,0 +1,1278 @@
+@using System.Security.Claims
+@{
+    Layout = null;
+    ViewData["Title"] = "Bảng điểm — Lumina Tutors";
+
+    var studentName  = User.FindFirstValue(ClaimTypes.Name) ?? "Nguyễn Minh Khôi";
+    var studentId    = ViewBag.StudentId    as string ?? "2021001234";
+    var program      = ViewBag.Program      as string ?? "Triết học Hiện đại";
+    var faculty      = ViewBag.Faculty      as string ?? "Khoa KHXH & Nhân văn";
+    var academicYear = ViewBag.AcademicYear as string ?? "Khoá 2021";
+    var cumGpa       = (decimal)(ViewBag.CumulativeGpa ?? 3.52m);
+    var cumCredits   = (int)(ViewBag.CumulativeCredits ?? 54);
+    var totalCredits = (int)(ViewBag.TotalCredits ?? 56);
+    var gpaClass     = cumGpa >= 3.6m ? "Xuất sắc" : cumGpa >= 3.2m ? "Giỏi" : cumGpa >= 2.5m ? "Khá" : cumGpa >= 2.0m ? "Trung bình" : "Yếu";
+    var now          = DateTime.Now;
+
+    // GPA ring math: r=72, viewBox 0 0 200 200, 270° arc
+    // Total arc length = 339.29, full circumference = 452.39, gap = 113.1
+    double arcTotal  = 339.29;
+    double arcCirc   = 452.39;
+    double fillRatio = (double)cumGpa / 4.0;
+    double fillArc   = fillRatio * arcTotal;
+    double gapArc    = arcCirc - fillArc;
+    // Glow dot position at current GPA angle: 135° + fillRatio*270°
+    double tipAngleDeg = 135.0 + fillRatio * 270.0;
+    double tipRad    = tipAngleDeg * Math.PI / 180.0;
+    double tipX      = 100.0 + 72.0 * Math.Cos(tipRad);
+    double tipY      = 100.0 + 72.0 * Math.Sin(tipRad);
+    // Distinction threshold at GPA 3.2 = 80%
+    double thrAngleDeg = 135.0 + 0.8 * 270.0;
+    double thrRad    = thrAngleDeg * Math.PI / 180.0;
+    double thrX      = 100.0 + 72.0 * Math.Cos(thrRad);
+    double thrY      = 100.0 + 72.0 * Math.Sin(thrRad);
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>@ViewData["Title"]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@@0,400;0,600;0,700;1,400&family=Inter:wght@@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ── TOKENS ─────────────────────────────────────────────────── */
+:root{
+  --navy:#0a0e1f; --navy2:#0f1530; --burg:#5c1a2e;
+  --gold:#c9a227; --gold-l:#d4af37; --gold-ll:#e8c84a; --gold-dim:rgba(201,162,39,.15);
+  --champagne:#f0e6c8; --ivory:#f8f3ec;
+  --page:#f2ede6; --card:#ffffff;
+  --text:#0e1225; --text2:#4a4036; --stone:#8a7d6e;
+  --ok:#16a34a; --ok-bg:#f0fdf4; --ok-bd:#bbf7d0;
+  --fail:#dc2626; --fail-bg:#fef2f2; --fail-bd:#fecaca;
+  --warn:#c2410c; --warn-bg:#fff7ed; --warn-bd:#fed7aa;
+  --bd:rgba(0,0,0,.07); --bd2:rgba(0,0,0,.12);
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'Inter',system-ui,sans-serif;
+  --expo:cubic-bezier(.16,1,.3,1);
+  --sh:0 1px 4px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+  --sh-h:0 4px 24px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08);
+  --r:12px;
+}
+
+/* ── RESET ───────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-family:var(--sans);background:var(--page);color:var(--text);-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+a{color:inherit;text-decoration:none}
+button{border:none;background:none;cursor:pointer;font:inherit}
+ul{list-style:none}
+table{border-collapse:collapse;width:100%}
+svg{display:block}
+
+/* ── SCREEN NAV ──────────────────────────────────────────────── */
+.screen-nav{
+  background:var(--navy);
+  display:flex;align-items:center;gap:.75rem;
+  padding:.85rem 1.25rem;
+}
+.nav-back{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:8px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  color:rgba(240,230,200,.8);
+  transition:background .2s,color .2s;flex-shrink:0;
+}
+.nav-back:hover{background:rgba(255,255,255,.14);color:var(--champagne)}
+.nav-back svg{width:16px;height:16px;stroke:currentColor}
+.nav-center{flex:1}
+.nav-title{
+  font-family:var(--serif);font-size:.95rem;font-weight:600;
+  color:var(--champagne);letter-spacing:.02em;
+}
+.nav-sub{font-size:.7rem;color:rgba(240,230,200,.45);margin-top:1px}
+.nav-action{
+  width:34px;height:34px;border-radius:8px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(240,230,200,.7);
+  transition:background .2s;flex-shrink:0;
+}
+.nav-action:hover{background:rgba(255,255,255,.14)}
+.nav-action svg{width:16px;height:16px;stroke:currentColor}
+
+/* ── HERO SECTION ────────────────────────────────────────────── */
+.hero{
+  background:linear-gradient(170deg,var(--navy2) 0%,var(--navy) 50%,var(--burg) 120%);
+  padding:2rem 1.25rem 2.5rem;
+  position:relative;overflow:hidden;
+}
+.hero::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 60% at 80% 110%,rgba(201,162,39,.12) 0%,transparent 60%);
+  pointer-events:none;
+}
+.hero-portal{
+  font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:500;
+  color:rgba(201,162,39,.65);margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem;
+}
+.hero-portal::before{
+  content:'';display:block;width:18px;height:1px;background:rgba(201,162,39,.4);
+}
+.hero-inner{
+  display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  position:relative;z-index:1;
+}
+.hero-ring-wrap{position:relative}
+.gpa-ring{width:min(200px,55vw);height:min(200px,55vw)}
+
+/* GPA Ring SVG text */
+.ring-val{
+  font-family:var(--serif);font-size:36px;font-weight:700;
+  fill:var(--champagne);text-anchor:middle;dominant-baseline:auto;
+}
+.ring-scale{
+  font-family:var(--sans);font-size:13px;font-weight:400;
+  fill:rgba(240,230,200,.5);text-anchor:middle;
+}
+.ring-lbl{
+  font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:.08em;
+  text-transform:uppercase;fill:rgba(240,230,200,.35);text-anchor:middle;
+}
+.ring-rank{
+  font-family:var(--serif);font-size:15px;font-weight:600;font-style:italic;
+  fill:var(--gold-ll);text-anchor:middle;
+}
+.ring-thr-label{
+  font-family:var(--sans);font-size:9px;
+  fill:rgba(201,162,39,.55);text-anchor:middle;
+}
+@@keyframes glow-pulse{0%,100%{opacity:.8;r:6}50%{opacity:1;r:8}}
+.ring-glow-dot{animation:glow-pulse 2.6s ease-in-out infinite}
+
+.hero-info{text-align:center}
+.hero-student{
+  font-family:var(--serif);font-size:1.4rem;font-weight:600;
+  color:var(--champagne);line-height:1.2;
+}
+.hero-meta-pills{
+  display:flex;flex-wrap:wrap;justify-content:center;
+  gap:.5rem;margin-top:.75rem;
+}
+.hero-pill{
+  font-size:.68rem;font-weight:500;letter-spacing:.04em;
+  padding:.25rem .7rem;border-radius:20px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  color:rgba(240,230,200,.7);
+}
+.hero-pill.gold{background:rgba(201,162,39,.14);border-color:rgba(201,162,39,.3);color:var(--gold-l)}
+
+.hero-stat-row{
+  display:flex;gap:1.5rem;margin-top:1.25rem;justify-content:center;
+}
+.hero-stat{text-align:center}
+.hero-stat-val{
+  font-family:var(--serif);font-size:1.4rem;font-weight:700;
+  color:var(--champagne);line-height:1;
+}
+.hero-stat-lbl{
+  font-size:.65rem;font-weight:500;letter-spacing:.07em;text-transform:uppercase;
+  color:rgba(240,230,200,.4);margin-top:.3rem;
+}
+.hero-sep{width:1px;background:rgba(255,255,255,.12);align-self:stretch;margin:2px 0}
+
+/* ── FILTER BAR ──────────────────────────────────────────────── */
+.filter-bar{
+  padding:.9rem 1.25rem;
+  background:var(--card);
+  border-bottom:1px solid var(--bd);
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;gap:.5rem;overflow-x:auto;
+  scrollbar-width:none;
+}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-lbl{
+  font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--stone);white-space:nowrap;flex-shrink:0;margin-right:.25rem;
+}
+.pill{
+  display:flex;align-items:center;gap:.35rem;
+  padding:.35rem .85rem;border-radius:20px;
+  font-size:.78rem;font-weight:500;white-space:nowrap;
+  background:transparent;border:1px solid var(--bd2);
+  color:var(--text2);
+  transition:background .2s,border-color .2s,color .2s;flex-shrink:0;
+}
+.pill:hover{background:var(--page);border-color:rgba(0,0,0,.18)}
+.pill.active{background:var(--navy);border-color:transparent;color:var(--champagne)}
+.pill-count{
+  font-size:.65rem;font-weight:700;
+  width:18px;height:18px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.08);
+}
+.pill.active .pill-count{background:rgba(255,255,255,.18)}
+
+/* ── TRANSCRIPT BODY ─────────────────────────────────────────── */
+.transcript-body{
+  padding:.75rem 1rem 1rem;
+  display:flex;flex-direction:column;gap:.65rem;
+  max-width:1100px;margin:0 auto;
+}
+
+/* ── ACCORDION ───────────────────────────────────────────────── */
+.acc-item{
+  background:var(--card);border-radius:var(--r);
+  border:1px solid var(--bd);box-shadow:var(--sh);
+  overflow:hidden;
+  transition:box-shadow .25s var(--expo);
+}
+.acc-item:hover{box-shadow:var(--sh-h)}
+.acc-header{
+  width:100%;display:flex;align-items:center;gap:.75rem;
+  padding:1rem 1.1rem;cursor:pointer;
+  background:transparent;text-align:left;
+}
+.acc-item.open .acc-header{
+  background:var(--navy);
+}
+.acc-sem-name{
+  flex:1;font-family:var(--serif);font-size:.95rem;font-weight:600;
+  color:var(--text);letter-spacing:.01em;
+}
+.acc-item.open .acc-sem-name{color:var(--champagne)}
+.acc-badges{display:flex;align-items:center;gap:.5rem;flex-shrink:0;margin-left:auto}
+.acc-gpa-badge{
+  font-size:.72rem;font-weight:600;
+  padding:.22rem .6rem;border-radius:6px;
+  background:var(--gold-dim);color:var(--gold);
+  border:1px solid rgba(201,162,39,.22);
+}
+.acc-item.open .acc-gpa-badge{background:rgba(201,162,39,.2);border-color:rgba(201,162,39,.4)}
+.acc-cr-badge{
+  font-size:.7rem;font-weight:500;color:var(--stone);
+}
+.acc-item.open .acc-cr-badge{color:rgba(240,230,200,.55)}
+.acc-icon{
+  width:22px;height:22px;border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.05);flex-shrink:0;
+  transition:background .2s,transform .3s var(--expo);
+}
+.acc-item.open .acc-icon{background:rgba(255,255,255,.12);transform:rotate(180deg)}
+.acc-icon svg{width:13px;height:13px;stroke:var(--stone)}
+.acc-item.open .acc-icon svg{stroke:rgba(240,230,200,.65)}
+.acc-body{height:0;overflow:hidden;transition:height .35s var(--expo)}
+
+/* ── COURSE TABLE ────────────────────────────────────────────── */
+.course-table{width:100%;border-collapse:collapse}
+.course-table thead tr{background:var(--page)}
+.course-table th{
+  font-size:.66rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--stone);padding:.55rem .85rem;text-align:left;
+  border-bottom:1px solid var(--bd);white-space:nowrap;
+}
+.course-table th:first-child{padding-left:1.1rem}
+.course-table th:last-child {padding-right:1.1rem}
+.course-table td{
+  padding:.75rem .85rem;font-size:.83rem;
+  border-bottom:1px solid rgba(0,0,0,.04);
+  color:var(--text);vertical-align:middle;
+}
+.course-table td:first-child{padding-left:1.1rem}
+.course-table td:last-child {padding-right:1.1rem}
+.course-table tbody tr:last-child td{border-bottom:none}
+.course-table tbody tr:hover td{background:rgba(0,0,0,.02)}
+.course-table tbody tr.row-fail td{background:rgba(220,38,38,.025)}
+.course-table tbody tr.row-fail:hover td{background:rgba(220,38,38,.04)}
+.course-row[style*="display: none"]{display:none!important}
+.course-name{font-weight:500;color:var(--text)}
+.course-code{font-size:.72rem;color:var(--stone);margin-top:.15rem;font-variant-numeric:tabular-nums}
+.score-val{font-variant-numeric:tabular-nums;font-size:.83rem;color:var(--text2)}
+.score-total{font-weight:600;color:var(--text)}
+
+/* Grade badges */
+.gb{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:32px;height:24px;padding:0 6px;border-radius:5px;
+  font-size:.75rem;font-weight:700;border:1px solid;
+}
+.gb-a  {background:#fefce8;color:#92400e;border-color:#fde68a}
+.gb-ap {background:#fffbeb;color:#78350f;border-color:#fcd34d}
+.gb-bp {background:#f0f9ff;color:#0369a1;border-color:#bae6fd}
+.gb-b  {background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.gb-cp {background:#f8fafc;color:#475569;border-color:#cbd5e1}
+.gb-c  {background:#f8fafc;color:#64748b;border-color:#e2e8f0}
+.gb-dp {background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+.gb-d  {background:#fff7ed;color:#b45309;border-color:#fecaca}
+.gb-f  {background:#fef2f2;color:#dc2626;border-color:#fecaca;font-size:.8rem}
+
+.pass-dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem}
+.pass-dot.ok  {background:#f0fdf4;color:#16a34a}
+.pass-dot.fail{background:#fef2f2;color:#dc2626}
+
+/* Semester summary row */
+.sem-summary-row td{
+  font-size:.75rem;font-weight:600;color:var(--stone);
+  background:var(--page)!important;border-top:1px solid var(--bd)!important;
+  padding-top:.6rem!important;padding-bottom:.6rem!important;
+}
+.sem-gpa-inline{color:var(--gold);font-weight:700}
+
+/* ── EXPORT SECTION ──────────────────────────────────────────── */
+.export-section{
+  max-width:1100px;margin:0 auto;
+  padding:.5rem 1rem 2rem;
+}
+.export-btn{
+  position:relative;
+  display:flex;align-items:center;gap:1.1rem;
+  width:100%;padding:1.25rem 1.5rem;
+  background:var(--navy);
+  border:1px solid rgba(201,162,39,.22);
+  border-radius:var(--r);
+  cursor:pointer;overflow:hidden;
+  transition:background .28s,border-color .28s,box-shadow .28s;
+  text-decoration:none;
+}
+.export-btn::before{
+  content:'';position:absolute;top:0;left:-100%;width:55%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(201,162,39,.1),transparent);
+  transform:skewX(-18deg);transition:left .6s ease;
+}
+.export-btn:hover::before{left:140%}
+.export-btn:hover{
+  background:var(--navy2);border-color:rgba(201,162,39,.45);
+  box-shadow:0 0 30px rgba(201,162,39,.1);
+}
+.export-icon{
+  width:44px;height:44px;border-radius:10px;flex-shrink:0;
+  background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.2);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--gold-l);
+  transition:background .2s;
+}
+.export-btn:hover .export-icon{background:rgba(201,162,39,.2)}
+.export-icon svg{width:22px;height:22px;stroke:currentColor}
+.export-text{flex:1}
+.export-title{
+  font-family:var(--serif);font-size:1rem;font-weight:600;
+  color:var(--champagne);letter-spacing:.02em;
+  display:flex;align-items:center;gap:.5rem;
+}
+.export-seal{
+  font-size:.65rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:.15rem .45rem;border-radius:4px;
+  background:rgba(201,162,39,.18);color:var(--gold-l);
+  border:1px solid rgba(201,162,39,.3);
+}
+.export-sub{
+  font-size:.73rem;color:rgba(240,230,200,.4);margin-top:.25rem;
+  font-style:italic;letter-spacing:.01em;
+}
+.export-arrow{color:rgba(201,162,39,.45);flex-shrink:0}
+.export-arrow svg{width:20px;height:20px;stroke:currentColor}
+
+/* Loading state */
+.export-btn .btn-default{transition:opacity .2s}
+.export-btn .btn-loading{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;gap:.75rem;
+  background:inherit;border-radius:inherit;
+  color:rgba(240,230,200,.7);font-size:.85rem;
+}
+.export-btn.loading .btn-default{opacity:0;pointer-events:none}
+.export-btn.loading .btn-loading{display:flex}
+.btn-spinner{
+  width:20px;height:20px;border:2px solid rgba(201,162,39,.2);
+  border-top-color:var(--gold-l);border-radius:50%;
+  animation:spin .75s linear infinite;flex-shrink:0;
+}
+@@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+.hide-sm{display:none}
+@@media (min-width:680px){
+  .hero-inner{flex-direction:row;gap:2.5rem;padding:0 1rem}
+  .hero-info{text-align:left}
+  .hero-meta-pills{justify-content:flex-start}
+  .hero-stat-row{justify-content:flex-start}
+  .gpa-ring{width:180px;height:180px}
+  .transcript-body{padding:1.25rem 1.5rem 1.5rem}
+  .export-section{padding:.75rem 1.5rem 2.5rem}
+  .hide-sm{display:table-cell}
+  .hide-sm-flex{display:flex}
+}
+@@media (min-width:900px){
+  .hero{padding:2.5rem 2rem 3rem}
+  .gpa-ring{width:200px;height:200px}
+  .transcript-body{padding:1.5rem 2rem 2rem}
+  .export-section{padding:1rem 2rem 3rem}
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/* ██  PRINT MEDIA — OFFICIAL TRANSCRIPT LAYOUT                 ██ */
+/* ─────────────────────────────────────────────────────────────── */
+@@media print {
+  @@page {
+    size:A4 portrait;
+    margin:18mm 22mm 22mm 22mm;
+  }
+  *, *::before, *::after{
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+  html,body{
+    background:#fff!important;
+    color:#000!important;
+    font-family:'Times New Roman',Times,serif;
+    font-size:10pt;
+    line-height:1.5;
+  }
+  /* Hide all screen-only elements */
+  .no-print,
+  .screen-nav,
+  .filter-bar,
+  .export-section,
+  .acc-icon,
+  .hero-ring-wrap{display:none!important}
+  /* Show print-only elements */
+  .print-only{display:block!important}
+  .print-header-grid{display:grid!important}
+  .print-sigs{display:grid!important}
+  /* Collapse hero to just student info */
+  .hero{
+    background:#fff!important;color:#000!important;
+    padding:0 0 12pt 0;border:none;
+  }
+  .hero::after{display:none}
+  .hero-portal{display:none}
+  .hero-inner{display:block}
+  .hero-info{text-align:left}
+  .hero-student{font-size:11pt;font-weight:700;color:#000;font-family:'Times New Roman',serif}
+  .hero-meta-pills,.hero-stat-row{display:none!important}
+  /* Expand all accordions */
+  .acc-item{
+    border:none!important;border-radius:0!important;
+    box-shadow:none!important;background:#fff!important;
+    break-inside:avoid;page-break-inside:avoid;
+  }
+  .acc-body{height:auto!important;overflow:visible!important}
+  .acc-header{
+    background:#fff!important;padding:.5rem 0!important;
+    border-bottom:1.5pt solid #000!important;cursor:auto;
+  }
+  .acc-sem-name{color:#000!important;font-size:11pt;font-weight:700}
+  .acc-gpa-badge{
+    background:#f5f5f5!important;color:#000!important;
+    border:1pt solid #ccc!important;
+  }
+  .acc-cr-badge{color:#555!important}
+  .acc-icon{display:none!important}
+  /* Course table for print */
+  .course-table{border:1pt solid #333;font-size:9pt;width:100%}
+  .course-table thead tr{background:#f0f0f0!important}
+  .course-table th{
+    font-size:8pt;border:1pt solid #555;padding:4pt 6pt;color:#000;
+    text-transform:uppercase;font-weight:700;
+  }
+  .course-table td{
+    border:1pt solid #bbb;padding:4pt 6pt;color:#000;font-size:9pt;
+  }
+  .course-table tbody tr.row-fail td{background:#fff5f5!important}
+  .gb{border:1pt solid #999!important;background:#f9f9f9!important;color:#000!important;font-size:8pt}
+  .pass-dot.ok  {background:none!important;color:#006400}
+  .pass-dot.fail{background:none!important;color:#cc0000}
+  .hide-sm{display:table-cell!important}
+  .course-name{font-weight:700}
+  .course-code{font-size:8pt}
+  /* Show semester summary */
+  .sem-summary-row td{background:#f8f8f8!important;border-top:1.5pt solid #333!important;font-size:8.5pt}
+  .transcript-body{padding:0;gap:12pt}
+  .filter-bar{display:none!important}
+}
+
+/* ── PRINT-ONLY ELEMENTS (hidden on screen) ──────────────────── */
+.print-only{display:none}
+</style>
+</head>
+<body>
+
+<!-- ╔════════════════════════════════════════════════════════════╗ -->
+<!-- ║  PRINT HEADER — shown only when printing                  ║ -->
+<!-- ╚════════════════════════════════════════════════════════════╝ -->
+<header class="print-only" style="border-bottom:2pt solid #000;padding-bottom:10pt;margin-bottom:16pt">
+  <div class="print-header-grid" style="display:none;grid-template-columns:64pt 1fr;gap:12pt;align-items:center">
+    <!-- Crest -->
+    <div style="text-align:center">
+      <svg viewBox="0 0 80 92" width="56" style="display:inline-block">
+        <polygon points="40,4 72,22 72,70 40,88 8,70 8,22" fill="none" stroke="#000" stroke-width="2"/>
+        <polygon points="40,14 63,28 63,63 40,78 17,63 17,28" fill="none" stroke="#000" stroke-width="1.2"/>
+        <line x1="40" y1="28" x2="40" y2="60" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M40,16 Q52,24 50,30 Q44,24 40,30 Q36,24 30,30 Q28,24 40,16Z" fill="none" stroke="#000" stroke-width="1.5"/>
+        <rect x="14" y="63" width="22" height="14" fill="none" stroke="#000" stroke-width="1.5"/>
+        <rect x="44" y="63" width="22" height="14" fill="none" stroke="#000" stroke-width="1.5"/>
+        <line x1="40" y1="64" x2="40" y2="76" stroke="#000" stroke-width="1.8"/>
+      </svg>
+    </div>
+    <!-- School info -->
+    <div>
+      <div style="font-size:8pt;letter-spacing:.08em;text-transform:uppercase;color:#333">LUMINA TUTORS EDUCATION SYSTEM</div>
+      <div style="font-size:7.5pt;color:#555;margin-top:1pt">@faculty</div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:10pt">
+    <div style="font-size:9pt;font-weight:700;letter-spacing:.06em">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+    <div style="font-size:8.5pt;margin-top:2pt">Độc lập &mdash; Tự do &mdash; Hạnh phúc</div>
+    <div style="border-bottom:1pt solid #000;width:140pt;margin:4pt auto"></div>
+  </div>
+  <div style="text-align:center;margin-top:10pt">
+    <div style="font-family:'Times New Roman',serif;font-size:16pt;font-weight:700;letter-spacing:.04em">BẢNG ĐIỂM SINH VIÊN CHÍNH THỨC</div>
+    <div style="font-size:9pt;font-style:italic;color:#444;margin-top:3pt">(Official Academic Transcript)</div>
+  </div>
+  <!-- Student info grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6pt 24pt;margin-top:14pt;font-size:9.5pt">
+    <div><b>Họ và tên:</b> @studentName</div>
+    <div><b>Mã sinh viên:</b> @studentId</div>
+    <div><b>Chương trình:</b> @program</div>
+    <div><b>Khoá:</b> @academicYear</div>
+    <div><b>Khoa:</b> @faculty</div>
+    <div><b>Ngày in:</b> @now.ToString("dd/MM/yyyy")</div>
+    <div><b>GPA Tích lũy:</b> @cumGpa.ToString("F2") / 4.0</div>
+    <div><b>Xếp loại:</b> @gpaClass</div>
+    <div><b>Tín chỉ tích lũy:</b> @cumCredits / @totalCredits</div>
+  </div>
+</header>
+
+
+<!-- ╔════════════════════════════════════════════════════════════╗ -->
+<!-- ║  SCREEN NAVIGATION                                        ║ -->
+<!-- ╚════════════════════════════════════════════════════════════╝ -->
+<nav class="screen-nav no-print">
+  <a asp-controller="Dashboard" asp-action="Index" class="nav-back" aria-label="Quay lại">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </a>
+  <div class="nav-center">
+    <div class="nav-title">Bảng điểm học tập</div>
+    <div class="nav-sub">Lumina Tutors Academic Portal</div>
+  </div>
+  <button class="nav-action" onclick="window.print()" aria-label="In bảng điểm">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  </button>
+</nav>
+
+
+<!-- ╔════════════════════════════════════════════════════════════╗ -->
+<!-- ║  HERO — GPA RING + STUDENT IDENTITY                       ║ -->
+<!-- ╚════════════════════════════════════════════════════════════╝ -->
+<section class="hero">
+  <div class="hero-portal no-print">Lumina Tutors Academic Portal</div>
+  <div class="hero-inner">
+
+    <!-- GPA PROGRESS RING -->
+    <div class="hero-ring-wrap no-print" aria-label="GPA @cumGpa / 4.0">
+      <svg class="gpa-ring" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="arcGrad" gradientUnits="userSpaceOnUse" x1="60" y1="28" x2="140" y2="172">
+            <stop offset="0%" stop-color="#e8c84a"/>
+            <stop offset="60%" stop-color="#c9a227"/>
+            <stop offset="100%" stop-color="#a07818"/>
+          </linearGradient>
+          <filter id="arcGlow" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="dotGlow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Outer track -->
+        <circle r="72" cx="100" cy="100"
+          fill="none" stroke="rgba(255,255,255,.06)" stroke-width="10"
+          stroke-dasharray="339.29 113.1" stroke-linecap="round"
+          transform="rotate(135,100,100)"/>
+
+        <!-- Track fill (dim) -->
+        <circle r="72" cx="100" cy="100"
+          fill="none" stroke="rgba(201,162,39,.1)" stroke-width="9"
+          stroke-dasharray="339.29 113.1" stroke-linecap="round"
+          transform="rotate(135,100,100)"/>
+
+        <!-- "Giỏi" threshold marker at GPA 3.2/4.0 -->
+        <circle r="4.5" cx="@thrX.ToString("F1")" cy="@thrY.ToString("F1")"
+          fill="none" stroke="rgba(201,162,39,.55)" stroke-width="1.8"/>
+        <text class="ring-thr-label"
+          x="@((thrX + (thrX > 100 ? 12 : -12)).ToString("F0"))"
+          y="@(thrY.ToString("F0"))">3.2</text>
+
+        <!-- Progress arc (animated from 0 via JS) -->
+        <circle r="72" cx="100" cy="100"
+          id="ringProgress"
+          fill="none" stroke="url(#arcGrad)" stroke-width="9"
+          stroke-dasharray="0 452.39" stroke-linecap="round"
+          transform="rotate(135,100,100)"
+          filter="url(#arcGlow)"
+          data-fill="@fillArc.ToString("F2")"
+          data-gap="@gapArc.ToString("F2")"/>
+
+        <!-- Glow dot at arc tip -->
+        <circle class="ring-glow-dot" id="ringTipDot"
+          cx="@tipX.ToString("F1")" cy="@tipY.ToString("F1")"
+          r="6" fill="#e8c84a" opacity="0"
+          filter="url(#dotGlow)"/>
+
+        <!-- Center text -->
+        <text class="ring-val" x="100" y="93">@cumGpa.ToString("F2")</text>
+        <text class="ring-scale" x="100" y="111">/ 4.0 GPA</text>
+        <text class="ring-lbl" x="100" y="127">Tích lũy</text>
+        <text class="ring-rank" x="100" y="150">@gpaClass</text>
+      </svg>
+    </div>
+
+    <!-- STUDENT INFO -->
+    <div class="hero-info">
+      <p class="hero-portal no-print" style="text-align:left;margin-bottom:.6rem;display:none" id="heroPortalInline">Lumina Tutors Academic Portal</p>
+      <h1 class="hero-student">@studentName</h1>
+      <div class="hero-meta-pills">
+        <span class="hero-pill gold">@studentId</span>
+        <span class="hero-pill">@program</span>
+        <span class="hero-pill">@faculty</span>
+        <span class="hero-pill">@academicYear</span>
+      </div>
+      <div class="hero-stat-row">
+        <div class="hero-stat">
+          <div class="hero-stat-val">@cumCredits<span style="font-size:.8rem;opacity:.6">/@totalCredits</span></div>
+          <div class="hero-stat-lbl">Tín chỉ</div>
+        </div>
+        <div class="hero-sep"></div>
+        <div class="hero-stat">
+          <div class="hero-stat-val">20</div>
+          <div class="hero-stat-lbl">Môn học</div>
+        </div>
+        <div class="hero-sep"></div>
+        <div class="hero-stat">
+          <div class="hero-stat-val">1</div>
+          <div class="hero-stat-lbl">Chưa qua</div>
+        </div>
+        <div class="hero-sep"></div>
+        <div class="hero-stat">
+          <div class="hero-stat-val">@gpaClass</div>
+          <div class="hero-stat-lbl">Xếp loại</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ╔════════════════════════════════════════════════════════════╗ -->
+<!-- ║  FILTER BAR                                               ║ -->
+<!-- ╚════════════════════════════════════════════════════════════╝ -->
+<div class="filter-bar no-print" role="group" aria-label="Lọc môn học">
+  <span class="filter-lbl" aria-hidden="true">Lọc:</span>
+  <button class="pill active" data-filter="all">
+    Tất cả <span class="pill-count">20</span>
+  </button>
+  <button class="pill" data-filter="pass">
+    Đã qua <span class="pill-count">19</span>
+  </button>
+  <button class="pill" data-filter="fail">
+    Chưa qua <span class="pill-count">1</span>
+  </button>
+</div>
+
+
+<!-- ╔════════════════════════════════════════════════════════════╗ -->
+<!-- ║  TRANSCRIPT BODY — SEMESTER ACCORDIONS                    ║ -->
+<!-- ╚════════════════════════════════════════════════════════════╝ -->
+<main class="transcript-body" id="transcriptBody">
+
+  <!-- ── SEMESTER 1 ──────────────────────────────────────────── -->
+  <article class="acc-item" data-sem="1">
+    <button class="acc-header" aria-expanded="false" aria-controls="sem1-body">
+      <span class="acc-sem-name">Học kỳ I &mdash; Năm học 2021–2022</span>
+      <span class="acc-badges">
+        <span class="acc-gpa-badge">GPA 3.10</span>
+        <span class="acc-cr-badge">14 TC</span>
+      </span>
+      <span class="acc-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+    <div class="acc-body" id="sem1-body">
+      <table class="course-table" aria-label="Danh sách môn học Học kỳ I 2021-2022">
+        <thead><tr>
+          <th class="hide-sm">Mã môn</th>
+          <th>Tên môn học</th>
+          <th style="text-align:center">TC</th>
+          <th class="hide-sm" style="text-align:center">ĐQT</th>
+          <th class="hide-sm" style="text-align:center">ĐCK</th>
+          <th class="hide-sm" style="text-align:center">ĐTK</th>
+          <th style="text-align:center">Chữ</th>
+          <th class="hide-sm" style="text-align:center">Điểm 4</th>
+          <th style="text-align:center">TT</th>
+        </tr></thead>
+        <tbody>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">PHIL301</span></td>
+            <td><div class="course-name">Triết học Hiện đại Nâng cao</div><div class="course-code hide-sm" style="display:none">GS. Trần Đức Anh</div></td>
+            <td style="text-align:center"><span class="score-val">3</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">8.5</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">9.0</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">8.8</span></td>
+            <td style="text-align:center"><span class="gb gb-a">A</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">4.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok" title="Đạt">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">LIT201</span></td>
+            <td><div class="course-name">Văn học Pháp thế kỷ XX</div></td>
+            <td style="text-align:center"><span class="score-val">3</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">7.0</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">8.0</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">7.6</span></td>
+            <td style="text-align:center"><span class="gb gb-b">B</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">3.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok" title="Đạt">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">PHIL201</span></td>
+            <td><div class="course-name">Lịch sử Triết học Đông phương</div></td>
+            <td style="text-align:center"><span class="score-val">3</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">8.0</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">8.5</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">8.3</span></td>
+            <td style="text-align:center"><span class="gb gb-bp">B+</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">3.5</span></td>
+            <td style="text-align:center"><span class="pass-dot ok" title="Đạt">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">LING201</span></td>
+            <td><div class="course-name">Ngôn ngữ học Ứng dụng</div></td>
+            <td style="text-align:center"><span class="score-val">2</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">6.5</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">7.0</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">6.8</span></td>
+            <td style="text-align:center"><span class="gb gb-cp">C+</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">2.5</span></td>
+            <td style="text-align:center"><span class="pass-dot ok" title="Đạt">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">MATH101</span></td>
+            <td><div class="course-name">Toán học Rời rạc</div></td>
+            <td style="text-align:center"><span class="score-val">3</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">5.5</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-val">6.0</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">5.8</span></td>
+            <td style="text-align:center"><span class="gb gb-c">C</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">2.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok" title="Đạt">✓</span></td>
+          </tr>
+          <tr class="sem-summary-row">
+            <td class="hide-sm"></td>
+            <td colspan="2">GPA Học kỳ: <span class="sem-gpa-inline">3.10</span></td>
+            <td class="hide-sm" style="text-align:center">–</td>
+            <td class="hide-sm" style="text-align:center">–</td>
+            <td class="hide-sm" style="text-align:center">–</td>
+            <td colspan="3" style="text-align:right;color:var(--stone);padding-right:.85rem">5 môn · 14 tín chỉ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <!-- ── SEMESTER 2 ──────────────────────────────────────────── -->
+  <article class="acc-item" data-sem="2">
+    <button class="acc-header" aria-expanded="false" aria-controls="sem2-body">
+      <span class="acc-sem-name">Học kỳ II &mdash; Năm học 2021–2022</span>
+      <span class="acc-badges">
+        <span class="acc-gpa-badge">GPA 3.54</span>
+        <span class="acc-cr-badge">14 TC</span>
+      </span>
+      <span class="acc-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+    <div class="acc-body" id="sem2-body">
+      <table class="course-table">
+        <thead><tr>
+          <th class="hide-sm">Mã môn</th><th>Tên môn học</th>
+          <th style="text-align:center">TC</th>
+          <th class="hide-sm" style="text-align:center">ĐQT</th>
+          <th class="hide-sm" style="text-align:center">ĐCK</th>
+          <th class="hide-sm" style="text-align:center">ĐTK</th>
+          <th style="text-align:center">Chữ</th>
+          <th class="hide-sm" style="text-align:center">Điểm 4</th>
+          <th style="text-align:center">TT</th>
+        </tr></thead>
+        <tbody>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">ARTS101</span></td>
+            <td><div class="course-name">Mỹ học Đại cương</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">9.0</td>
+            <td class="hide-sm" style="text-align:center">9.5</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">9.3</span></td>
+            <td style="text-align:center"><span class="gb gb-a">A</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">4.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">SOC201</span></td>
+            <td><div class="course-name">Xã hội học Giáo dục</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">7.5</td>
+            <td class="hide-sm" style="text-align:center">8.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">7.8</span></td>
+            <td style="text-align:center"><span class="gb gb-b">B</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">3.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">PSY201</span></td>
+            <td><div class="course-name">Tâm lý học Nhận thức</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">8.5</td>
+            <td class="hide-sm" style="text-align:center">8.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">8.2</span></td>
+            <td style="text-align:center"><span class="gb gb-bp">B+</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">3.5</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">RES201</span></td>
+            <td><div class="course-name">Phương pháp Nghiên cứu Khoa học</div></td>
+            <td style="text-align:center">2</td>
+            <td class="hide-sm" style="text-align:center">7.0</td>
+            <td class="hide-sm" style="text-align:center">7.5</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">7.3</span></td>
+            <td style="text-align:center"><span class="gb gb-b">B</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">3.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">ENG301</span></td>
+            <td><div class="course-name">Tiếng Anh Học thuật III</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">8.0</td>
+            <td class="hide-sm" style="text-align:center">9.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">8.6</span></td>
+            <td style="text-align:center"><span class="gb gb-a">A</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">4.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="sem-summary-row">
+            <td class="hide-sm"></td>
+            <td colspan="2">GPA Học kỳ: <span class="sem-gpa-inline">3.54</span></td>
+            <td class="hide-sm"></td><td class="hide-sm"></td><td class="hide-sm"></td>
+            <td colspan="3" style="text-align:right;color:var(--stone);padding-right:.85rem">5 môn · 14 tín chỉ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <!-- ── SEMESTER 3 ──────────────────────────────────────────── -->
+  <article class="acc-item" data-sem="3">
+    <button class="acc-header" aria-expanded="false" aria-controls="sem3-body">
+      <span class="acc-sem-name">Học kỳ I &mdash; Năm học 2022–2023</span>
+      <span class="acc-badges">
+        <span class="acc-gpa-badge">GPA 3.30</span>
+        <span class="acc-cr-badge">14 TC</span>
+      </span>
+      <span class="acc-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+    <div class="acc-body" id="sem3-body">
+      <table class="course-table">
+        <thead><tr>
+          <th class="hide-sm">Mã môn</th><th>Tên môn học</th>
+          <th style="text-align:center">TC</th>
+          <th class="hide-sm" style="text-align:center">ĐQT</th>
+          <th class="hide-sm" style="text-align:center">ĐCK</th>
+          <th class="hide-sm" style="text-align:center">ĐTK</th>
+          <th style="text-align:center">Chữ</th>
+          <th class="hide-sm" style="text-align:center">Điểm 4</th>
+          <th style="text-align:center">TT</th>
+        </tr></thead>
+        <tbody>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">PHIL302</span></td>
+            <td><div class="course-name">Phê phán Lý luận Kant</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">9.0</td>
+            <td class="hide-sm" style="text-align:center">9.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">9.0</span></td>
+            <td style="text-align:center"><span class="gb gb-a">A</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">4.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">LING301</span></td>
+            <td><div class="course-name">Ngôn ngữ học Nhận thức</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">6.0</td>
+            <td class="hide-sm" style="text-align:center">7.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">6.6</span></td>
+            <td style="text-align:center"><span class="gb gb-cp">C+</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">2.5</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">HIS201</span></td>
+            <td><div class="course-name">Lịch sử Văn minh Thế giới</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">8.0</td>
+            <td class="hide-sm" style="text-align:center">7.5</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">7.7</span></td>
+            <td style="text-align:center"><span class="gb gb-b">B</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">3.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">COM201</span></td>
+            <td><div class="course-name">Kỹ năng Thuyết trình Học thuật</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">8.5</td>
+            <td class="hide-sm" style="text-align:center">9.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">8.8</span></td>
+            <td style="text-align:center"><span class="gb gb-a">A</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">4.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">STAT201</span></td>
+            <td><div class="course-name">Thống kê Ứng dụng trong KHXH</div></td>
+            <td style="text-align:center">2</td>
+            <td class="hide-sm" style="text-align:center">5.0</td>
+            <td class="hide-sm" style="text-align:center">5.5</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">5.3</span></td>
+            <td style="text-align:center"><span class="gb gb-dp">D+</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">1.5</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="sem-summary-row">
+            <td class="hide-sm"></td>
+            <td colspan="2">GPA Học kỳ: <span class="sem-gpa-inline">3.30</span></td>
+            <td class="hide-sm"></td><td class="hide-sm"></td><td class="hide-sm"></td>
+            <td colspan="3" style="text-align:right;color:var(--stone);padding-right:.85rem">5 môn · 14 tín chỉ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <!-- ── SEMESTER 4 (contains the failed course) ────────────── -->
+  <article class="acc-item" data-sem="4">
+    <button class="acc-header" aria-expanded="false" aria-controls="sem4-body">
+      <span class="acc-sem-name">Học kỳ II &mdash; Năm học 2022–2023</span>
+      <span class="acc-badges">
+        <span class="acc-gpa-badge">GPA 3.65</span>
+        <span class="acc-cr-badge">14 TC</span>
+      </span>
+      <span class="acc-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+    <div class="acc-body" id="sem4-body">
+      <table class="course-table">
+        <thead><tr>
+          <th class="hide-sm">Mã môn</th><th>Tên môn học</th>
+          <th style="text-align:center">TC</th>
+          <th class="hide-sm" style="text-align:center">ĐQT</th>
+          <th class="hide-sm" style="text-align:center">ĐCK</th>
+          <th class="hide-sm" style="text-align:center">ĐTK</th>
+          <th style="text-align:center">Chữ</th>
+          <th class="hide-sm" style="text-align:center">Điểm 4</th>
+          <th style="text-align:center">TT</th>
+        </tr></thead>
+        <tbody>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">PHIL401</span></td>
+            <td><div class="course-name">Triết học Ngôn ngữ</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">8.5</td>
+            <td class="hide-sm" style="text-align:center">9.5</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">9.1</span></td>
+            <td style="text-align:center"><span class="gb gb-a">A</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">4.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">LIT301</span></td>
+            <td><div class="course-name">Văn học So sánh</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">7.5</td>
+            <td class="hide-sm" style="text-align:center">8.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">7.8</span></td>
+            <td style="text-align:center"><span class="gb gb-b">B</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">3.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">PHIL403</span></td>
+            <td><div class="course-name">Đạo đức học Ứng dụng</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">9.0</td>
+            <td class="hide-sm" style="text-align:center">9.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">9.0</span></td>
+            <td style="text-align:center"><span class="gb gb-a">A</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">4.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <tr class="course-row" data-pass="true">
+            <td class="hide-sm"><span class="course-code">LING401</span></td>
+            <td><div class="course-name">Phân tích Diễn ngôn Phê phán</div></td>
+            <td style="text-align:center">3</td>
+            <td class="hide-sm" style="text-align:center">7.0</td>
+            <td class="hide-sm" style="text-align:center">7.5</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">7.3</span></td>
+            <td style="text-align:center"><span class="gb gb-b">B</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total">3.0</span></td>
+            <td style="text-align:center"><span class="pass-dot ok">✓</span></td>
+          </tr>
+          <!-- FAILED COURSE -->
+          <tr class="course-row row-fail" data-pass="false">
+            <td class="hide-sm"><span class="course-code">POL101</span></td>
+            <td>
+              <div class="course-name" style="color:var(--fail)">Kinh tế Chính trị Mác–Lênin</div>
+              <div class="course-code" style="color:var(--fail);opacity:.7">Cần học lại</div>
+            </td>
+            <td style="text-align:center">2</td>
+            <td class="hide-sm" style="text-align:center">3.5</td>
+            <td class="hide-sm" style="text-align:center">4.0</td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total" style="color:var(--fail)">3.8</span></td>
+            <td style="text-align:center"><span class="gb gb-f">F</span></td>
+            <td class="hide-sm" style="text-align:center"><span class="score-total" style="color:var(--fail)">0</span></td>
+            <td style="text-align:center"><span class="pass-dot fail" title="Chưa đạt">✗</span></td>
+          </tr>
+          <tr class="sem-summary-row">
+            <td class="hide-sm"></td>
+            <td colspan="2">GPA Học kỳ: <span class="sem-gpa-inline">3.65</span></td>
+            <td class="hide-sm"></td><td class="hide-sm"></td><td class="hide-sm"></td>
+            <td colspan="3" style="text-align:right;color:var(--stone);padding-right:.85rem">5 môn · 14 TC · 1 chưa qua</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+</main><!-- /transcript-body -->
+
+
+<!-- ╔════════════════════════════════════════════════════════════╗ -->
+<!-- ║  EXPORT PDF BUTTON                                        ║ -->
+<!-- ╚════════════════════════════════════════════════════════════╝ -->
+<div class="export-section no-print">
+  <a asp-controller="StudentGrades" asp-action="ExportTranscript"
+     id="exportBtn" class="export-btn" role="button"
+     aria-label="Xuất bảng điểm chính thức dạng PDF">
+
+    <!-- Default state -->
+    <div class="btn-default" style="display:flex;align-items:center;gap:1.1rem;width:100%">
+      <div class="export-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="12" x2="12" y2="18"/>
+          <polyline points="9 15 12 18 15 15"/>
+        </svg>
+      </div>
+      <div class="export-text">
+        <div class="export-title">
+          Xuất Bảng Điểm Chính Thức
+          <span class="export-seal">PDF</span>
+        </div>
+        <div class="export-sub">Có chữ ký điện tử và đóng dấu xác thực &mdash; Official Academic Transcript</div>
+      </div>
+      <div class="export-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div class="btn-loading">
+      <div class="btn-spinner"></div>
+      <span>Đang xử lý bảng điểm&nbsp;&mdash;&nbsp;vui lòng đợi...</span>
+    </div>
+
+  </a>
+</div>
+
+
+<!-- ╔════════════════════════════════════════════════════════════╗ -->
+<!-- ║  PRINT FOOTER — signature & seal area                     ║ -->
+<!-- ╚════════════════════════════════════════════════════════════╝ -->
+<footer class="print-only" style="margin-top:32pt">
+  <div style="font-size:8.5pt;color:#444;margin-bottom:8pt;font-style:italic">
+    Tài liệu này được in từ Hệ thống Quản lý Giáo dục Lumina Tutors vào lúc @now.ToString("HH:mm, dd/MM/yyyy").
+    GPA tích lũy: @cumGpa.ToString("F2") / 4.0 &mdash; Xếp loại: @gpaClass.
+  </div>
+  <div class="print-sigs" style="display:none;grid-template-columns:1fr 1fr;gap:24pt;margin-top:12pt">
+    <!-- Left signature -->
+    <div style="text-align:center">
+      <div style="font-size:9pt;font-weight:700">TRƯỞNG PHÒNG ĐÀO TẠO</div>
+      <div style="font-size:8pt;font-style:italic;color:#555;margin-top:2pt">(Ký và ghi rõ họ tên)</div>
+      <div style="height:52pt;border-bottom:1pt dotted #999;margin-top:8pt"></div>
+      <div style="font-size:8.5pt;margin-top:4pt">
+        Ngày&nbsp;&nbsp;&nbsp;&nbsp;tháng&nbsp;&nbsp;&nbsp;&nbsp;năm 20
+      </div>
+    </div>
+    <!-- Right signature / seal -->
+    <div style="text-align:center">
+      <div style="font-size:9pt;font-weight:700">HIỆU TRƯỞNG</div>
+      <div style="font-size:8pt;font-style:italic;color:#555;margin-top:2pt">(Ký tên và đóng dấu)</div>
+      <div style="height:52pt;border-bottom:1pt dotted #999;margin-top:8pt;position:relative">
+        <!-- Seal placeholder ring -->
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
+          width:44pt;height:44pt;border:1.5pt dashed #bbb;border-radius:50%;
+          display:flex;align-items:center;justify-content:center;
+          font-size:7pt;color:#ccc;text-align:center;line-height:1.2">
+          CON<br>DẤU
+        </div>
+      </div>
+      <div style="font-size:8.5pt;margin-top:4pt">
+        Ngày&nbsp;&nbsp;&nbsp;&nbsp;tháng&nbsp;&nbsp;&nbsp;&nbsp;năm 20
+      </div>
+    </div>
+  </div>
+  <!-- Verification note -->
+  <div style="margin-top:14pt;padding-top:8pt;border-top:0.5pt solid #ddd;font-size:7.5pt;color:#888;text-align:center">
+    Tài liệu có giá trị khi có chữ ký và con dấu hợp lệ của Trường THCS-THPT Lumina Tutors.
+    Mã xác thực: LT-@studentId-@now.Year
+  </div>
+</footer>
+
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── GPA RING ANIMATION ─────────────────────────────────────── */
+  const ringEl = document.getElementById('ringProgress');
+  const dotEl  = document.getElementById('ringTipDot');
+
+  if (ringEl) {
+    const fill = parseFloat(ringEl.dataset.fill || '0');
+    const gap  = parseFloat(ringEl.dataset.gap  || '452');
+
+    // Delay slightly, then animate
+    setTimeout(() => {
+      ringEl.style.transition = 'stroke-dasharray 1.5s cubic-bezier(.16,1,.3,1)';
+      ringEl.style.strokeDasharray = fill + ' ' + gap;
+    }, 400);
+
+    // Reveal glow dot after ring finishes
+    setTimeout(() => {
+      if (dotEl) dotEl.style.opacity = '1';
+    }, 2100);
+  }
+
+  /* ── ACCORDION ──────────────────────────────────────────────── */
+  const accItems = document.querySelectorAll('.acc-item');
+
+  function openItem(item) {
+    const body   = item.querySelector('.acc-body');
+    const btn    = item.querySelector('.acc-header');
+    const height = body.scrollHeight;
+
+    item.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    body.style.height = height + 'px';
+
+    body.addEventListener('transitionend', () => {
+      // Allow natural reflow after open
+      if (item.classList.contains('open')) body.style.height = 'auto';
+    }, { once: true });
+  }
+
+  function closeItem(item) {
+    const body = item.querySelector('.acc-body');
+    const btn  = item.querySelector('.acc-header');
+
+    // Pin height before transition
+    body.style.height = body.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      body.style.transition = 'height .32s cubic-bezier(.16,1,.3,1)';
+      body.style.height = '0';
+    });
+
+    item.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  accItems.forEach(item => {
+    const btn = item.querySelector('.acc-header');
+    btn.addEventListener('click', () => {
+      if (item.classList.contains('open')) {
+        closeItem(item);
+      } else {
+        openItem(item);
+      }
+    });
+  });
+
+  // Open first accordion by default
+  if (accItems.length > 0) openItem(accItems[0]);
+
+  /* ── FILTER PILLS ───────────────────────────────────────────── */
+  const pills   = document.querySelectorAll('.pill');
+  const rows    = document.querySelectorAll('.course-row');
+
+  function applyFilter(filter) {
+    rows.forEach(row => {
+      const pass = row.dataset.pass === 'true';
+      const show = filter === 'all' ||
+                   (filter === 'pass' && pass) ||
+                   (filter === 'fail' && !pass);
+      row.style.display = show ? '' : 'none';
+    });
+
+    // Auto-open semesters that contain visible matching courses
+    // Auto-close semesters that are entirely hidden (unless filter=all)
+    accItems.forEach(item => {
+      const visibleRows = item.querySelectorAll('.course-row:not([style*="display: none"])');
+      if (filter !== 'all' && visibleRows.length === 0) {
+        if (item.classList.contains('open')) closeItem(item);
+      } else if (filter !== 'all' && visibleRows.length > 0) {
+        if (!item.classList.contains('open')) openItem(item);
+      }
+    });
+  }
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      applyFilter(pill.dataset.filter);
+    });
+  });
+
+  /* ── EXPORT BUTTON LOADING ──────────────────────────────────── */
+  const exportBtn = document.getElementById('exportBtn');
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', function (e) {
+      if (this.classList.contains('loading')) {
+        e.preventDefault();
+        return;
+      }
+      this.classList.add('loading');
+      this.setAttribute('aria-disabled', 'true');
+
+      // Reset after 6 seconds (allows time for download to initiate)
+      setTimeout(() => {
+        this.classList.remove('loading');
+        this.removeAttribute('aria-disabled');
+      }, 6000);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>

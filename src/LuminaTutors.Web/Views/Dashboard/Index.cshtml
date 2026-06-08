@@ -1,7 +1,9 @@
 @using System.Security.Claims
 @using LuminaTutors.Application.DTOs.Account
 @{
-    ViewData["Title"] = "Dashboard";
+    Layout = null;
+    ViewData["Title"] = "Trang chủ — Lumina Tutors";
+
     var role           = User.FindFirstValue(ClaimTypes.Role) ?? "";
     var name           = User.FindFirstValue(ClaimTypes.Name) ?? "";
     var finance        = ViewBag.FinanceReport as LuminaTutors.Application.DTOs.Finance.MonthlyFinanceReportDto;
@@ -12,295 +14,1153 @@
     var totalTeachers  = (int)(ViewBag.TotalTeachers ?? 0);
     var totalClasses   = (int)(ViewBag.TotalClasses  ?? 0);
     var activeYearName = (string)(ViewBag.ActiveYearName ?? "");
+    var unreadCount    = (int)(ViewBag.UnreadCount ?? 0);
+    var initials       = name.Split(' ').Where(p => !string.IsNullOrEmpty(p)).TakeLast(2).Select(p => char.ToUpper(p[0])).ToArray();
+    var avatarText     = new string(initials);
+    var greetHour      = now.Hour;
+    var greeting       = greetHour < 12 ? "Chào buổi sáng" : greetHour < 17 ? "Chào buổi chiều" : "Chào buổi tối";
+    var roleLabel      = role switch {
+        "ADMIN"      => "Quản trị viên",
+        "TEACHER"    => "Giáo viên",
+        "STUDENT"    => "Học sinh",
+        "PARENT"     => "Phụ huynh",
+        "SUPERVISOR" => "Giám thị",
+        "ACCOUNTANT" => "Kế toán",
+        _            => role
+    };
+}
+<!DOCTYPE html>
+<html lang="vi" data-role="@role.ToLower()">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>@ViewData["Title"]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ── TOKENS ───────────────────────────────────────────── */
+:root {
+  --n950:#050810; --n900:#080b18; --n800:#0c1028; --n700:#111838;
+  --n600:#18224a;
+  --g500:#c9a227; --g400:#d4af37; --g300:#e4c555; --g100:#faf2c0;
+  --champagne:#f0e6c8; --ivory:#f8f4ec;
+  --stone:#7a6e5a; --stone2:#3a3428;
+  --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --info:#3b82f6;
+  --card-bg:rgba(10,14,28,0.88);
+  --card-bd:rgba(201,162,39,0.1);
+  --card-bd-h:rgba(201,162,39,0.36);
+  --card-sh:0 2px 24px rgba(0,0,0,0.4);
+  --card-sh-h:0 16px 56px rgba(0,0,0,0.55),0 0 0 1px rgba(201,162,39,0.22);
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'Inter',system-ui,sans-serif;
+  --expo:cubic-bezier(.16,1,.3,1);
+  --nav-h:60px;
+  --r:14px;
 }
 
-<!-- Greeting -->
-<div class="lt-greeting">
-    <div>
-        <h1 class="lt-page-title">Chào mừng, @firstName</h1>
-        <p class="lt-page-subtitle">
-            @now.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"))
-            &nbsp;&middot;&nbsp;
-            <span class="lt-badge lt-badge--navy">@role</span>
-        </p>
-    </div>
+/* ── RESET ────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-family:var(--sans);background:var(--n950);color:var(--champagne);scroll-behavior:smooth}
+body{min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+ul{list-style:none}
+button{border:none;cursor:pointer;background:none}
+img{display:block;max-width:100%}
+
+/* ── SPLASH ───────────────────────────────────────────── */
+.splash{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--n950);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .72s var(--expo),transform .72s var(--expo);
+}
+.splash.exit{opacity:0;transform:translateY(-28px);pointer-events:none}
+.splash-inner{
+  display:flex;flex-direction:column;align-items:center;
+  gap:1.4rem;padding:2rem;
+}
+.splash-crest{width:148px;height:171px;overflow:visible}
+.crest-path{fill:none;stroke:#c9a227;stroke-linecap:round;stroke-linejoin:round}
+.crest-path-dim{fill:none;stroke:rgba(201,162,39,.42);stroke-linecap:round;stroke-linejoin:round}
+.crest-fill-bg{fill:rgba(201,162,39,.04);stroke:none}
+.splash-wordmark{
+  font-family:var(--serif);font-size:1.7rem;font-weight:600;
+  letter-spacing:.18em;color:var(--champagne);
+  opacity:0;transform:translateY(10px);
+  transition:opacity .6s .1s ease-out,transform .6s .1s ease-out;
+}
+.splash-wordmark em{font-style:normal;color:var(--g400)}
+.splash-motto{
+  font-family:var(--sans);font-size:.78rem;font-weight:300;
+  color:rgba(240,230,200,.5);letter-spacing:.06em;max-width:340px;text-align:center;
+  opacity:0;transform:translateY(8px);
+  transition:opacity .6s .25s ease-out,transform .6s .25s ease-out;
+}
+.splash.text-in .splash-wordmark,
+.splash.text-in .splash-motto{opacity:1;transform:none}
+.splash-bar{
+  position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:rgba(201,162,39,.1);overflow:hidden;
+}
+.splash-bar-fill{
+  height:100%;width:0;
+  background:linear-gradient(90deg,transparent,var(--g400),transparent);
+  transition:width 3s linear;
+}
+.splash-bar-fill.run{width:100%}
+
+/* ── NAVBAR ───────────────────────────────────────────── */
+.navbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:var(--nav-h);
+  background:rgba(5,8,16,.88);
+  backdrop-filter:blur(18px) saturate(1.4);
+  border-bottom:1px solid rgba(201,162,39,.1);
+}
+.nav-inner{
+  max-width:1380px;margin:0 auto;height:100%;
+  padding:0 1.5rem;
+  display:flex;align-items:center;gap:1.5rem;
+}
+.nav-brand{display:flex;align-items:center;gap:.7rem;flex-shrink:0}
+.nav-brand-name{
+  font-family:var(--serif);font-size:1.05rem;font-weight:600;
+  color:var(--champagne);letter-spacing:.04em;white-space:nowrap;
+}
+.nav-brand-name em{font-style:normal;color:var(--g400)}
+.nav-links{
+  display:flex;align-items:center;gap:.25rem;
+  flex:1;justify-content:center;
+}
+.nav-link{
+  font-size:.82rem;font-weight:500;color:rgba(240,230,200,.55);
+  padding:.45rem .9rem;border-radius:8px;
+  transition:color .2s,background .2s;white-space:nowrap;
+}
+.nav-link:hover{color:var(--champagne);background:rgba(255,255,255,.05)}
+.nav-link.active{color:var(--g400);background:rgba(201,162,39,.1)}
+.nav-actions{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+.nav-btn{
+  position:relative;width:36px;height:36px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(240,230,200,.6);
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  transition:color .2s,background .2s;
+}
+.nav-btn:hover{color:var(--champagne);background:rgba(255,255,255,.08)}
+.nav-badge{
+  position:absolute;top:-3px;right:-3px;
+  min-width:16px;height:16px;padding:0 4px;
+  background:var(--danger);color:#fff;
+  font-size:.62rem;font-weight:700;
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--n950);
+}
+.nav-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(201,162,39,.18);border:1px solid rgba(201,162,39,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;color:var(--g400);
+  cursor:pointer;
+}
+.hamburger{
+  display:none;flex-direction:column;justify-content:center;
+  gap:5px;width:36px;height:36px;padding:6px;border-radius:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  flex-shrink:0;
+}
+.hamburger span{
+  display:block;height:1.5px;background:rgba(240,230,200,.7);border-radius:2px;
+  transition:transform .28s var(--expo),opacity .2s;transform-origin:center;
+}
+.hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+
+/* ── MOBILE MENU ──────────────────────────────────────── */
+.mob-overlay{
+  position:fixed;inset:0;z-index:199;
+  background:rgba(5,8,16,.75);backdrop-filter:blur(6px);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+}
+.mob-overlay.show{opacity:1;pointer-events:auto}
+.mob-menu{
+  position:fixed;top:0;left:0;bottom:0;z-index:200;
+  width:min(320px,85vw);
+  background:var(--n800);
+  border-right:1px solid rgba(201,162,39,.12);
+  transform:translateX(-100%);
+  transition:transform .32s var(--expo);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+}
+.mob-menu.open{transform:none}
+.mob-header{
+  padding:1.5rem 1.25rem 1rem;
+  border-bottom:1px solid rgba(201,162,39,.1);
+  display:flex;align-items:center;gap:.9rem;
+}
+.mob-avatar{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  background:rgba(201,162,39,.18);border:1px solid rgba(201,162,39,.32);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.82rem;font-weight:700;color:var(--g400);
+}
+.mob-name{font-size:.9rem;font-weight:600;color:var(--champagne)}
+.mob-role{font-size:.75rem;color:var(--stone);margin-top:2px}
+.mob-nav{flex:1;padding:.75rem .5rem}
+.mob-link{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.7rem .85rem;border-radius:9px;
+  font-size:.875rem;font-weight:500;color:rgba(240,230,200,.6);
+  transition:color .2s,background .2s;
+}
+.mob-link:hover,.mob-link.active{
+  color:var(--champagne);background:rgba(255,255,255,.06)
+}
+.mob-link.active{color:var(--g400);background:rgba(201,162,39,.1)}
+.mob-footer{
+  padding:1rem 1.25rem;
+  border-top:1px solid rgba(201,162,39,.1);
+}
+.mob-logout{
+  display:flex;align-items:center;gap:.65rem;
+  padding:.65rem .85rem;border-radius:9px;width:100%;
+  font-size:.82rem;font-weight:500;color:rgba(240,230,200,.45);
+  transition:color .2s,background .2s;
+}
+.mob-logout:hover{color:var(--danger);background:rgba(239,68,68,.06)}
+
+/* ── PAGE BODY ────────────────────────────────────────── */
+.page{padding-top:var(--nav-h)}
+.page-inner{max-width:1380px;margin:0 auto}
+
+/* ── HERO ─────────────────────────────────────────────── */
+.hero{
+  position:relative;overflow:hidden;
+  padding:3rem 2rem 2.5rem;
+  background:linear-gradient(135deg,rgba(8,11,24,1) 0%,rgba(14,18,38,1) 60%,rgba(20,14,30,1) 100%);
+  border-bottom:1px solid rgba(201,162,39,.1);
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 70% 50%,rgba(201,162,39,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-inner{
+  position:relative;display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;gap:2rem;
+}
+.hero-eyebrow{
+  font-size:.75rem;font-weight:500;letter-spacing:.1em;
+  color:rgba(201,162,39,.7);text-transform:uppercase;
+  margin-bottom:.6rem;
+}
+.hero-greeting{
+  font-family:var(--serif);font-size:clamp(2rem,4vw,3rem);
+  font-weight:600;color:var(--champagne);line-height:1.2;
+}
+.hero-greeting em{font-style:normal;color:var(--g300)}
+.hero-meta{
+  display:flex;align-items:center;gap:.75rem;margin-top:.75rem;flex-wrap:wrap;
+}
+.hero-pill{
+  font-size:.72rem;font-weight:500;letter-spacing:.05em;
+  padding:.3rem .8rem;border-radius:20px;
+  background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.22);
+  color:var(--g400);
+}
+.hero-sep{color:rgba(240,230,200,.2);font-size:.8rem}
+.hero-week{font-size:.78rem;color:var(--stone)}
+.hero-quote{
+  margin-top:1.5rem;padding:.9rem 1.2rem;
+  border-left:1px solid rgba(201,162,39,.25);
+  max-width:520px;
+}
+.hero-quote p{
+  font-family:var(--serif);font-style:italic;font-size:.92rem;
+  color:rgba(240,230,200,.65);line-height:1.6;
+}
+.hero-quote cite{
+  display:block;margin-top:.45rem;
+  font-size:.72rem;font-style:normal;
+  color:rgba(201,162,39,.55);letter-spacing:.04em;
+}
+.hero-art{
+  display:flex;align-items:center;justify-content:flex-end;
+  opacity:.7;pointer-events:none;
+}
+.hero-constellation{width:clamp(180px,22vw,320px);height:auto}
+
+/* ── BENTO GRID ───────────────────────────────────────── */
+.bento{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1.25rem;
+  padding:1.75rem 2rem 2.5rem;
+}
+.card{
+  background:var(--card-bg);
+  border:1px solid var(--card-bd);
+  border-radius:var(--r);
+  backdrop-filter:blur(20px);
+  box-shadow:var(--card-sh);
+  transition:border-color .28s var(--expo),box-shadow .28s var(--expo),transform .28s var(--expo);
+  overflow:hidden;
+}
+.card:hover{
+  border-color:var(--card-bd-h);
+  box-shadow:var(--card-sh-h);
+  transform:translateY(-3px);
+}
+.card-pad{padding:1.4rem 1.5rem}
+.card-cap{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.1rem;
+}
+.card-title{
+  font-family:var(--serif);font-size:1.05rem;font-weight:600;
+  color:var(--champagne);
+}
+.card-subtitle{font-size:.75rem;color:var(--stone);margin-top:.1rem}
+.card-tag{
+  font-size:.68rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  padding:.25rem .65rem;border-radius:20px;
+}
+.tag-warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);color:#f59e0b}
+.tag-ok  {background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.2); color:#22c55e}
+.tag-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#60a5fa}
+.card-corner{color:rgba(201,162,39,.5)}
+
+/* ── CARD: COUNTDOWN ──────────────────────────────────── */
+.card-cdown{grid-column:span 2}
+.card-cdown .card-pad{padding:1.6rem 1.75rem}
+.cdown-subject{
+  font-family:var(--serif);font-size:1.35rem;font-weight:600;
+  color:var(--champagne);margin-bottom:.35rem;line-height:1.3;
+}
+.cdown-meta{
+  font-size:.76rem;color:var(--stone);margin-bottom:1.6rem;
+  display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;
+}
+.cdown-meta-dot{width:3px;height:3px;background:var(--stone);border-radius:50%;flex-shrink:0}
+.cdown-digits{
+  display:flex;align-items:flex-start;gap:.75rem;
+}
+.cd-unit{
+  display:flex;flex-direction:column;align-items:center;
+  min-width:72px;
+}
+.cd-num{
+  font-family:var(--serif);font-size:3rem;font-weight:700;
+  color:var(--g300);line-height:1;letter-spacing:-.02em;
+  background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.14);
+  border-radius:10px;width:100%;text-align:center;
+  padding:.4rem .5rem .3rem;
+}
+.cd-lbl{
+  font-size:.68rem;font-weight:500;letter-spacing:.08em;
+  color:rgba(201,162,39,.5);text-transform:uppercase;margin-top:.45rem;
+}
+.cd-sep{
+  font-family:var(--serif);font-size:2.4rem;font-weight:400;
+  color:rgba(201,162,39,.25);padding-top:.3rem;line-height:1;
+}
+.cdown-date-row{
+  margin-top:1.25rem;padding-top:1rem;
+  border-top:1px solid rgba(201,162,39,.08);
+  font-size:.75rem;color:var(--stone);
+  display:flex;align-items:center;gap:.5rem;
+}
+
+/* ── CARD: STATS ──────────────────────────────────────── */
+.card-stats{grid-column:span 1}
+.stat-ring-wrap{display:flex;justify-content:center;margin-bottom:1.2rem}
+.stat-ring{width:88px;height:88px}
+.stat-rows{display:flex;flex-direction:column;gap:.75rem}
+.stat-row{display:flex;align-items:center;gap:.7rem}
+.stat-k{font-size:.72rem;color:var(--stone);width:64px;flex-shrink:0}
+.stat-bar{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.stat-bar-fill{height:100%;background:var(--g500);border-radius:2px;transition:width 1s 1.5s var(--expo)}
+.stat-v{font-size:.72rem;font-weight:600;color:var(--champagne);width:34px;text-align:right;flex-shrink:0}
+
+/* ── CARD: SCHEDULE ───────────────────────────────────── */
+.card-sched{grid-column:span 1}
+.sched-today{
+  font-size:.72rem;font-weight:500;color:var(--stone);
+  font-variant-numeric:tabular-nums;
+}
+.sched-timeline{display:flex;flex-direction:column}
+.sched-item{
+  display:grid;grid-template-columns:22px 1fr auto;
+  gap:0 .75rem;padding:.7rem 0;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.sched-item:last-child{border-bottom:none}
+.sched-dot-col{display:flex;flex-direction:column;align-items:center;padding-top:3px}
+.sched-dot{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.2);
+}
+.sched-dot.past{background:rgba(201,162,39,.2);border-color:rgba(201,162,39,.3)}
+.sched-dot.now{
+  background:var(--g400);border-color:var(--g400);
+  box-shadow:0 0 0 3px rgba(201,162,39,.2);
+  animation:pulse-dot 2.2s ease-in-out infinite;
+}
+.sched-dot.up{background:transparent;border-color:rgba(255,255,255,.22)}
+.sched-line{flex:1;width:1px;background:rgba(255,255,255,.06);margin:.3rem 0}
+.sched-time{font-size:.69rem;color:var(--stone);margin-bottom:.2rem;font-variant-numeric:tabular-nums}
+.sched-name{font-size:.83rem;font-weight:500;color:var(--champagne);line-height:1.3}
+.sched-room{font-size:.7rem;color:var(--stone);margin-top:.15rem}
+.sched-status{
+  font-size:.63rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  padding:.18rem .5rem;border-radius:6px;align-self:start;white-space:nowrap;
+}
+.sched-status.done{background:rgba(255,255,255,.06);color:rgba(240,230,200,.35)}
+.sched-status.now{background:rgba(201,162,39,.14);color:var(--g400)}
+.sched-item.faded .sched-name{color:rgba(240,230,200,.4)}
+
+/* ── CARD: QUICK ACCESS ───────────────────────────────── */
+.card-access{grid-column:span 1}
+.access-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:.6rem;
+}
+.access-item{
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;
+  padding:.85rem .5rem;border-radius:10px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  color:rgba(240,230,200,.65);
+  transition:background .22s,border-color .22s,color .22s,transform .22s var(--expo);
+}
+.access-item:hover{
+  background:rgba(201,162,39,.08);border-color:rgba(201,162,39,.24);
+  color:var(--g300);transform:translateY(-2px);
+}
+.access-ico{width:22px;height:22px}
+.access-ico svg{width:22px;height:22px;stroke:currentColor}
+.access-label{font-size:.67rem;font-weight:500;text-align:center;line-height:1.2}
+
+/* ── CARD: ANNOUNCE ───────────────────────────────────── */
+.card-announce{grid-column:span 1}
+.ann-badge{
+  font-size:.68rem;font-weight:700;
+  width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(239,68,68,.18);color:#f87171;
+}
+.ann-list{display:flex;flex-direction:column;gap:0}
+.ann-item{
+  display:grid;grid-template-columns:8px 1fr;
+  gap:0 .75rem;padding:.7rem 0;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  align-items:start;
+}
+.ann-item:last-child{border-bottom:none}
+.ann-dot{
+  width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0;
+}
+.ann-dot-red  {background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.5)}
+.ann-dot-gold {background:var(--g500)}
+.ann-dot-green{background:#22c55e}
+.ann-text{font-size:.8rem;line-height:1.45;color:rgba(240,230,200,.8)}
+.ann-urgent .ann-text{color:var(--champagne)}
+.ann-time{display:block;font-size:.67rem;color:var(--stone);margin-top:.25rem}
+
+/* ── CARD: ADMIN STATS ────────────────────────────────── */
+.card-admin{grid-column:span 3}
+.admin-stats-row{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1rem;
+}
+.astat{
+  padding:1.2rem;border-radius:10px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  text-decoration:none;
+  transition:background .22s,border-color .22s,transform .22s var(--expo);
+  display:block;
+}
+.astat:hover{
+  background:rgba(201,162,39,.06);border-color:rgba(201,162,39,.2);
+  transform:translateY(-2px);
+}
+.astat-ico{
+  width:36px;height:36px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:.85rem;
+}
+.astat-ico.navy  {background:rgba(59,130,246,.14);color:#60a5fa}
+.astat-ico.gold  {background:rgba(201,162,39,.14);color:var(--g400)}
+.astat-ico.green {background:rgba(34,197,94,.12); color:#4ade80}
+.astat-ico.red   {background:rgba(239,68,68,.12); color:#f87171}
+.astat-ico.amber {background:rgba(245,158,11,.12);color:#fbbf24}
+.astat-ico svg   {width:18px;height:18px;stroke:currentColor}
+.astat-val{
+  font-family:var(--serif);font-size:1.8rem;font-weight:700;
+  color:var(--champagne);line-height:1;margin-bottom:.25rem;
+}
+.astat-lbl{font-size:.73rem;color:var(--stone)}
+
+/* ── CARD: RECENT ACCOUNTS ────────────────────────────── */
+.card-accounts{grid-column:span 3}
+.acc-table{width:100%;border-collapse:collapse}
+.acc-table th{
+  font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--stone);padding:.65rem 1rem;text-align:left;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.acc-table th:first-child{padding-left:1.5rem}
+.acc-table th:last-child {padding-right:1.5rem}
+.acc-table td{
+  padding:.65rem 1rem;font-size:.82rem;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  color:rgba(240,230,200,.75);vertical-align:middle;
+}
+.acc-table td:first-child{padding-left:1.5rem}
+.acc-table td:last-child {padding-right:1.5rem}
+.acc-table tr:last-child td{border-bottom:none}
+.acc-table tr:hover td{background:rgba(255,255,255,.02)}
+.acc-avatar-ring{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;font-weight:700;color:var(--g400);
+}
+.acc-name-cell{display:flex;align-items:center;gap:.65rem}
+.acc-name-link{font-weight:500;color:var(--champagne)}
+.acc-badge{
+  display:inline-flex;align-items:center;
+  font-size:.63rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  padding:.18rem .55rem;border-radius:5px;
+}
+.badge-teacher {background:rgba(59,130,246,.12);color:#60a5fa}
+.badge-student {background:rgba(201,162,39,.12);color:var(--g400)}
+.badge-admin   {background:rgba(148,163,184,.1);color:#94a3b8}
+.badge-other   {background:rgba(255,255,255,.07);color:rgba(240,230,200,.55)}
+.badge-active  {background:rgba(34,197,94,.1);color:#4ade80}
+.badge-inactive{background:rgba(239,68,68,.1);color:#f87171}
+
+/* ── CARD: FINANCE ────────────────────────────────────── */
+.card-finance{grid-column:span 2}
+.fin-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.4rem}
+.fin-m{padding:.9rem 1rem;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.fin-m-val{
+  font-family:var(--serif);font-size:1.25rem;font-weight:700;
+  color:var(--champagne);line-height:1.1;margin-bottom:.3rem;
+}
+.fin-m-val.green {color:#4ade80}
+.fin-m-val.red   {color:#f87171}
+.fin-m-val.gold  {color:var(--g400)}
+.fin-m-lbl{font-size:.7rem;color:var(--stone)}
+.fin-progress-lbl{
+  display:flex;justify-content:space-between;
+  font-size:.72rem;color:var(--stone);margin-bottom:.45rem;
+}
+.fin-prog{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.fin-prog-fill{height:100%;background:linear-gradient(90deg,var(--g500),var(--g300));border-radius:3px}
+
+/* ── CARD: ACTIONS ────────────────────────────────────── */
+.card-actions{grid-column:span 1}
+.action-list{display:flex;flex-direction:column;gap:.5rem}
+.action-btn{
+  display:flex;align-items:center;gap:.7rem;
+  padding:.7rem .9rem;border-radius:9px;
+  font-size:.82rem;font-weight:500;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);
+  color:rgba(240,230,200,.7);
+  transition:background .22s,border-color .22s,color .22s,transform .2s var(--expo);
+}
+.action-btn:hover{
+  background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);
+  color:var(--champagne);transform:translateX(2px);
+}
+.action-btn.primary{
+  background:rgba(201,162,39,.14);border-color:rgba(201,162,39,.3);
+  color:var(--g300);
+}
+.action-btn.primary:hover{background:rgba(201,162,39,.22);border-color:rgba(201,162,39,.5)}
+.action-btn svg{width:16px;height:16px;stroke:currentColor;flex-shrink:0}
+
+/* ── ANIMATIONS ───────────────────────────────────────── */
+@@keyframes pulse-dot {
+  0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,.4)}
+  50%     {box-shadow:0 0 0 7px rgba(201,162,39,0)}
+}
+@@keyframes card-in {
+  from{opacity:0;transform:translateY(18px)}
+  to  {opacity:1;transform:none}
+}
+.card{animation:card-in .5s var(--expo) both}
+.card:nth-child(1){animation-delay:.08s}
+.card:nth-child(2){animation-delay:.14s}
+.card:nth-child(3){animation-delay:.20s}
+.card:nth-child(4){animation-delay:.26s}
+.card:nth-child(5){animation-delay:.32s}
+.card:nth-child(6){animation-delay:.38s}
+.card:nth-child(7){animation-delay:.44s}
+
+/* ── RESPONSIVE ───────────────────────────────────────── */
+@@media (max-width:1100px) {
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .card-cdown  {grid-column:span 2}
+  .card-stats  {grid-column:span 1}
+  .card-sched  {grid-column:span 1}
+  .card-access {grid-column:span 1}
+  .card-announce{grid-column:span 1}
+  .card-admin  {grid-column:span 2}
+  .card-accounts{grid-column:span 2}
+  .card-finance{grid-column:span 2}
+  .card-actions{grid-column:span 2}
+  .admin-stats-row{grid-template-columns:repeat(2,1fr)}
+  .fin-metrics {grid-template-columns:repeat(2,1fr)}
+}
+@@media (max-width:800px) {
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .hero-art{display:none}
+  .hero-inner{grid-template-columns:1fr}
+  .hero{padding:2.25rem 1.25rem 2rem}
+  .hero-greeting{font-size:1.8rem}
+  .bento{grid-template-columns:1fr;padding:1.25rem}
+  .card-cdown,.card-admin,.card-accounts,.card-finance,.card-actions{grid-column:span 1}
+  .cdown-digits{gap:.5rem}
+  .cd-num{font-size:2.2rem}
+  .cd-unit{min-width:54px}
+  .admin-stats-row{grid-template-columns:repeat(2,1fr)}
+  .fin-metrics{grid-template-columns:repeat(2,1fr)}
+  .acc-table th:nth-child(3),.acc-table td:nth-child(3){display:none}
+}
+@@media (max-width:480px) {
+  .cdown-digits{flex-wrap:wrap;justify-content:center}
+  .access-grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ╔═════════════════════════════════════════════════════╗ -->
+<!-- ║  SPLASH SCREEN                                      ║ -->
+<!-- ╚═════════════════════════════════════════════════════╝ -->
+<div class="splash" id="splash" role="status" aria-label="Đang tải Lumina Tutors">
+  <div class="splash-inner">
+
+    <!-- Crest SVG — paths animated via JS getTotalLength() -->
+    <svg class="splash-crest" viewBox="0 0 200 230" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- Outer octagon -->
+      <path id="cp1" class="crest-path" stroke-width="1.6"
+        d="M58,4 L142,4 L196,58 L196,172 L142,226 L58,226 L4,172 L4,58 Z"/>
+      <!-- Inner octagon -->
+      <path id="cp2" class="crest-path-dim" stroke-width="1"
+        d="M66,20 L134,20 L179,65 L179,165 L134,210 L66,210 L21,165 L21,65 Z"
+        stroke="rgba(201,162,39,.38)"/>
+      <!-- Torch handle -->
+      <line id="cp3" class="crest-path" stroke-width="2.5"
+        x1="100" y1="64" x2="100" y2="148"/>
+      <!-- Torch flame outline -->
+      <path id="cp4" class="crest-path" stroke-width="1.5"
+        d="M100,28 Q119,46 114,66 Q108,52 100,66 Q92,52 86,66 Q81,46 100,28 Z"/>
+      <!-- Book — left page -->
+      <path id="cp5" class="crest-path" stroke-width="1.5"
+        d="M28,160 L96,160 L96,202 L28,202 Z"/>
+      <!-- Book — right page -->
+      <path id="cp6" class="crest-path" stroke-width="1.5"
+        d="M104,160 L172,160 L172,202 L104,202 Z"/>
+      <!-- Book spine -->
+      <line id="cp7" class="crest-path" stroke-width="2"
+        x1="100" y1="162" x2="100" y2="200"/>
+      <!-- Ruled lines — left -->
+      <g id="cp8" stroke="rgba(201,162,39,.3)" stroke-width="0.8">
+        <line x1="36" y1="173" x2="88" y2="173"/>
+        <line x1="36" y1="181" x2="88" y2="181"/>
+        <line x1="36" y1="189" x2="88" y2="189"/>
+      </g>
+      <!-- Ruled lines — right -->
+      <g id="cp9" stroke="rgba(201,162,39,.3)" stroke-width="0.8">
+        <line x1="112" y1="173" x2="164" y2="173"/>
+        <line x1="112" y1="181" x2="164" y2="181"/>
+        <line x1="112" y1="189" x2="164" y2="189"/>
+      </g>
+    </svg>
+
+    <div class="splash-wordmark">LUMINA <em>TUTORS</em></div>
+    <p class="splash-motto">Hệ thống Quản lý Giáo dục · Lux et Veritas</p>
+  </div>
+  <div class="splash-bar"><div class="splash-bar-fill" id="splashBar"></div></div>
 </div>
 
-<!-- ── Stat Cards ── -->
-<div class="row g-3 mb-4">
 
-    @if (role is "ADMIN" or "TEACHER")
-    {
-        <div class="col-sm-6 col-xl-3">
-            <a asp-controller="Account" asp-action="Index" asp-route-roleCode="STUDENT" style="text-decoration:none">
-                <div class="lt-stat" data-testid="stat-students">
-                    <div class="lt-stat__icon lt-stat__icon--navy">
-                        <i class="bi bi-people-fill"></i>
-                    </div>
-                    <div>
-                        <div class="lt-stat__value">@totalStudents</div>
-                        <div class="lt-stat__label">Học sinh</div>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <a asp-controller="Class" asp-action="Index" style="text-decoration:none">
-                <div class="lt-stat" data-testid="stat-classes">
-                    <div class="lt-stat__icon lt-stat__icon--gold">
-                        <i class="bi bi-building"></i>
-                    </div>
-                    <div>
-                        <div class="lt-stat__value">@totalClasses</div>
-                        <div class="lt-stat__label">
-                            Lớp học
-                            @if (!string.IsNullOrEmpty(activeYearName))
-                            {
-                                <small class="d-block" style="font-size:10px;opacity:.7">@activeYearName</small>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <a asp-controller="Account" asp-action="Index" asp-route-roleCode="TEACHER" style="text-decoration:none">
-                <div class="lt-stat" data-testid="stat-teachers">
-                    <div class="lt-stat__icon lt-stat__icon--success">
-                        <i class="bi bi-person-badge-fill"></i>
-                    </div>
-                    <div>
-                        <div class="lt-stat__value">@totalTeachers</div>
-                        <div class="lt-stat__label">Giáo viên</div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    }
+<!-- ╔═════════════════════════════════════════════════════╗ -->
+<!-- ║  APP SHELL                                          ║ -->
+<!-- ╚═════════════════════════════════════════════════════╝ -->
+<div class="page" id="appShell">
 
-    @if (role is "ACCOUNTANT" or "ADMIN")
-    {
-        <div class="col-sm-6 col-xl-3">
-            <a asp-controller="Finance" asp-action="OutstandingDebts" style="text-decoration:none">
-                <div class="lt-stat" data-testid="stat-debts">
-                    <div class="lt-stat__icon lt-stat__icon--danger">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                    </div>
-                    <div>
-                        <div class="lt-stat__value">@(finance?.OverdueInvoices ?? 0)</div>
-                        <div class="lt-stat__label">Hóa đơn quá hạn</div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    }
+  <!-- NAVBAR ───────────────────────────────────────────── -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <svg width="28" height="33" viewBox="0 0 28 33" aria-hidden="true">
+          <polygon points="14,2 26,9 26,25 14,32 2,25 2,9"
+            fill="none" stroke="rgba(201,162,39,.65)" stroke-width="1.2"/>
+          <text x="14" y="22" text-anchor="middle"
+            font-family="'Playfair Display',serif"
+            font-size="12" font-weight="700" fill="#d4af37">L</text>
+        </svg>
+        <span class="nav-brand-name">Lumina <em>Tutors</em></span>
+      </div>
 
-    @if (role == "SUPERVISOR")
-    {
-        <div class="col-sm-6 col-xl-3">
-            <a asp-controller="Supervisor" asp-action="Records" style="text-decoration:none">
-                <div class="lt-stat" data-testid="stat-discipline">
-                    <div class="lt-stat__icon lt-stat__icon--danger">
-                        <i class="bi bi-file-earmark-text-fill"></i>
-                    </div>
-                    <div>
-                        <div class="lt-stat__value">—</div>
-                        <div class="lt-stat__label">Vi phạm hôm nay</div>
-                    </div>
-                </div>
-            </a>
-        </div>
-    }
+      <div class="nav-links">
+        <a asp-controller="Dashboard" asp-action="Index"    class="nav-link active">Trang chủ</a>
+        <a asp-controller="Class"     asp-action="Index"    class="nav-link">Lớp học</a>
+        <a asp-controller="Attendance" asp-action="Index"   class="nav-link">Điểm danh</a>
+        <a asp-controller="Grading"   asp-action="Index"    class="nav-link">Điểm số</a>
+        <a asp-controller="Dashboard" asp-action="Notifications" class="nav-link">Thông báo</a>
+      </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <a asp-controller="Dashboard" asp-action="Notifications" style="text-decoration:none">
-            <div class="lt-stat" data-testid="stat-notifications">
-                <div class="lt-stat__icon lt-stat__icon--info">
-                    <i class="bi bi-bell-fill"></i>
-                </div>
-                <div>
-                    <div class="lt-stat__value">@(ViewBag.UnreadCount ?? 0)</div>
-                    <div class="lt-stat__label">Thông báo chưa đọc</div>
-                </div>
-            </div>
+      <div class="nav-actions">
+        <a asp-controller="Dashboard" asp-action="Notifications" class="nav-btn" aria-label="Thông báo">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          @if (unreadCount > 0) {
+            <span class="nav-badge">@(unreadCount > 9 ? "9+" : unreadCount.ToString())</span>
+          }
         </a>
+        <div class="nav-avatar" title="@name — @roleLabel">@avatarText</div>
+      </div>
+
+      <button class="hamburger" id="hamburger" aria-label="Mở menu" aria-expanded="false" aria-controls="mobMenu">
+        <span></span><span></span><span></span>
+      </button>
     </div>
-</div>
+  </nav>
 
-<!-- ── Finance + Quick Actions row ── -->
-<div class="row g-4">
+  <!-- MOBILE MENU ──────────────────────────────────────── -->
+  <div class="mob-overlay" id="mobOverlay" aria-hidden="true"></div>
+  <aside class="mob-menu" id="mobMenu" role="dialog" aria-modal="true" aria-label="Menu điều hướng">
+    <div class="mob-header">
+      <div class="mob-avatar">@avatarText</div>
+      <div>
+        <div class="mob-name">@name</div>
+        <div class="mob-role">@roleLabel</div>
+      </div>
+    </div>
+    <nav class="mob-nav">
+      <a asp-controller="Dashboard" asp-action="Index" class="mob-link active">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Trang chủ
+      </a>
+      <a asp-controller="Class" asp-action="Index" class="mob-link">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Lớp học
+      </a>
+      <a asp-controller="Attendance" asp-action="Index" class="mob-link">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Điểm danh
+      </a>
+      <a asp-controller="Grading" asp-action="Index" class="mob-link">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Điểm số
+      </a>
+      <a asp-controller="Finance" asp-action="Index" class="mob-link">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Tài chính
+      </a>
+      <a asp-controller="Dashboard" asp-action="Notifications" class="mob-link">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Thông báo @if (unreadCount > 0) { <span class="ann-badge" style="margin-left:auto">@unreadCount</span> }
+      </a>
+    </nav>
+    <div class="mob-footer">
+      <a asp-controller="Auth" asp-action="Logout" class="mob-logout">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Đăng xuất
+      </a>
+    </div>
+  </aside>
 
-    @if (finance != null)
-    {
-    <div class="col-lg-8">
-        <div class="lt-card">
-            <div class="lt-card__header">
-                <h3 class="lt-card__title">
-                    <i class="bi bi-currency-dollar" style="color:var(--lt-gold);margin-right:6px"></i>
-                    Tài chính tháng @now.Month/@now.Year
-                </h3>
-                <a asp-controller="Finance" asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm">
-                    Chi tiết
-                </a>
+  <!-- ─────────────────────────────────────────────────── -->
+  <!-- MAIN CONTENT                                        -->
+  <!-- ─────────────────────────────────────────────────── -->
+  <main id="main">
+    <div class="page-inner">
+
+      <!-- HERO ─────────────────────────────────────────── -->
+      <section class="hero">
+        <div class="hero-inner">
+          <div class="hero-text">
+            <p class="hero-eyebrow">@now.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("vi-VN"))</p>
+            <h1 class="hero-greeting">@greeting, <em>@firstName</em></h1>
+            <div class="hero-meta">
+              <span class="hero-pill">@roleLabel</span>
+              @if (!string.IsNullOrEmpty(activeYearName)) {
+                <span class="hero-sep">·</span>
+                <span class="hero-week">@activeYearName</span>
+              }
             </div>
-            <div class="lt-card__body">
+            <blockquote class="hero-quote">
+              <p>"Nếu tôi nhìn xa hơn, đó là vì tôi đứng trên vai những người khổng lồ."</p>
+              <cite>Sir Isaac Newton</cite>
+            </blockquote>
+          </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-6 col-md-3">
-                        <div class="lt-metric">
-                            <div class="lt-metric__value lt-metric__value--navy">
-                                @finance.TotalBilled.ToString("N0")<span class="lt-metric__currency">đ</span>
-                            </div>
-                            <div class="lt-metric__label">Tổng phát sinh</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="lt-metric">
-                            <div class="lt-metric__value lt-metric__value--success">
-                                @finance.TotalCollected.ToString("N0")<span class="lt-metric__currency">đ</span>
-                            </div>
-                            <div class="lt-metric__label">Đã thu</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="lt-metric">
-                            <div class="lt-metric__value lt-metric__value--danger">
-                                @finance.TotalOutstanding.ToString("N0")<span class="lt-metric__currency">đ</span>
-                            </div>
-                            <div class="lt-metric__label">Còn lại</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="lt-metric">
-                            <div class="lt-metric__value lt-metric__value--gold">
-                                @finance.CollectionRate%
-                            </div>
-                            <div class="lt-metric__label">Tỷ lệ thu</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Collection progress -->
-                <div class="lt-flex-between lt-text-xs lt-text-muted lt-mb-2">
-                    <span>Tiến độ thu học phí</span>
-                    <span>@finance.PaidInvoices / @finance.TotalInvoices hóa đơn</span>
-                </div>
-                <div class="lt-progress">
-                    <div class="lt-progress__bar" style="width:@finance.CollectionRate%"></div>
-                </div>
-
-            </div>
+          <div class="hero-art" aria-hidden="true">
+            <svg class="hero-constellation" viewBox="0 0 360 240"
+                 xmlns="http://www.w3.org/2000/svg" fill="none">
+              <g stroke="#c9a227" stroke-width="0.65" opacity="0.16">
+                <line x1="54"  y1="38"  x2="148" y2="18"/><line x1="148" y1="18"  x2="226" y2="58"/>
+                <line x1="226" y1="58"  x2="284" y2="26"/><line x1="284" y1="26"  x2="336" y2="96"/>
+                <line x1="336" y1="96"  x2="262" y2="136"/><line x1="262" y1="136" x2="164" y2="162"/>
+                <line x1="164" y1="162" x2="88"  y2="146"/><line x1="88"  y1="146" x2="30"  y2="114"/>
+                <line x1="30"  y1="114" x2="54"  y2="38"/><line x1="226" y1="58"  x2="262" y2="136"/>
+                <line x1="164" y1="162" x2="282" y2="192"/><line x1="282" y1="192" x2="204" y2="222"/>
+                <line x1="54"  y1="38"  x2="88"  y2="146"/>
+              </g>
+              <g fill="#c9a227">
+                <circle cx="54"  cy="38"  r="2.8" opacity=".55"/>
+                <circle cx="148" cy="18"  r="1.8" opacity=".38"/>
+                <circle cx="226" cy="58"  r="3.8" opacity=".75"/>
+                <circle cx="284" cy="26"  r="1.8" opacity=".42"/>
+                <circle cx="336" cy="96"  r="2.8" opacity=".55"/>
+                <circle cx="262" cy="136" r="2.2" opacity=".48"/>
+                <circle cx="164" cy="162" r="3.2" opacity=".65"/>
+                <circle cx="88"  cy="146" r="1.8" opacity=".38"/>
+                <circle cx="30"  cy="114" r="2.2" opacity=".45"/>
+                <circle cx="282" cy="192" r="2.8" opacity=".52"/>
+                <circle cx="204" cy="222" r="1.8" opacity=".38"/>
+              </g>
+            </svg>
+          </div>
         </div>
-    </div>
-    }
+      </section>
 
-    <div class="@(finance != null ? "col-lg-4" : "col-12")">
-        <div class="lt-card">
-            <div class="lt-card__header">
-                <h3 class="lt-card__title">Thao tác nhanh</h3>
+      <!-- BENTO ────────────────────────────────────────── -->
+      <div class="bento">
+
+        @* ── ADMIN / TEACHER: stat cards ── *@
+        @if (role is "ADMIN" or "TEACHER" or "SUPERVISOR" or "ACCOUNTANT")
+        {
+        <article class="card card-admin">
+          <div class="card-pad">
+            <div class="card-cap">
+              <h2 class="card-title">Tổng quan</h2>
+              <span class="card-corner" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </span>
             </div>
-            <div class="lt-card__body lt-flex-col lt-gap-3">
-                @if (role is "ADMIN" or "TEACHER")
-                {
-                    <a asp-controller="Attendance" asp-action="Index" class="lt-btn lt-btn--primary">
-                        <i class="bi bi-qr-code-scan"></i> Mở điểm danh
-                    </a>
-                    <a asp-controller="Grading" asp-action="Index" class="lt-btn lt-btn--outline">
-                        <i class="bi bi-journal-text"></i> Nhập điểm TT22
-                    </a>
-                }
-                @if (role is "ACCOUNTANT" or "ADMIN")
-                {
-                    <a asp-controller="Finance" asp-action="Invoices" class="lt-btn lt-btn--outline">
-                        <i class="bi bi-receipt"></i> Xem hóa đơn
-                    </a>
-                }
-                @if (role == "SUPERVISOR")
-                {
-                    <a asp-controller="Supervisor" asp-action="Records" class="lt-btn lt-btn--outline">
-                        <i class="bi bi-file-earmark-text"></i> Hồ sơ kỷ luật
-                    </a>
-                }
-                @if (role == "ADMIN")
-                {
-                    <a asp-controller="Auth" asp-action="InviteLinks" class="lt-btn lt-btn--gold">
-                        <i class="bi bi-link-45deg"></i> Tạo liên kết mời
-                    </a>
-                }
-            </div>
-        </div>
-    </div>
-
-</div>
-
-@if (role == "ADMIN" && recentAccounts != null && recentAccounts.Count > 0)
-{
-<!-- ── Recent Accounts ── -->
-<div class="row g-4 mt-1">
-    <div class="col-12">
-        <div class="lt-card">
-            <div class="lt-card__header">
-                <h3 class="lt-card__title">
-                    <i class="bi bi-person-plus-fill" style="color:var(--lt-navy);margin-right:6px"></i>
-                    Tài khoản mới nhất
-                </h3>
-                <a asp-controller="Account" asp-action="Index" class="lt-btn lt-btn--outline lt-btn--sm">
-                    Xem tất cả
+            <div class="admin-stats-row">
+              @if (role is "ADMIN" or "TEACHER")
+              {
+                <a asp-controller="Account" asp-action="Index" asp-route-roleCode="STUDENT" class="astat">
+                  <div class="astat-ico gold">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  </div>
+                  <div class="astat-val">@totalStudents</div>
+                  <div class="astat-lbl">Học sinh</div>
                 </a>
+                <a asp-controller="Class" asp-action="Index" class="astat">
+                  <div class="astat-ico navy">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                  </div>
+                  <div class="astat-val">@totalClasses</div>
+                  <div class="astat-lbl">Lớp học</div>
+                </a>
+                <a asp-controller="Account" asp-action="Index" asp-route-roleCode="TEACHER" class="astat">
+                  <div class="astat-ico green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <div class="astat-val">@totalTeachers</div>
+                  <div class="astat-lbl">Giáo viên</div>
+                </a>
+              }
+              @if (role is "ACCOUNTANT" or "ADMIN")
+              {
+                <a asp-controller="Finance" asp-action="OutstandingDebts" class="astat">
+                  <div class="astat-ico red">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  </div>
+                  <div class="astat-val">@(finance?.OverdueInvoices ?? 0)</div>
+                  <div class="astat-lbl">Hóa đơn quá hạn</div>
+                </a>
+              }
+              @if (role == "SUPERVISOR")
+              {
+                <a asp-controller="Supervisor" asp-action="Records" class="astat">
+                  <div class="astat-ico amber">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div class="astat-val">—</div>
+                  <div class="astat-lbl">Vi phạm hôm nay</div>
+                </a>
+              }
+              <a asp-controller="Dashboard" asp-action="Notifications" class="astat">
+                <div class="astat-ico navy">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </div>
+                <div class="astat-val">@unreadCount</div>
+                <div class="astat-lbl">Thông báo chưa đọc</div>
+              </a>
             </div>
-            <div class="lt-card__body p-0">
-                <table class="table table-hover mb-0" style="font-size:.875rem">
-                    <thead>
-                        <tr style="background:var(--lt-surface-alt)">
-                            <th class="ps-4 py-2" style="font-weight:600;color:var(--lt-text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">Họ tên</th>
-                            <th class="py-2"       style="font-weight:600;color:var(--lt-text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">Vai trò</th>
-                            <th class="py-2"       style="font-weight:600;color:var(--lt-text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">Email</th>
-                            <th class="py-2 pe-4"  style="font-weight:600;color:var(--lt-text-muted);text-transform:uppercase;font-size:.7rem;letter-spacing:.05em">Trạng thái</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var acc in recentAccounts)
+          </div>
+        </article>
+        }
+
+        @* ── FINANCE CARD ── *@
+        @if (finance != null)
+        {
+        <article class="card card-finance">
+          <div class="card-pad">
+            <div class="card-cap">
+              <div>
+                <h2 class="card-title">Tài chính</h2>
+                <p class="card-subtitle">Tháng @now.Month / @now.Year</p>
+              </div>
+              <a asp-controller="Finance" asp-action="Index" class="card-tag tag-info">Chi tiết</a>
+            </div>
+            <div class="fin-metrics">
+              <div class="fin-m">
+                <div class="fin-m-val">@finance.TotalBilled.ToString("N0")đ</div>
+                <div class="fin-m-lbl">Tổng phát sinh</div>
+              </div>
+              <div class="fin-m">
+                <div class="fin-m-val green">@finance.TotalCollected.ToString("N0")đ</div>
+                <div class="fin-m-lbl">Đã thu</div>
+              </div>
+              <div class="fin-m">
+                <div class="fin-m-val red">@finance.TotalOutstanding.ToString("N0")đ</div>
+                <div class="fin-m-lbl">Còn lại</div>
+              </div>
+              <div class="fin-m">
+                <div class="fin-m-val gold">@finance.CollectionRate%</div>
+                <div class="fin-m-lbl">Tỷ lệ thu</div>
+              </div>
+            </div>
+            <div class="fin-progress-lbl">
+              <span>Tiến độ thu học phí</span>
+              <span>@finance.PaidInvoices / @finance.TotalInvoices hóa đơn</span>
+            </div>
+            <div class="fin-prog">
+              <div class="fin-prog-fill" style="width:@finance.CollectionRate%"></div>
+            </div>
+          </div>
+        </article>
+        }
+
+        @* ── QUICK ACTIONS ── *@
+        <article class="card card-actions">
+          <div class="card-pad">
+            <div class="card-cap">
+              <h2 class="card-title">Thao tác nhanh</h2>
+            </div>
+            <div class="action-list">
+              @if (role is "ADMIN" or "TEACHER")
+              {
+                <a asp-controller="Attendance" asp-action="Index" class="action-btn primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="10" y="3" width="5" height="5"/><rect x="17" y="3" width="4" height="4"/><rect x="3" y="10" width="4" height="4"/><line x1="10" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="14" y2="10"/><rect x="17" y="10" width="4" height="4"/></svg>
+                  Mở điểm danh QR
+                </a>
+                <a asp-controller="Grading" asp-action="Index" class="action-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Nhập điểm TT22
+                </a>
+              }
+              @if (role is "ACCOUNTANT" or "ADMIN")
+              {
+                <a asp-controller="Finance" asp-action="Invoices" class="action-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Xem hóa đơn
+                </a>
+              }
+              @if (role == "SUPERVISOR")
+              {
+                <a asp-controller="Supervisor" asp-action="Records" class="action-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Hồ sơ kỷ luật
+                </a>
+              }
+              @if (role == "ADMIN")
+              {
+                <a asp-controller="Auth" asp-action="InviteLinks" class="action-btn primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  Tạo liên kết mời
+                </a>
+              }
+              <a asp-controller="Account" asp-action="Index" class="action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Quản lý tài khoản
+              </a>
+            </div>
+          </div>
+        </article>
+
+        @* ── RECENT ACCOUNTS (ADMIN) ── *@
+        @if (role == "ADMIN" && recentAccounts != null && recentAccounts.Count > 0)
+        {
+        <article class="card card-accounts">
+          <div class="card-pad" style="padding-bottom:.75rem">
+            <div class="card-cap">
+              <h2 class="card-title">Tài khoản mới nhất</h2>
+              <a asp-controller="Account" asp-action="Index" class="card-tag tag-info">Xem tất cả</a>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="acc-table">
+              <thead>
+                <tr>
+                  <th>Họ tên</th>
+                  <th>Vai trò</th>
+                  <th>Email</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var acc in recentAccounts)
+                {
+                  <tr>
+                    <td>
+                      <div class="acc-name-cell">
+                        @if (!string.IsNullOrEmpty(acc.AvatarUrl))
                         {
-                            <tr>
-                                <td class="ps-4 py-2 align-middle">
-                                    <div class="d-flex align-items-center gap-2">
-                                        @if (!string.IsNullOrEmpty(acc.AvatarUrl))
-                                        {
-                                            <img src="@acc.AvatarUrl" alt="" class="rounded-circle" style="width:32px;height:32px;object-fit:cover">
-                                        }
-                                        else
-                                        {
-                                            <div class="rounded-circle d-flex align-items-center justify-content-center"
-                                                 style="width:32px;height:32px;background:var(--lt-navy-light);color:var(--lt-navy);font-weight:700;font-size:.75rem;flex-shrink:0">
-                                                @(acc.FullName.Split(' ').LastOrDefault()?.FirstOrDefault())
-                                            </div>
-                                        }
-                                        <a asp-controller="Account" asp-action="Detail" asp-route-id="@acc.UserId"
-                                           style="color:inherit;text-decoration:none;font-weight:500">@acc.FullName</a>
-                                    </div>
-                                </td>
-                                <td class="py-2 align-middle">
-                                    <span class="lt-badge @(acc.RoleCode == "TEACHER" ? "lt-badge--navy" : acc.RoleCode == "STUDENT" ? "lt-badge--gold" : "lt-badge--info")">
-                                        @acc.RoleCode
-                                    </span>
-                                </td>
-                                <td class="py-2 align-middle" style="color:var(--lt-text-muted)">@acc.Email</td>
-                                <td class="py-2 pe-4 align-middle">
-                                    @if (acc.IsActive)
-                                    {
-                                        <span class="lt-badge lt-badge--success">Hoạt động</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="lt-badge lt-badge--danger">Vô hiệu</span>
-                                    }
-                                </td>
-                            </tr>
+                          <img src="@acc.AvatarUrl" alt="" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0"/>
                         }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-}
+                        else
+                        {
+                          <div class="acc-avatar-ring">@(acc.FullName.Split(' ').LastOrDefault()?.FirstOrDefault())</div>
+                        }
+                        <a asp-controller="Account" asp-action="Detail" asp-route-id="@acc.UserId" class="acc-name-link">@acc.FullName</a>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="acc-badge @(acc.RoleCode == "TEACHER" ? "badge-teacher" : acc.RoleCode == "STUDENT" ? "badge-student" : acc.RoleCode == "ADMIN" ? "badge-admin" : "badge-other")">
+                        @acc.RoleCode
+                      </span>
+                    </td>
+                    <td style="color:var(--stone)">@acc.Email</td>
+                    <td>
+                      <span class="acc-badge @(acc.IsActive ? "badge-active" : "badge-inactive")">
+                        @(acc.IsActive ? "Hoạt động" : "Vô hiệu")
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </article>
+        }
+
+      </div><!-- /bento -->
+    </div><!-- /page-inner -->
+  </main>
+</div><!-- /page -->
+
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── SPLASH ─────────────────────────────────────────── */
+  const splash   = document.getElementById('splash');
+  const splashBar = document.getElementById('splashBar');
+  const ANIM_PATHS = ['cp1','cp2','cp3','cp4','cp5','cp6','cp7'];
+  const RULED_GROUPS = ['cp8','cp9'];
+
+  // Initialise stroke-dash for each animatable path
+  function initPaths() {
+    ANIM_PATHS.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const len = el.getTotalLength ? el.getTotalLength() : 200;
+      el.style.strokeDasharray  = len;
+      el.style.strokeDashoffset = len;
+      const dur  = [1.6, 1.2, 1.0, 0.9, 0.9, 0.8, 0.5][i] || 0.8;
+      const del  = [0.05, 0.3, 0.8, 0.85, 1.05, 1.15, 1.22][i] || 0;
+      el.style.transition = `stroke-dashoffset ${dur}s ${del}s cubic-bezier(.16,1,.3,1)`;
+    });
+    // Ruled lines: fade in after book is drawn
+    RULED_GROUPS.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.opacity    = '0';
+      el.style.transition = 'opacity 0.4s 1.6s ease-out';
+    });
+  }
+
+  function startDraw() {
+    ANIM_PATHS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.strokeDashoffset = '0';
+    });
+    RULED_GROUPS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.opacity = '1';
+    });
+  }
+
+  function dismissSplash() {
+    splash.classList.add('exit');
+    setTimeout(() => { splash.style.display = 'none'; }, 800);
+  }
+
+  // Sequence
+  initPaths();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    startDraw();
+    // Text fades in 1.4s after draw starts
+    setTimeout(() => splash.classList.add('text-in'), 1400);
+    // Progress bar
+    splashBar.classList.add('run');
+    // Dismiss after 3.4s total
+    setTimeout(dismissSplash, 3400);
+  }));
+
+  // Allow tap/click to skip
+  splash.addEventListener('click', dismissSplash);
+
+  /* ── HAMBURGER / MOBILE MENU ────────────────────────── */
+  const hamburger  = document.getElementById('hamburger');
+  const mobMenu    = document.getElementById('mobMenu');
+  const mobOverlay = document.getElementById('mobOverlay');
+
+  function openMenu() {
+    mobMenu.classList.add('open');
+    mobOverlay.classList.add('show');
+    hamburger.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMenu() {
+    mobMenu.classList.remove('open');
+    mobOverlay.classList.remove('show');
+    hamburger.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  hamburger.addEventListener('click', () =>
+    mobMenu.classList.contains('open') ? closeMenu() : openMenu()
+  );
+  mobOverlay.addEventListener('click', closeMenu);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+
+  /* ── DATE DISPLAY ───────────────────────────────────── */
+  // Stat bars: animate in after page load
+  document.querySelectorAll('.stat-bar-fill').forEach(bar => {
+    const target = bar.style.width;
+    bar.style.width = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      bar.style.transition = 'width 1s 2s cubic-bezier(.16,1,.3,1)';
+      bar.style.width = target;
+    }));
+  });
+
+})();
+</script>
+</body>
+</html>
