@@ -33,9 +33,13 @@ try
     builder.Services.AddApplication();
 
     // ── MVC ───────────────────────────────────────────────────────────────────
-    builder.Services.AddControllersWithViews()
+    var mvcBuilder = builder.Services.AddControllersWithViews()
         .AddViewOptions(o => o.HtmlHelperOptions.ClientValidationEnabled = true)
         .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+    // Hot-reload Razor views in Development without restarting the app
+    if (builder.Environment.IsDevelopment())
+        mvcBuilder.AddRazorRuntimeCompilation();
 
     // ── Authentication (Cookie for MVC + JWT for API) ────────────────────────
     var jwtKey    = builder.Configuration["JwtSettings:SecretKey"]!;

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lumina-tutors",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/LuminaTutors.Web", "--no-launch-profile", "--urls", "http://localhost:60481"],
+      "port": 60481
+    }
+  ]
+}

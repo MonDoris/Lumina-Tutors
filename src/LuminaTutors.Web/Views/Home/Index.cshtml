@@ -1,10 +1,13 @@
 @{
     Layout = null;
     /*
-     * LUMINA TUTORS — LANDING PAGE v3 (Light)
-     * Concept: "The Illumination of Knowledge" — Light Edition
-     * Warm parchment base. Cursor casts a golden bloom on the surface,
-     * like sunlight moving across aged paper.
+     * ╔══════════════════════════════════════════════════════════════╗
+     * ║  LUMINA TUTORS — LANDING PAGE                                 ║
+     * ║  Concept: "The Architecture of Knowledge"                    ║
+     * ║  Futuristic Data Canvas · Technical Blueprint · Live Data     ║
+     * ║  ASP.NET Core MVC — Layout = null (standalone)                ║
+     * ║  Palette: Tech White · Cyber Blue · Quantum Purple · Optical  ║
+     * ╚══════════════════════════════════════════════════════════════╝
      */
 }
 <!DOCTYPE html>
@@ -12,959 +15,1427 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta name="description" content="Lumina Tutors — Nền tảng quản lý giáo dục thế hệ mới."/>
-<title>Lumina Tutors — Chạm vào ánh sáng</title>
+<meta name="description" content="Lumina Tutors — Kiến trúc của Tri thức. Nền tảng giáo dục vận hành bằng dữ liệu."/>
+<title>Lumina Tutors — Kiến trúc của Tri thức</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 
 <style>
-/* ═══════════════════════════════════════════════════
-   RESET
-═══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   RESET & DESIGN TOKENS
+   Palette uses hex/rgba (verified reliable in this runtime) but every
+   neutral is tinted toward the cool blueprint hue — no pure #000/#fff.
+═══════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; font-size: 16px; -webkit-text-size-adjust: 100%; }
 
-/* ═══════════════════════════════════════════════════
-   DESIGN TOKENS  (hex / rgba — no oklch)
-═══════════════════════════════════════════════════ */
 :root {
-    --parch:      #f8f4ed;   /* page background — warm parchment    */
-    --parch2:     #f2ede3;   /* section tint                        */
-    --parch3:     #ece5d8;   /* card / divider                      */
-    --ink:        #1c160e;   /* primary text                        */
-    --ink2:       #3d3220;   /* body text                           */
-    --ink3:       #7a6a52;   /* subdued / captions                  */
-    --gold:       #a07828;   /* primary accent                      */
-    --gold-l:     #c49430;   /* lighter gold — hover                */
-    --gold-bg:    rgba(160,120,40,.08);   /* gold tint bg            */
-    --gold-bd:    rgba(160,120,40,.22);   /* gold border             */
-    --rule:       rgba(160,120,40,.18);   /* horizontal rules        */
-    --thread:     #b08830;   /* scrollytelling thread               */
-    --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    /* Cursor-bloom position (updated by JS) */
-    --bx: 50%;
-    --by: 50%;
+    /* Surfaces — cool tech white / grey */
+    --bg:        #eef1f6;   /* page                        */
+    --paper:     #f7f9fc;   /* raised panel                */
+    --paper-2:   #ffffff;   /* card (tinted via overlay)   */
+    --ink:       #0d1626;   /* near-black, blue-tinted     */
+    --ink-2:     #2f3c50;   /* secondary text              */
+    --muted:     #6a7589;   /* captions / labels           */
+    --line:      #d3dae5;   /* grid lines (solid)          */
+    --line-2:    #c0cad9;   /* stronger grid               */
+    --dash:      #b9c4d4;   /* dashed border color         */
+
+    /* Scientific accents */
+    --cyber:     #1763ff;   /* Cyber Blue — primary        */
+    --cyber-2:   #4f8bff;
+    --purple:    #7b3fe4;   /* Quantum Purple              */
+    --purple-2:  #9a6bf0;
+    --green:     #06bf86;   /* Optical Green               */
+    --green-2:   #2dd6a0;
+    --amber:     #f0a020;   /* warning / tertiary metric   */
+
+    --cyber-a:   rgba(23,99,255,.10);
+    --purple-a:  rgba(123,63,228,.10);
+    --green-a:   rgba(6,191,134,.12);
+
+    --ease:      cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-io:   cubic-bezier(0.65, 0, 0.35, 1);
+
+    --fs-mono:   'JetBrains Mono', ui-monospace, monospace;
+    --fs-disp:   'Space Grotesk', sans-serif;
+    --fs-body:   'Inter', sans-serif;
 }
 
-/* ═══════════════════════════════════════════════════
-   BASE
-═══════════════════════════════════════════════════ */
 body {
-    font-family: 'Inter', sans-serif;
-    background: var(--parch);
-    color: var(--ink2);
+    font-family: var(--fs-body);
+    background: var(--bg);
+    color: var(--ink-2);
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     overflow-x: hidden;
-    cursor: none;
 }
-a { cursor: none; }
 
-/* ═══════════════════════════════════════════════════
-   CUSTOM CURSOR
-═══════════════════════════════════════════════════ */
-.c-dot {
-    position: fixed; z-index: 9000;
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--gold);
-    pointer-events: none;
-    transform: translate(-50%,-50%);
-    will-change: left, top;
-}
-.c-ring {
-    position: fixed; z-index: 8999;
-    width: 30px; height: 30px; border-radius: 50%;
-    border: 1.5px solid rgba(160,120,40,.5);
-    pointer-events: none;
-    transform: translate(-50%,-50%);
-    will-change: left, top;
-    transition: width .22s var(--ease-expo),
-                height .22s var(--ease-expo),
-                border-color .2s, opacity .2s;
-}
-.c-ring.hov { width: 46px; height: 46px; border-color: var(--gold); }
-.c-ring.portal { width: 72px; height: 72px; border-color: rgba(160,120,40,.55); }
+::selection { background: var(--cyber); color: #fff; }
 
-/* ═══════════════════════════════════════════════════
-   CURSOR BLOOM — warm golden glow following cursor
-   Sits below content so it colours the background
-   without obscuring text.
-═══════════════════════════════════════════════════ */
-.bloom {
+a { color: inherit; text-decoration: none; }
+
+/* Mono helper */
+.mono { font-family: var(--fs-mono); font-feature-settings: "tnum" 1; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   FIXED TECHNICAL GRID BACKGROUND + HUD CORNERS
+═══════════════════════════════════════════════════════════════════ */
+.grid-bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+        linear-gradient(to right,  rgba(120,140,170,.07) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(120,140,170,.07) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 120% 90% at 50% 0%, #000 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 120% 90% at 50% 0%, #000 40%, transparent 100%);
+}
+.grid-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(to right,  rgba(120,140,170,.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(120,140,170,.12) 1px, transparent 1px);
+    background-size: 256px 256px;
+}
+
+/* Page HUD frame (corner ticks + edge coordinates) */
+.hud { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+.hud-corner {
+    position: absolute; width: 18px; height: 18px;
+    border: 1.5px solid var(--cyber);
+    opacity: .55;
+}
+.hud-corner.tl { top: 16px;    left: 16px;    border-right: none; border-bottom: none; }
+.hud-corner.tr { top: 16px;    right: 16px;   border-left: none;  border-bottom: none; }
+.hud-corner.bl { bottom: 16px; left: 16px;    border-right: none; border-top: none; }
+.hud-corner.br { bottom: 16px; right: 16px;   border-left: none;  border-top: none; }
+.hud-edge {
     position: fixed;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background: radial-gradient(
-        circle 320px at var(--bx) var(--by),
-        rgba(200,165,60, 0.13) 0%,
-        rgba(200,165,60, 0.05) 40%,
-        transparent 70%
-    );
-    transition: background .05s linear;
+    font-family: var(--fs-mono); font-size: .58rem; letter-spacing: .12em;
+    color: var(--muted); opacity: .6;
 }
+.hud-edge.left  { left: 24px; top: 50%; transform: rotate(-90deg) translateX(50%); transform-origin: left center; }
+.hud-edge.right { right: 24px; top: 50%; transform: rotate(90deg) translateX(-50%); transform-origin: right center; }
 
-/* ═══════════════════════════════════════════════════
-   CONTENT LAYER (z-2 so it sits above bloom)
-═══════════════════════════════════════════════════ */
-.page-wrap { position: relative; z-index: 2; }
+@@media (max-width: 1000px) { .hud-edge { display: none; } }
 
-/* ═══════════════════════════════════════════════════
-   NAVBAR
-═══════════════════════════════════════════════════ */
-.nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 500;
-    height: 68px; padding: 0 56px;
-    display: flex; align-items: center; justify-content: space-between;
-    transition: background .35s, box-shadow .35s, border-color .35s;
-    border-bottom: 1px solid transparent;
+/* ═══════════════════════════════════════════════════════════════════
+   SYSTEM SCAN — boot overlay
+═══════════════════════════════════════════════════════════════════ */
+.boot {
+    position: fixed; inset: 0; z-index: 9000;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .6s var(--ease), visibility .6s;
 }
-.nav.scrolled {
-    background: rgba(248,244,237,.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 1px 0 var(--rule);
-    border-color: var(--rule);
+.boot.done { opacity: 0; visibility: hidden; }
+.boot-scan {
+    position: absolute; left: 0; right: 0; top: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyber) 25%, var(--purple) 50%, var(--green) 75%, transparent);
+    box-shadow: 0 0 24px 4px rgba(23,99,255,.5);
+    animation: scan-sweep 1.5s var(--ease-io) forwards;
 }
-.nav__logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.4rem; font-weight: 600;
-    color: var(--gold); text-decoration: none;
-    letter-spacing: .04em;
-    display: flex; align-items: center; gap: 9px;
+@@keyframes scan-sweep {
+    0%   { top: 0;    opacity: 0; }
+    8%   { opacity: 1; }
+    92%  { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
 }
-.nav__links { display: flex; gap: 0; }
-.nav__link {
-    font-size: .78rem; letter-spacing: .09em; text-transform: uppercase;
-    color: var(--ink3); text-decoration: none;
-    padding: 7px 15px; border-radius: 5px;
-    transition: color .18s, background .18s;
-}
-.nav__link:hover { color: var(--ink); background: var(--gold-bg); }
-.nav__actions { display: flex; gap: 9px; align-items: center; }
-.nav-ghost {
-    font-size: .78rem; font-weight: 500; letter-spacing: .05em;
-    color: var(--ink3); text-decoration: none;
-    padding: 7px 18px; border-radius: 5px;
-    border: 1px solid var(--gold-bd);
-    transition: color .18s, border-color .18s, background .18s;
-}
-.nav-ghost:hover { color: var(--gold); border-color: var(--gold); background: var(--gold-bg); }
-.nav-solid {
-    font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-    color: #fff; background: var(--gold);
-    text-decoration: none; padding: 8px 20px; border-radius: 5px;
-    transition: background .18s, box-shadow .2s, transform .15s;
-    box-shadow: 0 2px 14px rgba(160,120,40,.3);
-}
-.nav-solid:hover {
-    background: var(--gold-l);
-    box-shadow: 0 4px 22px rgba(160,120,40,.4);
-    transform: translateY(-1px);
-}
-
-/* ═══════════════════════════════════════════════════
-   HERO
-═══════════════════════════════════════════════════ */
-.hero {
-    min-height: 100vh;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 130px 48px 100px;
+.boot-readout {
     text-align: center;
-    position: relative;
-    /* Subtle radial — slightly lighter in centre */
-    background: radial-gradient(ellipse 70% 60% at 50% 42%,
-        #fdfbf6 0%, var(--parch) 100%);
+    font-family: var(--fs-mono);
 }
-
-/* Fine ornamental rule above crest */
-.hero-rule {
-    display: flex; align-items: center; gap: 14px;
-    margin-bottom: 44px;
-    opacity: 0; transform: translateY(12px);
-    transition: opacity .9s var(--ease-expo) .2s,
-                transform .9s var(--ease-expo) .2s;
-}
-.hero-rule-line {
-    flex: 1; max-width: 80px; height: 1px;
-    background: linear-gradient(to right, transparent, var(--rule));
-}
-.hero-rule-line.r { background: linear-gradient(to left, transparent, var(--rule)); }
-.hero-rule-diamond {
-    width: 5px; height: 5px;
-    background: var(--gold);
-    transform: rotate(45deg);
-    opacity: .6;
-}
-
-/* Eyebrow */
-.hero-eyebrow {
-    font-size: .68rem; letter-spacing: .22em; text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 30px;
-    opacity: 0; transform: translateY(12px);
-    transition: opacity .9s var(--ease-expo) .35s,
-                transform .9s var(--ease-expo) .35s;
-}
-
-/* Crest */
-.hero-crest {
-    margin-bottom: 34px;
-    opacity: 0; transform: translateY(12px);
-    transition: opacity 1s var(--ease-expo) .52s,
-                transform 1s var(--ease-expo) .52s;
-}
-.hero-crest svg {
-    width: 74px; height: 74px;
-    filter: drop-shadow(0 2px 16px rgba(160,120,40,.2));
-    animation: crest-pulse 4s ease-in-out 1.6s infinite;
-}
-@@keyframes crest-pulse {
-    0%,100% { filter: drop-shadow(0 2px 12px rgba(160,120,40,.18)); }
-    50%      { filter: drop-shadow(0 2px 28px rgba(160,120,40,.38)); }
-}
-
-/* Title */
-.hero-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(2.8rem, 6.5vw, 5.6rem);
-    font-weight: 300; line-height: 1.1;
-    letter-spacing: -.01em;
-    color: var(--ink);
+.boot-logo {
+    font-family: var(--fs-disp); font-weight: 700;
+    font-size: 1.4rem; letter-spacing: .04em; color: var(--ink);
     margin-bottom: 20px;
-    opacity: 0; transform: translateY(12px);
-    transition: opacity 1s var(--ease-expo) .68s,
-                transform 1s var(--ease-expo) .68s;
 }
-.hero-title em { font-style: italic; color: var(--gold); }
+.boot-logo b { color: var(--cyber); }
+.boot-lines { font-size: .72rem; color: var(--muted); line-height: 2; min-height: 90px; }
+.boot-lines .ok { color: var(--green); }
+.boot-bar {
+    width: 240px; height: 3px; margin: 22px auto 0;
+    background: var(--line); border-radius: 99px; overflow: hidden;
+}
+.boot-bar-fill {
+    height: 100%; width: 0; background: linear-gradient(90deg, var(--cyber), var(--purple));
+    animation: boot-fill 1.5s var(--ease-io) forwards;
+}
+@@keyframes boot-fill { to { width: 100%; } }
 
-/* Subtitle */
-.hero-motto {
-    font-family: 'EB Garamond', serif;
-    font-size: clamp(.95rem, 1.6vw, 1.175rem);
-    font-style: italic; line-height: 1.9; letter-spacing: .03em;
-    color: var(--ink3);
-    margin-bottom: 0;
-    opacity: 0; transform: translateY(12px);
-    transition: opacity 1s var(--ease-expo) .84s,
-                transform 1s var(--ease-expo) .84s;
-}
-.hero-motto strong { font-style: normal; font-weight: 400; color: var(--ink2); }
+/* ═══════════════════════════════════════════════════════════════════
+   SHELL — constrains content over grid
+═══════════════════════════════════════════════════════════════════ */
+.shell { position: relative; z-index: 2; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 0 40px; }
 
-/* Scroll indicator */
-.hero-scroll {
-    position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    opacity: 0; transition: opacity 1s .2s;
+/* Section eyebrow / label common */
+.tag {
+    font-family: var(--fs-mono); font-size: .62rem; font-weight: 500;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--cyber);
+    display: inline-flex; align-items: center; gap: 8px;
 }
-.hero-scroll.visible { opacity: 1; }
-.hero-scroll-lbl {
-    font-size: .6rem; letter-spacing: .2em; text-transform: uppercase;
-    color: var(--ink3);
+.tag::before {
+    content: ''; width: 18px; height: 1px; background: var(--cyber);
 }
-.hero-scroll-line {
-    width: 1px; height: 40px;
-    background: linear-gradient(to bottom, var(--gold), transparent);
-    animation: scroll-breathe 2s ease-in-out infinite;
+.tag.purple { color: var(--purple); }
+.tag.purple::before { background: var(--purple); }
+.tag.green { color: var(--green); }
+.tag.green::before { background: var(--green); }
+
+.h-section {
+    font-family: var(--fs-disp); font-weight: 600;
+    font-size: clamp(1.9rem, 3.4vw, 3rem); line-height: 1.08;
+    letter-spacing: -.02em; color: var(--ink);
 }
-@@keyframes scroll-breathe {
-    0%,100% { opacity: .35; }
-    50%      { opacity: .85; }
+.sub-section {
+    font-size: .95rem; color: var(--muted); line-height: 1.7; max-width: 56ch;
 }
 
-/* JS trigger: body.in → hero elements visible */
-body.in .hero-rule,
-body.in .hero-eyebrow,
-body.in .hero-crest,
-body.in .hero-title,
-body.in .hero-motto { opacity: 1; transform: translateY(0); }
+/* ═══════════════════════════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════════════════════════ */
+.nav {
+    position: sticky; top: 0; z-index: 100;
+    height: 64px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(238,241,246,.8);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    transition: border-color .3s;
+}
+.nav-inner { max-width: 1320px; margin: 0 auto; padding: 0 40px; height: 100%;
+    display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+    width: 32px; height: 32px; position: relative;
+    border: 1.5px solid var(--ink); border-radius: 6px;
+    display: grid; place-items: center;
+    overflow: hidden;
+}
+.brand-mark::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+        linear-gradient(135deg, transparent 45%, var(--cyber) 45%, var(--cyber) 55%, transparent 55%),
+        linear-gradient(45deg,  transparent 45%, var(--purple) 45%, var(--purple) 55%, transparent 55%);
+    opacity: .85;
+}
+.brand-mark span {
+    position: relative; z-index: 1; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ink);
+}
+.brand-name {
+    font-family: var(--fs-disp); font-weight: 600; font-size: 1.05rem;
+    letter-spacing: .01em; color: var(--ink);
+}
+.brand-ver { font-family: var(--fs-mono); font-size: .58rem; color: var(--muted); letter-spacing: .1em; }
 
-/* ═══════════════════════════════════════════════════
-   DIVIDER — ornamental section separator
-═══════════════════════════════════════════════════ */
-.ornament-rule {
-    display: flex; align-items: center; gap: 16px;
-    max-width: 320px; margin: 0 auto;
-    padding: 8px 0;
+.nav-links { display: flex; gap: 4px; }
+.nav-link {
+    font-family: var(--fs-mono); font-size: .72rem; letter-spacing: .04em;
+    color: var(--ink-2); padding: 8px 14px; border-radius: 6px;
+    transition: background .18s, color .18s;
 }
-.or-line {
-    flex: 1; height: 1px;
-    background: var(--rule);
+.nav-link:hover { background: var(--cyber-a); color: var(--cyber); }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.status {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--fs-mono); font-size: .62rem; letter-spacing: .08em;
+    color: var(--muted);
 }
-.or-mark {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: .7rem; letter-spacing: .18em; text-transform: uppercase;
-    color: var(--gold); opacity: .7;
+.status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 0 0 rgba(6,191,134,.5);
+    animation: pulse-dot 2s infinite;
+}
+@@keyframes pulse-dot {
+    0%   { box-shadow: 0 0 0 0 rgba(6,191,134,.5); }
+    70%  { box-shadow: 0 0 0 6px rgba(6,191,134,0); }
+    100% { box-shadow: 0 0 0 0 rgba(6,191,134,0); }
+}
+
+/* Buttons */
+.btn {
+    font-family: var(--fs-mono); font-size: .72rem; font-weight: 500;
+    letter-spacing: .04em; padding: 10px 18px; border-radius: 7px;
+    display: inline-flex; align-items: center; gap: 9px; cursor: pointer;
+    border: 1px solid transparent; transition: all .2s var(--ease);
     white-space: nowrap;
 }
+.btn-primary {
+    background: var(--ink); color: #fff;
+    box-shadow: 0 1px 0 rgba(255,255,255,.1) inset, 0 6px 18px rgba(13,22,38,.18);
+}
+.btn-primary:hover { background: var(--cyber); box-shadow: 0 8px 24px rgba(23,99,255,.32); transform: translateY(-1px); }
+.btn-ghost { border-color: var(--line-2); color: var(--ink-2); background: var(--paper); }
+.btn-ghost:hover { border-color: var(--cyber); color: var(--cyber); }
+.btn-arrow { transition: transform .25s var(--ease); }
+.btn:hover .btn-arrow { transform: translateX(3px); }
 
-/* ═══════════════════════════════════════════════════
-   SCROLLYTELLING STORY
-═══════════════════════════════════════════════════ */
-.story {
+@@media (max-width: 880px) { .nav-links, .status { display: none; } .nav-inner, .wrap { padding: 0 22px; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════════════════════ */
+.hero { padding: 72px 0 40px; position: relative; }
+.hero-grid {
+    display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: stretch;
+}
+.hero-left { display: flex; flex-direction: column; justify-content: center; padding: 12px 0; }
+
+.hero-eyebrow {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+    opacity: 0; transform: translateY(12px);
+}
+.hero-coord { font-family: var(--fs-mono); font-size: .6rem; color: var(--muted); letter-spacing: .1em; }
+
+.hero-title {
+    font-family: var(--fs-disp); font-weight: 700;
+    font-size: clamp(2.8rem, 5.6vw, 5rem); line-height: 1.02;
+    letter-spacing: -.03em; color: var(--ink); margin-bottom: 26px;
+}
+.hero-title .accent {
+    position: relative; color: var(--cyber);
+}
+.hero-title .accent::after {
+    content: ''; position: absolute; left: 0; bottom: .08em; width: 100%; height: .07em;
+    background: linear-gradient(90deg, var(--cyber), var(--purple)); border-radius: 2px;
+    transform: scaleX(0); transform-origin: left; transition: transform .9s var(--ease) .9s;
+}
+body.ready .hero-title .accent::after { transform: scaleX(1); }
+.hero-line { display: block; overflow: hidden; }
+.hero-line > span { display: block; transform: translateY(105%); }
+
+.hero-desc {
+    font-size: 1.02rem; line-height: 1.75; color: var(--ink-2);
+    max-width: 50ch; margin-bottom: 36px;
+    opacity: 0; transform: translateY(12px);
+}
+.hero-desc b { color: var(--ink); font-weight: 600; }
+
+.hero-actions {
+    display: flex; gap: 14px; align-items: center; margin-bottom: 40px;
+    opacity: 0; transform: translateY(12px);
+}
+.hero-actions .btn { padding: 14px 24px; font-size: .78rem; }
+
+/* Inline mini metrics under hero */
+.hero-mini {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border: 1px dashed var(--dash); border-radius: 10px;
+    overflow: hidden; background: var(--paper);
+    opacity: 0; transform: translateY(12px);
+}
+.hm-cell { padding: 16px 20px; border-right: 1px dashed var(--dash); }
+.hm-cell:last-child { border-right: none; }
+.hm-val {
+    font-family: var(--fs-disp); font-weight: 600; font-size: 1.5rem; color: var(--ink);
+    line-height: 1; letter-spacing: -.01em;
+}
+.hm-val .u { font-size: .85rem; color: var(--cyber); }
+.hm-lbl { font-family: var(--fs-mono); font-size: .58rem; letter-spacing: .06em; color: var(--muted); margin-top: 7px; text-transform: uppercase; }
+
+/* hero entrance */
+body.ready .hero-eyebrow { animation: rise .7s var(--ease) .15s forwards; }
+body.ready .hero-line > span { animation: rise-line .9s var(--ease) forwards; }
+body.ready .hero-line:nth-child(1) > span { animation-delay: .25s; }
+body.ready .hero-line:nth-child(2) > span { animation-delay: .35s; }
+body.ready .hero-desc    { animation: rise .8s var(--ease) .6s forwards; }
+body.ready .hero-actions { animation: rise .8s var(--ease) .72s forwards; }
+body.ready .hero-mini    { animation: rise .8s var(--ease) .84s forwards; }
+@@keyframes rise { to { opacity: 1; transform: translateY(0); } }
+@@keyframes rise-line { to { transform: translateY(0); } }
+
+/* Hero VIEWPORT — the node network canvas module */
+.viewport {
     position: relative;
-    padding: 60px 48px 80px;
-    background: var(--parch);
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    background:
+        radial-gradient(circle at 50% 40%, rgba(255,255,255,.9), rgba(247,249,252,.75));
+    overflow: hidden;
+    min-height: 480px;
+    box-shadow: 0 30px 70px rgba(13,22,38,.10), 0 1px 0 rgba(255,255,255,.7) inset;
+    opacity: 0; transform: scale(.97);
+}
+body.ready .viewport { animation: vp-in 1s var(--ease) .4s forwards; }
+@@keyframes vp-in { to { opacity: 1; transform: scale(1); } }
+
+.viewport canvas { display: block; width: 100%; height: 100%; position: absolute; inset: 0; }
+
+/* corner ticks inside viewport */
+.vp-tick { position: absolute; width: 12px; height: 12px; border: 1px solid var(--cyber); opacity: .6; z-index: 3; }
+.vp-tick.tl { top: 14px; left: 14px; border-right: none; border-bottom: none; }
+.vp-tick.tr { top: 14px; right: 14px; border-left: none; border-bottom: none; }
+.vp-tick.bl { bottom: 14px; left: 14px; border-right: none; border-top: none; }
+.vp-tick.br { bottom: 14px; right: 14px; border-left: none; border-top: none; }
+
+.vp-hud { position: absolute; z-index: 3; font-family: var(--fs-mono); pointer-events: none; }
+.vp-hud.top {
+    top: 16px; left: 50%; transform: translateX(-50%);
+    font-size: .6rem; letter-spacing: .14em; color: var(--muted); text-transform: uppercase;
+}
+.vp-readout {
+    position: absolute; left: 18px; bottom: 16px; z-index: 3;
+    font-family: var(--fs-mono); font-size: .62rem; color: var(--ink-2);
+    display: flex; flex-direction: column; gap: 3px; pointer-events: none;
+}
+.vp-readout .k { color: var(--muted); }
+.vp-readout .v { color: var(--cyber); }
+.vp-readout .v.g { color: var(--green); }
+.vp-readout .v.p { color: var(--purple); }
+.vp-legend {
+    position: absolute; right: 18px; bottom: 16px; z-index: 3;
+    display: flex; flex-direction: column; gap: 5px; align-items: flex-end;
+    font-family: var(--fs-mono); font-size: .58rem; color: var(--muted); pointer-events: none;
+}
+.vp-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-left: 6px; vertical-align: middle; }
+
+@@media (max-width: 980px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 32px; }
+    .viewport { min-height: 380px; order: -1; }
+}
+@@media (max-width: 560px) {
+    .hero-mini { grid-template-columns: 1fr; }
+    .hm-cell { border-right: none; border-bottom: 1px dashed var(--dash); }
+    .hm-cell:last-child { border-bottom: none; }
+    .hero-actions { flex-wrap: wrap; }
 }
 
-/* Golden thread */
-.s-thread {
-    position: absolute; left: 50%; top: 0; bottom: 0;
-    width: 1px; transform: translateX(-50%);
-    pointer-events: none; z-index: 0; overflow: hidden;
+/* ═══════════════════════════════════════════════════════════════════
+   METRICS BAR — counters + sparklines
+═══════════════════════════════════════════════════════════════════ */
+.metrics {
+    margin-top: 48px;
+    border-top: 1px dashed var(--dash); border-bottom: 1px dashed var(--dash);
+    display: grid; grid-template-columns: repeat(4, 1fr);
 }
-.s-thread-fill {
-    width: 1px; height: 0;
-    background: linear-gradient(
-        to bottom,
-        transparent,
-        var(--thread) 8%,
-        var(--thread) 92%,
-        transparent
-    );
-    box-shadow: 0 0 8px rgba(176,136,48,.25);
-    transition: height .16s linear;
-}
-.s-thread-node {
-    position: absolute; left: 50%; transform: translateX(-50%);
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--thread);
-    box-shadow: 0 0 10px rgba(176,136,48,.55);
-    opacity: 0; transition: opacity .5s;
-}
-.s-thread-node.lit { opacity: 1; }
-
-/* Value panels */
-.v-panel {
-    position: relative; z-index: 1;
-    max-width: 520px;
-    padding: 100px 48px;
-    opacity: 0; transform: translateY(24px);
-    transition: opacity .85s var(--ease-expo),
-                transform .85s var(--ease-expo);
-}
-.v-panel.lit { opacity: 1; transform: translateY(0); }
-
-/* Odd: right side of thread */
-.v-panel:nth-child(odd) {
-    margin-left: auto; margin-right: 0;
-    padding-left: calc(50% - 260px + 40px);
-    text-align: left;
-}
-/* Even: left side */
-.v-panel:nth-child(even) {
-    margin-left: 0; margin-right: auto;
-    padding-right: calc(50% - 260px + 40px);
-    text-align: right;
-}
-
-.v-num {
-    display: block;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: .72rem; font-weight: 300;
-    letter-spacing: .24em; text-transform: uppercase;
-    color: var(--gold); margin-bottom: 12px;
-}
-.v-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(1.9rem, 3.6vw, 3rem);
-    font-weight: 300; line-height: 1.15;
-    color: var(--ink); margin-bottom: 16px;
-}
-.v-title em { font-style: italic; color: var(--gold); }
-.v-body {
-    font-family: 'EB Garamond', serif;
-    font-size: 1.05rem; line-height: 1.9;
-    color: var(--ink2);
-}
-.v-tags {
-    display: flex; flex-wrap: wrap; gap: 7px;
-    margin-top: 20px;
-}
-.v-panel:nth-child(even) .v-tags { justify-content: flex-end; }
-.v-tag {
-    font-size: .66rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
-    color: var(--ink3);
-    border: 1px solid var(--gold-bd);
-    padding: 3px 11px; border-radius: 2px;
-    background: var(--gold-bg);
-    transition: color .35s, border-color .35s, background .35s;
-}
-.v-panel.lit .v-tag { color: var(--gold); border-color: rgba(160,120,40,.38); }
-.v-mark {
-    position: absolute; top: 50%; transform: translateY(-50%);
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 7rem; font-weight: 300; line-height: 1;
-    color: rgba(160,120,40,.06);
-    pointer-events: none; user-select: none;
-}
-.v-panel:nth-child(odd)  .v-mark { right: 8px; }
-.v-panel:nth-child(even) .v-mark { left: 8px; }
-
-/* ═══════════════════════════════════════════════════
-   STATS BAR — light edition
-═══════════════════════════════════════════════════ */
-.stats-bar {
-    background: var(--parch2);
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-    padding: 48px;
-}
-.stats-inner {
-    max-width: 860px; margin: 0 auto;
-    display: grid; grid-template-columns: repeat(4,1fr);
-    gap: 0;
-}
-.stat-item {
-    text-align: center; padding: 0 24px;
-    border-right: 1px solid var(--rule);
-}
-.stat-item:last-child { border-right: none; }
-.stat-num {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 2.6rem; font-weight: 300;
-    color: var(--ink); line-height: 1; letter-spacing: -.02em;
-}
-.stat-num span { color: var(--gold); }
-.stat-lbl {
-    font-size: .75rem; letter-spacing: .05em;
-    color: var(--ink3); margin-top: 6px;
-}
-
-/* ═══════════════════════════════════════════════════
-   THE GATEWAY — light edition
-═══════════════════════════════════════════════════ */
-.gateway-section {
-    min-height: 100vh;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 100px 48px;
-    text-align: center;
-    background: var(--parch2);
+.metric {
+    padding: 34px 28px; border-right: 1px dashed var(--dash);
     position: relative; overflow: hidden;
 }
-/* Faint ornamental watermark behind portal */
-.gateway-section::before {
-    content: 'L';
-    position: absolute; left: 50%; top: 50%;
-    transform: translate(-50%,-50%);
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 52vw; font-weight: 300;
-    color: rgba(160,120,40,.028);
-    line-height: 1;
-    pointer-events: none; user-select: none;
-    letter-spacing: -.05em;
+.metric:last-child { border-right: none; }
+.metric-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.metric-id { font-family: var(--fs-mono); font-size: .56rem; letter-spacing: .12em; color: var(--muted); }
+.metric-trend { font-family: var(--fs-mono); font-size: .6rem; color: var(--green); }
+.metric-val {
+    font-family: var(--fs-disp); font-weight: 600; font-size: clamp(2rem, 3.4vw, 2.8rem);
+    line-height: 1; letter-spacing: -.02em; color: var(--ink);
 }
+.metric-val .u { font-size: .5em; color: var(--cyber); margin-left: 2px; }
+.metric-lbl { font-size: .8rem; color: var(--muted); margin-top: 10px; }
+.metric-spark { margin-top: 16px; height: 30px; width: 100%; display: block; }
 
-.gw-eyebrow {
-    font-size: .68rem; letter-spacing: .22em; text-transform: uppercase;
-    color: var(--gold); margin-bottom: 32px;
-    opacity: 0; transform: translateY(12px);
-    transition: opacity .8s var(--ease-expo),
-                transform .8s var(--ease-expo);
-}
-.gw-eyebrow.in { opacity: 1; transform: none; }
+@@media (max-width: 880px) { .metrics { grid-template-columns: 1fr 1fr; } .metric:nth-child(2){border-right:none;} .metric:nth-child(1),.metric:nth-child(2){border-bottom:1px dashed var(--dash);} }
+@@media (max-width: 460px) { .metrics { grid-template-columns: 1fr; } .metric { border-right: none; border-bottom: 1px dashed var(--dash); } }
 
-.gw-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(1.7rem, 3vw, 2.6rem);
-    font-weight: 300; line-height: 1.4;
-    color: var(--ink2); max-width: 400px; margin-bottom: 68px;
-    opacity: 0; transform: translateY(12px);
-    transition: opacity .9s var(--ease-expo) .1s,
-                transform .9s var(--ease-expo) .1s;
+/* ═══════════════════════════════════════════════════════════════════
+   MODULES — technical feature grid
+═══════════════════════════════════════════════════════════════════ */
+.modules { padding: 110px 0; }
+.mod-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; margin-bottom: 48px; }
+.mod-head .tag { margin-bottom: 16px; }
+.mod-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    background: var(--line);
+    gap: 1px;
 }
-.gw-title.in { opacity: 1; transform: none; }
-.gw-title em { color: var(--ink); font-style: italic; }
-
-/* Portal */
-.gateway {
-    position: relative;
-    display: inline-flex; align-items: center; justify-content: center;
-    text-decoration: none; cursor: none;
-    opacity: 0; transform: scale(.92);
-    transition: opacity .9s var(--ease-expo) .22s,
-                transform .9s var(--ease-expo) .22s;
-}
-.gateway.in { opacity: 1; transform: scale(1); }
-
-/* Rings */
-.gw-ring {
-    position: absolute; border-radius: 50%;
-    border: 1px solid var(--gold-bd);
-    transition: transform .6s var(--ease-expo), border-color .45s;
-}
-.gw-r1 { width: 188px; height: 188px; }
-.gw-r2 { width: 248px; height: 248px; animation: rring 20s linear infinite; }
-.gw-r3 { width: 310px; height: 310px; animation: rring 30s linear infinite reverse; }
-@@keyframes rring { to { transform: rotate(360deg); } }
-
-/* Orbital dot on ring 2 */
-.gw-r2::before {
-    content: '';
-    position: absolute; top: 50%; left: -3px; transform: translateY(-50%);
-    width: 5px; height: 5px; border-radius: 50%;
-    background: var(--gold); box-shadow: 0 0 8px rgba(160,120,40,.5);
-}
-/* Orbital dot on ring 3 */
-.gw-r3::after {
-    content: '';
-    position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%);
-    width: 4px; height: 4px; border-radius: 50%;
-    background: var(--gold-bd);
-}
-
-/* Core button */
-.gw-core {
-    position: relative; z-index: 1;
-    width: 132px; height: 132px; border-radius: 50%;
-    background: var(--parch);
-    border: 1px solid var(--gold-bd);
-    box-shadow: 0 4px 24px rgba(160,120,40,.1),
-                inset 0 1px 0 rgba(255,255,255,.6);
+.mod {
+    background: var(--paper);
+    padding: 30px 28px 28px; position: relative;
+    transition: background .25s;
+    min-height: 250px;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 5px;
-    transition: background .45s, border-color .45s, box-shadow .45s, transform .5s;
 }
-.gw-icon {
-    font-size: 1.65rem; color: var(--gold);
-    transition: transform .45s, color .35s;
+.mod:hover { background: var(--paper-2); }
+.mod::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 0; height: 2px;
+    background: var(--bar, var(--cyber)); transition: width .4s var(--ease);
 }
-.gw-lbl {
-    font-size: .6rem; font-weight: 600;
-    letter-spacing: .2em; text-transform: uppercase;
-    color: var(--ink3); transition: color .35s;
+.mod:hover::before { width: 100%; }
+.mod-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.mod-num { font-family: var(--fs-mono); font-size: .6rem; letter-spacing: .1em; color: var(--muted); }
+.mod-ico {
+    width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--bar-a, var(--cyber-a)); color: var(--bar, var(--cyber));
+    border: 1px solid color-mix(in srgb, var(--bar, var(--cyber)) 25%, transparent);
 }
-
-/* Hover */
-.gateway:hover .gw-core {
-    background: #fffdf7;
-    border-color: var(--gold);
-    box-shadow: 0 8px 48px rgba(160,120,40,.22),
-                0 2px 10px rgba(160,120,40,.12),
-                inset 0 1px 0 rgba(255,255,255,.8);
-    transform: scale(1.07);
-}
-.gateway:hover .gw-icon  { transform: scale(1.1) rotate(-8deg); }
-.gateway:hover .gw-lbl   { color: var(--gold); }
-.gateway:hover .gw-r1 { transform: scale(1.12); border-color: rgba(160,120,40,.4); }
-.gateway:hover .gw-r2 { border-color: rgba(160,120,40,.28); }
-
-/* Ripple */
-.gw-ripple {
-    position: absolute; border-radius: 50%;
-    width: 132px; height: 132px;
-    border: 1px solid var(--gold);
-    pointer-events: none; opacity: 0;
-}
-.gateway:hover .gw-ripple {
-    animation: gwrip 1.4s var(--ease-expo) infinite;
-}
-@@keyframes gwrip {
-    from { transform: scale(1); opacity: .4; }
-    to   { transform: scale(2.3); opacity: 0; }
+.mod-ico svg { width: 19px; height: 19px; }
+.mod-title { font-family: var(--fs-disp); font-weight: 600; font-size: 1.12rem; color: var(--ink); margin-bottom: 9px; letter-spacing: -.01em; }
+.mod-body { font-size: .85rem; color: var(--muted); line-height: 1.65; flex: 1; }
+/* tiny viz inside module footer */
+.mod-viz { margin-top: 18px; height: 26px; display: flex; align-items: flex-end; gap: 3px; }
+.mod-viz .b { flex: 1; background: var(--bar, var(--cyber)); border-radius: 2px 2px 0 0; opacity: .25; transition: opacity .3s, height .5s var(--ease); }
+.mod:hover .mod-viz .b { opacity: .85; }
+.mod-tags { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+.mod-chip {
+    font-family: var(--fs-mono); font-size: .56rem; letter-spacing: .05em;
+    padding: 3px 8px; border-radius: 5px; background: var(--bg); color: var(--ink-2);
+    border: 1px solid var(--line);
 }
 
-.gw-sub {
-    margin-top: 72px;
-    font-family: 'EB Garamond', serif;
-    font-size: .95rem; font-style: italic; letter-spacing: .04em;
-    color: var(--ink3);
-    opacity: 0; transition: opacity .8s var(--ease-expo) .3s;
-}
-.gw-sub.in { opacity: 1; }
-.gw-sub a {
-    color: var(--gold); text-decoration: none;
-    border-bottom: 1px solid rgba(160,120,40,.3);
-    transition: border-color .2s;
-}
-.gw-sub a:hover { border-color: var(--gold); }
+@@media (max-width: 920px) { .mod-grid { grid-template-columns: 1fr 1fr; } }
+@@media (max-width: 600px) { .mod-grid { grid-template-columns: 1fr; } .mod-head { flex-direction: column; align-items: flex-start; } }
 
-/* ═══════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════
+   DATA CONSOLE — live dashboard preview
+═══════════════════════════════════════════════════════════════════ */
+.console { padding: 0 0 110px; }
+.console-frame {
+    border: 1px solid var(--line-2); border-radius: 16px; overflow: hidden;
+    background: var(--paper);
+    box-shadow: 0 40px 90px rgba(13,22,38,.1);
+}
+.console-bar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 20px; border-bottom: 1px solid var(--line);
+    background: rgba(255,255,255,.55);
+}
+.console-dots { display: flex; gap: 6px; }
+.console-dots i { width: 10px; height: 10px; border-radius: 50%; }
+.cd-r { background: #ec6a5e; } .cd-y { background: #f4bf4f; } .cd-g { background: #61c554; }
+.console-path { font-family: var(--fs-mono); font-size: .66rem; color: var(--muted); }
+.console-path b { color: var(--ink-2); }
+.console-live {
+    margin-left: auto; font-family: var(--fs-mono); font-size: .6rem; color: var(--green);
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.console-body {
+    display: grid; grid-template-columns: 1.4fr 1fr 1fr;
+    grid-auto-rows: minmax(0, auto); gap: 1px; background: var(--line);
+}
+.panel { background: var(--paper); padding: 24px; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.panel-title { font-family: var(--fs-mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.panel-meta { font-family: var(--fs-mono); font-size: .58rem; color: var(--muted); }
+
+/* span helpers */
+.panel.col-span-1 { grid-column: span 1; }
+.panel.big { grid-column: 1; grid-row: 1 / 3; }
+
+/* Bar chart (cohort performance) */
+.barchart { display: flex; align-items: flex-end; gap: 10px; height: 200px; padding-top: 10px; }
+.bc-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+.bc-bar-wrap { width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 4px; flex: 1; }
+.bc-bar {
+    width: 42%; border-radius: 4px 4px 0 0; height: 0;
+    transition: height 1.1s var(--ease);
+}
+.bc-a { background: linear-gradient(to top, var(--cyber), var(--cyber-2)); }
+.bc-b { background: linear-gradient(to top, var(--purple), var(--purple-2)); }
+.bc-lbl { font-family: var(--fs-mono); font-size: .58rem; color: var(--muted); }
+.bc-legend { display: flex; gap: 16px; }
+.bc-legend span { font-family: var(--fs-mono); font-size: .58rem; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.bc-legend i { width: 9px; height: 9px; border-radius: 2px; }
+
+/* Radial gauge (attendance) */
+.gauge { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; height: 100%; }
+.gauge-ring {
+    --val: 0;
+    width: 150px; height: 150px; border-radius: 50%;
+    background: conic-gradient(var(--green) calc(var(--val) * 1%), var(--line) 0);
+    display: grid; place-items: center; position: relative;
+    transition: --val 1.4s var(--ease);
+}
+.gauge-ring::before { content: ''; position: absolute; inset: 14px; border-radius: 50%; background: var(--paper); }
+.gauge-center { position: relative; text-align: center; }
+.gauge-num { font-family: var(--fs-disp); font-weight: 600; font-size: 2rem; color: var(--ink); line-height: 1; }
+.gauge-num .u { font-size: .9rem; color: var(--green); }
+.gauge-cap { font-family: var(--fs-mono); font-size: .56rem; color: var(--muted); letter-spacing: .08em; margin-top: 4px; }
+
+/* Progress list (subjects) */
+.prog { display: flex; flex-direction: column; gap: 16px; }
+.prog-row {}
+.prog-top { display: flex; justify-content: space-between; font-size: .76rem; margin-bottom: 7px; }
+.prog-name { color: var(--ink-2); font-weight: 500; }
+.prog-pct { font-family: var(--fs-mono); color: var(--muted); }
+.prog-track { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.prog-fill { height: 100%; width: 0; border-radius: 99px; transition: width 1.1s var(--ease); }
+
+/* Line chart (trend) */
+.linechart { width: 100%; height: 120px; }
+.linechart .area { opacity: .12; }
+.linechart .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 600; stroke-dashoffset: 600; }
+.linechart.in .ln { transition: stroke-dashoffset 1.6s var(--ease); stroke-dashoffset: 0; }
+
+@@media (max-width: 920px) {
+    .console-body { grid-template-columns: 1fr 1fr; }
+    .panel.big { grid-column: 1 / 3; grid-row: auto; }
+}
+@@media (max-width: 600px) { .console-body { grid-template-columns: 1fr; } .panel.big { grid-column: 1; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ARCHITECTURE PIPELINE
+═══════════════════════════════════════════════════════════════════ */
+.pipeline { padding: 0 0 110px; }
+.pipe-head { text-align: center; margin-bottom: 56px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.pipe-flow {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    position: relative;
+}
+.pipe-node {
+    border: 1px dashed var(--dash); border-radius: 12px; padding: 28px 24px;
+    background: var(--paper); margin: 0 14px; position: relative; z-index: 1;
+    transition: transform .3s var(--ease), border-color .3s, box-shadow .3s;
+}
+.pipe-node:hover { transform: translateY(-4px); border-color: var(--cyber); border-style: solid; box-shadow: 0 16px 36px rgba(23,99,255,.12); }
+.pipe-node::after {
+    content: ''; position: absolute; top: 50%; right: -28px; width: 28px; height: 1px;
+    background: repeating-linear-gradient(90deg, var(--line-2) 0 4px, transparent 4px 8px);
+    z-index: 0;
+}
+.pipe-node:last-child::after { display: none; }
+.pipe-step { font-family: var(--fs-mono); font-size: .58rem; color: var(--cyber); letter-spacing: .12em; margin-bottom: 14px; }
+.pipe-ico { width: 36px; height: 36px; color: var(--ink); margin-bottom: 16px; }
+.pipe-ico svg { width: 100%; height: 100%; }
+.pipe-title { font-family: var(--fs-disp); font-weight: 600; font-size: 1.05rem; color: var(--ink); margin-bottom: 8px; }
+.pipe-desc { font-size: .8rem; color: var(--muted); line-height: 1.6; }
+
+@@media (max-width: 860px) {
+    .pipe-flow { grid-template-columns: 1fr 1fr; gap: 24px; }
+    .pipe-node { margin: 0; }
+    .pipe-node::after { display: none; }
+}
+@@media (max-width: 480px) { .pipe-flow { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CTA TERMINAL
+═══════════════════════════════════════════════════════════════════ */
+.cta { padding: 0 0 100px; }
+.cta-box {
+    position: relative; overflow: hidden;
+    border-radius: 18px; padding: 72px 56px;
+    background: linear-gradient(135deg, #0d1626 0%, #131f36 60%, #1a2748 100%);
+    color: #fff;
+}
+.cta-box::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+        linear-gradient(to right,  rgba(255,255,255,.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 80% 100% at 80% 0%, #000, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 100% at 80% 0%, #000, transparent 70%);
+}
+.cta-glow {
+    position: absolute; width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(23,99,255,.4), transparent 70%);
+    right: -80px; top: -120px; filter: blur(20px); pointer-events: none;
+}
+.cta-glow.p { background: radial-gradient(circle, rgba(123,63,228,.35), transparent 70%); right: 120px; top: 60px; width: 300px; height: 300px; }
+.cta-inner { position: relative; z-index: 1; max-width: 640px; }
+.cta-tag { font-family: var(--fs-mono); font-size: .64rem; letter-spacing: .2em; text-transform: uppercase; color: var(--cyber-2); display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px; }
+.cta-tag::before { content: ''; width: 18px; height: 1px; background: var(--cyber-2); }
+.cta-title { font-family: var(--fs-disp); font-weight: 700; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.06; letter-spacing: -.02em; margin-bottom: 22px; }
+.cta-title em { font-style: normal; color: var(--green-2); }
+.cta-desc { font-size: 1rem; line-height: 1.7; color: rgba(255,255,255,.65); margin-bottom: 36px; max-width: 52ch; }
+.cta-actions { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.cta-actions .btn-primary { background: #fff; color: var(--ink); }
+.cta-actions .btn-primary:hover { background: var(--cyber); color: #fff; }
+.cta-actions .btn-ghost { background: transparent; border-color: rgba(255,255,255,.25); color: #fff; }
+.cta-actions .btn-ghost:hover { border-color: var(--green); color: var(--green-2); }
+.cta-note { margin-top: 26px; font-family: var(--fs-mono); font-size: .64rem; color: rgba(255,255,255,.4); letter-spacing: .04em; }
+
+@@media (max-width: 600px) { .cta-box { padding: 48px 28px; } }
+
+/* ═══════════════════════════════════════════════════════════════════
    FOOTER
-═══════════════════════════════════════════════════ */
-.footer {
-    background: var(--parch);
-    border-top: 1px solid var(--rule);
-    padding: 44px 56px 32px;
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 14px;
-}
-.footer-brand {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.1rem; font-weight: 600;
-    color: var(--gold); text-decoration: none;
-}
-.footer-links { display: flex; gap: 22px; }
-.footer-lnk {
-    font-size: .74rem; letter-spacing: .05em;
-    color: var(--ink3); text-decoration: none;
-    transition: color .18s;
-}
-.footer-lnk:hover { color: var(--gold); }
-.footer-copy { font-size: .72rem; letter-spacing: .04em; color: var(--ink3); }
+═══════════════════════════════════════════════════════════════════ */
+.footer { border-top: 1px solid var(--line); padding: 48px 0 36px; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 36px; border-bottom: 1px dashed var(--dash); }
+.footer-brand { font-family: var(--fs-disp); font-weight: 600; font-size: 1.1rem; color: var(--ink); margin-bottom: 14px; }
+.footer-desc { font-size: .82rem; color: var(--muted); line-height: 1.7; max-width: 30ch; }
+.footer-col h4 { font-family: var(--fs-mono); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+.footer-col a { display: block; font-size: .84rem; color: var(--ink-2); margin-bottom: 10px; transition: color .18s; }
+.footer-col a:hover { color: var(--cyber); }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 26px; }
+.footer-copy { font-family: var(--fs-mono); font-size: .62rem; color: var(--muted); letter-spacing: .04em; }
+.footer-meta { font-family: var(--fs-mono); font-size: .62rem; color: var(--muted); display: flex; gap: 18px; }
+.footer-meta span { display: inline-flex; align-items: center; gap: 6px; }
 
-/* ═══════════════════════════════════════════════════
-   GENERAL SCROLL REVEAL
-═══════════════════════════════════════════════════ */
-.reveal {
-    opacity: 0; transform: translateY(18px);
-    transition: opacity .75s var(--ease-expo),
-                transform .75s var(--ease-expo);
-}
-.reveal.d1 { transition-delay: .1s; }
-.reveal.d2 { transition-delay: .2s; }
-.reveal.d3 { transition-delay: .3s; }
-.reveal.visible { opacity: 1; transform: none; }
+@@media (max-width: 760px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+@@media (max-width: 460px) { .footer-grid { grid-template-columns: 1fr; } .footer-bottom { flex-direction: column; align-items: flex-start; } }
 
-/* ═══════════════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════════════ */
-@@media (max-width: 1024px) {
-    .nav { padding: 0 28px; }
-    .nav__links { display: none; }
-    .story { padding: 40px 28px 60px; }
-    .v-panel:nth-child(odd),
-    .v-panel:nth-child(even) {
-        max-width: 100%; margin: 0 auto;
-        padding: 72px 24px; text-align: center;
-    }
-    .v-panel:nth-child(odd)  { padding-left:  24px; }
-    .v-panel:nth-child(even) { padding-right: 24px; }
-    .v-tags, .v-panel:nth-child(even) .v-tags { justify-content: center; }
-    .v-mark { display: none; }
-    .s-thread { display: none; }
-    .stats-inner { grid-template-columns: repeat(2,1fr); gap: 28px; }
-    .stat-item { border-right: none; }
-}
-@@media (max-width: 640px) {
-    body { cursor: auto; }
-    .c-dot, .c-ring { display: none; }
-    .hero { padding: 120px 24px 80px; }
-    .stats-bar { padding: 40px 24px; }
-    .gateway-section { padding: 80px 24px; }
-    .gw-title { margin-bottom: 52px; }
-    .footer { padding: 36px 24px 24px; flex-direction: column; text-align: center; }
-    .footer-links { flex-wrap: wrap; justify-content: center; }
-}
+/* Reveal utility */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.reveal.in { opacity: 1; transform: none; }
+.reveal.d1 { transition-delay: .08s; } .reveal.d2 { transition-delay: .16s; } .reveal.d3 { transition-delay: .24s; }
+
 @@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: .01ms !important;
-        transition-duration: .01ms !important;
-    }
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    .hero-line > span { transform: none; } .hero-eyebrow,.hero-desc,.hero-actions,.hero-mini,.viewport { opacity: 1 !important; transform: none !important; }
 }
 </style>
 </head>
 <body>
 
-<!-- Custom cursor -->
-<div class="c-dot"  id="cDot"  aria-hidden="true"></div>
-<div class="c-ring" id="cRing" aria-hidden="true"></div>
-
-<!-- Cursor bloom — warm golden glow on parchment -->
-<div class="bloom" id="bloom" aria-hidden="true"></div>
-
-<!-- ════════ PAGE CONTENT ════════ -->
-<div class="page-wrap">
-
-<!-- NAV -->
-<nav class="nav" id="mainNav" aria-label="Điều hướng chính" data-testid="landing-nav">
-    <a href="/" class="nav__logo" aria-label="Lumina Tutors">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="12" cy="12" r="10.5" stroke="rgba(160,120,40,.4)" stroke-width=".75"/>
-            <circle cx="12" cy="12" r="7"    stroke="rgba(160,120,40,.22)" stroke-width=".75"/>
-            <line x1="12" y1="5"  x2="12" y2="19" stroke="#a07828" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M12 5 C12 5 15.8 9 14 12.5 C13 10.5 11 10.5 10 12.5 C8.2 9 12 5 12 5Z" fill="#a07828"/>
-            <path d="M7 10 C5 8 4.5 5.5 6 4"   stroke="rgba(160,120,40,.4)" stroke-width=".9" fill="none" stroke-linecap="round"/>
-            <path d="M17 10 C19 8 19.5 5.5 18 4" stroke="rgba(160,120,40,.4)" stroke-width=".9" fill="none" stroke-linecap="round"/>
-        </svg>
-        Lumina Tutors
-    </a>
-    <div class="nav__links">
-        <a href="#story"   class="nav__link">Giá trị</a>
-        <a href="#gateway" class="nav__link">Vào hệ thống</a>
-    </div>
-    <div class="nav__actions">
-        <a asp-controller="Auth" asp-action="Login"      class="nav-ghost" data-testid="nav-login">Đăng nhập</a>
-        <a asp-controller="Auth" asp-action="SelectRole" class="nav-solid" data-testid="nav-start">Khám phá</a>
-    </div>
-</nav>
-
-<!-- HERO -->
-<section class="hero" id="hero" aria-labelledby="heroTitle" data-testid="hero-section">
-
-    <!-- Ornamental rule -->
-    <div class="hero-rule" aria-hidden="true">
-        <div class="hero-rule-line"></div>
-        <div class="hero-rule-diamond"></div>
-        <div class="hero-rule-line r"></div>
-    </div>
-
-    <p class="hero-eyebrow">Lumina Tutors &nbsp;&middot;&nbsp; Education Excellence</p>
-
-    <!-- Crest mark -->
-    <div class="hero-crest" id="heroCrest" aria-hidden="true">
-        <svg width="76" height="76" viewBox="0 0 76 76" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="38" cy="38" r="34" stroke="rgba(160,120,40,.28)" stroke-width=".75"/>
-            <circle cx="38" cy="38" r="26" stroke="rgba(160,120,40,.18)" stroke-width=".75"/>
-            <line x1="38" y1="16" x2="38" y2="56" stroke="#a07828" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M38 16 C38 16 45 24 42.5 30.5 C40.5 27 35.5 27 33.5 30.5 C31 24 38 16 38 16Z" fill="#a07828"/>
-            <path d="M26 40 C21 35 20 29 23 25" stroke="rgba(160,120,40,.45)" stroke-width="1" fill="none" stroke-linecap="round"/>
-            <path d="M23 36 C20 34 19 29 21 26" stroke="rgba(160,120,40,.28)" stroke-width="1" fill="none" stroke-linecap="round"/>
-            <path d="M50 40 C55 35 56 29 53 25" stroke="rgba(160,120,40,.45)" stroke-width="1" fill="none" stroke-linecap="round"/>
-            <path d="M53 36 C56 34 57 29 55 26" stroke="rgba(160,120,40,.28)" stroke-width="1" fill="none" stroke-linecap="round"/>
-            <path d="M31 52 Q38 56 45 52" stroke="rgba(160,120,40,.38)" stroke-width="1" fill="none"/>
-            <line x1="38" y1="2"  x2="38" y2="7"  stroke="rgba(160,120,40,.3)" stroke-width=".75"/>
-            <line x1="38" y1="69" x2="38" y2="74" stroke="rgba(160,120,40,.3)" stroke-width=".75"/>
-            <line x1="2"  y1="38" x2="7"  y2="38" stroke="rgba(160,120,40,.3)" stroke-width=".75"/>
-            <line x1="69" y1="38" x2="74" y2="38" stroke="rgba(160,120,40,.3)" stroke-width=".75"/>
-        </svg>
-    </div>
-
-    <h1 class="hero-title" id="heroTitle">
-        Chạm vào <em>ánh sáng.</em><br/>Đánh thức tri thức.
-    </h1>
-
-    <p class="hero-motto">
-        <strong>Touch the light. Awaken the mind.</strong><br/>
-        Nền tảng quản lý giáo dục cho những học viện tinh hoa.
-    </p>
-
-    <div class="hero-scroll" id="heroScroll" aria-hidden="true">
-        <span class="hero-scroll-lbl">Cuộn để khám phá</span>
-        <div class="hero-scroll-line"></div>
-    </div>
-</section>
-
-<!-- STATS -->
-<div class="stats-bar" data-testid="stats">
-    <div class="stats-inner">
-        <div class="stat-item reveal">
-            <div class="stat-num">500<span>+</span></div>
-            <div class="stat-lbl">Trường học đang dùng</div>
-        </div>
-        <div class="stat-item reveal d1">
-            <div class="stat-num">120<span>K</span></div>
-            <div class="stat-lbl">Học sinh được quản lý</div>
-        </div>
-        <div class="stat-item reveal d2">
-            <div class="stat-num">99.9<span>%</span></div>
-            <div class="stat-lbl">Uptime đảm bảo</div>
-        </div>
-        <div class="stat-item reveal d3">
-            <div class="stat-num">4.9<span>★</span></div>
-            <div class="stat-lbl">Điểm đánh giá trung bình</div>
-        </div>
+<!-- ░░░ SYSTEM SCAN BOOT ░░░ -->
+<div class="boot" id="boot" aria-hidden="true">
+    <div class="boot-scan"></div>
+    <div class="boot-readout">
+        <div class="boot-logo">LUMINA<b>·</b>TUTORS</div>
+        <div class="boot-lines mono" id="bootLines"></div>
+        <div class="boot-bar"><div class="boot-bar-fill"></div></div>
     </div>
 </div>
 
-<!-- SCROLLYTELLING -->
-<section class="story" id="story" aria-label="Giá trị cốt lõi" data-testid="story-section">
-    <div class="s-thread" aria-hidden="true">
-        <div class="s-thread-fill" id="threadFill"></div>
-        <div class="s-thread-node" id="tn0" style="top:17%"></div>
-        <div class="s-thread-node" id="tn1" style="top:33%"></div>
-        <div class="s-thread-node" id="tn2" style="top:50%"></div>
-        <div class="s-thread-node" id="tn3" style="top:66%"></div>
-        <div class="s-thread-node" id="tn4" style="top:83%"></div>
+<!-- Fixed technical grid + HUD -->
+<div class="grid-bg" aria-hidden="true"></div>
+<div class="hud" aria-hidden="true">
+    <div class="hud-corner tl"></div><div class="hud-corner tr"></div>
+    <div class="hud-corner bl"></div><div class="hud-corner br"></div>
+    <div class="hud-edge left mono">LUMINA · KNOWLEDGE ARCHITECTURE</div>
+    <div class="hud-edge right mono">SYS.EDU // BUILD 2.6.0</div>
+</div>
+
+<div class="shell">
+
+<!-- ░░░ NAV ░░░ -->
+<nav class="nav" data-testid="nav">
+    <div class="nav-inner">
+        <a href="/" class="brand">
+            <span class="brand-mark" aria-hidden="true"><span></span></span>
+            <span>
+                <span class="brand-name">Lumina Tutors</span>
+                <span class="brand-ver mono"> v2.6</span>
+            </span>
+        </a>
+        <div class="nav-links">
+            <a href="#modules"  class="nav-link mono">/modules</a>
+            <a href="#console"  class="nav-link mono">/console</a>
+            <a href="#pipeline" class="nav-link mono">/pipeline</a>
+        </div>
+        <div class="nav-right">
+            <span class="status mono"><span class="status-dot"></span>SYSTEM ONLINE</span>
+            <a asp-controller="Auth" asp-action="Login" class="btn btn-ghost" data-testid="nav-login">Đăng nhập</a>
+            <a asp-controller="Auth" asp-action="SelectRole" class="btn btn-primary" data-testid="nav-start">
+                Khởi tạo <span class="btn-arrow">→</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- ░░░ HERO ░░░ -->
+<header class="hero wrap" data-testid="hero">
+    <div class="hero-grid">
+        <!-- LEFT -->
+        <div class="hero-left">
+            <div class="hero-eyebrow">
+                <span class="tag">The Architecture of Knowledge</span>
+                <span class="hero-coord mono">[ 10.762 N · 106.660 E ]</span>
+            </div>
+
+            <h1 class="hero-title">
+                <span class="hero-line"><span>Kiến trúc</span></span>
+                <span class="hero-line"><span>của <span class="accent">tri thức</span>.</span></span>
+            </h1>
+
+            <p class="hero-desc">
+                Nền tảng giáo dục vận hành bằng <b>dữ liệu</b>. Mỗi điểm số, mỗi buổi học,
+                mỗi tương tác trở thành một nút trong mạng lưới tri thức được kết nối liền mạch
+                giữa nhà trường, giáo viên, học sinh và phụ huynh.
+            </p>
+
+            <div class="hero-actions">
+                <a asp-controller="Auth" asp-action="SelectRole" class="btn btn-primary" data-testid="hero-cta">
+                    Truy cập hệ thống <span class="btn-arrow">→</span>
+                </a>
+                <a href="#console" class="btn btn-ghost">Xem bảng điều khiển</a>
+            </div>
+
+            <div class="hero-mini">
+                <div class="hm-cell">
+                    <div class="hm-val" data-count="500" data-suffix="+">0</div>
+                    <div class="hm-lbl mono">Trường tích hợp</div>
+                </div>
+                <div class="hm-cell">
+                    <div class="hm-val" data-count="120" data-suffix="K"><span></span>0</div>
+                    <div class="hm-lbl mono">Học sinh hoạt động</div>
+                </div>
+                <div class="hm-cell">
+                    <div class="hm-val" data-count="99.99" data-decimals="2"><span></span>0<span class="u">%</span></div>
+                    <div class="hm-lbl mono">Độ chính xác dữ liệu</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT — node network viewport -->
+        <div class="viewport" id="viewport" data-testid="node-network">
+            <canvas id="netCanvas" aria-hidden="true"></canvas>
+            <span class="vp-tick tl"></span><span class="vp-tick tr"></span>
+            <span class="vp-tick bl"></span><span class="vp-tick br"></span>
+            <div class="vp-hud top mono">FIG.01 — KNOWLEDGE GRAPH · LIVE</div>
+            <div class="vp-readout mono">
+                <span><span class="k">nodes</span>      <span class="v" id="roNodes">—</span></span>
+                <span><span class="k">edges</span>      <span class="v p" id="roEdges">—</span></span>
+                <span><span class="k">coherence</span>  <span class="v g" id="roCoh">—</span></span>
+            </div>
+            <div class="vp-legend mono">
+                <span>concept <i style="background:var(--cyber)"></i></span>
+                <span>skill <i style="background:var(--purple)"></i></span>
+                <span>mastery <i style="background:var(--green)"></i></span>
+            </div>
+        </div>
     </div>
 
-    <article class="v-panel" id="vp0">
-        <div class="v-mark" aria-hidden="true">I</div>
-        <span class="v-num">Giá trị thứ nhất</span>
-        <h2 class="v-title">Khai sáng <em>tri thức</em></h2>
-        <p class="v-body">Lumina không chỉ là phần mềm — đây là ngọn đuốc dẫn đường. Mỗi dữ liệu điểm số, mỗi báo cáo chuyên cần đều là một tia sáng giúp giáo viên nhìn thấy rõ hơn, hiểu sâu hơn về từng học sinh.</p>
-        <div class="v-tags"><span class="v-tag">Phân tích học tập</span><span class="v-tag">AI Insights</span><span class="v-tag">Báo cáo TT22</span></div>
-    </article>
-
-    <article class="v-panel" id="vp1">
-        <div class="v-mark" aria-hidden="true">II</div>
-        <span class="v-num">Giá trị thứ hai</span>
-        <h2 class="v-title">Kết nối <em>tâm huyết</em></h2>
-        <p class="v-body">Ba góc nhìn — nhà trường, giáo viên, phụ huynh — hội tụ trên một nền tảng duy nhất. Thông tin chảy minh bạch, niềm tin được xây dựng qua từng thông báo tức thời.</p>
-        <div class="v-tags"><span class="v-tag">6 vai trò</span><span class="v-tag">Nhắn tin nội bộ</span><span class="v-tag">Push Notification</span></div>
-    </article>
-
-    <article class="v-panel" id="vp2">
-        <div class="v-mark" aria-hidden="true">III</div>
-        <span class="v-num">Giá trị thứ ba</span>
-        <h2 class="v-title">Minh bạch <em>tuyệt đối</em></h2>
-        <p class="v-body">Điểm danh QR theo thời gian thực, học phí minh bạch từng đồng, audit log toàn bộ thao tác. Không có gì khuất trong bóng tối khi Lumina soi rọi.</p>
-        <div class="v-tags"><span class="v-tag">QR &amp; Face ID</span><span class="v-tag">Quản lý học phí</span><span class="v-tag">Audit Log</span></div>
-    </article>
-
-    <article class="v-panel" id="vp3">
-        <div class="v-mark" aria-hidden="true">IV</div>
-        <span class="v-num">Giá trị thứ tư</span>
-        <h2 class="v-title">Công nghệ <em>tiên phong</em></h2>
-        <p class="v-body">Kiến trúc multi-tenant cách ly dữ liệu giữa các trường. ASP.NET Core 8 trên nền Clean Architecture, bảo mật AES-256, uptime 99.9%. Hạ tầng của tương lai, xây dựng cho hôm nay.</p>
-        <div class="v-tags"><span class="v-tag">Multi-tenant</span><span class="v-tag">Clean Architecture</span><span class="v-tag">99.9% Uptime</span></div>
-    </article>
-
-    <article class="v-panel" id="vp4">
-        <div class="v-mark" aria-hidden="true">V</div>
-        <span class="v-num">Giá trị thứ năm</span>
-        <h2 class="v-title">Di sản <em>bền vững</em></h2>
-        <p class="v-body">Mỗi thế hệ học sinh đều để lại dấu vết trong hệ thống. Học bạ điện tử, bảng điểm toàn khoá, lịch sử chuyên cần — di sản học thuật được lưu giữ mãi mãi.</p>
-        <div class="v-tags"><span class="v-tag">Học bạ điện tử</span><span class="v-tag">Lưu trữ lâu dài</span><span class="v-tag">Xuất PDF chính thức</span></div>
-    </article>
-</section>
-
-<!-- GATEWAY -->
-<section class="gateway-section" id="gateway" aria-labelledby="gwTitle" data-testid="gateway-section">
-    <p class="gw-eyebrow" id="gwEyebrow">Cánh cổng tri thức</p>
-    <h2 class="gw-title" id="gwTitle">Bạn đã sẵn sàng bước<br/>vào <em>ánh sáng</em>?</h2>
-
-    <a asp-controller="Auth" asp-action="SelectRole"
-       class="gateway" id="gatewayPortal"
-       aria-label="Bước vào hệ thống Lumina Tutors"
-       data-testid="gateway-portal">
-        <div class="gw-ring gw-r1" aria-hidden="true"></div>
-        <div class="gw-ring gw-r2" aria-hidden="true"></div>
-        <div class="gw-ring gw-r3" aria-hidden="true"></div>
-        <div class="gw-ripple"     aria-hidden="true"></div>
-        <div class="gw-core" aria-hidden="true">
-            <i class="bi bi-brightness-high gw-icon"></i>
-            <span class="gw-lbl">Bước vào</span>
+    <!-- METRICS BAR -->
+    <div class="metrics" data-testid="metrics">
+        <div class="metric">
+            <div class="metric-head"><span class="metric-id mono">M.01 / EXAM</span><span class="metric-trend mono">▲ 2.4%</span></div>
+            <div class="metric-val"><span data-count="99.2" data-decimals="1">0</span><span class="u">%</span></div>
+            <div class="metric-lbl">Tỷ lệ đỗ tốt nghiệp</div>
+            <svg class="metric-spark" data-spark="8,7,9,6,8,9,7,9,10" data-color="#1763ff" preserveAspectRatio="none" viewBox="0 0 100 30"></svg>
         </div>
-    </a>
+        <div class="metric">
+            <div class="metric-head"><span class="metric-id mono">M.02 / TIME</span><span class="metric-trend mono">▲ 8.1%</span></div>
+            <div class="metric-val"><span data-count="2.4" data-decimals="1">0</span><span class="u">M</span></div>
+            <div class="metric-lbl">Giờ học được ghi nhận</div>
+            <svg class="metric-spark" data-spark="4,5,6,6,7,8,9,9,10" data-color="#7b3fe4" preserveAspectRatio="none" viewBox="0 0 100 30"></svg>
+        </div>
+        <div class="metric">
+            <div class="metric-head"><span class="metric-id mono">M.03 / DATA</span><span class="metric-trend mono">▲ 12%</span></div>
+            <div class="metric-val"><span data-count="18.6" data-decimals="1">0</span><span class="u">M</span></div>
+            <div class="metric-lbl">Bản ghi điểm đã xử lý</div>
+            <svg class="metric-spark" data-spark="5,6,5,7,8,7,9,10,10" data-color="#06bf86" preserveAspectRatio="none" viewBox="0 0 100 30"></svg>
+        </div>
+        <div class="metric">
+            <div class="metric-head"><span class="metric-id mono">M.04 / SLA</span><span class="metric-trend mono">STABLE</span></div>
+            <div class="metric-val"><span data-count="99.9" data-decimals="1">0</span><span class="u">%</span></div>
+            <div class="metric-lbl">Thời gian hoạt động</div>
+            <svg class="metric-spark" data-spark="10,10,9,10,10,10,9,10,10" data-color="#f0a020" preserveAspectRatio="none" viewBox="0 0 100 30"></svg>
+        </div>
+    </div>
+</header>
 
-    <p class="gw-sub" id="gwSub">
-        Đã có tài khoản?
-        <a asp-controller="Auth" asp-action="Login" data-testid="gw-login">Đăng nhập tại đây</a>
-    </p>
+<!-- ░░░ MODULES ░░░ -->
+<section class="modules wrap" id="modules" data-testid="modules">
+    <div class="mod-head">
+        <div>
+            <span class="tag reveal">System Modules</span>
+            <h2 class="h-section reveal d1" style="margin-top:16px">Các phân hệ vận hành</h2>
+        </div>
+        <p class="sub-section reveal d2">
+            Sáu phân hệ độc lập, chia sẻ một lõi dữ liệu duy nhất.
+            Mỗi phân hệ là một lớp trong kiến trúc sạch (clean architecture) của hệ thống.
+        </p>
+    </div>
+
+    <div class="mod-grid">
+        <!-- 01 -->
+        <article class="mod reveal" style="--bar:var(--cyber);--bar-a:var(--cyber-a)">
+            <div class="mod-top">
+                <span class="mod-num mono">MOD_01</span>
+                <span class="mod-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 2 4-6"/></svg></span>
+            </div>
+            <h3 class="mod-title">Phân tích &amp; Báo cáo</h3>
+            <p class="mod-body">Dashboard thời gian thực, tự động tính ĐTBm theo Thông tư 22/2021 và xuất học bạ PDF chuẩn Bộ GD&amp;ĐT.</p>
+            <div class="mod-viz" data-bars="40,65,50,80,60,95"></div>
+            <div class="mod-tags"><span class="mod-chip mono">TT22</span><span class="mod-chip mono">PDF</span><span class="mod-chip mono">REALTIME</span></div>
+        </article>
+        <!-- 02 -->
+        <article class="mod reveal d1" style="--bar:var(--purple);--bar-a:var(--purple-a)">
+            <div class="mod-top">
+                <span class="mod-num mono">MOD_02</span>
+                <span class="mod-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M17 14v6M14 17h6"/></svg></span>
+            </div>
+            <h3 class="mod-title">Điểm danh QR &amp; Face ID</h3>
+            <p class="mod-body">Ghi nhận chuyên cần bằng mã QR động (hết hạn 10 phút) hoặc nhận diện khuôn mặt, đồng bộ tức thì tới phụ huynh.</p>
+            <div class="mod-viz" data-bars="90,30,70,85,40,75"></div>
+            <div class="mod-tags"><span class="mod-chip mono">QR</span><span class="mod-chip mono">FACE_ID</span><span class="mod-chip mono">SYNC</span></div>
+        </article>
+        <!-- 03 -->
+        <article class="mod reveal d2" style="--bar:var(--green);--bar-a:var(--green-a)">
+            <div class="mod-top">
+                <span class="mod-num mono">MOD_03</span>
+                <span class="mod-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="5"/></svg></span>
+            </div>
+            <h3 class="mod-title">Quản lý Tài chính</h3>
+            <p class="mod-body">Tạo hóa đơn tự động, ghi nhận thanh toán qua MoMo/VNPay, đối soát công nợ và nhắc hạn đúng thời điểm.</p>
+            <div class="mod-viz" data-bars="50,60,55,70,65,80"></div>
+            <div class="mod-tags"><span class="mod-chip mono">MOMO</span><span class="mod-chip mono">VNPAY</span><span class="mod-chip mono">AUTO</span></div>
+        </article>
+        <!-- 04 -->
+        <article class="mod reveal" style="--bar:var(--cyber);--bar-a:var(--cyber-a)">
+            <div class="mod-top">
+                <span class="mod-num mono">MOD_04</span>
+                <span class="mod-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+            </div>
+            <h3 class="mod-title">Nhắn tin &amp; Thông báo</h3>
+            <p class="mod-body">Kênh liên lạc bảo mật giữa nhà trường và gia đình, push notification tức thì cho mọi sự kiện quan trọng.</p>
+            <div class="mod-viz" data-bars="30,70,45,90,55,85"></div>
+            <div class="mod-tags"><span class="mod-chip mono">IN_APP</span><span class="mod-chip mono">PUSH</span></div>
+        </article>
+        <!-- 05 -->
+        <article class="mod reveal d1" style="--bar:var(--purple);--bar-a:var(--purple-a)">
+            <div class="mod-top">
+                <span class="mod-num mono">MOD_05</span>
+                <span class="mod-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+            </div>
+            <h3 class="mod-title">Bảo mật đa lớp</h3>
+            <p class="mod-body">Sáu vai trò phân quyền chi tiết, multi-tenant cách ly dữ liệu theo trường, mã hóa AES-256 và audit log toàn bộ.</p>
+            <div class="mod-viz" data-bars="80,85,90,88,92,95"></div>
+            <div class="mod-tags"><span class="mod-chip mono">RBAC</span><span class="mod-chip mono">AES_256</span><span class="mod-chip mono">AUDIT</span></div>
+        </article>
+        <!-- 06 -->
+        <article class="mod reveal d2" style="--bar:var(--green);--bar-a:var(--green-a)">
+            <div class="mod-top">
+                <span class="mod-num mono">MOD_06</span>
+                <span class="mod-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.1a3 3 0 0 1 0 5.8M21 21v-2a4 4 0 0 0-3-3.8"/></svg></span>
+            </div>
+            <h3 class="mod-title">Nhân sự &amp; Kỷ luật</h3>
+            <p class="mod-body">Quản lý hợp đồng, lương, nghỉ phép cho giáo viên; theo dõi nề nếp, khen thưởng và kỷ luật học sinh trong một hồ sơ.</p>
+            <div class="mod-viz" data-bars="45,55,50,65,60,72"></div>
+            <div class="mod-tags"><span class="mod-chip mono">HR</span><span class="mod-chip mono">PAYROLL</span><span class="mod-chip mono">DISCIPLINE</span></div>
+        </article>
+    </div>
 </section>
 
-<!-- FOOTER -->
-<footer class="footer" data-testid="landing-footer">
-    <a href="/" class="footer-brand">Lumina Tutors</a>
-    <nav class="footer-links" aria-label="Footer links">
-        <a href="#story"   class="footer-lnk">Giá trị</a>
-        <a href="#gateway" class="footer-lnk">Đăng nhập</a>
-        <a href="mailto:contact@luminatutors.vn" class="footer-lnk">Liên hệ</a>
-    </nav>
-    <p class="footer-copy">© @DateTime.Now.Year Lumina Tutors</p>
+<!-- ░░░ DATA CONSOLE ░░░ -->
+<section class="console wrap" id="console" data-testid="console">
+    <div class="mod-head" style="margin-bottom:40px">
+        <div>
+            <span class="tag green reveal">Live Data Console</span>
+            <h2 class="h-section reveal d1" style="margin-top:16px">Trực quan hóa dữ liệu</h2>
+        </div>
+        <p class="sub-section reveal d2">Một lát cắt từ bảng điều khiển vận hành thực tế. Dữ liệu được tổng hợp và xử lý theo thời gian thực.</p>
+    </div>
+
+    <div class="console-frame reveal">
+        <div class="console-bar">
+            <div class="console-dots" aria-hidden="true"><i class="cd-r"></i><i class="cd-y"></i><i class="cd-g"></i></div>
+            <span class="console-path mono">lumina://<b>dashboard</b>/analytics/overview</span>
+            <span class="console-live mono"><span class="status-dot"></span>STREAMING</span>
+        </div>
+        <div class="console-body" id="consoleBody">
+            <!-- BIG: bar chart -->
+            <div class="panel big">
+                <div class="panel-head">
+                    <span class="panel-title">Hiệu suất theo khối lớp</span>
+                    <span class="panel-meta mono">ĐTB · HK2</span>
+                </div>
+                <div class="barchart" data-testid="barchart">
+                    <div class="bc-col"><div class="bc-bar-wrap"><div class="bc-bar bc-a" data-h="72"></div><div class="bc-bar bc-b" data-h="64"></div></div><div class="bc-lbl mono">K6</div></div>
+                    <div class="bc-col"><div class="bc-bar-wrap"><div class="bc-bar bc-a" data-h="80"></div><div class="bc-bar bc-b" data-h="70"></div></div><div class="bc-lbl mono">K7</div></div>
+                    <div class="bc-col"><div class="bc-bar-wrap"><div class="bc-bar bc-a" data-h="68"></div><div class="bc-bar bc-b" data-h="76"></div></div><div class="bc-lbl mono">K8</div></div>
+                    <div class="bc-col"><div class="bc-bar-wrap"><div class="bc-bar bc-a" data-h="88"></div><div class="bc-bar bc-b" data-h="82"></div></div><div class="bc-lbl mono">K9</div></div>
+                    <div class="bc-col"><div class="bc-bar-wrap"><div class="bc-bar bc-a" data-h="92"></div><div class="bc-bar bc-b" data-h="85"></div></div><div class="bc-lbl mono">K10</div></div>
+                    <div class="bc-col"><div class="bc-bar-wrap"><div class="bc-bar bc-a" data-h="84"></div><div class="bc-bar bc-b" data-h="90"></div></div><div class="bc-lbl mono">K11</div></div>
+                    <div class="bc-col"><div class="bc-bar-wrap"><div class="bc-bar bc-a" data-h="96"></div><div class="bc-bar bc-b" data-h="93"></div></div><div class="bc-lbl mono">K12</div></div>
+                </div>
+                <div class="bc-legend" style="margin-top:16px">
+                    <span><i style="background:var(--cyber)"></i> Học kỳ trước</span>
+                    <span><i style="background:var(--purple)"></i> Học kỳ này</span>
+                </div>
+            </div>
+
+            <!-- gauge -->
+            <div class="panel">
+                <div class="panel-head"><span class="panel-title">Chuyên cần</span><span class="panel-meta mono">7 ngày</span></div>
+                <div class="gauge">
+                    <div class="gauge-ring" data-val="96">
+                        <div class="gauge-center">
+                            <div class="gauge-num"><span data-count="96">0</span><span class="u">%</span></div>
+                            <div class="gauge-cap mono">TỶ LỆ HIỆN DIỆN</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- progress -->
+            <div class="panel">
+                <div class="panel-head"><span class="panel-title">Theo môn học</span><span class="panel-meta mono">% đạt</span></div>
+                <div class="prog">
+                    <div class="prog-row"><div class="prog-top"><span class="prog-name">Toán</span><span class="prog-pct mono">94%</span></div><div class="prog-track"><div class="prog-fill" data-w="94" style="background:var(--cyber)"></div></div></div>
+                    <div class="prog-row"><div class="prog-top"><span class="prog-name">Ngữ văn</span><span class="prog-pct mono">88%</span></div><div class="prog-track"><div class="prog-fill" data-w="88" style="background:var(--purple)"></div></div></div>
+                    <div class="prog-row"><div class="prog-top"><span class="prog-name">Tiếng Anh</span><span class="prog-pct mono">91%</span></div><div class="prog-track"><div class="prog-fill" data-w="91" style="background:var(--green)"></div></div></div>
+                    <div class="prog-row"><div class="prog-top"><span class="prog-name">Vật lý</span><span class="prog-pct mono">82%</span></div><div class="prog-track"><div class="prog-fill" data-w="82" style="background:var(--amber)"></div></div></div>
+                </div>
+            </div>
+
+            <!-- line trend (spans 2) -->
+            <div class="panel" style="grid-column: 2 / 4;">
+                <div class="panel-head"><span class="panel-title">Xu hướng điểm trung bình toàn hệ thống</span><span class="panel-meta mono">12 tháng · ▲ 6.8%</span></div>
+                <svg class="linechart" id="trendLine" viewBox="0 0 600 120" preserveAspectRatio="none" data-testid="linechart">
+                    <defs>
+                        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#1763ff"/><stop offset="100%" stop-color="#1763ff" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon class="area" fill="url(#lineGrad)" points="0,90 50,84 100,86 150,72 200,76 250,60 300,64 350,48 400,52 450,38 500,42 550,28 600,32 600,120 0,120"/>
+                    <polyline class="ln" stroke="#1763ff" points="0,90 50,84 100,86 150,72 200,76 250,60 300,64 350,48 400,52 450,38 500,42 550,28 600,32"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ░░░ PIPELINE ░░░ -->
+<section class="pipeline wrap" id="pipeline" data-testid="pipeline">
+    <div class="pipe-head">
+        <span class="tag purple reveal">Data Pipeline</span>
+        <h2 class="h-section reveal d1">Từ dữ liệu thô đến quyết định</h2>
+        <p class="sub-section reveal d2" style="text-align:center">Bốn giai đoạn biến mỗi tương tác học tập thành thông tin có giá trị cho người dạy và người học.</p>
+    </div>
+    <div class="pipe-flow">
+        <div class="pipe-node reveal">
+            <div class="pipe-step mono">STAGE_01</div>
+            <div class="pipe-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></div>
+            <h3 class="pipe-title">Thu thập</h3>
+            <p class="pipe-desc">Điểm danh, điểm số, học phí và tương tác được ghi nhận tại nguồn theo thời gian thực.</p>
+        </div>
+        <div class="pipe-node reveal d1">
+            <div class="pipe-step mono">STAGE_02</div>
+            <div class="pipe-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></div>
+            <h3 class="pipe-title">Phân tích</h3>
+            <p class="pipe-desc">Hệ thống chuẩn hóa, tính toán ĐTBm và tổng hợp chỉ số theo lớp, môn, học kỳ.</p>
+        </div>
+        <div class="pipe-node reveal d2">
+            <div class="pipe-step mono">STAGE_03</div>
+            <div class="pipe-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></div>
+            <h3 class="pipe-title">Dự báo</h3>
+            <p class="pipe-desc">Phát hiện sớm xu hướng tụt dốc, cảnh báo nguy cơ và đề xuất can thiệp kịp thời.</p>
+        </div>
+        <div class="pipe-node reveal d3">
+            <div class="pipe-step mono">STAGE_04</div>
+            <div class="pipe-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div>
+            <h3 class="pipe-title">Hành động</h3>
+            <p class="pipe-desc">Thông báo đến đúng người, đúng lúc — giáo viên, phụ huynh và ban giám hiệu.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ░░░ CTA ░░░ -->
+<section class="cta wrap" data-testid="cta">
+    <div class="cta-box">
+        <div class="cta-glow" aria-hidden="true"></div>
+        <div class="cta-glow p" aria-hidden="true"></div>
+        <div class="cta-inner">
+            <span class="cta-tag mono">Initialize System</span>
+            <h2 class="cta-title">Bắt đầu kiến tạo<br/>kiến trúc <em>tri thức</em> của bạn.</h2>
+            <p class="cta-desc">
+                Tham gia cùng hơn 500 cơ sở giáo dục đang vận hành toàn bộ quy trình
+                trên một nền tảng dữ liệu thống nhất.
+            </p>
+            <div class="cta-actions">
+                <a asp-controller="Auth" asp-action="SelectRole" class="btn btn-primary" data-testid="cta-start">
+                    Truy cập hệ thống <span class="btn-arrow">→</span>
+                </a>
+                <a asp-controller="Auth" asp-action="Login" class="btn btn-ghost" data-testid="cta-login">Đã có tài khoản</a>
+            </div>
+            <p class="cta-note mono">// 30 ngày dùng thử · không cần thẻ tín dụng · hỗ trợ 24/7</p>
+        </div>
+    </div>
+</section>
+
+<!-- ░░░ FOOTER ░░░ -->
+<footer class="footer wrap" data-testid="footer">
+    <div class="footer-grid">
+        <div>
+            <div class="footer-brand">Lumina Tutors</div>
+            <p class="footer-desc">Kiến trúc của tri thức. Nền tảng quản lý giáo dục vận hành bằng dữ liệu cho trường học Việt Nam.</p>
+        </div>
+        <div class="footer-col">
+            <h4>Hệ thống</h4>
+            <a href="#modules">Phân hệ</a>
+            <a href="#console">Bảng điều khiển</a>
+            <a href="#pipeline">Pipeline</a>
+        </div>
+        <div class="footer-col">
+            <h4>Công ty</h4>
+            <a href="#">Giới thiệu</a>
+            <a href="#">Tài liệu kỹ thuật</a>
+            <a href="#">Tuyển dụng</a>
+        </div>
+        <div class="footer-col">
+            <h4>Hỗ trợ</h4>
+            <a href="#">Trung tâm trợ giúp</a>
+            <a href="#">Liên hệ</a>
+            <a href="#">Chính sách bảo mật</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <span class="footer-copy mono">© @DateTime.Now.Year LUMINA_TUTORS // ALL RIGHTS RESERVED</span>
+        <span class="footer-meta mono">
+            <span><span class="status-dot"></span>OPERATIONAL</span>
+            <span>BUILD 2.6.0</span>
+            <span>HCMC · VN</span>
+        </span>
+    </div>
 </footer>
 
-</div><!-- /page-wrap -->
+</div><!-- /shell -->
 
+<!-- ═══════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function () {
 'use strict';
+var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ─ Shared mouse position ─────────────────────────── */
-var mx = window.innerWidth / 2, my = window.innerHeight / 2;
-var rx = mx, ry = my;   /* ring lerp position */
-
-document.addEventListener('mousemove', function (e) {
-    mx = e.clientX; my = e.clientY;
-}, { passive: true });
-
-/* ─ One rAF loop: cursor + bloom + stars ─────────── */
-var dotEl  = document.getElementById('cDot');
-var ringEl = document.getElementById('cRing');
-var bloom  = document.getElementById('bloom');
-var root   = document.documentElement;
-var bRad = 320, bRadTarget = 320; /* bloom radius */
-
-(function loop() {
-    /* Dot — snap */
-    if (dotEl)  { dotEl.style.left  = mx + 'px'; dotEl.style.top  = my + 'px'; }
-    /* Ring — lerp */
-    rx += (mx - rx) * 0.14; ry += (my - ry) * 0.14;
-    if (ringEl) { ringEl.style.left = rx + 'px'; ringEl.style.top = ry + 'px'; }
-    /* Bloom radius lerp */
-    bRad += (bRadTarget - bRad) * 0.08;
-    /* Bloom position via CSS vars */
-    root.style.setProperty('--bx', Math.round(mx) + 'px');
-    root.style.setProperty('--by', Math.round(my) + 'px');
-    /* Update bloom radial size inline (can't put var inside gradient radius easily in all browsers) */
-    if (bloom) {
-        bloom.style.background =
-            'radial-gradient(circle ' + Math.round(bRad) + 'px at ' + Math.round(mx) + 'px ' + Math.round(my) + 'px,' +
-            'rgba(200,165,60,0.12) 0%,rgba(200,165,60,0.05) 40%,transparent 70%)';
+/* ─────────────────────────────────────────────────────────────────
+   1. SYSTEM SCAN BOOT — typed readout, then reveal
+───────────────────────────────────────────────────────────────── */
+(function boot() {
+    var lines = [
+        'INITIALIZING KNOWLEDGE GRAPH ........ <span class="ok">OK</span>',
+        'MOUNTING DATA MODULES [6/6] ......... <span class="ok">OK</span>',
+        'ESTABLISHING SECURE LINK ............ <span class="ok">OK</span>',
+        'SYNCING 120K NODES .................. <span class="ok">OK</span>'
+    ];
+    var el = document.getElementById('bootLines');
+    var boot = document.getElementById('boot');
+    var i = 0;
+    function step() {
+        if (!el) return;
+        if (i < lines.length) {
+            el.innerHTML += lines[i] + '<br/>';
+            i++;
+            setTimeout(step, reduced ? 10 : 300);
+        }
     }
-    requestAnimationFrame(loop);
+    step();
+    var delay = reduced ? 200 : 1650;
+    setTimeout(function () {
+        if (boot) boot.classList.add('done');
+        document.body.classList.add('ready');
+        startReveals();
+    }, delay);
 }());
 
-/* ─ Cursor ring states ─────────────────────────────── */
-document.addEventListener('mouseover', function (e) {
-    var t = e.target.closest('a,button');
-    if (!t || !ringEl) return;
-    if (t.id === 'gatewayPortal' || t.closest('#gatewayPortal')) {
-        ringEl.className = 'c-ring portal';
-        bRadTarget = 440;
-    } else {
-        ringEl.className = 'c-ring hov';
+/* ─────────────────────────────────────────────────────────────────
+   2. INTERACTIVE NODE NETWORK  (HTML5 Canvas)
+   ─────────────────────────────────────────────────────────────────
+   • Nodes drift in "field space" (rotation-invariant) and bounce.
+   • The whole field rotates slowly around its center each frame.
+   • Edges connect nodes within a distance threshold; opacity scales
+     with proximity. Edges near the cursor brighten + take an accent
+     color (concept=cyber / skill=purple / mastery=green).
+   • DPR-aware sizing; pauses when reduced-motion is set.
+───────────────────────────────────────────────────────────────── */
+(function nodeNetwork() {
+    var canvas = document.getElementById('netCanvas');
+    var host   = document.getElementById('viewport');
+    if (!canvas || !host) return;
+    var ctx = canvas.getContext('2d');
+
+    var W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
+    var nodes = [], EDGE_DIST = 132, angle = 0;
+    var mouse = { x: -9999, y: -9999, on: false };
+    var accents = ['#1763ff', '#7b3fe4', '#06bf86'];
+    var edgeCount = 0;
+
+    function size() {
+        var r = host.getBoundingClientRect();
+        W = r.width; H = r.height;
+        canvas.width  = Math.round(W * DPR);
+        canvas.height = Math.round(H * DPR);
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        build();
     }
-}, { passive: true });
-document.addEventListener('mouseout', function (e) {
-    var t = e.target.closest('a,button');
-    if (!t || !ringEl) return;
-    ringEl.className = 'c-ring';
-    bRadTarget = 320;
-}, { passive: true });
 
-/* ─ Touch: restore default cursor ──────────────────── */
-window.addEventListener('touchstart', function () {
-    document.body.style.cursor = 'auto';
-    ['cDot','cRing','bloom'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.style.display = 'none';
+    function build() {
+        // node density scales with area, clamped
+        var n = Math.max(22, Math.min(46, Math.round((W * H) / 13000)));
+        nodes = [];
+        for (var i = 0; i < n; i++) {
+            var a = Math.random() * Math.PI * 2;
+            var rad = Math.pow(Math.random(), 0.7) * (Math.min(W, H) * 0.46);
+            nodes.push({
+                // field-space coords centered at 0,0
+                fx: Math.cos(a) * rad,
+                fy: Math.sin(a) * rad,
+                vx: (Math.random() - 0.5) * 0.18,
+                vy: (Math.random() - 0.5) * 0.18,
+                r: 1.6 + Math.random() * 2.2,
+                tier: Math.floor(Math.random() * 3),
+                pulse: Math.random() * Math.PI * 2
+            });
+        }
+    }
+
+    function tick() {
+        ctx.clearRect(0, 0, W, H);
+        var cx = W / 2, cy = H / 2;
+        if (!reduced) angle += 0.0013;
+        var cos = Math.cos(angle), sin = Math.sin(angle);
+        var bound = Math.min(W, H) * 0.48;
+
+        // update + compute display coords
+        for (var i = 0; i < nodes.length; i++) {
+            var p = nodes[i];
+            if (!reduced) { p.fx += p.vx; p.fy += p.vy; p.pulse += 0.03; }
+            // soft circular bound
+            var d = Math.sqrt(p.fx * p.fx + p.fy * p.fy);
+            if (d > bound) { p.vx *= -1; p.vy *= -1; p.fx += p.vx * 2; p.fy += p.vy * 2; }
+            // rotate field-space -> display
+            p.dx = cx + (p.fx * cos - p.fy * sin);
+            p.dy = cy + (p.fx * sin + p.fy * cos);
+        }
+
+        // edges
+        edgeCount = 0;
+        for (var a2 = 0; a2 < nodes.length; a2++) {
+            for (var b = a2 + 1; b < nodes.length; b++) {
+                var p1 = nodes[a2], p2 = nodes[b];
+                var ddx = p1.dx - p2.dx, ddy = p1.dy - p2.dy;
+                var dist = Math.sqrt(ddx * ddx + ddy * ddy);
+                if (dist > EDGE_DIST) continue;
+                edgeCount++;
+                var t = 1 - dist / EDGE_DIST;
+                // cursor proximity to either endpoint
+                var near = false, accent = null;
+                if (mouse.on) {
+                    var m1 = Math.hypot(p1.dx - mouse.x, p1.dy - mouse.y);
+                    var m2 = Math.hypot(p2.dx - mouse.x, p2.dy - mouse.y);
+                    var mm = Math.min(m1, m2);
+                    if (mm < 110) { near = true; accent = accents[(p1.tier + p2.tier) % 3]; }
+                }
+                ctx.beginPath();
+                ctx.moveTo(p1.dx, p1.dy);
+                ctx.lineTo(p2.dx, p2.dy);
+                if (near) {
+                    ctx.strokeStyle = accent;
+                    ctx.globalAlpha = 0.25 + t * 0.6;
+                    ctx.lineWidth = 1.3;
+                } else {
+                    ctx.strokeStyle = '#5e6b80';
+                    ctx.globalAlpha = t * 0.28;
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+            }
+        }
+        ctx.globalAlpha = 1;
+
+        // nodes
+        for (var k = 0; k < nodes.length; k++) {
+            var pn = nodes[k];
+            var md = mouse.on ? Math.hypot(pn.dx - mouse.x, pn.dy - mouse.y) : 9999;
+            var lit = md < 110;
+            var col = lit ? accents[pn.tier] : '#2f3c50';
+            var pr = pn.r + (reduced ? 0 : Math.sin(pn.pulse) * 0.5);
+            if (lit) {
+                ctx.beginPath();
+                ctx.arc(pn.dx, pn.dy, pr + 5, 0, Math.PI * 2);
+                ctx.fillStyle = accents[pn.tier];
+                ctx.globalAlpha = 0.14;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+            ctx.beginPath();
+            ctx.arc(pn.dx, pn.dy, pr, 0, Math.PI * 2);
+            ctx.fillStyle = col;
+            ctx.fill();
+            // ring for tier-0 (concept) nodes
+            if (pn.tier === 0) {
+                ctx.beginPath();
+                ctx.arc(pn.dx, pn.dy, pr + 2.5, 0, Math.PI * 2);
+                ctx.strokeStyle = lit ? accents[0] : '#b9c4d4';
+                ctx.globalAlpha = lit ? 0.8 : 0.5;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // HUD readout
+        if (roNodes) roNodes.textContent = String(nodes.length).padStart(3, '0');
+        if (roEdges) roEdges.textContent = String(edgeCount).padStart(3, '0');
+        if (roCoh)   roCoh.textContent = (0.82 + Math.sin(angle * 6) * 0.04).toFixed(3);
+
+        requestAnimationFrame(tick);
+    }
+
+    var roNodes = document.getElementById('roNodes');
+    var roEdges = document.getElementById('roEdges');
+    var roCoh   = document.getElementById('roCoh');
+
+    host.addEventListener('mousemove', function (e) {
+        var r = host.getBoundingClientRect();
+        mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.on = true;
     });
-}, { once: true, passive: true });
+    host.addEventListener('mouseleave', function () { mouse.on = false; mouse.x = mouse.y = -9999; });
 
-/* ─ Hero entrance (waits for paint) ────────────────── */
-window.addEventListener('DOMContentLoaded', function () {
-    setTimeout(function () { document.body.classList.add('in'); }, 60);
-    setTimeout(function () {
-        var s = document.getElementById('heroScroll');
-        if (s) s.classList.add('visible');
-    }, 2000);
-});
+    var rt;
+    window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(size, 160); });
 
-/* ─ Navbar scroll ───────────────────────────────────── */
-var nav = document.getElementById('mainNav');
+    size();
+    requestAnimationFrame(tick);
+}());
+
+/* ─────────────────────────────────────────────────────────────────
+   3. COUNTER ANIMATIONS (count-up with easing)
+───────────────────────────────────────────────────────────────── */
+function animateCount(el) {
+    var target = parseFloat(el.getAttribute('data-count'));
+    var dec    = parseInt(el.getAttribute('data-decimals') || '0', 10);
+    var suffix = el.getAttribute('data-suffix') || '';
+    var dur    = reduced ? 0 : 1400;
+    var start  = performance.now();
+    // keep any leading <span> placeholder, replace trailing text node
+    function fmt(v) { return v.toFixed(dec) + suffix; }
+    function frame(now) {
+        var t = dur === 0 ? 1 : Math.min((now - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - t, 3);
+        var val = target * eased;
+        // write into the element's last text node (preserve child spans/units)
+        var unit = el.querySelector('.u');
+        var unitHTML = unit ? unit.outerHTML : '';
+        el.firstChild && el.firstChild.nodeType === 1 && el.firstChild.classList && el.firstChild.classList.contains('u');
+        el.childNodes.forEach ? null : null;
+        // Simplest robust approach: set text before unit
+        if (unit) {
+            // remove existing text nodes, keep unit
+            var nodes = Array.prototype.slice.call(el.childNodes);
+            nodes.forEach(function (n) { if (n.nodeType === 3) el.removeChild(n); });
+            el.insertBefore(document.createTextNode(fmt(val)), unit);
+        } else {
+            el.textContent = fmt(val);
+        }
+        if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   4. SPARKLINES (build polylines from data-spark)
+───────────────────────────────────────────────────────────────── */
+function buildSparks() {
+    document.querySelectorAll('.metric-spark').forEach(function (svg) {
+        var pts = (svg.getAttribute('data-spark') || '').split(',').map(Number);
+        var color = svg.getAttribute('data-color') || '#1763ff';
+        if (!pts.length) return;
+        var max = Math.max.apply(null, pts), min = Math.min.apply(null, pts);
+        var range = (max - min) || 1;
+        var w = 100, h = 30, pad = 3;
+        var coords = pts.map(function (v, i) {
+            var x = (i / (pts.length - 1)) * w;
+            var y = pad + (1 - (v - min) / range) * (h - pad * 2);
+            return x.toFixed(1) + ',' + y.toFixed(1);
+        });
+        var poly = coords.join(' ');
+        var area = '0,' + h + ' ' + poly + ' ' + w + ',' + h;
+        svg.innerHTML =
+            '<polygon points="' + area + '" fill="' + color + '" opacity="0.08"/>' +
+            '<polyline points="' + poly + '" fill="none" stroke="' + color + '" stroke-width="1.6" ' +
+            'stroke-linejoin="round" stroke-linecap="round" ' +
+            'style="stroke-dasharray:200;stroke-dashoffset:200;transition:stroke-dashoffset 1.4s cubic-bezier(0.16,1,0.3,1)"/>' +
+            '<circle cx="' + w + '" cy="' + coords[coords.length-1].split(',')[1] + '" r="2.4" fill="' + color + '"/>';
+    });
+}
+function runSparks() {
+    document.querySelectorAll('.metric-spark polyline').forEach(function (pl) { pl.style.strokeDashoffset = '0'; });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   5. MODULE MINI-BARS (height from data-bars)
+───────────────────────────────────────────────────────────────── */
+function buildModBars() {
+    document.querySelectorAll('.mod-viz').forEach(function (viz) {
+        var vals = (viz.getAttribute('data-bars') || '').split(',').map(Number);
+        viz.innerHTML = vals.map(function () { return '<span class="b" style="height:0"></span>'; }).join('');
+        viz._vals = vals;
+    });
+}
+function runModBars(viz) {
+    if (!viz._vals) return;
+    var bars = viz.querySelectorAll('.b');
+    viz._vals.forEach(function (v, i) {
+        setTimeout(function () { if (bars[i]) bars[i].style.height = v + '%'; }, i * 40);
+    });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   6. REVEAL + trigger viz when sections enter
+───────────────────────────────────────────────────────────────── */
+function startReveals() {
+    buildSparks(); buildModBars();
+
+    var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            var el = e.target;
+            el.classList.add('in');
+
+            // counters
+            el.querySelectorAll && el.querySelectorAll('[data-count]').forEach(function (c) {
+                if (!c._done) { c._done = true; animateCount(c); }
+            });
+            if (el.hasAttribute('data-count') && !el._done) { el._done = true; animateCount(el); }
+
+            io.unobserve(el);
+        });
+    }, { threshold: 0.18 });
+
+    document.querySelectorAll('.reveal, [data-count]').forEach(function (el) { io.observe(el); });
+
+    // metrics bar — counters + sparks
+    var metricsIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            e.target.querySelectorAll('[data-count]').forEach(function (c) { if (!c._done) { c._done = true; animateCount(c); } });
+            runSparks();
+            metricsIO.unobserve(e.target);
+        });
+    }, { threshold: 0.3 });
+    var mb = document.querySelector('.metrics'); if (mb) metricsIO.observe(mb);
+
+    // hero mini counters fire on ready
+    document.querySelectorAll('.hero-mini [data-count]').forEach(function (c) {
+        if (!c._done) { c._done = true; setTimeout(function(){ animateCount(c); }, 900); }
+    });
+
+    // modules — mini bars
+    var modIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (e.isIntersecting) { var v = e.target.querySelector('.mod-viz'); if (v) runModBars(v); modIO.unobserve(e.target); }
+        });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.mod').forEach(function (m) { modIO.observe(m); });
+
+    // console — bars / gauge / progress / line
+    var conIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            // bar chart
+            e.target.querySelectorAll('.bc-bar').forEach(function (b, i) {
+                setTimeout(function () { b.style.height = b.getAttribute('data-h') + '%'; }, i * 30);
+            });
+            // gauge
+            e.target.querySelectorAll('.gauge-ring').forEach(function (g) {
+                var v = g.getAttribute('data-val');
+                // animate conic via requestAnimationFrame fallback (custom prop may not transition everywhere)
+                var start = performance.now(), dur = reduced ? 0 : 1400, target = parseFloat(v);
+                (function fr(now){
+                    var t = dur === 0 ? 1 : Math.min((now-start)/dur,1);
+                    var eased = 1 - Math.pow(1-t,3);
+                    g.style.setProperty('--val', (target*eased).toFixed(1));
+                    if (t<1) requestAnimationFrame(fr);
+                })(performance.now());
+            });
+            // progress
+            e.target.querySelectorAll('.prog-fill').forEach(function (p, i) {
+                setTimeout(function () { p.style.width = p.getAttribute('data-w') + '%'; }, 150 + i * 80);
+            });
+            // line
+            var lc = e.target.querySelector('.linechart'); if (lc) lc.classList.add('in');
+            conIO.unobserve(e.target);
+        });
+    }, { threshold: 0.2 });
+    var cf = document.querySelector('.console-frame'); if (cf) conIO.observe(cf);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   7. NAV border on scroll
+───────────────────────────────────────────────────────────────── */
+var nav = document.querySelector('.nav');
 window.addEventListener('scroll', function () {
-    if (nav) nav.classList.toggle('scrolled', window.scrollY > 55);
+    if (nav) nav.style.borderColor = window.scrollY > 20 ? 'var(--line-2)' : 'var(--line)';
 }, { passive: true });
-
-/* ─ Stats + generic reveal ─────────────────────────── */
-var revObs = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-        if (e.isIntersecting) { e.target.classList.add('visible'); revObs.unobserve(e.target); }
-    });
-}, { threshold: 0.15 });
-document.querySelectorAll('.reveal').forEach(function (el) { revObs.observe(el); });
-
-/* ─ Value panels + golden thread ───────────────────── */
-var panels = document.querySelectorAll('.v-panel');
-var fill   = document.getElementById('threadFill');
-var nodes  = [0,1,2,3,4].map(function (i) { return document.getElementById('tn'+i); });
-
-var pObs = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        var idx = [].indexOf.call(panels, e.target);
-        e.target.classList.add('lit');
-        if (fill) fill.style.height = Math.min(95, (idx+1)*20+3) + '%';
-        if (nodes[idx]) nodes[idx].classList.add('lit');
-        pObs.unobserve(e.target);
-    });
-}, { threshold: 0.25, rootMargin: '0px 0px -50px 0px' });
-panels.forEach(function (p) { pObs.observe(p); });
-
-/* ─ Gateway reveals ─────────────────────────────────── */
-var gwObs = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-        if (e.isIntersecting) { e.target.classList.add('in'); gwObs.unobserve(e.target); }
-    });
-}, { threshold: 0.18 });
-['gwEyebrow','gwTitle','gatewayPortal','gwSub'].forEach(function (id) {
-    var el = document.getElementById(id); if (el) gwObs.observe(el);
-});
 
 }());
 </script>
