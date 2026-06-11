@@ -1,0 +1,233 @@
+/* ════════════════════════════════════════════════════════════════════
+   Lumina Holographic Nexus — Overlay UI · "Hologram Lab"
+   Tablet kính mờ tối viền cyan + video widget, đè lên <canvas> hologram.
+   ════════════════════════════════════════════════════════════════════ */
+:root {
+  --holo: #7fe9ff; --holo-d: #1aa3e0; --holo-dim: #4fb8e6; --gold: #c9a96a;
+  --void: #05070f; --ink: #cfe9ff; --ink-2: #9fc4e0; --muted: #5f7d97;
+  --glass: rgba(12,22,38,.58); --glass-brd: rgba(127,233,255,.26);
+  --panel: linear-gradient(150deg, rgba(13,24,42,.92), rgba(8,14,26,.92));
+  --font: 'Inter','SF Pro Display',system-ui,-apple-system,sans-serif;
+  --glow: 0;
+}
+* { box-sizing: border-box; }
+
+.nexus-stage {
+  position: fixed; inset: 0;
+  background: radial-gradient(circle at 50% 36%, #0a1528 0%, #060a16 55%, var(--void) 100%);
+  font-family: var(--font); color: var(--ink); overflow: hidden;
+}
+.nexus-stage canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; }
+.lumina-label-layer { position: absolute; inset: 0; pointer-events: none; }
+
+/* ── Scanlines + flicker overlay (đè lên canvas, dưới tablet) ────────── */
+.nexus-fx {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none; mix-blend-mode: screen;
+  background:
+    repeating-linear-gradient(0deg, rgba(127,233,255,.045) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 50% 40%, rgba(127,233,255,.05), transparent 60%);
+  animation: nx-scan-move 7s linear infinite, nx-flicker 4.5s steps(2) infinite;
+}
+@keyframes nx-scan-move { from { background-position: 0 0, 0 0; } to { background-position: 0 -90px, 0 0; } }
+@keyframes nx-flicker { 0%,97%,100% { opacity: 1; } 98% { opacity: .82; } 99% { opacity: .92; } }
+
+/* ── Hologram label phát ra từ mô hình (CSS2DObject) ────────────────── */
+.lumina-label {
+  font: 500 11px/1.2 var(--font); letter-spacing: .02em; color: #e7f6ff;
+  background: rgba(8,18,32,.62); backdrop-filter: blur(6px);
+  border: 1px solid var(--glass-brd); border-left: 2px solid var(--holo);
+  padding: 5px 9px; border-radius: 7px; white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4), 0 0 12px rgba(127,233,255,.18);
+  transform: translate(16px,-50%); position: relative; text-shadow: 0 0 8px rgba(127,233,255,.4);
+}
+.lumina-label::before { content: ''; position: absolute; left: -16px; top: 50%; width: 16px; height: 1px;
+  background: var(--holo); box-shadow: 0 0 6px var(--holo); }
+
+/* Nhãn công thức nhỏ trên lọ hóa chất (luôn hiện) */
+.lumina-label--chem { font-size: 9px; padding: 2px 6px; border-left: 1px solid var(--glass-brd);
+  transform: translate(0, -50%); opacity: .85; }
+.lumina-label--chem::before { display: none; }
+
+/* Nhãn thí nghiệm tham số (vector, tia sáng…) */
+.lumina-label--sim { font-size: 10px; padding: 2px 7px; transform: translate(0, -50%); }
+.lumina-label--sim::before { display: none; }
+
+/* ── Boot (hologram, tối) ───────────────────────────────────────────── */
+.nexus-boot {
+  position: absolute; inset: 0; z-index: 50; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 45%, #0a1528, var(--void) 70%);
+  transition: opacity .6s ease, visibility .6s;
+}
+.nexus-boot.done { opacity: 0; visibility: hidden; }
+.nexus-boot-scan {
+  position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--holo) 50%, transparent);
+  box-shadow: 0 0 18px 2px rgba(127,233,255,.55);
+  animation: nx-scan 1.5s cubic-bezier(.65,0,.35,1) forwards;
+}
+@keyframes nx-scan { 0%{top:0;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:100%;opacity:0} }
+.nexus-boot-text { text-align: center; }
+.nexus-boot-text b { font-weight: 700; letter-spacing: .08em; font-size: 1.1rem; color: #e7f6ff; text-shadow: 0 0 14px rgba(127,233,255,.4); }
+.nexus-boot-text b span { color: var(--holo); }
+.nexus-boot-lines { font: 500 .72rem/1.9 'JetBrains Mono', ui-monospace, monospace; color: var(--muted); margin-top: 14px; min-height: 76px; }
+.nexus-boot-lines .ok { color: #27c08a; }
+
+/* ── HUD telemetry (góc trái) ───────────────────────────────────────── */
+.hud-readout {
+  position: absolute; left: 24px; top: 24px; z-index: 9;
+  font: 500 .62rem/1.7 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--muted); pointer-events: none;
+}
+.hud-readout .v { color: var(--holo); }
+
+/* ════════ TABLET (Hologram glass) ════════ */
+.tablet { position: absolute; left: 24px; bottom: 24px; z-index: 10; width: min(348px, 46vw); }
+.tablet__bezel {
+  padding: 16px 18px; border-radius: 24px; background: var(--panel);
+  border: 1px solid var(--glass-brd);
+  box-shadow: 0 1px 0 rgba(127,233,255,.12) inset, 0 20px 50px rgba(0,0,0,.55), 0 0 40px rgba(23,99,255,.12);
+  backdrop-filter: blur(14px);
+}
+.tablet__head {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--glass); backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid var(--glass-brd); border-radius: 18px; padding: 13px 16px; margin-bottom: 12px;
+}
+.tablet__brand { font-weight: 700; letter-spacing: .06em; font-size: .82rem; color: #e7f6ff; }
+.tablet__brand span { color: var(--holo); }
+.tablet__status { font: 500 .6rem/1 var(--font); letter-spacing: .1em; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.tablet__status .dot { width: 7px; height: 7px; border-radius: 50%; background: #f0a020; transition: background .3s; }
+.tablet__status .dot.online { background: var(--holo); box-shadow: 0 0 0 0 rgba(127,233,255,.5); animation: nx-pulse 2s infinite; }
+@keyframes nx-pulse { 70%{box-shadow:0 0 0 6px rgba(127,233,255,0)} 100%{box-shadow:0 0 0 0 rgba(127,233,255,0)} }
+
+/* ── Bộ chọn Môn học + Thí nghiệm ───────────────────────────────────── */
+.holo-pick { display: grid; gap: 8px; margin-bottom: 12px; }
+.holo-pick__row { display: flex; align-items: center; gap: 10px;
+  background: var(--glass); border: 1px solid var(--glass-brd); border-radius: 14px; padding: 9px 12px; }
+.holo-pick__lbl { font: 600 .62rem/1 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); flex: 0 0 64px; }
+.holo-sel {
+  flex: 1; min-width: 0; appearance: none; -webkit-appearance: none; cursor: pointer;
+  background: rgba(6,12,22,.7); color: #e7f6ff; border: 1px solid var(--glass-brd); border-radius: 10px;
+  padding: 8px 30px 8px 11px; font: 600 .78rem/1 var(--font);
+  background-image: linear-gradient(45deg, transparent 50%, var(--holo) 50%), linear-gradient(135deg, var(--holo) 50%, transparent 50%);
+  background-position: right 13px center, right 8px center; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  transition: border-color .2s, box-shadow .2s;
+}
+.holo-sel:hover { border-color: var(--holo); }
+.holo-sel:focus { outline: none; border-color: var(--holo); box-shadow: 0 0 0 3px rgba(127,233,255,.18); }
+.holo-sel option { background: #0a1424; color: #e7f6ff; }
+
+.tablet__tools { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+.tool {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; cursor: pointer;
+  background: var(--glass); border: 1px solid var(--glass-brd); border-radius: 14px;
+  backdrop-filter: blur(18px); font: 600 .72rem/1 var(--font); color: var(--ink-2); transition: .2s;
+}
+.tool:hover { transform: translateY(-2px); border-color: var(--holo); }
+.tool.is-on { background: linear-gradient(160deg, rgba(127,233,255,.22), rgba(23,99,255,.18)); border-color: var(--holo); color: #e7f6ff; box-shadow: 0 6px 18px rgba(23,99,255,.3), 0 0 16px rgba(127,233,255,.25); }
+.tool:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.tool__ic { font-size: 1.15rem; color: var(--holo); line-height: 1; }
+
+.slider { display: block; background: var(--glass); border: 1px solid var(--glass-brd); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; }
+.slider span { display: flex; justify-content: space-between; font: 600 .72rem/1 var(--font); color: var(--ink-2); margin-bottom: 8px; }
+.slider b { color: var(--holo); }
+.slider input { width: 100%; accent-color: var(--holo); }
+.slider input:disabled { opacity: .45; }
+
+.tablet__specimen { display: flex; flex-direction: column; gap: 2px; background: rgba(127,233,255,.06); border: 1px solid var(--glass-brd); border-radius: 14px; padding: 10px 14px; }
+.specimen__k { font: 600 .56rem/1 var(--font); letter-spacing: .14em; color: var(--muted); }
+.specimen__v { font: 600 .82rem/1.2 var(--font); color: #e7f6ff; }
+
+/* ════════ KỆ HÓA CHẤT (bàn phản ứng) ════════ */
+.chemtray { position: absolute; right: 24px; bottom: 24px; z-index: 10; width: 308px; display: none;
+  padding: 14px; border-radius: 20px; background: var(--panel); border: 1px solid var(--glass-brd);
+  backdrop-filter: blur(14px); box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 30px rgba(23,99,255,.1); }
+.chemtray.show { display: block; }
+.chemtray__title { font: 600 .56rem/1.4 var(--font); letter-spacing: .13em; color: var(--muted); margin: 2px 2px 10px; }
+.chemtray__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; max-height: 52vh; overflow: auto; padding-right: 2px; }
+.chemtray__cat { grid-column: 1 / -1; font: 600 .52rem/1 var(--font); letter-spacing: .15em; color: var(--holo-dim);
+  margin-top: 5px; padding-bottom: 2px; border-bottom: 1px solid var(--glass-brd); }
+.chemtray__cat:first-child { margin-top: 0; }
+.chemtray__grid::-webkit-scrollbar { width: 4px; }
+.chemtray__grid::-webkit-scrollbar-thumb { background: var(--glass-brd); border-radius: 2px; }
+.chem-chip { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: 8px 10px;
+  background: var(--glass); border: 1px solid var(--glass-brd); border-left: 3px solid var(--cc, var(--holo));
+  border-radius: 10px; transition: .15s; }
+.chem-chip b { font: 700 .76rem/1.15 var(--font); color: #e7f6ff; }
+.chem-chip span { font: 500 .58rem/1.25 var(--font); color: var(--muted); }
+.chem-chip:hover { transform: translateY(-1px); border-color: var(--holo); background: rgba(127,233,255,.08); }
+.chem-chip:active { transform: translateY(0); }
+.chem-chip--rinse { grid-column: 1 / -1; border-left-color: #ffd166; align-items: center; text-align: center; }
+
+/* ════════ BẢNG PHƯƠNG TRÌNH PHẢN ỨNG ════════ */
+.chempanel { position: absolute; left: 50%; transform: translateX(-50%); bottom: 24px; z-index: 9; display: none;
+  min-width: 300px; max-width: 440px; padding: 12px 20px; border-radius: 16px; text-align: center;
+  background: var(--panel); border: 1px solid var(--glass-brd); backdrop-filter: blur(14px);
+  box-shadow: 0 14px 36px rgba(0,0,0,.45); }
+.chempanel.show { display: block; }
+.chempanel__k { font: 600 .54rem/1 var(--font); letter-spacing: .16em; color: var(--muted); margin-bottom: 6px; }
+.chempanel__contents { font: 500 .66rem/1.35 var(--font); color: var(--ink-2); margin-bottom: 6px; }
+.chempanel__eq { font: 700 .96rem/1.35 var(--font); color: var(--holo); text-shadow: 0 0 12px rgba(127,233,255,.4); }
+.chempanel__desc { font: 500 .7rem/1.5 var(--font); color: var(--ink-2); margin-top: 5px; }
+
+/* ════════ THANH TRƯỢT THAM SỐ (thí nghiệm Lý/Sinh/Toán) ════════ */
+.simctrl { position: absolute; right: 24px; bottom: 24px; z-index: 10; width: 296px; display: none;
+  padding: 14px; border-radius: 20px; background: var(--panel); border: 1px solid var(--glass-brd);
+  backdrop-filter: blur(14px); box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 30px rgba(23,99,255,.1); }
+.simctrl.show { display: block; }
+.simctrl__title { font: 600 .56rem/1.4 var(--font); letter-spacing: .12em; color: var(--muted); margin: 2px 2px 12px; }
+.simctrl__body { display: flex; flex-direction: column; gap: 13px; max-height: 52vh; overflow: auto; padding-right: 2px; }
+.simrow { display: flex; flex-direction: column; gap: 6px; }
+.simrow__lbl { display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  font: 600 .7rem/1.2 var(--font); color: var(--ink-2); }
+.simrow__lbl b { color: var(--holo); font-variant-numeric: tabular-nums; }
+.simrow input[type=range] { width: 100%; accent-color: var(--holo); }
+
+/* ════════ BẢNG KẾT QUẢ THÍ NGHIỆM ════════ */
+.simpanel { position: absolute; left: 50%; transform: translateX(-50%); bottom: 24px; z-index: 9; display: none;
+  min-width: 320px; max-width: 480px; padding: 13px 22px; border-radius: 16px;
+  background: var(--panel); border: 1px solid var(--glass-brd); backdrop-filter: blur(14px);
+  box-shadow: 0 14px 36px rgba(0,0,0,.45); }
+.simpanel.show { display: block; }
+.simpanel__title { font: 700 .92rem/1.3 var(--font); color: var(--holo); text-align: center;
+  text-shadow: 0 0 12px rgba(127,233,255,.4); margin-bottom: 9px; }
+.simpanel__lines { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 18px; }
+.simpanel__row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+  font: 500 .72rem/1.5 var(--font); color: var(--ink-2); border-bottom: 1px solid rgba(127,233,255,.08); padding: 2px 0; }
+.simpanel__row b { color: #e7f6ff; font-variant-numeric: tabular-nums; }
+.simpanel__row--wide { grid-column: 1 / -1; }
+
+/* ════════ DUAL-COMM video widget ════════ */
+.commwidget {
+  position: absolute; right: 24px; top: 24px; z-index: 10; width: clamp(180px,20vw,260px);
+  aspect-ratio: 4/3; border-radius: 20px; overflow: hidden; border: 1px solid var(--glass-brd);
+  box-shadow: 0 16px 40px rgba(0,0,0,.5), 0 0 0 5px rgba(127,233,255,.1), 0 0 28px rgba(23,99,255,.18); background: #0a1424;
+}
+.commwidget video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+.commwidget__placeholder { position: absolute; inset: 0; display: grid; place-items: center; font: 600 .66rem/1.4 'JetBrains Mono', monospace; letter-spacing: .08em; color: var(--muted); text-align: center; padding: 12px; }
+.commwidget__bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: linear-gradient(transparent, rgba(3,7,15,.7)); color: #e7f6ff; }
+.commwidget__name { font: 600 .7rem/1 var(--font); }
+.commwidget__live { font: 700 .58rem/1 var(--font); letter-spacing: .08em; display: flex; align-items: center; gap: 5px; }
+.commwidget__live i { width: 6px; height: 6px; border-radius: 50%; background: #ff4d4f; animation: nx-pulse 1.4s infinite; }
+.commwidget__glow { position: absolute; inset: 0; border-radius: 20px; pointer-events: none;
+  box-shadow: inset 0 0 calc(6px + var(--glow)*30px) rgba(127,233,255, calc(.16 + var(--glow)*.6)); }
+
+/* ── Responsive mobile ──────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .tablet { left: 12px; right: 12px; bottom: 12px; width: auto; }
+  .commwidget { width: 38vw; right: 12px; top: 12px; }
+  .hud-readout { display: none; }
+  .chemtray.show { right: 12px; bottom: auto; top: calc(28.5vw + 70px); width: 46vw; }
+  .chemtray__grid { max-height: 30vh; grid-template-columns: 1fr; }
+  .chempanel.show { left: 12px; right: auto; transform: none; bottom: auto; top: calc(28.5vw + 70px);
+    min-width: 0; width: 44vw; padding: 10px 12px; }
+  .simctrl.show { right: 12px; bottom: auto; top: calc(28.5vw + 70px); width: 46vw; padding: 10px; }
+  .simctrl__body { max-height: 34vh; }
+  .simpanel.show { left: 12px; right: auto; transform: none; bottom: auto; top: calc(28.5vw + 70px);
+    min-width: 0; width: 44vw; padding: 10px 12px; }
+  .simpanel__lines { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nexus-boot-scan, .tablet__status .dot.online, .commwidget__live i, .nexus-fx { animation: none; }
+  .tool, .nexus-boot { transition: none; }
+}

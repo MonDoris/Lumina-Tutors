@@ -1,0 +1,167 @@
+@{
+    Layout = null; // Full-screen immersive 3D experience
+    var roomId       = ViewBag.RoomId as string ?? "nexus-demo";
+    var isTeacher    = ViewBag.IsTeacher as bool? ?? false;
+    var displayName  = ViewBag.DisplayName as string ?? "Học viên";
+    var defaultTag   = ViewBag.DefaultSubjectTag as string ?? "";
+    var initialScene = ViewBag.InitialScene as string ?? "";
+    var disabled     = isTeacher ? null : "disabled";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+    <title>Lumina Holographic Nexus — @roomId</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/nexus/OverlayUI.css" asp-append-version="true"/>
+
+    <!-- IMPORTMAP phải đứng TRƯỚC mọi modulepreload (convention dự án) -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three":         "/js/three/three.module.js",
+        "three/addons/": "/js/three/"
+      }
+    }
+    </script>
+    <link rel="modulepreload" href="/js/three/three.module.js">
+    <link rel="modulepreload" href="/js/three/controls/OrbitControls.js">
+</head>
+<body>
+<div class="nexus-stage">
+
+    <!-- 3D canvas (Holographic projection) -->
+    <canvas id="nexusCanvas"></canvas>
+
+    <!-- Hologram scanlines + flicker overlay -->
+    <div class="nexus-fx" aria-hidden="true"></div>
+
+    <!-- Boot scan -->
+    <div class="nexus-boot" id="nexusBoot">
+        <div class="nexus-boot-scan"></div>
+        <div class="nexus-boot-text">
+            <b>LUMINA <span>·</span> HOLOGRAPHIC NEXUS</b>
+            <div class="nexus-boot-lines" id="nexusBootLines"></div>
+        </div>
+    </div>
+
+    <!-- HUD telemetry -->
+    <div class="hud-readout">
+        <div>FPS <span class="v" id="hudFps">--</span></div>
+        <div>EXPLODE <span class="v" id="hudExplode">0%</span></div>
+        <div>ROOM <span class="v">@roomId</span></div>
+    </div>
+
+    <!-- TABLET control panel (Clinical Luxury) -->
+    <section class="tablet" role="toolbar" aria-label="Bảng điều khiển giảng dạy">
+        <div class="tablet__bezel">
+            <header class="tablet__head">
+                <span class="tablet__brand">LUMINA<span>·</span>NEXUS</span>
+                <span class="tablet__status">
+                    <i class="dot" id="statusDot"></i><span id="statusTxt">CONNECTING…</span>
+                </span>
+            </header>
+
+            @if (isTeacher)
+            {
+                <div class="holo-pick" role="group" aria-label="Chọn môn học và thí nghiệm">
+                    <label class="holo-pick__row">
+                        <span class="holo-pick__lbl">Môn học</span>
+                        <select id="subjectSel" class="holo-sel" aria-label="Môn học"></select>
+                    </label>
+                    <label class="holo-pick__row">
+                        <span class="holo-pick__lbl">Thí nghiệm</span>
+                        <select id="sceneSel" class="holo-sel" aria-label="Thí nghiệm"></select>
+                    </label>
+                </div>
+            }
+
+            <div class="tablet__tools">
+                <button class="tool" id="btnHighlight" data-tool="highlight" title="Bật chế độ tô sáng, bấm vào bộ phận" @disabled>
+                    <span class="tool__ic">◆</span>Highlight
+                </button>
+                <button class="tool" id="btnLabels" data-tool="label" title="Hiện/ẩn nhãn bộ phận" @disabled>
+                    <span class="tool__ic">⌖</span>Nhãn
+                </button>
+                <button class="tool" id="btnReset" data-tool="reset" title="Đặt lại mô hình" @disabled>
+                    <span class="tool__ic">⟲</span>Reset
+                </button>
+            </div>
+
+            <label class="slider">
+                <span>Bóc tách <b id="explodeVal">0%</b></span>
+                <input id="explode" type="range" min="0" max="100" value="0" @disabled/>
+            </label>
+
+            <div class="tablet__specimen">
+                <span class="specimen__k">HOLOGRAM</span>
+                <span class="specimen__v" id="specimenLabel">Đang nạp hình chiếu…</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- KỆ HÓA CHẤT (bàn phản ứng, chỉ giáo viên thao tác) -->
+    @if (isTeacher)
+    {
+        <aside class="chemtray" id="chemTray" aria-label="Kệ hóa chất">
+            <div class="chemtray__title">KỆ HÓA CHẤT — BẤM ĐỂ CHO VÀO CỐC</div>
+            <div class="chemtray__grid" id="chemGrid"></div>
+        </aside>
+    }
+
+    <!-- BẢNG PHƯƠNG TRÌNH PHẢN ỨNG (cả lớp đều thấy) -->
+    <section class="chempanel" id="chemPanel" aria-live="polite">
+        <div class="chempanel__k">PHẢN ỨNG HÓA HỌC</div>
+        <div class="chempanel__contents" id="chemContents">Cốc rỗng</div>
+        <div class="chempanel__eq" id="chemEq">—</div>
+        <div class="chempanel__desc" id="chemDesc">Chọn hóa chất trên kệ để bắt đầu thí nghiệm.</div>
+    </section>
+
+    <!-- THANH TRƯỢT THAM SỐ (thí nghiệm Lý/Sinh/Toán, chỉ giáo viên) -->
+    @if (isTeacher)
+    {
+        <aside class="simctrl" id="simControls" aria-label="Tham số thí nghiệm">
+            <div class="simctrl__title">THAM SỐ THÍ NGHIỆM — KÉO ĐỂ ĐIỀU CHỈNH</div>
+            <div class="simctrl__body" id="simCtrlBody"></div>
+        </aside>
+    }
+
+    <!-- BẢNG KẾT QUẢ THÍ NGHIỆM (cả lớp đều thấy) -->
+    <section class="simpanel" id="simPanel" aria-live="polite">
+        <div class="simpanel__title" id="simTitle">—</div>
+        <div class="simpanel__lines" id="simLines"></div>
+    </section>
+
+    <!-- DUAL-COMM video widget -->
+    <aside class="commwidget">
+        <video id="teacherFeed" autoplay muted playsinline style="display:none"></video>
+        <div class="commwidget__placeholder" id="camPlaceholder">@(isTeacher ? "KHỞI ĐỘNG CAMERA…" : "CHỜ GIÁO VIÊN")</div>
+        <div class="commwidget__bar">
+            <span class="commwidget__name" id="commName">@displayName</span>
+            <span class="commwidget__live"><i></i>LIVE</span>
+        </div>
+        <div class="commwidget__glow" aria-hidden="true"></div>
+    </aside>
+
+    <!-- Hidden media pool -->
+    <div id="nexus-video-pool" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0"></div>
+</div>
+
+<!-- SignalR client (global `signalR`) -->
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@@8.0.0/dist/browser/signalr.min.js"></script>
+
+<script>
+    window.NEXUS_CONFIG = {
+        roomId: '@Html.Raw(roomId)',
+        isTeacher: @(isTeacher ? "true" : "false"),
+        displayName: '@Html.Raw(displayName.Replace("'", "\\'"))',
+        subject: '@Html.Raw(defaultTag)',
+        initialScene: '@Html.Raw(initialScene)'
+    };
+</script>
+<script type="module" src="~/js/nexus/nexus-init.js" asp-append-version="true"></script>
+</body>
+</html>

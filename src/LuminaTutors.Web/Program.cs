@@ -117,6 +117,10 @@ try
     // ── SignalR (Online Classroom real-time) ──────────────────────────────────
     builder.Services.AddSignalR();
 
+    // ── Lumina Holographic Nexus: SFU thuần C# (SIPSorcery) ───────────────────
+    builder.Services.AddSingleton<LuminaTutors.Web.Hubs.ILuminaSfuService,
+                                  LuminaTutors.Web.Hubs.LuminaSfuService>();
+
     // ── HttpClient (URL scraping for Question Bank import) ────────────────────
     builder.Services.AddHttpClient();
 
@@ -141,7 +145,26 @@ try
 
     if (!app.Environment.IsDevelopment())
         app.UseHttpsRedirection();
-    app.UseStaticFiles();
+
+    // Trong Development: tắt cache file tĩnh để các module JS (đặc biệt là ESM
+    // import lồng nhau trong /js/nexus, /js/three không được asp-append-version)
+    // luôn được tải lại sau khi sửa — tránh chạy phải bản cache cũ.
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            OnPrepareResponse = ctx =>
+            {
+                ctx.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+                ctx.Context.Response.Headers.Pragma = "no-cache";
+                ctx.Context.Response.Headers.Expires = "0";
+            }
+        });
+    }
+    else
+    {
+        app.UseStaticFiles();
+    }
     app.UseSerilogRequestLogging();
     app.UseCors("MobileApp");
     app.UseRouting();
@@ -160,6 +183,7 @@ try
 
     // ── SignalR Hub Route ─────────────────────────────────────────────────────
     app.MapHub<OnlineClassHub>("/hubs/online-class");
+    app.MapHub<LuminaTutors.Web.Hubs.LuminaRtcHub>("/hubs/lumina-rtc");
 
     Log.Information("🌟 Lumina Tutors starting on {Environment}", app.Environment.EnvironmentName);
     app.Run();

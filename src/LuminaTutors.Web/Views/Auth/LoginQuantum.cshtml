@@ -1,0 +1,613 @@
+@model LuminaTutors.Application.DTOs.Auth.LoginRequest
+@*
+    ╔══════════════════════════════════════════════════════════════════════════╗
+    ║  THE QUANTUM ACCESS TERMINAL — Lumina Tutors Login                          ║
+    ║  Concept: Clinical Luxury · Data-driven · Sci-Tech EdTech                   ║
+    ║                                                                            ║
+    ║  Drop-in thay cho Login.cshtml: GIỮ NGUYÊN hợp đồng backend                 ║
+    ║  (asp-action Auth/Login · antiforgery · Email/Password/RememberMe ·         ║
+    ║   hidden role + role chips · returnUrl · validation).                       ║
+    ║  Xem preview: trong AuthController.Login [HttpGet] đổi `return View();`      ║
+    ║  thành `return View("LoginQuantum");` (hoặc đổi tên file này thành          ║
+    ║  Login.cshtml để thay hẳn).                                                 ║
+    ╚══════════════════════════════════════════════════════════════════════════╝
+*@
+@{
+    Layout = null;
+    string role = (ViewBag.Role as string ?? "student").ToLower();
+    if (!new[] { "student", "teacher", "supervisor", "parent", "admin" }.Contains(role)) role = "student";
+
+    var roleNames = new Dictionary<string, string>{
+        ["student"]="Học Sinh", ["teacher"]="Giáo Viên",
+        ["supervisor"]="Giám Thị", ["parent"]="Phụ Huynh", ["admin"]="Quản Trị Viên"
+    };
+    var roleCodes = new Dictionary<string, string>{
+        ["student"]="STU", ["teacher"]="EDU", ["supervisor"]="SUP", ["parent"]="PAR", ["admin"]="SYS"
+    };
+    bool hasError = !ViewData.ModelState.IsValid &&
+                    ViewData.ModelState.Values.Any(v => v.Errors.Count > 0);
+    string? okMsg = TempData["Success"] as string;
+    ViewData["Title"] = "Quantum Access — Lumina Tutors";
+}
+<!DOCTYPE html>
+<html lang="vi" data-role="@role">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>@ViewData["Title"]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   QUANTUM ACCESS TERMINAL — DESIGN TOKENS
+   ════════════════════════════════════════════════════════════════════════ */
+:root{
+  --void:#04070e; --abyss:#070b16; --steel:#0c1322;
+  --cyan:#35d6ff; --cyan-deep:#1493c6; --cyan-glow:rgba(53,214,255,.55);
+  --optic:#34f5b0;                       /* optical green — ACCESS GRANTED   */
+  --ink:#d4e7f5; --ink-soft:#9fb8cf; --muted:#5c728c; --faint:#33465e;
+  --line:rgba(53,214,255,.16); --line-2:rgba(53,214,255,.30);
+  --danger:#ff5b6b; --danger-bg:rgba(255,91,107,.08);
+  /* Role accent (mạch điện đổi màu theo cổng truy cập) */
+  --role:#35d6ff; --role-rgb:53,214,255;
+  --glass:rgba(9,15,27,.55); --glass-rim:rgba(53,214,255,.22);
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --expo:cubic-bezier(.16,1,.3,1);
+}
+html[data-role="student"]    { --role:#35d6ff; --role-rgb:53,214,255  }
+html[data-role="teacher"]    { --role:#34f5b0; --role-rgb:52,245,176  }
+html[data-role="supervisor"] { --role:#ffc24d; --role-rgb:255,194,77  }
+html[data-role="parent"]     { --role:#b388ff; --role-rgb:179,136,255 }
+html[data-role="admin"]      { --role:#9fb6cf; --role-rgb:159,182,207  }
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans);background:var(--void);color:var(--ink);
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;min-height:100vh;
+}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font-family:inherit;color:inherit}
+::selection{background:rgba(var(--role-rgb),.28);color:#fff}
+
+/* ── Neural-network background canvas ─────────────────────────────────── */
+#neuralCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+/* Vignette + scientific scanlines over the canvas */
+.q-veil{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 80% at 50% 50%,transparent 38%,rgba(4,7,14,.86) 100%),
+    repeating-linear-gradient(0deg,rgba(53,214,255,.025) 0 1px,transparent 1px 3px);
+  mix-blend-mode:normal;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   THE TERMINAL — glass "microscope lens" floating on the neural field
+   ════════════════════════════════════════════════════════════════════════ */
+.terminal{
+  position:relative;z-index:2;width:min(440px,92vw);
+  padding:2.4rem 2.3rem 2.1rem;
+  background:var(--glass);
+  border:1px solid var(--glass-rim);border-radius:18px;
+  backdrop-filter:blur(26px) saturate(1.5);-webkit-backdrop-filter:blur(26px) saturate(1.5);
+  box-shadow:
+    0 40px 120px rgba(0,0,0,.7),
+    0 0 0 1px rgba(255,255,255,.02) inset,
+    0 1px 0 rgba(255,255,255,.06) inset;
+  animation:termIn .85s var(--expo) both;
+}
+@@keyframes termIn{from{opacity:0;transform:translateY(22px) scale(.975)}to{opacity:1;transform:none}}
+/* Lens top light-refraction line */
+.terminal::before{
+  content:'';position:absolute;top:0;left:14%;right:14%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan-glow),transparent);
+}
+/* HUD corner ticks */
+.hud{position:absolute;width:16px;height:16px;border:1.5px solid var(--line-2);pointer-events:none}
+.hud.tl{top:10px;left:10px;border-right:none;border-bottom:none;border-radius:5px 0 0 0}
+.hud.tr{top:10px;right:10px;border-left:none;border-bottom:none;border-radius:0 5px 0 0}
+.hud.bl{bottom:10px;left:10px;border-right:none;border-top:none;border-radius:0 0 0 5px}
+.hud.br{bottom:10px;right:10px;border-left:none;border-top:none;border-radius:0 0 5px 0}
+
+/* ── Header: brand atom + system id ───────────────────────────────────── */
+.t-head{display:flex;align-items:center;gap:.7rem;margin-bottom:1.05rem}
+.t-mark{width:40px;height:40px;flex-shrink:0;filter:drop-shadow(0 0 9px rgba(var(--role-rgb),.5))}
+.t-mark .orb{transform-origin:20px 20px;animation:spin 7s linear infinite}
+@@keyframes spin{to{transform:rotate(360deg)}}
+/* Drive mark colors via CSS so var() role-tint works in every browser */
+.t-mark polygon{fill:none;stroke:rgba(var(--role-rgb),.7)}
+.t-mark>circle{fill:var(--role)}
+.t-mark .orb ellipse{fill:none;stroke:rgba(var(--role-rgb),.5)}
+.t-mark .orb circle{fill:var(--role)}
+.t-id{line-height:1.18}
+.t-id b{font:600 1.05rem/1 var(--sans);letter-spacing:.32em;color:var(--ink)}
+.t-id span{
+  display:block;font:500 .56rem/1 var(--mono);letter-spacing:.34em;
+  color:var(--role);text-transform:uppercase;margin-top:.42rem;
+  transition:color .4s;
+}
+
+/* ── Secure-channel status strip ──────────────────────────────────────── */
+.t-status{
+  display:flex;align-items:center;gap:.5rem;
+  font:500 .58rem/1 var(--mono);letter-spacing:.12em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:1.35rem;
+}
+.t-status .dot{width:6px;height:6px;border-radius:50%;background:var(--optic);
+  box-shadow:0 0 8px var(--optic);animation:beat 1.8s ease-in-out infinite}
+@@keyframes beat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+.t-status .sep{color:var(--faint)}
+.t-status .clock{margin-left:auto;color:var(--ink-soft);letter-spacing:.08em}
+
+/* ── Welcome line ─────────────────────────────────────────────────────── */
+.t-welcome{font:300 1.32rem/1.25 var(--sans);color:var(--ink);margin-bottom:.2rem}
+.t-welcome b{font-weight:600;color:var(--role);transition:color .4s}
+.t-sub{font:400 .76rem/1.5 var(--sans);color:var(--muted);margin-bottom:1.25rem}
+
+/* ── Access-level selector (role chips) ───────────────────────────────── */
+.t-levels{display:grid;grid-template-columns:repeat(5,1fr);gap:.34rem;margin-bottom:1.5rem}
+.lvl{
+  display:flex;flex-direction:column;align-items:center;gap:.32rem;
+  padding:.5rem .15rem;border-radius:9px;
+  border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.018);
+  color:var(--muted);transition:all .24s var(--expo);position:relative;
+}
+.lvl svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;transition:stroke .24s}
+.lvl .code{font:600 .5rem/1 var(--mono);letter-spacing:.12em}
+.lvl:hover{color:var(--ink-soft);border-color:var(--line-2);
+  background:rgba(var(--role-rgb),.05);transform:translateY(-2px)}
+.lvl.on{
+  color:var(--role);border-color:var(--role);
+  background:rgba(var(--role-rgb),.1);
+  box-shadow:0 0 16px rgba(var(--role-rgb),.22),
+             inset 0 0 12px rgba(var(--role-rgb),.07);
+}
+.lvl.on svg{stroke:var(--role)}
+
+/* ── Alerts ───────────────────────────────────────────────────────────── */
+.q-alert{display:flex;align-items:flex-start;gap:.55rem;padding:.65rem .8rem;
+  border-radius:8px;font:500 .74rem/1.45 var(--sans);margin-bottom:1.05rem}
+.q-alert svg{width:14px;height:14px;flex-shrink:0;stroke:currentColor;fill:none;
+  stroke-width:2;stroke-linecap:round;margin-top:.1rem}
+.q-alert.err{background:var(--danger-bg);border:1px solid rgba(255,91,107,.32);color:#ff96a1}
+.q-alert.ok{background:rgba(52,245,176,.07);border:1px solid rgba(52,245,176,.26);color:#7df3c9}
+
+/* ════════════════════════════════════════════════════════════════════════
+   UNDERLINE INPUTS — "mạch điện kết nối" khi focus
+   ════════════════════════════════════════════════════════════════════════ */
+.q-field{position:relative;margin-bottom:1.45rem}
+.q-label{
+  display:flex;align-items:center;gap:.4rem;
+  font:600 .6rem/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.55rem;transition:color .3s;
+}
+.q-label .idx{color:var(--faint)}
+.q-field:focus-within .q-label{color:var(--role)}
+.q-input-wrap{position:relative;display:flex;align-items:center}
+.q-input{
+  width:100%;padding:.5rem 0;background:transparent;
+  border:none;border-bottom:1px solid var(--line);
+  font:500 .98rem/1.2 var(--mono);letter-spacing:.03em;color:var(--ink);
+  outline:none;transition:border-color .3s;
+}
+.q-input::placeholder{color:var(--faint);letter-spacing:.04em;font-weight:400}
+.q-input:-webkit-autofill{-webkit-text-fill-color:var(--ink);
+  -webkit-box-shadow:0 0 0 40px var(--abyss) inset;transition:background 9999s}
+/* Animated glowing underline: vẽ từ tâm ra hai bên như mạch nối */
+.q-underline{
+  position:absolute;left:0;right:0;bottom:-1px;height:1.5px;
+  background:var(--role);transform:scaleX(0);transform-origin:50% 50%;
+  transition:transform .55s var(--expo);
+  box-shadow:0 0 9px rgba(var(--role-rgb),.7),0 0 2px var(--role);
+}
+.q-field:focus-within .q-underline{transform:scaleX(1)}
+/* Node dots ở hai đầu mạch */
+.q-node{position:absolute;bottom:-1px;width:5px;height:5px;border-radius:50%;
+  background:var(--role);transform:translateY(1.7px) scale(0);
+  box-shadow:0 0 8px var(--role);transition:transform .5s var(--expo) .12s}
+.q-node.l{left:-2px}.q-node.r{right:-2px}
+.q-field:focus-within .q-node{transform:translateY(1.7px) scale(1)}
+.q-input.invalid{border-bottom-color:rgba(255,91,107,.6)}
+
+.q-eye{position:absolute;right:0;color:var(--muted);display:flex;padding:5px;
+  transition:color .25s}
+.q-eye:hover{color:var(--role)}
+.q-eye svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round}
+.q-ferr{font:500 .68rem/1.3 var(--mono);color:#ff8a95;margin-top:.4rem;letter-spacing:.02em}
+.q-ferr::before{content:'⚠ '}
+
+/* ── Extras ───────────────────────────────────────────────────────────── */
+.q-ext{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.55rem}
+.q-rem{display:flex;align-items:center;gap:.45rem;font:400 .72rem/1 var(--sans);
+  color:var(--muted);cursor:pointer;user-select:none}
+.q-rem input{accent-color:var(--role);width:13px;height:13px;cursor:pointer}
+.q-forgot{font:500 .68rem/1 var(--mono);letter-spacing:.08em;color:var(--muted);
+  text-transform:uppercase;transition:color .25s}
+.q-forgot:hover{color:var(--role)}
+
+/* ════════════════════════════════════════════════════════════════════════
+   AUTHENTICATE BUTTON — biometric scan + scramble decrypt (no spinner)
+   ════════════════════════════════════════════════════════════════════════ */
+.q-auth{
+  position:relative;width:100%;padding:.92rem 1.5rem;overflow:hidden;
+  border-radius:10px;border:1px solid var(--role);
+  background:rgba(var(--role-rgb),.1);
+  color:var(--role);
+  font:600 .76rem/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:center;gap:.7rem;
+  transition:background .3s,box-shadow .3s,transform .15s var(--expo),color .3s,border-color .3s;
+}
+.q-auth:hover{background:rgba(var(--role-rgb),.18);
+  box-shadow:0 0 26px rgba(var(--role-rgb),.3),inset 0 0 18px rgba(var(--role-rgb),.08)}
+.q-auth:active{transform:translateY(1px)}
+.q-auth .txt{position:relative;z-index:2;white-space:nowrap}
+.q-auth .arr{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;
+  stroke-linecap:round;stroke-linejoin:round;transition:transform .25s;position:relative;z-index:2}
+.q-auth:hover .arr{transform:translateX(4px)}
+/* Biometric scan line sweeping during authentication */
+.q-auth .scan{
+  position:absolute;left:0;top:0;height:100%;width:2px;z-index:1;
+  background:linear-gradient(180deg,transparent,var(--role),transparent);
+  box-shadow:0 0 16px 3px rgba(var(--role-rgb),.8);
+  opacity:0;transform:translateX(-4px);
+}
+.q-auth.busy{pointer-events:none;letter-spacing:.16em}
+.q-auth.busy .arr{display:none}
+.q-auth.busy .scan{animation:sweep 1s linear infinite;opacity:1}
+@@keyframes sweep{from{transform:translateX(-4px)}to{transform:translateX(440px)}}
+.q-auth.granted{color:var(--optic);border-color:var(--optic);
+  background:rgba(52,245,176,.14);box-shadow:0 0 30px rgba(52,245,176,.35)}
+.q-auth.granted .scan{background:linear-gradient(180deg,transparent,var(--optic),transparent);
+  box-shadow:0 0 16px 3px rgba(52,245,176,.8)}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.t-foot{margin-top:1.5rem;display:flex;align-items:center;justify-content:space-between;
+  padding-top:1.1rem;border-top:1px solid var(--line)}
+.t-back{display:inline-flex;align-items:center;gap:.4rem;font:500 .68rem/1 var(--mono);
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);transition:color .25s}
+.t-back:hover{color:var(--role)}
+.t-back svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .25s}
+.t-back:hover svg{transform:translateX(-3px)}
+.t-meta{font:400 .56rem/1 var(--mono);letter-spacing:.1em;color:var(--faint)}
+
+/* Card shake on empty submit */
+@@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}
+  30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
+.terminal.shake{animation:shake .5s var(--expo)}
+
+@@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.08s!important}
+}
+@@media (max-width:480px){
+  .terminal{padding:1.8rem 1.4rem 1.6rem;border-radius:14px}
+  .t-welcome{font-size:1.18rem}
+  .lvl .code{font-size:.46rem}
+}
+</style>
+</head>
+<body>
+
+<canvas id="neuralCanvas" aria-hidden="true"></canvas>
+<div class="q-veil" aria-hidden="true"></div>
+
+<main class="terminal" id="terminal" role="dialog" aria-label="Cổng truy cập Lumina Tutors">
+  <span class="hud tl"></span><span class="hud tr"></span>
+  <span class="hud bl"></span><span class="hud br"></span>
+
+  <!-- ── Header ── -->
+  <header class="t-head">
+    <svg class="t-mark" viewBox="0 0 40 40" aria-hidden="true">
+      <polygon points="20,3 34,11 34,29 20,37 6,29 6,11" fill="none"
+               stroke="rgba(var(--role-rgb),.7)" stroke-width="1.4"/>
+      <circle cx="20" cy="20" r="3.4" fill="var(--role)"/>
+      <g class="orb">
+        <ellipse cx="20" cy="20" rx="12.5" ry="5" fill="none"
+                 stroke="rgba(var(--role-rgb),.5)" stroke-width="1"/>
+        <circle cx="32.5" cy="20" r="1.7" fill="var(--role)"/>
+      </g>
+    </svg>
+    <div class="t-id">
+      <b>LUMINA</b>
+      <span>Quantum Access Terminal</span>
+    </div>
+  </header>
+
+  <!-- ── Secure channel status ── -->
+  <div class="t-status">
+    <span class="dot"></span>Secure channel<span class="sep">·</span>AES-256
+    <span class="clock" id="utc">--:--:--</span>
+  </div>
+
+  <!-- ── Welcome ── -->
+  <p class="t-welcome">Truy cập với tư cách <b id="roleLbl">@roleNames[role]</b></p>
+  <p class="t-sub">Xác thực danh tính để kết nối tới mạng lưới tri thức Lumina.</p>
+
+  <!-- ── Access-level selector ── -->
+  <div class="t-levels" id="levelRow" role="group" aria-label="Chọn cấp truy cập">
+    @{
+        var icons = new Dictionary<string,string>{
+            ["student"]="<path d='M2,11 L12,6 L22,11 L12,16 Z'/><path d='M7,13.5V18Q12,21 17,18V13.5'/>",
+            ["teacher"]="<path d='M4,5 Q8,4 12,6 Q16,4 20,5V19Q16,18 12,20Q8,18 4,19Z'/><line x1='12' y1='6' x2='12' y2='20'/>",
+            ["supervisor"]="<path d='M12,2 L21,7V13Q17.5,20 12,22Q6.5,20 3,13V7Z'/><path d='M9,12L11,14L15,10'/>",
+            ["parent"]="<circle cx='9' cy='7' r='3'/><path d='M2,21Q2,14 9,14Q16,14 16,21'/><circle cx='19' cy='8' r='2'/><path d='M15.5,21Q16,17 21,16'/>",
+            ["admin"]="<circle cx='12' cy='12' r='3'/><path d='M19.4,15A7,7 0 0,0 20,12A7,7 0 0,0 19.4,9L21,7.5 18.5,3.5 16.5,4.5A7,7 0 0,0 14,3.7L13.5,2H10.5L10,3.7A7,7 0 0,0 7.5,4.5L5.5,3.5 3,7.5 4.6,9A7,7 0 0,0 4,12A7,7 0 0,0 4.6,15L3,16.5 5.5,20.5 7.5,19.5A7,7 0 0,0 10,20.3L10.5,22H13.5L14,20.3A7,7 0 0,0 16.5,19.5L18.5,20.5 21,16.5Z'/>"
+        };
+    }
+    @foreach (var rc in new[]{"student","teacher","supervisor","parent","admin"})
+    {
+        <button type="button" class="lvl @(role==rc ? "on" : "")" data-role="@rc"
+                aria-pressed="@(role==rc ? "true" : "false")" aria-label="@roleNames[rc]">
+            <svg viewBox="0 0 24 24" aria-hidden="true">@Html.Raw(icons[rc])</svg>
+            <span class="code">@roleCodes[rc]</span>
+        </button>
+    }
+  </div>
+
+  <!-- ── Alerts ── -->
+  @if (hasError)
+  {
+      var errs = ViewData.ModelState.Values.SelectMany(v => v.Errors)
+                 .Select(e => e.ErrorMessage).Where(m => !string.IsNullOrEmpty(m)).ToList();
+      if (errs.Any())
+      {
+          <div class="q-alert err" role="alert">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span>@errs.First()</span>
+          </div>
+      }
+  }
+  @if (okMsg != null)
+  {
+      <div class="q-alert ok" role="status">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>@okMsg</span>
+      </div>
+  }
+
+  <!-- ── Form ── -->
+  <form asp-controller="Auth" asp-action="Login" method="post"
+        asp-route-returnUrl="@ViewData["ReturnUrl"]" id="qForm" novalidate>
+      @Html.AntiForgeryToken()
+      <input type="hidden" name="role" id="roleInput" value="@role"/>
+
+      <!-- Lumina ID (Email) -->
+      <div class="q-field">
+          <label asp-for="Email" class="q-label"><span class="idx">01</span> Lumina ID</label>
+          <div class="q-input-wrap">
+              <input asp-for="Email" class="q-input @(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "invalid" : "")"
+                     placeholder="identity@lumina.edu.vn" autocomplete="username" spellcheck="false"/>
+              <span class="q-underline"></span><span class="q-node l"></span><span class="q-node r"></span>
+          </div>
+          @if (ViewData.ModelState["Email"]?.Errors.Count > 0)
+          {
+              <div class="q-ferr"><span asp-validation-for="Email"></span></div>
+          }
+      </div>
+
+      <!-- Security Passcode (Password) -->
+      <div class="q-field">
+          <label asp-for="Password" class="q-label"><span class="idx">02</span> Security Passcode</label>
+          <div class="q-input-wrap">
+              <input asp-for="Password" type="password" id="pwInput"
+                     class="q-input @(ViewData.ModelState["Password"]?.Errors.Count > 0 ? "invalid" : "")"
+                     placeholder="••••••••••••" autocomplete="current-password"
+                     style="padding-right:2rem"/>
+              <button type="button" class="q-eye" id="pwTog" aria-label="Hiện/ẩn passcode">
+                  <svg id="eyeIco" viewBox="0 0 24 24">
+                      <path id="eyeOn" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle id="eyePup" cx="12" cy="12" r="3"/>
+                      <path id="eyeOff" d="M3 3l18 18M10.6 10.6a3 3 0 004.2 4.2M9.4 5.2A9 9 0 0112 5c7 0 11 7 11 7a18 18 0 01-3 3.8M6.2 6.2A18 18 0 001 12s4 8 11 8a9 9 0 003.6-.7" style="display:none"/>
+                  </svg>
+              </button>
+              <span class="q-underline"></span><span class="q-node l"></span><span class="q-node r"></span>
+          </div>
+          @if (ViewData.ModelState["Password"]?.Errors.Count > 0)
+          {
+              <div class="q-ferr"><span asp-validation-for="Password"></span></div>
+          }
+      </div>
+
+      <!-- Extras -->
+      <div class="q-ext">
+          <label class="q-rem">
+              <input asp-for="RememberMe" type="checkbox"/> Lưu phiên truy cập
+          </label>
+          <a asp-controller="Auth" asp-action="ForgotPassword" asp-route-role="@role"
+             class="q-forgot" id="forgotLnk">Khôi phục mã</a>
+      </div>
+
+      <!-- Authenticate -->
+      <button type="submit" class="q-auth" id="authBtn">
+          <span class="scan" aria-hidden="true"></span>
+          <span class="txt" id="authTxt">Khởi tạo phiên</span>
+          <svg class="arr" viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="4" y1="12" x2="18" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+      </button>
+  </form>
+
+  <!-- ── Footer ── -->
+  <footer class="t-foot">
+      <a asp-controller="Auth" asp-action="SelectRole" class="t-back">
+          <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Đổi cổng
+      </a>
+      <span class="t-meta">NODE LUM-04 · 21.0285N 105.854E</span>
+  </footer>
+</main>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   1 ▸ NEURAL-NETWORK BACKGROUND  (nodes drift · connect · react to cursor)
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+  const cv = document.getElementById('neuralCanvas'), ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W, H, DPR, nodes = [], LINK = 132;
+  const mouse = { x: -9999, y: -9999, on: false };
+
+  function accent(){
+    const c = getComputedStyle(document.documentElement).getPropertyValue('--role-rgb').trim();
+    return c || '53,214,255';
+  }
+  function resize(){
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR;
+    cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+    const target = Math.min(132, Math.round(innerWidth * innerHeight / 13000));
+    nodes = [];
+    for (let i = 0; i < target; i++) nodes.push({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - .5) * .22 * DPR, vy: (Math.random() - .5) * .22 * DPR,
+      r: (Math.random() * 1.4 + .6) * DPR
+    });
+  }
+  resize(); addEventListener('resize', resize);
+  addEventListener('mousemove', e => { mouse.x = e.clientX * DPR; mouse.y = e.clientY * DPR; mouse.on = true; });
+  addEventListener('mouseleave', () => mouse.on = false);
+
+  function frame(){
+    ctx.clearRect(0, 0, W, H);
+    const rgb = accent(), maxD = LINK * DPR;
+    for (const n of nodes){
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+      // gentle gravitation toward the cursor — the field "leans in"
+      if (mouse.on){
+        const dx = mouse.x - n.x, dy = mouse.y - n.y, d2 = dx*dx + dy*dy, R = 150 * DPR;
+        if (d2 < R*R){ const f = (1 - Math.sqrt(d2)/R) * .035; n.vx += dx/ (Math.sqrt(d2)+1) * f; n.vy += dy/(Math.sqrt(d2)+1) * f; }
+      }
+      n.vx = Math.max(-.6*DPR, Math.min(.6*DPR, n.vx));
+      n.vy = Math.max(-.6*DPR, Math.min(.6*DPR, n.vy));
+    }
+    // links between nodes
+    for (let i = 0; i < nodes.length; i++){
+      for (let j = i + 1; j < nodes.length; j++){
+        const a = nodes[i], b = nodes[j], dx = a.x-b.x, dy = a.y-b.y, d = Math.hypot(dx, dy);
+        if (d < maxD){
+          ctx.strokeStyle = `rgba(${rgb},${(1 - d/maxD) * .26})`;
+          ctx.lineWidth = .6 * DPR;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+      }
+      // links to cursor (brighter)
+      if (mouse.on){
+        const a = nodes[i], d = Math.hypot(a.x-mouse.x, a.y-mouse.y), R = 175 * DPR;
+        if (d < R){
+          ctx.strokeStyle = `rgba(${rgb},${(1 - d/R) * .5})`;
+          ctx.lineWidth = .8 * DPR;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke();
+        }
+      }
+    }
+    // nodes
+    for (const n of nodes){
+      ctx.fillStyle = `rgba(${rgb},.65)`;
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 6.283); ctx.fill();
+    }
+    if (mouse.on){
+      ctx.fillStyle = `rgba(${rgb},.9)`;
+      ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 2.4*DPR, 0, 6.283); ctx.fill();
+    }
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  frame(); if (reduce){ /* render one static frame already done */ }
+})();
+
+/* ════════════════════════════════════════════════════════════════════════
+   2 ▸ LIVE UTC CLOCK  (data-driven detail)
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+  const el = document.getElementById('utc'); if (!el) return;
+  const tick = () => { el.textContent = new Date().toISOString().slice(11, 19) + 'Z'; };
+  tick(); setInterval(tick, 1000);
+})();
+
+/* ════════════════════════════════════════════════════════════════════════
+   3 ▸ ACCESS-LEVEL SWITCHER  (đổi cổng → đổi màu mạch điện)
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+  const chips = document.querySelectorAll('.lvl'),
+        roleInput = document.getElementById('roleInput'),
+        roleLbl = document.getElementById('roleLbl'),
+        forgot = document.getElementById('forgotLnk'),
+        names = { student:'Học Sinh', teacher:'Giáo Viên', supervisor:'Giám Thị', parent:'Phụ Huynh', admin:'Quản Trị Viên' };
+  chips.forEach(chip => chip.addEventListener('click', () => {
+    const r = chip.dataset.role;
+    chips.forEach(c => { c.classList.remove('on'); c.setAttribute('aria-pressed', 'false'); });
+    chip.classList.add('on'); chip.setAttribute('aria-pressed', 'true');
+    roleInput.value = r; document.documentElement.dataset.role = r;
+    if (roleLbl) roleLbl.textContent = names[r];
+    if (forgot){ const u = new URL(forgot.href, location.origin); u.searchParams.set('role', r); forgot.href = u.pathname + u.search; }
+  }));
+})();
+
+/* ════════════════════════════════════════════════════════════════════════
+   4 ▸ PASSCODE VISIBILITY TOGGLE
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+  const pw = document.getElementById('pwInput'), btn = document.getElementById('pwTog'),
+        on = document.getElementById('eyeOn'), pu = document.getElementById('eyePup'), off = document.getElementById('eyeOff');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const vis = pw.type === 'text'; pw.type = vis ? 'password' : 'text';
+    on.style.display = vis ? '' : 'none'; pu.style.display = vis ? '' : 'none'; off.style.display = vis ? 'none' : '';
+  });
+})();
+
+/* ════════════════════════════════════════════════════════════════════════
+   5 ▸ AUTHENTICATION SEQUENCE  (scramble-decrypt + biometric scan → submit)
+   ════════════════════════════════════════════════════════════════════════ */
+(function(){
+  const form = document.getElementById('qForm'),
+        btn  = document.getElementById('authBtn'),
+        txt  = document.getElementById('authTxt'),
+        term = document.getElementById('terminal'),
+        email = document.querySelector('[name="Email"]'),
+        pass  = document.getElementById('pwInput');
+  const GLYPHS = 'ABCDEF0123456789#%&/<>=+*アカサタナハマヤラ';
+  let busy = false;
+
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  /* Hiệu ứng giải mã: từng ký tự "kết tinh" dần về chuỗi đích */
+  function decryptTo(target, ms){
+    return new Promise(res => {
+      const t0 = performance.now();
+      (function step(now){
+        const p = Math.min((now - t0) / ms, 1), reveal = Math.floor(p * target.length);
+        let out = '';
+        for (let i = 0; i < target.length; i++)
+          out += (i < reveal || target[i] === ' ') ? target[i] : GLYPHS[(Math.random()*GLYPHS.length)|0];
+        txt.textContent = out;
+        p < 1 ? requestAnimationFrame(step) : (txt.textContent = target, res());
+      })(t0);
+    });
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (busy) return;
+    // Tối thiểu: cần ID + passcode trước khi quét; thiếu thì rung + focus
+    if (!email.value.trim() || !pass.value){
+      term.classList.remove('shake'); void term.offsetWidth; term.classList.add('shake');
+      (!email.value.trim() ? email : pass).focus();
+      return;
+    }
+    busy = true; btn.classList.add('busy');
+    await decryptTo('XÁC THỰC NEURAL LINK', 900);
+    await wait(220);
+    btn.classList.remove('busy'); btn.classList.add('granted', 'busy');
+    await decryptTo('ACCESS GRANTED', 560);
+    await wait(420);
+    form.submit();   // → POST thật tới Auth/Login (server xác thực)
+  });
+})();
+</script>
+</body>
+</html>

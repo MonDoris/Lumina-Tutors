@@ -71,6 +71,71 @@
     </div>
 </div>
 
+@* ── NEW: Holographic Nexus — phòng học 3D real-time + streaming ───────────── *@
+<a asp-controller="LuminaNexus" asp-action="Index" asp-route-room="nexus-demo"
+   asp-route-subject="@(ViewBag.DefaultSubjectTag as string)"
+   class="nexus-banner" data-testid="nexus-entry">
+    <div class="nexus-banner__glow"></div>
+    <div class="nexus-banner__main">
+        <span class="nexus-banner__badge">MỚI</span>
+        <div class="nexus-banner__icon"><i class="bi bi-broadcast"></i></div>
+        <div>
+            <div class="nexus-banner__title">Holographic Nexus — Phòng học 3D thời gian thực</div>
+            <div class="nexus-banner__desc">
+                Streaming video qua SFU thuần C#, đồng bộ mô hình 3D &amp; âm thanh không gian (spatial audio).
+                Hai chế độ: Lecture (giáo viên dẫn) · Lab (tự do khám phá).
+            </div>
+        </div>
+    </div>
+    <div class="nexus-banner__cta">
+        Vào Nexus <i class="bi bi-arrow-right"></i>
+    </div>
+</a>
+
+<style>
+.nexus-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    position: relative; overflow: hidden;
+    margin-bottom: 24px; padding: 22px 26px; border-radius: 16px;
+    text-decoration: none; color: #eaf0ff;
+    background: linear-gradient(125deg, #0d1626 0%, #131f36 55%, #1a2748 100%);
+    border: 1px solid rgba(79,139,255,.28);
+    box-shadow: 0 14px 40px rgba(13,22,38,.28);
+    transition: transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s, border-color .25s;
+}
+.nexus-banner:hover { transform: translateY(-2px); border-color: rgba(79,139,255,.6); box-shadow: 0 20px 52px rgba(23,99,255,.3); color:#fff; text-decoration:none; }
+.nexus-banner__glow {
+    position: absolute; width: 320px; height: 320px; right: -60px; top: -120px; pointer-events: none;
+    background: radial-gradient(circle, rgba(23,99,255,.35), transparent 70%); filter: blur(14px);
+}
+.nexus-banner__main { display: flex; align-items: center; gap: 18px; position: relative; z-index: 1; }
+.nexus-banner__badge {
+    position: absolute; top: -10px; left: 0;
+    font-size: .58rem; font-weight: 700; letter-spacing: .12em;
+    background: linear-gradient(135deg, #06bf86, #2dd6a0); color: #04130d;
+    padding: 2px 8px; border-radius: 5px;
+}
+.nexus-banner__icon {
+    width: 54px; height: 54px; flex-shrink: 0; border-radius: 13px; display: grid; place-items: center;
+    background: linear-gradient(135deg, #1763ff, #7b3fe4); font-size: 1.5rem; color: #fff;
+    box-shadow: 0 6px 18px rgba(23,99,255,.4);
+}
+.nexus-banner__title { font-size: 1.08rem; font-weight: 600; margin-bottom: 4px; }
+.nexus-banner__desc { font-size: .84rem; line-height: 1.55; color: rgba(234,240,255,.6); max-width: 60ch; }
+.nexus-banner__cta {
+    position: relative; z-index: 1; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-weight: 600; font-size: .88rem; padding: 11px 20px; border-radius: 10px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    transition: background .2s, gap .2s;
+}
+.nexus-banner:hover .nexus-banner__cta { background: rgba(255,255,255,.18); gap: 12px; }
+@@media (max-width: 720px) {
+    .nexus-banner { flex-direction: column; align-items: flex-start; }
+    .nexus-banner__cta { width: 100%; justify-content: center; }
+}
+</style>
+
 @if (TempData["Success"] is string ok)
 {
     <div class="lt-alert lt-alert--success lt-mb-4">
@@ -254,92 +319,23 @@
             </div>
         </div>
 
-        <!-- Create (teacher only) -->
+        @* Tạo phòng lab cũ đã được thay bằng "Holographic Nexus" (banner phía trên) —
+           giáo viên mở phòng 3D thời gian thực trực tiếp tại đó. *@
         @if (isTeacher)
         {
-            <div class="lt-card">
-                <div class="lt-card__header">
-                    <h3 class="lt-card__title">
-                        <i class="bi bi-plus-circle-fill" style="color:var(--lt-gold);margin-right:6px"></i>
-                        Mở phòng mới
-                    </h3>
-                </div>
-                <div class="lt-card__body">
-                    <form asp-action="Create" method="post">
-                        @Html.AntiForgeryToken()
-                        <div class="lt-form-group lt-mb-3">
-                            <label class="lt-label">Tên buổi thí nghiệm <span class="lt-text-danger">*</span></label>
-                            <input name="SessionName" class="lt-input"
-                                   placeholder="VD: Thí nghiệm chuẩn độ HCl-NaOH"
-                                   maxlength="100" required/>
-                        </div>
-                        @{
-                            var defaultTag = ViewBag.DefaultSubjectTag as string ?? "";
-                        }
-                        <div class="lt-form-group lt-mb-3">
-                            <label class="lt-label">Môn học <span class="lt-text-danger">*</span></label>
-                            <select name="SubjectTag" class="lt-select" required id="subjectTagSelect"
-                                    onchange="filterScenes(this.value)">
-                                <option value="">— Chọn môn —</option>
-                                <option value="chemistry" selected="@(defaultTag=="chemistry")">⚗️ Hóa học</option>
-                                <option value="physics"   selected="@(defaultTag=="physics")">⚙️ Vật lý</option>
-                                <option value="biology"   selected="@(defaultTag=="biology")">🧬 Sinh học</option>
-                                <option value="math"      selected="@(defaultTag=="math")">📐 Toán học</option>
-                            </select>
-                        </div>
-                        <div class="lt-form-group lt-mb-3">
-                            <label class="lt-label">Loại thí nghiệm <span class="lt-text-danger">*</span></label>
-                            <select name="SceneType" class="lt-select" required id="sceneTypeSelect">
-                                <option value="">— Chọn thí nghiệm —</option>
-                                <optgroup label="⚗️ Hóa học">
-                                    <option value="titration">Chuẩn độ axit-bazơ</option>
-                                    <option value="electrolysis">Điện phân nước</option>
-                                    <option value="distillation">Chưng cất đơn giản</option>
-                                </optgroup>
-                                <optgroup label="⚙️ Vật lý">
-                                    <option value="pendulum">Con lắc đơn</option>
-                                    <option value="spring">Con lắc lò xo</option>
-                                    <option value="optics">Quang học — khúc xạ ánh sáng</option>
-                                </optgroup>
-                                <optgroup label="🧬 Sinh học">
-                                    <option value="cell">Quan sát tế bào</option>
-                                    <option value="dna">Cấu trúc DNA</option>
-                                    <option value="photosynthesis">Quang hợp</option>
-                                </optgroup>
-                                <optgroup label="📐 Toán học">
-                                    <option value="polyhedron">Khám phá đa diện đều</option>
-                                    <option value="vectors">Vector 3D & tích có hướng</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="lt-form-group lt-mb-4">
-                            <label class="lt-label">Số học sinh tối đa</label>
-                            <input name="MaxParticipants" type="number" class="lt-input"
-                                   value="40" min="1" max="100"/>
-                        </div>
-                        <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
-                            <i class="bi bi-badge-vr-fill"></i> Mở phòng lab 3D
-                        </button>
-                        <p class="lt-form-hint" style="text-align:center;margin-top:.6rem">
-                            <i class="bi bi-magic"></i>
-                            Hệ thống sẽ tự tạo mã phòng 6 ký tự sau khi mở
-                        </p>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Quick-start guide -->
-            <div class="lt-card lt-mt-4" style="background:oklch(96% 0.008 240)">
-                <div class="lt-card__body" style="padding:1rem">
-                    <div style="font-weight:600;font-size:.85rem;margin-bottom:.5rem;color:var(--lt-navy)">
-                        <i class="bi bi-info-circle-fill"></i> Hướng dẫn nhanh
+            <div class="lt-card" style="background:oklch(96% 0.008 240)">
+                <div class="lt-card__body" style="padding:1.1rem">
+                    <div style="font-weight:600;font-size:.9rem;margin-bottom:.4rem;color:var(--lt-navy)">
+                        <i class="bi bi-broadcast" style="color:var(--lt-gold)"></i> Mở phòng 3D thời gian thực
                     </div>
-                    <ol style="font-size:.8rem;color:var(--lt-text-muted);padding-left:1.2rem;margin:0">
-                        <li class="lt-mb-1">Chọn môn học và loại thí nghiệm</li>
-                        <li class="lt-mb-1">Nhấn "Mở phòng" → hệ thống tạo mã 6 ký tự</li>
-                        <li class="lt-mb-1">Chia sẻ mã cho học sinh qua bảng/chat</li>
-                        <li>Học sinh nhập mã để vào phòng 3D</li>
-                    </ol>
+                    <p style="font-size:.82rem;color:var(--lt-text-muted);line-height:1.55;margin-bottom:.8rem">
+                        Vào <b>Holographic Nexus</b> để giảng dạy 3D trực tiếp: chọn môn &amp; thí nghiệm,
+                        thao tác mô phỏng tương tác, học sinh xem đồng bộ real-time.
+                    </p>
+                    <a asp-controller="LuminaNexus" asp-action="Index" asp-route-room="nexus-demo"
+                       class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                        <i class="bi bi-arrow-right-circle"></i> Vào Nexus
+                    </a>
                 </div>
             </div>
         }

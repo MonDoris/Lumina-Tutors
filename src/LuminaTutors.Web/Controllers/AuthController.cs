@@ -46,14 +46,20 @@ public sealed class AuthController : Controller
     // ─── GET /Auth/Login ──────────────────────────────────────────────────────
 
     [HttpGet]
-    public IActionResult Login(string? returnUrl = null, string? role = null)
+    public IActionResult Login(string? returnUrl = null, string? role = null, string? ui = null)
     {
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction("Index", "Dashboard");
 
         ViewData["ReturnUrl"] = returnUrl;
         ViewBag.Role = (role ?? "student").ToLower();
-        return View();
+
+        // MẶC ĐỊNH: concept "Quantum Access Terminal".
+        // Bản luxury cũ vẫn giữ nguyên, xem qua: /Auth/Login?ui=luxury
+        if (string.Equals(ui, "luxury", StringComparison.OrdinalIgnoreCase))
+            return View("Login");
+
+        return View("LoginQuantum");
     }
 
     // ─── POST /Auth/Login ─────────────────────────────────────────────────────
@@ -65,15 +71,16 @@ public sealed class AuthController : Controller
         // Giữ lại role để view hiển thị đúng form khi có lỗi
         ViewBag.Role = (role ?? "student").ToLower();
 
+        // Khi lỗi: ở lại đúng giao diện mặc định (Quantum Access Terminal)
         if (!ModelState.IsValid)
-            return View(model);
+            return View("LoginQuantum", model);
 
         var result = await _authService.LoginAsync(model);
 
         if (!result.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, result.Error ?? "Email hoặc mật khẩu không đúng.");
-            return View(model);
+            return View("LoginQuantum", model);
         }
 
         var loginData = result.Data!;
