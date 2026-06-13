@@ -2,6 +2,7 @@
 @using LuminaTutors.Domain.Enums
 @{
     ViewData["Title"] = "Thêm câu hỏi";
+    var subjects = ViewBag.Subjects as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
 }
 
 <div class="lt-page-header">
@@ -30,9 +31,14 @@
                 <div class="lt-card__body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="lt-label lt-required">Môn học (SubjectId)</label>
-                            <input type="number" name="SubjectId" class="lt-input" required min="1"
-                                   placeholder="ID môn học">
+                            <label class="lt-label lt-required">Môn học</label>
+                            <select name="SubjectId" class="lt-input" required>
+                                <option value="">-- Chọn môn học --</option>
+                                @foreach (var s in subjects)
+                                {
+                                    <option value="@s.Value">@s.Text</option>
+                                }
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label class="lt-label lt-required">Dạng câu hỏi</label>

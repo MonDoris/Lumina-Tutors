@@ -339,8 +339,27 @@ public sealed class QuizService : IQuizService
         if (exam.Status == QuizExamStatus.Published)
             return Result.Failure("Không thể xóa đề thi đang mở. Hãy đóng đề thi trước.");
 
+        // Xóa luôn bài làm của học sinh trước — FK StudentQuizAttempts là Restrict nên không tự cascade.
+        // StudentQuizAnswers của từng bài làm sẽ tự xóa theo Cascade. Đây là thao tác xóa có chủ đích
+        // trên đề đã đóng nên chấp nhận xóa kèm kết quả (UI có cảnh báo trước khi xóa).
+        var attempts = (await _uow.StudentQuizAttempts.FindAsync(a => a.ExamId == examId, ct: ct)).ToList();
+        foreach (var attempt in attempts)
+            _uow.StudentQuizAttempts.Remove(attempt);
+
+        // QuizExamQuestions (các câu hỏi trong đề) sẽ tự xóa theo Cascade khi xóa đề.
         _uow.QuizExams.Remove(exam);
-        await _uow.SaveChangesAsync(ct);
+        try
+        {
+            await _uow.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            // Lưới an toàn cho mọi ràng buộc khóa ngoại khác.
+            _logger.LogWarning(ex, "Không thể xóa đề thi {ExamId}: vi phạm ràng buộc khóa ngoại", examId);
+            return Result.Failure("Không thể xóa đề thi vì đang được sử dụng ở nơi khác.");
+        }
+
+        _logger.LogInformation("Đã xóa đề thi {ExamId} cùng {AttemptCount} bài làm của học sinh", examId, attempts.Count);
         return Result.Success();
     }
 

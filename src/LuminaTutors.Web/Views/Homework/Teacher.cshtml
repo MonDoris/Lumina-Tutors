@@ -5,10 +5,11 @@
     var assignments = ViewBag.Assignments as IReadOnlyList<AssignmentListDto> ?? new List<AssignmentListDto>();
     var sas         = ViewBag.SubjectAssignments as IReadOnlyList<SubjectAssignmentOptionDto> ?? new List<SubjectAssignmentOptionDto>();
 
-    // Group assignments by "Subject – Class"
+    // Group assignments by Subject + Class — dùng khóa ghép (anonymous type) thay vì nối chuỗi,
+    // tránh tách sai khi tên môn/lớp chứa ký tự phân tách.
     var grouped = assignments
-        .GroupBy(a => $"{a.SubjectName}|{a.ClassName}")
-        .OrderBy(g => g.Key)
+        .GroupBy(a => new { a.SubjectName, a.ClassName })
+        .OrderBy(g => g.Key.SubjectName).ThenBy(g => g.Key.ClassName)
         .ToList();
 
     string TypeLabel(AssignmentType t) => t switch {
@@ -43,14 +44,7 @@
     </a>
 </div>
 
-@if (TempData["Success"] is string ok)
-{
-    <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div>
-}
-@if (TempData["Error"] is string err)
-{
-    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
-}
+@* Thông báo Success/Error được render tập trung ở _Layout (tránh trùng 2 lần). *@
 
 @* ── Summary strip ─────────────────────────────────────────────────────── *@
 @if (assignments.Any())
@@ -118,9 +112,8 @@ else
     <div class="hw-course-grid">
         @foreach (var group in grouped)
         {
-            var parts       = group.Key.Split('|');
-            var subjectName = parts[0];
-            var className   = parts[1];
+            var subjectName = group.Key.SubjectName;
+            var className   = group.Key.ClassName;
             var colorIdx    = Math.Abs(subjectName.GetHashCode()) % subjectColors.Length;
             var cardColor   = subjectColors[colorIdx];
             var published   = group.Count(a => a.IsPublished);

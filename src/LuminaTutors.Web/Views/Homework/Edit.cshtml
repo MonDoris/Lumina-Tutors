@@ -23,10 +23,7 @@
     </div>
 </div>
 
-@if (TempData["Error"] is string err)
-{
-    <div class="lt-alert lt-alert--danger lt-mb-4"><i class="bi bi-exclamation-triangle-fill"></i> @err</div>
-}
+@* Thông báo lỗi được render tập trung ở _Layout (tránh trùng 2 lần). *@
 
 <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()

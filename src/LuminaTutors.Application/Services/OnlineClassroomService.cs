@@ -274,8 +274,10 @@ public sealed class OnlineClassroomService : IOnlineClassroomService
                   .Take(pageSize),
             ct);
 
+        // msgs đã được DB sắp giảm dần (mới nhất trước) để lấy đúng 50 tin gần nhất.
+        // Chỉ cần đảo ngược (O(n)) để hiển thị tăng dần theo thời gian, thay vì sắp xếp lại.
         var dtos = msgs
-            .OrderBy(m => m.SentAt)
+            .Reverse()
             .Select(m => new ChatMessageDto(
                 m.Id, m.SenderId,
                 m.Sender?.FullName ?? "Không rõ",   // Sender có thể null nếu tài khoản đã bị xóa

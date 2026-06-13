@@ -77,19 +77,27 @@ public sealed class LeaveRequestService : ILeaveRequestService
     public async Task<Result<LeaveRequestListDto>> GetBySchoolAsync(
         int schoolId, string? status, int page, int pageSize, CancellationToken ct = default)
     {
-        var all = await _uow.LeaveRequests.FindAsync(
+        // Phân trang ở DB (Skip/Take trong SQL) thay vì load toàn bộ rồi cắt trong memory.
+        var pagedResult = await _uow.LeaveRequests.GetPagedAsync(
+            pageNumber: page,
+            pageSize:   pageSize,
+            filter:     r => r.SchoolId == schoolId &&
+                             (status == null || r.Status.ToString() == status),
+            orderBy:    q => q.OrderByDescending(r => r.CreatedAt),
+            include:    q => q.Include(r => r.Student).Include(r => r.Parent).Include(r => r.ReviewedBy),
+            ct:         ct);
+
+        // pending: đếm trong cùng phạm vi filter (giữ đúng ngữ nghĩa cũ), bằng 1 COUNT ở DB.
+        var pending = await _uow.LeaveRequests.CountAsync(
             r => r.SchoolId == schoolId &&
-                 (status == null || r.Status.ToString() == status),
-            include: q => q.Include(r => r.Student).Include(r => r.Parent).Include(r => r.ReviewedBy),
-            ct: ct);
+                 (status == null || r.Status.ToString() == status) &&
+                 r.Status == LeaveRequestStatus.Pending,
+            ct);
 
-        var sorted  = all.OrderByDescending(r => r.CreatedAt).ToList();
-        var total   = sorted.Count;
-        var pending = sorted.Count(r => r.Status == LeaveRequestStatus.Pending);
-        var paged   = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        var dtos    = await BuildDtosAsync(paged, ct);
+        var dtos = await BuildDtosAsync(pagedResult.Items, ct);
 
-        return Result<LeaveRequestListDto>.Success(new LeaveRequestListDto(dtos, total, pending));
+        return Result<LeaveRequestListDto>.Success(
+            new LeaveRequestListDto(dtos, pagedResult.TotalCount, pending));
     }
 
     // ─── Review ───────────────────────────────────────────────────────────────
@@ -119,36 +127,55 @@ public sealed class LeaveRequestService : ILeaveRequestService
 
     // ─── Private helpers ──────────────────────────────────────────────────────
 
+    // Danh sách: batch-load mã HS + lớp đang học theo tập studentId (2 query) thay vì 2 query/đơn (N+1).
     private async Task<List<LeaveRequestDto>> BuildDtosAsync(List<LeaveRequest> requests, CancellationToken ct)
     {
-        var result = new List<LeaveRequestDto>(requests.Count);
-        foreach (var r in requests)
-            result.Add(await BuildDtoAsync(r, ct));
-        return result;
+        var studentIds = requests.Select(r => r.StudentId).Distinct().ToList();
+
+        var profiles = await _uow.StudentProfiles.FindAsync(
+            p => studentIds.Contains(p.UserId), ct: ct);
+        var codeByStudent = profiles
+            .GroupBy(p => p.UserId)
+            .ToDictionary(g => g.Key, g => g.First().StudentCode);
+
+        var enrollments = await _uow.ClassEnrollments.FindAsync(
+            e => studentIds.Contains(e.StudentId) && e.Status == EnrollmentStatus.Active,
+            include: q => q.Include(e => e.Class),
+            ct: ct);
+        var classByStudent = enrollments
+            .GroupBy(e => e.StudentId)
+            .ToDictionary(g => g.Key, g => g.First().Class?.ClassName);
+
+        return requests
+            .Select(r => MapToDto(
+                r,
+                codeByStudent.GetValueOrDefault(r.StudentId),
+                classByStudent.GetValueOrDefault(r.StudentId)))
+            .ToList();
     }
 
+    // Một đơn: nạp riêng 2 giá trị (chấp nhận cho 1 record), rồi map.
     private async Task<LeaveRequestDto> BuildDtoAsync(LeaveRequest r, CancellationToken ct)
     {
-        // Load student profile for code
         var profile = (await _uow.StudentProfiles.FindAsync(
             p => p.UserId == r.StudentId, ct: ct)).FirstOrDefault();
 
-        // Load active class enrollment
         var enrollment = (await _uow.ClassEnrollments.FindAsync(
             e => e.StudentId == r.StudentId && e.Status == EnrollmentStatus.Active,
             include: q => q.Include(e => e.Class),
             ct: ct)).FirstOrDefault();
 
-        // Ensure nav props are loaded (may already be from Include)
-        var studentName = r.Student?.FullName ?? "—";
-        var parentName  = r.Parent?.FullName  ?? "—";
+        return MapToDto(r, profile?.StudentCode, enrollment?.Class?.ClassName);
+    }
 
-        return new LeaveRequestDto(
+    // Dựng DTO từ entity + 2 giá trị đã tra cứu — giữ hình dạng DTO ở một chỗ.
+    private static LeaveRequestDto MapToDto(LeaveRequest r, string? studentCode, string? className) =>
+        new(
             Id:          r.Id,
-            StudentName: studentName,
-            StudentCode: profile?.StudentCode ?? r.StudentId.ToString(),
-            ClassName:   enrollment?.Class?.ClassName ?? "—",
-            ParentName:  parentName,
+            StudentName: r.Student?.FullName ?? "—",
+            StudentCode: studentCode ?? r.StudentId.ToString(),
+            ClassName:   className ?? "—",
+            ParentName:  r.Parent?.FullName ?? "—",
             FromDate:    r.FromDate,
             ToDate:      r.ToDate,
             DayCount:    r.ToDate.DayNumber - r.FromDate.DayNumber + 1,
@@ -159,5 +186,4 @@ public sealed class LeaveRequestService : ILeaveRequestService
             ReviewedAt:  r.ReviewedAt,
             CreatedAt:   r.CreatedAt
         );
-    }
 }

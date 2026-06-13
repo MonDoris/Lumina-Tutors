@@ -1,0 +1,96 @@
+@model LuminaTutors.Application.DTOs.HR.UpdateTeacherRequest
+@{
+    ViewData["Title"] = "Chỉnh sửa giáo viên";
+    var teacherId = (int)(ViewBag.TeacherId ?? 0);
+    var email     = ViewBag.Email as string ?? "";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Chỉnh sửa giáo viên</h1>
+        <p class="lt-page-subtitle">Cập nhật hồ sơ giáo viên</p>
+    </div>
+    <a asp-action="TeacherDetail" asp-route-id="@teacherId" class="lt-btn lt-btn--outline">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="lt-card" style="max-width:720px">
+    <div class="lt-card__body">
+        <form asp-action="EditTeacher" asp-route-id="@teacherId" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="FullName" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                    <input asp-for="FullName" class="form-control" placeholder="Nguyễn Văn A" />
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="TeacherCode" class="form-label">Mã giáo viên <span class="text-danger">*</span></label>
+                    <input asp-for="TeacherCode" class="form-control" placeholder="GV001" />
+                    <span asp-validation-for="TeacherCode" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input class="form-control" value="@email" readonly disabled />
+                    <span class="text-muted small">Email là định danh đăng nhập, không thể đổi tại đây.</span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="PhoneNumber" class="form-label">Điện thoại</label>
+                    <input asp-for="PhoneNumber" class="form-control" placeholder="0912 345 678" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="DateOfBirth" class="form-label">Ngày sinh</label>
+                    <input asp-for="DateOfBirth" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Gender" class="form-label">Giới tính</label>
+                    <select asp-for="Gender" class="form-select">
+                        <option value="">-- Chọn --</option>
+                        <option value="Male">Nam</option>
+                        <option value="Female">Nữ</option>
+                        <option value="Other">Khác</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Qualification" class="form-label">Trình độ học vấn</label>
+                    <input asp-for="Qualification" class="form-control" placeholder="Thạc sĩ, Cử nhân..." />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="SpecializationSubject" class="form-label">Chuyên môn</label>
+                    <input asp-for="SpecializationSubject" class="form-control" placeholder="Toán, Vật lý..." />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="HireDate" class="form-label">Ngày vào làm</label>
+                    <input asp-for="HireDate" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="ContractType" class="form-label">Loại hợp đồng</label>
+                    <select asp-for="ContractType" class="form-select">
+                        <option value="FullTime">Toàn thời gian</option>
+                        <option value="PartTime">Bán thời gian</option>
+                        <option value="Probation">Thử việc</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="BankName" class="form-label">Ngân hàng</label>
+                    <input asp-for="BankName" class="form-control" placeholder="Vietcombank, BIDV..." />
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="lt-btn lt-btn--primary">
+                    <i class="bi bi-check-lg"></i> Lưu thay đổi
+                </button>
+                <a asp-action="TeacherDetail" asp-route-id="@teacherId" class="lt-btn lt-btn--outline">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

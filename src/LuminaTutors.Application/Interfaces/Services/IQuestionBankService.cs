@@ -40,7 +40,7 @@ public interface IQuestionBankService
     Task<Result<IReadOnlyList<ImportJobDto>>> GetImportJobsAsync(int schoolId, CancellationToken ct = default);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-    Task<Result<IReadOnlyList<SubjectOptionDto>>> GetSubjectsAsync(CancellationToken ct = default);
+    Task<Result<IReadOnlyList<SubjectOptionDto>>> GetSubjectsAsync(int schoolId, CancellationToken ct = default);
 
     // ── Stats ─────────────────────────────────────────────────────────────────
     Task<Result<QuestionBankStatsDto>> GetStatsAsync(int schoolId, CancellationToken ct = default);

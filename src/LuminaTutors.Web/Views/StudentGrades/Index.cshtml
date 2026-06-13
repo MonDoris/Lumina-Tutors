@@ -108,6 +108,17 @@
 /* Empty / no-select state */
 .grades-empty { text-align: center; padding: 3rem 1.5rem; color: #9ca3af; }
 .grades-empty i { font-size: 2.5rem; display: block; margin-bottom: .75rem; color: #d1d5db; }
+
+/* Export PDF button (in dark card header) */
+.btn-export-pdf {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: #c9a84c; color: #0f1c2e;
+    border-radius: 8px; padding: 6px 14px;
+    font-size: .82rem; font-weight: 700;
+    text-decoration: none; transition: background 200ms, transform 120ms;
+}
+.btn-export-pdf:hover { background: #d8b85a; transform: translateY(-1px); color: #0f1c2e; }
 </style>
 
 <div class="grades-page">
@@ -169,6 +180,10 @@
             <div class="grades-card-header">
                 <i class="bi bi-award" style="color:#c9a84c;font-size:1rem"></i>
                 <h5>@Model.SemesterName — @Model.StudentName</h5>
+                <a asp-action="ExportSemester" asp-route-semesterId="@Model.SemesterId"
+                   class="btn-export-pdf" title="Tải bảng điểm học kỳ dạng PDF">
+                    <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
+                </a>
             </div>
             <div class="grades-card-body">
                 <div class="gpa-strip">

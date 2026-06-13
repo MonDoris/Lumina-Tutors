@@ -3,6 +3,7 @@ using LuminaTutors.Application.DTOs.QuestionBank;
 using LuminaTutors.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -24,6 +25,16 @@ public sealed class QuestionBankController : Controller
 
     private int UserId   => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
     private int SchoolId => int.Parse(User.FindFirstValue("SchoolId") ?? "0");
+
+    // Danh sách môn học cho dropdown (Create/Edit). View tự xử lý mục được chọn.
+    private async Task<List<SelectListItem>> BuildSubjectSelectListAsync()
+    {
+        var result   = await _service.GetSubjectsAsync(SchoolId);
+        var subjects = result.IsSuccess ? result.Data : null;
+        return (subjects ?? Enumerable.Empty<SubjectOptionDto>())
+            .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+            .ToList();
+    }
 
     // ── GET /QuestionBank ─────────────────────────────────────────────────────
 
@@ -49,7 +60,11 @@ public sealed class QuestionBankController : Controller
 
     // ── GET /QuestionBank/Create ──────────────────────────────────────────────
 
-    public IActionResult Create() => View();
+    public async Task<IActionResult> Create()
+    {
+        ViewBag.Subjects = await BuildSubjectSelectListAsync();
+        return View();
+    }
 
     // ── POST /QuestionBank/Create ─────────────────────────────────────────────
 
@@ -76,6 +91,7 @@ public sealed class QuestionBankController : Controller
     {
         var result = await _service.GetByIdAsync(SchoolId, id);
         if (!result.IsSuccess) return NotFound();
+        ViewBag.Subjects = await BuildSubjectSelectListAsync();
         return View(result.Data);
     }
 
@@ -128,7 +144,7 @@ public sealed class QuestionBankController : Controller
     public async Task<IActionResult> Import()
     {
         var jobs     = await _service.GetImportJobsAsync(SchoolId);
-        var subjects = await _service.GetSubjectsAsync();
+        var subjects = await _service.GetSubjectsAsync(SchoolId);
         ViewBag.Jobs     = jobs.IsSuccess     ? jobs.Data!.ToList()     : new List<ImportJobDto>();
         ViewBag.Subjects = subjects.IsSuccess ? subjects.Data!.ToList() : new List<SubjectOptionDto>();
         return View();

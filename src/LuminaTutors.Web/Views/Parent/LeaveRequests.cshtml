@@ -44,18 +44,7 @@
         </button>
     </div>
 
-    @if (TempData["Success"] is string success)
-    {
-        <div class="alert alert-success rounded-3 mb-3" style="background:#d1fae5;border:none;color:#065f46;font-size:.85rem;padding:12px 16px">
-            <i class="bi bi-check-circle-fill me-2"></i>@success
-        </div>
-    }
-    @if (TempData["Error"] is string error)
-    {
-        <div class="alert alert-danger rounded-3 mb-3" style="background:#fee2e2;border:none;color:#991b1b;font-size:.85rem;padding:12px 16px">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>@error
-        </div>
-    }
+    @* Thông báo Success/Error được render tập trung ở _Layout (tránh trùng 2 lần). *@
 
     <!-- Stats -->
     <div class="stat-row">

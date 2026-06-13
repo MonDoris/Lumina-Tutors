@@ -12,7 +12,7 @@ public interface IHRService
     Task<Result<PagedResult<TeacherDetailDto>>> GetTeachersAsync(int schoolId, string? keyword, int page, int pageSize, CancellationToken ct = default);
     Task<Result<TeacherDetailDto>>              GetTeacherByIdAsync(int schoolId, int teacherId, CancellationToken ct = default);
     Task<Result<TeacherDetailDto>>              CreateTeacherAsync(int schoolId, CreateTeacherRequest request, CancellationToken ct = default);
-    Task<Result<TeacherDetailDto>>              UpdateTeacherAsync(int schoolId, int teacherId, CancellationToken ct = default);
+    Task<Result<TeacherDetailDto>>              UpdateTeacherAsync(int schoolId, int teacherId, UpdateTeacherRequest request, CancellationToken ct = default);
     Task<Result>                                DeactivateTeacherAsync(int schoolId, int teacherId, CancellationToken ct = default);
     Task<Result>                                CreateContractAsync(int schoolId, int createdByUserId, CreateContractRequest request, CancellationToken ct = default);
     Task<Result<PayrollDto>>                    CreatePayrollAsync(int schoolId, int createdByUserId, CreatePayrollRequest request, CancellationToken ct = default);

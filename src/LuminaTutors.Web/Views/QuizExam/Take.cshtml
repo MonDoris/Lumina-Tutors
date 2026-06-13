@@ -233,7 +233,7 @@
             Sau khi nộp sẽ không thể sửa đáp án.</p>
         <div class="dialog-btns">
             <button class="btn btn-outline" onclick="closeSubmitDialog()">Tiếp tục làm bài</button>
-            <form asp-controller="QuizExam" asp-action="Submit" method="post" style="display:inline">
+            <form id="quizSubmitForm" asp-controller="QuizExam" asp-action="Submit" method="post" style="display:inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="attemptId" value="@Model.AttemptId"/>
                 <button type="submit" class="btn btn-danger">
@@ -271,8 +271,8 @@ if (TIME_LIMIT > 0) {
         timerEl.className = 'timer' + (remain <= 60 ? ' danger' : remain <= 5*60 ? ' warn' : '');
 
         if (remain === 0) {
-            // Auto-submit
-            document.querySelector('form[action*="Submit"]').submit();
+            // Auto-submit khi hết giờ — dùng id cố định thay vì selector phụ thuộc URL action.
+            document.getElementById('quizSubmitForm').submit();
         }
     }
     updateTimer();

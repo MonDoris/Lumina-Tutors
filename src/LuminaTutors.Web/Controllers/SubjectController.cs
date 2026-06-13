@@ -21,6 +21,25 @@ public sealed class SubjectController : Controller
 
     private int SchoolId => int.Parse(User.FindFirstValue("SchoolId") ?? "0");
 
+    // Sinh mã môn học kế tiếp theo thứ tự cho trường: MH001, MH002, ...
+    private async Task<string> GenerateNextSubjectCodeAsync()
+    {
+        var subjects = await _uow.Subjects.FindAsync(s => s.SchoolId == SchoolId);
+        var codes = subjects
+            .Select(s => s.SubjectCode ?? string.Empty)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var maxNum = codes
+            .Where(c => c.StartsWith("MH", StringComparison.OrdinalIgnoreCase))
+            .Select(c => int.TryParse(c[2..], out var n) ? n : 0)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        var next = maxNum + 1;
+        while (codes.Contains($"MH{next:D3}")) next++;   // phòng trùng với mã đã nhập tay trước đó
+        return $"MH{next:D3}";
+    }
+
     // ── GET /Subject ──────────────────────────────────────────────────────────
 
     public async Task<IActionResult> Index(string? search, bool? activeOnly)
@@ -43,34 +62,32 @@ public sealed class SubjectController : Controller
 
     // ── GET /Subject/Create ───────────────────────────────────────────────────
 
-    public IActionResult Create() => View();
+    public async Task<IActionResult> Create()
+    {
+        ViewBag.NextCode = await GenerateNextSubjectCodeAsync();
+        return View();
+    }
 
     // ── POST /Subject/Create ──────────────────────────────────────────────────
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        string subjectCode, string subjectName,
-        SubjectCategory subjectCategory, bool has3DLab)
+        string subjectName, SubjectCategory subjectCategory, bool has3DLab)
     {
         if (string.IsNullOrWhiteSpace(subjectName))
         {
             ModelState.AddModelError("", "Tên môn học không được để trống.");
+            ViewBag.NextCode = await GenerateNextSubjectCodeAsync();
             return View();
         }
 
-        // Kiểm tra mã môn trùng
-        var existing = await _uow.Subjects.FindAsync(
-            s => s.SchoolId == SchoolId && s.SubjectCode == subjectCode.Trim().ToUpper());
-        if (existing.Any())
-        {
-            ModelState.AddModelError("", $"Mã môn học '{subjectCode}' đã tồn tại.");
-            return View();
-        }
+        // Mã môn học được sinh tự động theo thứ tự (MH001, MH002, ...) — không nhập tay nữa.
+        var subjectCode = await GenerateNextSubjectCodeAsync();
 
         var subject = new Subject
         {
             SchoolId         = SchoolId,
-            SubjectCode      = subjectCode.Trim().ToUpper(),
+            SubjectCode      = subjectCode,
             SubjectName      = subjectName.Trim(),
             SubjectCategory  = subjectCategory,
             Has3DLab         = has3DLab,

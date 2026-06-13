@@ -17,6 +17,9 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // ── QuestPDF (giấy phép Community — miễn phí, bắt buộc set trước khi tạo PDF) ─
+    QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
     // ── Serilog ───────────────────────────────────────────────────────────────
     builder.Host.UseSerilog((ctx, lc) => lc
         .ReadFrom.Configuration(ctx.Configuration)

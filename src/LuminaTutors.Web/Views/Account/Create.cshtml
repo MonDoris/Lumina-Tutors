@@ -164,13 +164,7 @@
         </div>
     </div>
 
-    @if (TempData["Error"] is string tempError)
-    {
-        <div class="lt-alert lt-alert--danger lt-mb-4">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <div>@tempError</div>
-        </div>
-    }
+    @* Thông báo lỗi được render tập trung ở _Layout (tránh trùng 2 lần). *@
 
     @if (ViewData.ModelState.ErrorCount > 0)
     {

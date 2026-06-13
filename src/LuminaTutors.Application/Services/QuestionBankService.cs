@@ -33,23 +33,24 @@ public sealed class QuestionBankService : IQuestionBankService
     public async Task<Result<PagedResult<QuestionListItemDto>>> GetQuestionsAsync(
         int schoolId, QuestionFilterRequest filter, CancellationToken ct = default)
     {
-        var query = await _uow.QuestionBanks.FindAsync(
-            q => q.SchoolId == schoolId
-              && (filter.SubjectId == null   || q.SubjectId == filter.SubjectId)
-              && (filter.QuestionType == null || q.QuestionType == filter.QuestionType)
-              && (filter.Difficulty == null   || q.DifficultyLevel == filter.Difficulty)
-              && (filter.ChapterTag == null   || q.ChapterTag == filter.ChapterTag)
-              && (filter.IsApproved == null   || q.IsApproved == filter.IsApproved)
-              && (filter.Keyword == null
-                  || q.QuestionText.Contains(filter.Keyword)
-                  || (q.Tags != null && q.Tags.Contains(filter.Keyword))),
-            q => q.Include(x => x.Subject).OrderByDescending(x => x.CreatedAt),
-            ct);
+        // Phân trang ở DB (Skip/Take trong SQL) thay vì load toàn bộ câu hỏi rồi cắt trong memory.
+        var paged = await _uow.QuestionBanks.GetPagedAsync(
+            pageNumber: filter.Page,
+            pageSize:   filter.PageSize,
+            filter: q => q.SchoolId == schoolId
+                      && (filter.SubjectId == null    || q.SubjectId == filter.SubjectId)
+                      && (filter.QuestionType == null || q.QuestionType == filter.QuestionType)
+                      && (filter.Difficulty == null   || q.DifficultyLevel == filter.Difficulty)
+                      && (filter.ChapterTag == null   || q.ChapterTag == filter.ChapterTag)
+                      && (filter.IsApproved == null   || q.IsApproved == filter.IsApproved)
+                      && (filter.Keyword == null
+                          || q.QuestionText.Contains(filter.Keyword)
+                          || (q.Tags != null && q.Tags.Contains(filter.Keyword))),
+            orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+            include: q => q.Include(x => x.Subject),
+            ct: ct);
 
-        var total = query.Count;
-        var items = query
-            .Skip((filter.Page - 1) * filter.PageSize)
-            .Take(filter.PageSize)
+        var items = paged.Items
             .Select(q => new QuestionListItemDto(
                 q.Id, q.Subject.SubjectName, q.QuestionType, q.DifficultyLevel,
                 q.QuestionText.Length > 120 ? q.QuestionText[..120] + "…" : q.QuestionText,
@@ -57,7 +58,7 @@ public sealed class QuestionBankService : IQuestionBankService
             .ToList();
 
         return Result<PagedResult<QuestionListItemDto>>.Success(
-            PagedResult<QuestionListItemDto>.Create(items, total, filter.Page, filter.PageSize));
+            PagedResult<QuestionListItemDto>.Create(items, paged.TotalCount, filter.Page, filter.PageSize));
     }
 
     public async Task<Result<QuestionDto>> GetByIdAsync(
@@ -378,7 +379,7 @@ public sealed class QuestionBankService : IQuestionBankService
         }
     }
 
-    private static async Task<string> ExtractPdfTextAsync(IFormFile file)
+    private async Task<string> ExtractPdfTextAsync(IFormFile file)
     {
         using var ms = new MemoryStream();
         await file.CopyToAsync(ms);
@@ -418,7 +419,11 @@ public sealed class QuestionBankService : IQuestionBankService
                 sb.Append(ExtractTextFromContentStream(decoded));
             }
         }
-        catch { /* ignore — fallback below */ }
+        catch (Exception ex)
+        {
+            // Bước 1 lỗi (regex/encoding/giải nén bất ngờ) — ghi log rồi để Bước 2 fallback thử tiếp.
+            _logger.LogWarning(ex, "Trích xuất PDF (Bước 1 — giải nén content stream) thất bại, chuyển sang fallback BT...ET.");
+        }
 
         // ── Bước 2: fallback — quét BT...ET trực tiếp trên raw bytes ─────────────
         if (sb.Length == 0)
@@ -509,9 +514,10 @@ public sealed class QuestionBankService : IQuestionBankService
 
     // ── Subjects helper ───────────────────────────────────────────────────────
 
-    public async Task<Result<IReadOnlyList<SubjectOptionDto>>> GetSubjectsAsync(CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<SubjectOptionDto>>> GetSubjectsAsync(int schoolId, CancellationToken ct = default)
     {
-        var all = await _uow.Subjects.FindAsync(_ => true, ct: ct);
+        // Chỉ lấy môn của trường hiện tại (multi-tenancy) — tránh lộ môn của trường khác.
+        var all = await _uow.Subjects.FindAsync(s => s.SchoolId == schoolId, ct: ct);
         var dtos = all.OrderBy(s => s.SubjectName)
                       .Select(s => new SubjectOptionDto(s.Id, s.SubjectName))
                       .ToList();
@@ -561,7 +567,6 @@ public sealed class QuestionBankService : IQuestionBankService
                         .ToList();
 
         QuestionBank? current = null;
-        char nextLabel = 'A';
 
         // Regex patterns
         var questionPattern = new Regex(@"^(Câu\s*\d+|Question\s*\d+|\d+[\.\)])\s*[:\.\)]?\s*(.+)", RegexOptions.IgnoreCase);
@@ -587,7 +592,6 @@ public sealed class QuestionBankService : IQuestionBankService
                     SourceUrl          = sourceUrl,
                     IsApproved         = false
                 };
-                nextLabel = 'A';
                 continue;
             }
 

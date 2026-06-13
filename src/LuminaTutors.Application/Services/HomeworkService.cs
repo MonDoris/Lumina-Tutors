@@ -79,16 +79,16 @@ public sealed class HomeworkService : IHomeworkService
                   .Include(a => a.Submissions),
             ct);
 
-        // Count students per SubjectAssignment (class)
-        var classStudentCounts = new Dictionary<int, int>();
-        foreach (var saId in assignments.Select(a => a.SubjectAssignmentId).Distinct())
-        {
-            var sa = await _uow.SubjectAssignments.FindOneAsync(
-                x => x.Id == saId,
-                q => q.Include(x => x.Class).ThenInclude(c => c.Enrollments),
-                ct);
-            classStudentCounts[saId] = sa?.Class?.Enrollments?.Count ?? 0;
-        }
+        // Count students per SubjectAssignment (class) — 1 batch query thay cho N+1 (tránh gọi DB trong vòng lặp).
+        // Không gộp Enrollments vào query assignments ở trên để tránh cartesian explosion với Submissions.
+        var saIdsInUse = assignments.Select(a => a.SubjectAssignmentId).Distinct().ToList();
+        var sasWithEnrollments = await _uow.SubjectAssignments.FindAsync(
+            x => saIdsInUse.Contains(x.Id),
+            q => q.Include(x => x.Class).ThenInclude(c => c.Enrollments),
+            ct);
+        var classStudentCounts = sasWithEnrollments.ToDictionary(
+            sa => sa.Id,
+            sa => sa.Class?.Enrollments?.Count ?? 0);
 
         var dtos = assignments
             .OrderByDescending(a => a.CreatedAt)

@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.Grading;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Web.Pdf;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QuestPDF.Fluent;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -177,15 +179,31 @@ public sealed class GradingController : Controller
 
     // ─── GET /Grading/ExportGradeBook ────────────────────────────────────────
     // Inherited TeacherOrAdmin policy from class attribute.
-    // Triggers browser print dialog (print-to-PDF).  Replace body with a real
-    // PDF library (DinkToPdf / SelectPdf) when available.
+    // Sinh file PDF sổ điểm thật bằng QuestPDF và trả về để tải xuống.
 
     [HttpGet]
-    public IActionResult ExportGradeBook(int subjectAssignmentId)
+    public async Task<IActionResult> ExportGradeBook(int subjectAssignmentId)
     {
-        // TODO: render view to HTML then convert with DinkToPdf / SelectPdf
-        TempData["TriggerPrint"] = true;
-        return RedirectToAction(nameof(GradeBook), new { subjectAssignmentId });
+        var result = await _gradingService.GetSubjectGradeBookAsync(subjectAssignmentId);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            TempData["Error"] = result.Error ?? "Không tìm thấy sổ điểm để xuất.";
+            return RedirectToAction(nameof(GradeBook), new { subjectAssignmentId });
+        }
+
+        var model    = result.Data;
+        var pdfBytes = new GradeBookPdfDocument(model).GeneratePdf();
+        var fileName = $"SoDiem_{MakeFileSafe(model.ClassName)}_{MakeFileSafe(model.SubjectName)}.pdf";
+
+        return File(pdfBytes, "application/pdf", fileName);
+    }
+
+    // Loại bỏ ký tự không hợp lệ trong tên file và thay khoảng trắng bằng gạch dưới.
+    private static string MakeFileSafe(string raw)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var cleaned = new string(raw.Where(c => !invalid.Contains(c)).ToArray());
+        return cleaned.Replace(' ', '_').Trim('_');
     }
 
     // ─── GET /Grading/Exams ───────────────────────────────────────────────────

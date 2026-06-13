@@ -36,8 +36,7 @@
     </div>
 </div>
 
-@if (TempData["Success"] is string ok)
-{ <div class="lt-alert lt-alert--success lt-mb-4"><i class="bi bi-check-circle-fill"></i> @ok</div> }
+@* Thông báo Success/Error được render tập trung ở _Layout (tránh trùng 2 lần). *@
 
 @* ── KPI strip ───────────────────────────────────────────────────────────── *@
 <div class="row g-3 lt-mb-4">

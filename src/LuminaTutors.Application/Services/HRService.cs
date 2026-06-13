@@ -142,8 +142,44 @@ public sealed class HRService : IHRService
     }
 
     public async Task<Result<TeacherDetailDto>> UpdateTeacherAsync(
-        int schoolId, int teacherId, CancellationToken ct = default)
+        int schoolId, int teacherId, UpdateTeacherRequest request, CancellationToken ct = default)
     {
+        var profiles = await _uow.TeacherProfiles.FindAsync(
+            tp => tp.Id == teacherId && tp.SchoolId == schoolId,
+            include: q => q.Include(tp => tp.User),
+            ct: ct);
+
+        var profile = profiles.FirstOrDefault();
+        if (profile is null)
+            return Result<TeacherDetailDto>.Failure("NOT_FOUND", "Giáo viên không tồn tại.");
+
+        // Mã giáo viên phải là duy nhất trong trường (bỏ qua chính hồ sơ đang sửa).
+        var newCode = request.TeacherCode.Trim();
+        if (!string.Equals(newCode, profile.TeacherCode, StringComparison.OrdinalIgnoreCase))
+        {
+            var lowered = newCode.ToLower();
+            var dup = await _uow.TeacherProfiles.AnyAsync(
+                tp => tp.SchoolId == schoolId && tp.Id != teacherId && tp.TeacherCode.ToLower() == lowered, ct);
+            if (dup)
+                return Result<TeacherDetailDto>.Failure("CODE_EXISTS", "Mã giáo viên đã được sử dụng.");
+        }
+
+        // Cập nhật thông tin tài khoản + hồ sơ. Email không sửa ở đây (là định danh đăng nhập);
+        // BankAccountNumber/TaxCode không nằm trong form nên giữ nguyên, tránh ghi đè rỗng.
+        profile.User.FullName         = request.FullName.Trim();
+        profile.User.PhoneNumber      = request.PhoneNumber?.Trim();
+        profile.TeacherCode           = newCode;
+        profile.DateOfBirth           = request.DateOfBirth;
+        profile.Gender                = request.Gender;
+        profile.Qualification         = request.Qualification?.Trim();
+        profile.SpecializationSubject = request.SpecializationSubject?.Trim();
+        profile.HireDate              = request.HireDate;
+        profile.ContractType          = request.ContractType;
+        profile.BankName              = request.BankName?.Trim();
+
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("Updated teacher {TeacherId} in school {SchoolId}", teacherId, schoolId);
+
         return await GetTeacherByIdAsync(schoolId, teacherId, ct);
     }
 

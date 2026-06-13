@@ -40,6 +40,19 @@ public record CreateTeacherRequest(
     string?   TaxCode          = null
 );
 
+public record UpdateTeacherRequest(
+    [Required(ErrorMessage = "Vui lòng nhập họ tên."), MaxLength(150, ErrorMessage = "Họ tên tối đa 150 ký tự.")] string FullName,
+    [Required(ErrorMessage = "Vui lòng nhập mã giáo viên."), MaxLength(30, ErrorMessage = "Mã giáo viên tối đa 30 ký tự.")]  string TeacherCode,
+    [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]   string?  PhoneNumber,
+    DateOnly? DateOfBirth,
+    Gender?   Gender,
+    string?   Qualification,
+    string?   SpecializationSubject,
+    DateOnly? HireDate,
+    ContractType ContractType = ContractType.FullTime,
+    string?   BankName = null
+);
+
 public record CreateContractRequest(
     [Required(ErrorMessage = "Vui lòng chọn giáo viên.")] int          TeacherId,
     [Required(ErrorMessage = "Vui lòng nhập mã hợp đồng."), MaxLength(50, ErrorMessage = "Mã hợp đồng tối đa 50 ký tự.")] string ContractCode,

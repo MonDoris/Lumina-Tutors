@@ -30,12 +30,10 @@
 
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="lt-label lt-required">Mã môn học</label>
-                            <input name="subjectCode" class="lt-input" required maxlength="20"
-                                   placeholder="VD: TOAN, VAN, ANH..."
-                                   style="text-transform:uppercase"
-                                   oninput="this.value=this.value.toUpperCase()">
-                            <div class="lt-hint">Mã viết tắt, không dấu, tối đa 20 ký tự</div>
+                            <label class="lt-label">Mã môn học</label>
+                            <input class="lt-input" value="@ViewBag.NextCode" readonly disabled
+                                   style="background:#f3f4f6;font-weight:600;letter-spacing:.5px">
+                            <div class="lt-hint"><i class="bi bi-magic"></i> Mã được tạo tự động theo thứ tự</div>
                         </div>
                         <div class="col-md-8">
                             <label class="lt-label lt-required">Tên môn học</label>

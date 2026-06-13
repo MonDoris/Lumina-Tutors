@@ -596,11 +596,10 @@ public sealed class AccountService : IAccountService
         int?    classId    = null;
         if (u.Role.RoleCode == "STUDENT")
         {
-            var enrollments = await _uow.ClassEnrollments.FindAsync(
+            var enrollment = await _uow.ClassEnrollments.FindOneAsync(
                 e => e.StudentId == u.Id && e.Status == EnrollmentStatus.Active,
-                include: q => q.Include(e => e.Class),
-                ct: ct);
-            var enrollment = enrollments.FirstOrDefault();
+                q => q.Include(e => e.Class),
+                ct);
             className = enrollment?.Class?.ClassName;
             classId   = enrollment?.ClassId;
         }
@@ -610,11 +609,10 @@ public sealed class AccountService : IAccountService
         int?    linkedStudentId   = null;
         if (u.Role.RoleCode == "PARENT")
         {
-            var relations = await _uow.ParentStudentRelations.FindAsync(
+            var rel = await _uow.ParentStudentRelations.FindOneAsync(
                 r => r.ParentUserId == u.Id,
-                include: q => q.Include(r => r.Student),
-                ct: ct);
-            var rel = relations.FirstOrDefault();
+                q => q.Include(r => r.Student),
+                ct);
             linkedStudentName = rel?.Student?.FullName;
             linkedStudentId   = rel?.StudentUserId;
         }

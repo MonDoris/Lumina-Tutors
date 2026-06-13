@@ -167,14 +167,7 @@
 <div class="ait-page">
 <div style="max-width:1060px; margin:0 auto">
 
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
-            <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
-            <span>@TempData["Error"]</span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-        </div>
-    }
+    @* Thông báo lỗi được render tập trung ở _Layout (tránh trùng 2 lần). *@
 
     <!-- Hero -->
     <div class="ait-hero">

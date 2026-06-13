@@ -24,13 +24,7 @@
                 <h3 class="lt-card__title">Thông tin lớp học</h3>
             </div>
             <div class="lt-card__body">
-                @if (TempData["Error"] != null)
-                {
-                    <div class="lt-alert lt-alert--danger lt-mb-4">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        <span>@TempData["Error"]</span>
-                    </div>
-                }
+                @* Thông báo lỗi được render tập trung ở _Layout (tránh trùng 2 lần). *@
 
                 <form asp-action="Edit" asp-route-id="@classId" method="post">
                     @Html.AntiForgeryToken()

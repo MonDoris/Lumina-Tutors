@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Web.Pdf;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QuestPDF.Fluent;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -44,6 +46,37 @@ public sealed class StudentGradesController : Controller
         }
 
         return View(result.Data);
+    }
+
+    // ── EXPORT BẢNG ĐIỂM HỌC KỲ (PDF) ───────────────────────────────
+    /// <summary>
+    /// Xuất bảng điểm của học kỳ ra PDF từ dữ liệu thật. studentId lấy từ claims
+    /// nên học sinh chỉ xuất được điểm của chính mình.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> ExportSemester(int semesterId)
+    {
+        var studentId = UserId();
+        var result    = await _grading.GetStudentSemesterSummaryAsync(studentId, semesterId);
+        if (!result.IsSuccess || result.Data is null)
+        {
+            TempData["Error"] = result.Error ?? "Không tìm thấy bảng điểm để xuất.";
+            return RedirectToAction(nameof(Index), new { semesterId });
+        }
+
+        var model    = result.Data;
+        var pdfBytes = new SemesterTranscriptPdfDocument(model).GeneratePdf();
+        var fileName = $"BangDiem_{MakeFileSafe(model.SemesterName)}_{studentId}.pdf";
+
+        return File(pdfBytes, "application/pdf", fileName);
+    }
+
+    // Loại bỏ ký tự không hợp lệ trong tên file và thay khoảng trắng bằng gạch dưới.
+    private static string MakeFileSafe(string raw)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var cleaned = new string(raw.Where(c => !invalid.Contains(c)).ToArray());
+        return cleaned.Replace(' ', '_').Trim('_');
     }
 
     // ── TRANSCRIPT ──────────────────────────────────────────────────

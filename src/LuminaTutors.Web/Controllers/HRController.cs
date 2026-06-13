@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.HR;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -60,11 +61,59 @@ public sealed class HRController : Controller
         return RedirectToAction(nameof(Teachers));
     }
 
+    // GET /HR/EditTeacher/5
+    public async Task<IActionResult> EditTeacher(int id)
+    {
+        var result = await _hrService.GetTeacherByIdAsync(GetCurrentSchoolId(), id);
+        if (!result.IsSuccess) return NotFound();
+
+        var t = result.Data!;
+        var model = new UpdateTeacherRequest(
+            FullName:              t.FullName,
+            TeacherCode:           t.TeacherCode,
+            PhoneNumber:           t.PhoneNumber,
+            DateOfBirth:           t.DateOfBirth,
+            Gender:                Enum.TryParse<Gender>(t.Gender, out var g) ? g : null,
+            Qualification:         t.Qualification,
+            SpecializationSubject: t.SpecializationSubject,
+            HireDate:              t.HireDate,
+            ContractType:          Enum.TryParse<ContractType>(t.ContractType, out var ctype) ? ctype : ContractType.FullTime,
+            BankName:              t.BankName);
+
+        ViewBag.TeacherId = id;
+        ViewBag.Email     = t.Email;
+        return View(model);
+    }
+
+    // POST /HR/EditTeacher/5
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditTeacher(int id, UpdateTeacherRequest model)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.TeacherId = id;
+            return View(model);
+        }
+
+        var result = await _hrService.UpdateTeacherAsync(GetCurrentSchoolId(), id, model);
+        if (!result.IsSuccess)
+        {
+            ModelState.AddModelError("", result.Error ?? "Có lỗi xảy ra.");
+            ViewBag.TeacherId = id;
+            return View(model);
+        }
+
+        TempData["Success"] = $"Đã cập nhật giáo viên {result.Data!.FullName}.";
+        return RedirectToAction(nameof(TeacherDetail), new { id });
+    }
+
     // POST /HR/DeactivateTeacher
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> DeactivateTeacher(int id)
     {
-        await _hrService.DeactivateTeacherAsync(GetCurrentSchoolId(), id);
+        var result = await _hrService.DeactivateTeacherAsync(GetCurrentSchoolId(), id);
+        TempData[result.IsSuccess ? "Success" : "Error"] =
+            result.IsSuccess ? "Đã vô hiệu hóa giáo viên." : result.Error;
         return RedirectToAction(nameof(Teachers));
     }
 
@@ -104,7 +153,9 @@ public sealed class HRController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ApprovePayroll(int id)
     {
-        await _hrService.ApprovePayrollAsync(id, GetCurrentUserId());
+        var result = await _hrService.ApprovePayrollAsync(id, GetCurrentUserId());
+        TempData[result.IsSuccess ? "Success" : "Error"] =
+            result.IsSuccess ? "Đã duyệt bảng lương." : result.Error;
         return RedirectToAction(nameof(Payroll));
     }
 
@@ -131,5 +182,7 @@ public sealed class HRController : Controller
         int.Parse(User.FindFirstValue("SchoolId") ?? "0");
 
     private int GetCurrentUserId() =>
-        int.Parse(User.FindFirstValue("UserId") ?? "0");
+        // Lúc đăng nhập chỉ set ClaimTypes.NameIdentifier (không có claim "UserId"),
+        // nên phải đọc đúng claim này — nếu không sẽ trả 0 và gây vi phạm FK khi lưu ApprovedBy/CreatedBy.
+        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
 }
