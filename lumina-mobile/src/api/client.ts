@@ -26,6 +26,24 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Khi token hết hạn / không hợp lệ → server trả 401. Xoá phiên & báo app
+// đăng nhập lại (tránh hiển thị "Request failed with status code 401" khó hiểu).
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null) { onUnauthorized = fn; }
+
+api.interceptors.response.use(
+  (res) => res,
+  async (err) => {
+    const url: string = err?.config?.url ?? '';
+    if (err?.response?.status === 401 && !url.includes('/auth/login')) {
+      await AsyncStorage.removeItem('jwt_token');
+      await AsyncStorage.removeItem('user_data');
+      onUnauthorized?.();
+    }
+    return Promise.reject(err);
+  },
+);
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   login: (email: string, password: string) =>
@@ -107,6 +125,13 @@ export const onlineApi = {
 // ── Virtual Lab ───────────────────────────────────────────────────────────────
 export const virtualLabApi = {
   sessions: () => api.get('/mobile/virtual-lab/sessions'),
+};
+
+// ── Holographic Nexus (phòng 3D thời gian thực) ─────────────────────────────
+export const nexusApi = {
+  createRoom: ()             => api.post('/mobile/nexus/room'),          // giáo viên
+  joinByCode: (room: string) => api.post('/mobile/nexus/join', { roomCode: room }),
+  webviewToken: ()           => api.post('/mobile/webview-token'),
 };
 
 // ── Common ────────────────────────────────────────────────────────────────────

@@ -80,6 +80,24 @@
 }
 .hud-readout .v { color: var(--holo); }
 
+/* ── MÃ PHÒNG (chia sẻ cho học sinh tham gia) ───────────────────────── */
+.roomcode { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); z-index: 11;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  padding: 8px 14px; border-radius: 12px; background: var(--panel);
+  border: 1px solid var(--glass-brd); backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.4); transition: border-color .2s, box-shadow .2s, transform .2s; }
+.roomcode:hover { border-color: var(--holo); box-shadow: 0 8px 28px rgba(23,99,255,.28); transform: translateX(-50%) translateY(-1px); }
+.roomcode__k { font: 600 .54rem/1 var(--font); letter-spacing: .16em; color: var(--muted); }
+.roomcode__v { font: 700 1rem/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .26em;
+  color: var(--holo); text-shadow: 0 0 12px rgba(127,233,255,.4); }
+.roomcode__ic { font-style: normal; font-size: .95rem; color: var(--muted); transition: color .2s; }
+.roomcode:hover .roomcode__ic { color: var(--holo); }
+.roomcode__toast { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  white-space: nowrap; font: 500 .66rem/1 var(--font); color: #34f5b0;
+  background: rgba(8,18,32,.92); border: 1px solid rgba(52,245,176,.3); border-radius: 8px;
+  padding: 5px 10px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.roomcode.copied .roomcode__toast { opacity: 1; }
+
 /* ════════ TABLET (Hologram glass) ════════ */
 .tablet { position: absolute; left: 24px; bottom: 24px; z-index: 10; width: min(348px, 46vw); }
 .tablet__bezel {
@@ -226,6 +244,11 @@
   .simpanel.show { left: 12px; right: auto; transform: none; bottom: auto; top: calc(28.5vw + 70px);
     min-width: 0; width: 44vw; padding: 10px 12px; }
   .simpanel__lines { grid-template-columns: 1fr; }
+  /* Mã phòng: dồn về góc trái (HUD ẩn trên mobile), không đè video widget */
+  .roomcode { left: 12px; top: 12px; transform: none; padding: 6px 10px; gap: 7px; }
+  .roomcode:hover { transform: none; }
+  .roomcode__v { font-size: .82rem; letter-spacing: .18em; }
+  .roomcode__toast { left: 0; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .nexus-boot-scan, .tablet__status .dot.online, .commwidget__live i, .nexus-fx { animation: none; }

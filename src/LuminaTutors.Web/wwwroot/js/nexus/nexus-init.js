@@ -6,11 +6,11 @@
 // NOTE: các ESM nội bộ import nhau KHÔNG qua asp-append-version, dễ bị trình
 // duyệt giữ bản cache cũ. Dùng ?v=<NEXUS_VER> đồng nhất để buộc tải lại khi sửa.
 // Bump số này mỗi khi đổi 1 trong các module /js/nexus/*.js.
-import { Lumina3DEngine } from './Lumina3DEngine.js?v=2';
-import { attachPositionalAudio } from './LuminaInteraction.js?v=2';
-import { LuminaStreamManager } from './LuminaStreamManager.js?v=2';
-import { CHEMICALS, CHEM_BY_ID, CHEM_CATS } from './LuminaChemLab.js?v=2';
-import { SIMS } from './LuminaSimLab.js?v=2';
+import { Lumina3DEngine } from './Lumina3DEngine.js?v=3';
+import { attachPositionalAudio } from './LuminaInteraction.js?v=3';
+import { LuminaStreamManager } from './LuminaStreamManager.js?v=3';
+import { CHEMICALS, CHEM_BY_ID, CHEM_CATS } from './LuminaChemLab.js?v=3';
+import { SIMS } from './LuminaSimLab.js?v=3';
 
 const CFG = window.NEXUS_CONFIG || { roomId: 'nexus-demo', isTeacher: false, displayName: 'Học viên' };
 
@@ -39,22 +39,21 @@ const SUBJECTS = [
 ];
 const SCENES_BY_SUBJECT = {
   chemistry: [
-    ['reaction', 'Bàn phản ứng · TƯƠNG TÁC'],
-    ['titration', 'Chuẩn độ axit-bazơ'], ['electrolysis', 'Điện phân nước'],
-    ['distillation', 'Chưng cất đơn giản'], ['molecule', 'Phân tử nước H₂O'],
+    ['reaction', 'Bàn phản ứng hóa học'],
   ],
   physics: [
-    ['pendulum-lab', 'Con lắc đơn · TƯƠNG TÁC'],
-    ['optics-lab', 'Khúc xạ ánh sáng · TƯƠNG TÁC'],
-    ['pendulum', 'Con lắc đơn'], ['spring', 'Con lắc lò xo'], ['optics', 'Lăng kính · Khúc xạ'],
+    ['pendulum-lab', 'Con lắc đơn'],
+    ['spring-lab', 'Con lắc lò xo'],
+    ['optics-lab', 'Khúc xạ ánh sáng'],
+    ['circuit-lab', 'Định luật Ôm'],
   ],
   biology: [
-    ['photosynthesis-lab', 'Quang hợp · TƯƠNG TÁC'],
-    ['cell', 'Tế bào nhân thực'], ['dna', 'Cấu trúc DNA'], ['photosynthesis', 'Lục lạp · Quang hợp'],
+    ['photosynthesis-lab', 'Quang hợp'],
+    ['osmosis-lab', 'Thẩm thấu tế bào'],
   ],
   math: [
-    ['vectors-lab', 'Vector 3D · TƯƠNG TÁC'],
-    ['polyhedron', 'Đa diện đều'], ['vectors', 'Vector 3D'],
+    ['vectors-lab', 'Vector 3D'],
+    ['parabola-lab', 'Đồ thị Parabol'],
   ],
 };
 const subjectOfScene = (scene) =>
@@ -78,7 +77,12 @@ async function main() {
     .configureLogging(signalR.LogLevel.Warning).build();
 
   // ── 3D Engine (tự tạo LuminaInteraction bên trong) ──────────────────────
-  const startScene = CFG.initialScene || firstSceneOf(CFG.subject) || 'cell';
+  // Chỉ mở thí nghiệm TƯƠNG TÁC (mô hình tĩnh đã bỏ khỏi danh sách chọn).
+  const startScene = (() => {
+    const valid = new Set(Object.values(SCENES_BY_SUBJECT).flat().map(([v]) => v));
+    if (CFG.initialScene && valid.has(CFG.initialScene)) return CFG.initialScene;
+    return firstSceneOf(CFG.subject) || 'reaction';
+  })();
   const engine = new Lumina3DEngine(els.canvas, {
     isTeacher: CFG.isTeacher, hub, roomId: CFG.roomId, scene: startScene,
   });
@@ -140,13 +144,16 @@ async function main() {
     if (CFG.isTeacher) hub.invoke('SetScene', engine.scene2).catch(() => {});
   } catch (err) { console.error('[Nexus] Hub start failed:', err); setStatus(false, 'HUB ERROR'); }
 
-  // ── Teacher: publish camera + glow theo âm lượng ────────────────────────
+  // ── Teacher: hiện camera NGAY, rồi mới đẩy lên SFU (best-effort) ────────
   if (CFG.isTeacher) {
     try {
-      const local = await streams.publish({ video: true, audio: true });
-      showFeed(local);
+      const local = await streams.getLocalMedia({ video: true, audio: true });
+      showFeed(local);                       // camera lên hình ngay, không chờ SFU
       streams.attachLocalAnalyser();
       pumpGlow(() => streams.getLocalLevel());
+      // Đẩy lên SFU để học sinh xem — nếu SFU lỗi vẫn KHÔNG mất preview của giáo viên
+      streams.publishLocal().catch((err) =>
+        console.warn('[Nexus] SFU publish lỗi (camera vẫn hiển thị):', err.message));
     } catch (err) {
       console.warn('[Nexus] Camera/mic không khả dụng:', err.message);
       if (els.camPlaceholder) els.camPlaceholder.textContent = 'CAMERA OFFLINE';

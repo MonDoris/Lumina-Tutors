@@ -88,12 +88,37 @@ public sealed class HomeworkController : Controller
         var result = await _svc.CreateAssignmentAsync(SchoolId, UserId, req);
         if (!result.IsSuccess) { TempData["Error"] = result.Error; return RedirectToAction(nameof(Create)); }
 
-        if (attachments != null)
-            foreach (var f in attachments.Where(f => f.Length > 0))
-                await _svc.AddAttachmentAsync(result.Data, f);
+        // result.Data là Id của bài tập vừa tạo (Result<int>). Bài tập đã được lưu thành công,
+        // nên nếu một tệp đính kèm lỗi I/O ta chỉ ghi nhận tệp lỗi thay vì để controller 500.
+        var failedAttachments = await SaveAttachmentsAsync(result.Data, attachments);
 
         TempData["Success"] = $"Đã tạo bài tập \"{title}\".";
+        if (failedAttachments.Count > 0)
+            TempData["Error"] = $"Một số tệp đính kèm không lưu được: {string.Join(", ", failedAttachments)}.";
         return RedirectToAction(nameof(Teacher));
+    }
+
+    // Lưu lần lượt các tệp đính kèm cho bài tập. Một tệp lỗi I/O không làm hỏng cả request:
+    // ta log lại và trả về danh sách tên tệp thất bại để controller báo cho người dùng.
+    private async Task<List<string>> SaveAttachmentsAsync(int assignmentId, IList<IFormFile>? attachments)
+    {
+        var failed = new List<string>();
+        if (attachments is null) return failed;
+
+        foreach (var f in attachments.Where(f => f.Length > 0))
+        {
+            try
+            {
+                var attResult = await _svc.AddAttachmentAsync(assignmentId, f);
+                if (!attResult.IsSuccess) failed.Add(f.FileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi lưu tệp đính kèm {FileName} cho bài tập {AssignmentId}", f.FileName, assignmentId);
+                failed.Add(f.FileName);
+            }
+        }
+        return failed;
     }
 
     [Authorize(Policy = "TeacherOrAdmin")]
@@ -113,11 +138,15 @@ public sealed class HomeworkController : Controller
         var req = new UpdateAssignmentRequest(title, instructions, assignmentType,
             maxScore, dueDate, allowLateSubmission, latePenaltyPercent, isPublished);
         var result = await _svc.UpdateAssignmentAsync(SchoolId, id, req);
-        if (attachments != null)
-            foreach (var f in attachments.Where(f => f.Length > 0))
-                await _svc.AddAttachmentAsync(id, f);
-        TempData[result.IsSuccess ? "Success" : "Error"] =
-            result.IsSuccess ? "Đã cập nhật bài tập." : result.Error;
+        // Update thất bại (bài tập không tồn tại / không thuộc trường này) → KHÔNG lưu đính kèm,
+        // tránh tạo file + bản ghi AssignmentAttachment mồ côi trỏ tới bài tập không hợp lệ.
+        if (!result.IsSuccess) { TempData["Error"] = result.Error; return RedirectToAction(nameof(Teacher)); }
+
+        var failedAttachments = await SaveAttachmentsAsync(id, attachments);
+
+        TempData["Success"] = "Đã cập nhật bài tập.";
+        if (failedAttachments.Count > 0)
+            TempData["Error"] = $"Một số tệp đính kèm không lưu được: {string.Join(", ", failedAttachments)}.";
         return RedirectToAction(nameof(Teacher));
     }
 

@@ -15,9 +15,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 // ?v=2 phải KHỚP với phiên bản trong nexus-init.js để dùng chung 1 instance module.
-import { LuminaInteraction } from './LuminaInteraction.js?v=2';
-import { LuminaChemLab } from './LuminaChemLab.js?v=2';
-import { LuminaSimLab, SIMS } from './LuminaSimLab.js?v=2';
+import { LuminaInteraction } from './LuminaInteraction.js?v=3';
+import { LuminaChemLab } from './LuminaChemLab.js?v=3';
+import { LuminaSimLab, SIMS } from './LuminaSimLab.js?v=3';
 
 const GOLD = 0xc9a96a, PLATINUM = 0xc8cdd6, PEARL = 0xf4f5f7;
 // Hologram palette: nền không gian tối + accent cyan

@@ -1,7 +1,11 @@
 using System.Security.Claims;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Web.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -18,9 +22,13 @@ namespace LuminaTutors.Web.Controllers;
 public sealed class LuminaNexusController : Controller
 {
     private readonly IAccountService _accountService;
+    private readonly IMemoryCache    _cache;
 
-    public LuminaNexusController(IAccountService accountService)
-        => _accountService = accountService;
+    public LuminaNexusController(IAccountService accountService, IMemoryCache cache)
+    {
+        _accountService = accountService;
+        _cache          = cache;
+    }
 
     // Bộ thẻ môn học dùng trong phòng Lab 3D (đồng bộ với VirtualLab)
     private static readonly string[] ValidTags = ["chemistry", "physics", "biology", "math"];
@@ -43,12 +51,27 @@ public sealed class LuminaNexusController : Controller
         return null;
     }
 
-    // ─── GET /LuminaNexus?room=demo&subject=biology&scene=cell ────────────────
+    // Mã phòng = chuỗi 6 CHỮ SỐ (100000–999999) để học sinh gõ nhanh bằng bàn
+    // phím số trên điện thoại; luôn đủ 6 số, không có số 0 đứng đầu gây nhầm.
+    private static string GenerateRoomCode() => Random.Shared.Next(100000, 1000000).ToString();
+
+    // ─── GET /LuminaNexus/Create — giáo viên tạo phòng mới (mã 6 ký tự) ───────
+    [HttpGet]
+    public IActionResult Create(string? subject = null)
+    {
+        if (!(User.IsInRole("TEACHER") || User.IsInRole("ADMIN")))
+            return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Index), new { room = GenerateRoomCode(), subject });
+    }
+
+    // ─── GET /LuminaNexus?room=ABC123&subject=biology&scene=cell ──────────────
     public async Task<IActionResult> Index(string room = "nexus-demo", string? subject = null, string? scene = null)
     {
         var isTeacher = User.IsInRole("TEACHER") || User.IsInRole("ADMIN");
 
-        ViewBag.RoomId      = string.IsNullOrWhiteSpace(room) ? "nexus-demo" : room.Trim();
+        // Chuẩn hoá mã phòng HOA để teacher/student luôn khớp group dù gõ thường.
+        var roomId = string.IsNullOrWhiteSpace(room) ? "NEXUS-DEMO" : room.Trim().ToUpperInvariant();
+        ViewBag.RoomId      = roomId;
         ViewBag.IsTeacher   = isTeacher;
         ViewBag.DisplayName = User.FindFirstValue(ClaimTypes.Name) ?? "Học viên";
 
@@ -68,4 +91,37 @@ public sealed class LuminaNexusController : Controller
 
         return View();
     }
+
+    // ─── GET /LuminaNexus/MobileEntry?room=123456&code=GUID ───────────────────
+    // Cầu nối WebView cho app: app đã xác thực JWT → tạo bridge code 90s
+    // (POST /api/mobile/webview-token) → mở WebView ở URL này. Ở đây đổi bridge
+    // code thành cookie rồi vào thẳng phòng 3D (SignalR realtime chạy bằng cookie).
+    [AllowAnonymous]
+    [HttpGet]
+    public async Task<IActionResult> MobileEntry(string room, string code, string? subject = null, string? scene = null)
+    {
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(room))
+            return Content(HtmlError("Thiếu code hoặc mã phòng."), "text/html");
+
+        var cacheKey = $"webview:{code}";
+        if (!_cache.TryGetValue(cacheKey, out List<WebViewBridgeClaim>? bridgeClaims) || bridgeClaims is null)
+            return Content(HtmlError("Mã xác thực hết hạn hoặc không hợp lệ.<br>Vui lòng đóng và thử lại trong ứng dụng."), "text/html");
+
+        _cache.Remove(cacheKey); // dùng một lần
+
+        var claims = bridgeClaims.Select(c => new Claim(c.Type, c.Value)).ToList();
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identity),
+            new AuthenticationProperties { IsPersistent = false, ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2) });
+
+        return RedirectToAction(nameof(Index), new { room, subject, scene });
+    }
+
+    private static string HtmlError(string msg) =>
+        $"<html><body style='font-family:sans-serif;padding:30px;background:#fff'>" +
+        $"<h3 style='color:#c0392b'>⚠️ {msg}</h3>" +
+        $"<p style='color:#64748b'>Đóng màn hình này và thử lại.</p>" +
+        $"</body></html>";
 }

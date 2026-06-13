@@ -17,9 +17,9 @@
     var role      = ViewBag.Role as string ?? "";
     bool isTeacher = role is "TEACHER" or "ADMIN";
 
-    var live      = Model?.Where(s => s.Status == "Live").ToList() ?? [];
-    var scheduled = Model?.Where(s => s.Status == "Scheduled").ToList() ?? [];
-    var past      = Model?.Where(s => s.Status is "Ended" or "Cancelled").ToList() ?? [];
+    var live      = Model?.Where(s => s.Status == "Live").ToList() ?? new List<OnlineSessionDto>();
+    var scheduled = Model?.Where(s => s.Status == "Scheduled").ToList() ?? new List<OnlineSessionDto>();
+    var past      = Model?.Where(s => s.Status is "Ended" or "Cancelled").ToList() ?? new List<OnlineSessionDto>();
 
     string StatusLabel(string s) => s switch {
         "Scheduled" => "Sắp diễn ra",

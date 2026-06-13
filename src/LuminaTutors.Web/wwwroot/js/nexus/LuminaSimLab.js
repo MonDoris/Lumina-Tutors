@@ -259,6 +259,216 @@ export const SIMS = {
       ] };
     },
   },
+
+  // ── VẬT LÝ: Con lắc lò xo ─────────────────────────────────────────────────
+  'spring-lab': {
+    label: 'Con lắc lò xo (tương tác)', subject: 'physics',
+    params: [
+      { key: 'k', label: 'Độ cứng k', min: 5, max: 60, step: 1, value: 20, unit: 'N/m' },
+      { key: 'mass', label: 'Khối lượng m', min: 0.1, max: 2, step: 0.1, value: 0.5, unit: 'kg' },
+      { key: 'amp', label: 'Biên độ A', min: 0.05, max: 0.4, step: 0.05, value: 0.25, unit: 'm' },
+    ],
+    build(c) {
+      const g = c.group, s = c.state; s.topY = 1.15; s.baseLen = 0.85;
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.07, 0.3), holoMetal()); bar.position.y = s.topY + 0.04;
+      // Lò xo: đường xoắn ốc đơn vị (cao 1, hướng xuống), scale.y theo chiều dài
+      const pts = []; const turns = 9, seg = 18;
+      for (let i = 0; i <= turns * seg; i++) { const a = i * (Math.PI * 2 / seg), y = -i / (turns * seg);
+        pts.push(new THREE.Vector3(Math.cos(a) * 0.14, y, Math.sin(a) * 0.14)); }
+      s.spring = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), glowMat(0x7fe9ff, 0.75));
+      s.spring.position.y = s.topY;
+      s.mass = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), holoSolid(0x9fd8ff, 0.6));
+      g.add(bar, s.spring, s.mass); s.phase = 0;
+    },
+    update(dt, t, c) {
+      const s = c.state, p = c.params;
+      const T = 2 * Math.PI * Math.sqrt(p.mass / p.k), omega = (2 * Math.PI) / T;
+      s.phase += omega * dt;
+      const disp = p.amp * 1.6 * Math.cos(s.phase);          // 1.6 = hệ số phóng đại cho dễ nhìn
+      const len = s.baseLen + disp;
+      s.spring.scale.y = len;
+      s.mass.position.y = s.topY - len - 0.2;
+    },
+    readout(c) {
+      const p = c.params, T = 2 * Math.PI * Math.sqrt(p.mass / p.k);
+      return { title: 'Con lắc lò xo', lines: [
+        { k: 'Chu kỳ T', v: T.toFixed(2) + ' s' },
+        { k: 'Tần số f', v: (1 / T).toFixed(2) + ' Hz' },
+        { k: 'Công thức', v: 'T = 2π√(m/k)' },
+        { k: 'Lực kéo về', v: 'F = −k·x' },
+      ] };
+    },
+  },
+
+  // ── VẬT LÝ: Định luật Ôm (mạch điện) ─────────────────────────────────────
+  'circuit-lab': {
+    label: 'Định luật Ôm (tương tác)', subject: 'physics',
+    params: [
+      { key: 'u', label: 'Hiệu điện thế U', min: 1, max: 24, step: 1, value: 9, unit: 'V' },
+      { key: 'r', label: 'Điện trở R', min: 1, max: 100, step: 1, value: 30, unit: 'Ω' },
+    ],
+    build(c) {
+      const g = c.group, s = c.state; s.W = 1.7; s.H = 1.3;
+      const W = s.W, H = s.H, hw = W / 2, hh = H / 2;
+      // Dây dẫn = khung chữ nhật phát sáng
+      const wire = (x1, y1, x2, y2) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, Math.hypot(x2-x1, y2-y1), 8), glowMat(0x7fbfe0, 0.6));
+        m.position.set((x1+x2)/2, (y1+y2)/2, 0); m.rotation.z = Math.atan2(y2-y1, x2-x1) - Math.PI/2; return m; };
+      g.add(wire(-hw,-hh, hw,-hh), wire(hw,-hh, hw,hh), wire(hw,hh, -hw,hh), wire(-hw,hh, -hw,-hh));
+      // Pin (trái) · Điện trở (phải) · Bóng đèn (trên)
+      const batt = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.5, 0.22), holoSolid(0xffc24d, 0.7)); batt.position.set(-hw, 0, 0);
+      const res = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.22, 0.22), holoSolid(0xff8a8a, 0.7)); res.position.set(hw, 0, 0);
+      s.bulb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 20), new THREE.MeshStandardMaterial({
+        color: 0x1a1206, emissive: 0xffe066, emissiveIntensity: 0.4, transparent: true, opacity: 0.85, depthWrite: false }));
+      s.bulb.position.set(0, hh, 0);
+      s.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0xffe066, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+      s.halo.position.copy(s.bulb.position); s.halo.scale.setScalar(0.9);
+      g.add(batt, res, s.bulb, s.halo);
+      c.addLabel('Pin', -hw, -hh - 0.18, 0); c.addLabel('R', hw + 0.16, 0, 0); c.addLabel('Đèn', 0, hh + 0.22, 0);
+      // Electron chạy quanh mạch
+      s.N = 24; s.flow = 0;
+      const pos = new Float32Array(s.N * 3).fill(-999);
+      s.eGeo = new THREE.BufferGeometry(); s.eGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      s.electrons = new THREE.Points(s.eGeo, new THREE.PointsMaterial({ size: 0.07, map: glowTex(), color: 0x9fe8ff,
+        transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending })); s.electrons.frustumCulled = false;
+      g.add(s.electrons);
+    },
+    _perim(s, t) {   // t∈[0,1) → điểm trên chu vi khung W×H
+      const W = s.W, H = s.H, hw = W/2, hh = H/2, P = 2*(W+H), d = (t % 1) * P;
+      if (d < W)            return [-hw + d, -hh];
+      if (d < W + H)        return [hw, -hh + (d - W)];
+      if (d < 2*W + H)      return [hw - (d - W - H), hh];
+      return [-hw, hh - (d - 2*W - H)];
+    },
+    update(dt, t, c) {
+      const s = c.state, p = c.params, I = p.u / p.r;
+      s.flow = (s.flow + I * 0.06 * dt) % 1;
+      const arr = s.eGeo.attributes.position.array;
+      for (let i = 0; i < s.N; i++) { const [x, y] = SIMS['circuit-lab']._perim(s, s.flow + i / s.N); arr[i*3] = x; arr[i*3+1] = y; arr[i*3+2] = 0.02; }
+      s.eGeo.attributes.position.needsUpdate = true;
+      const bright = Math.min(I * 0.5, 2.2);                 // đèn sáng theo dòng điện
+      s.bulb.material.emissiveIntensity = 0.3 + bright;
+      s.halo.material.opacity = Math.min(0.15 + bright * 0.4, 0.9);
+      s.halo.scale.setScalar(0.7 + bright * 0.35);
+    },
+    readout(c) {
+      const p = c.params, I = p.u / p.r;
+      return { title: 'Định luật Ôm', lines: [
+        { k: 'Hiệu điện thế U', v: p.u + ' V' },
+        { k: 'Điện trở R', v: p.r + ' Ω' },
+        { k: 'Cường độ I = U/R', v: I.toFixed(2) + ' A' },
+        { k: 'Công suất P = U·I', v: (p.u * I).toFixed(1) + ' W' },
+      ] };
+    },
+  },
+
+  // ── SINH HỌC: Thẩm thấu tế bào ───────────────────────────────────────────
+  'osmosis-lab': {
+    label: 'Thẩm thấu (tương tác)', subject: 'biology',
+    params: [
+      { key: 'conc', label: 'Nồng độ dung dịch', min: 0, max: 100, step: 5, value: 50, unit: '%' },
+    ],
+    build(c) {
+      const g = c.group, s = c.state;
+      const beaker = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.0, 1.7, 40, 1, true), holoSolid(0x9fd8ff, 0.12));
+      const water = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 0.97, 1.5, 40), holoSolid(0x4fd0e0, 0.22)); water.position.y = -0.05;
+      s.cell = new THREE.Group();
+      s.mem = new THREE.Mesh(new THREE.SphereGeometry(0.55, 40, 32), holoSolid(0xbfe0ff, 0.4));
+      const nuc = new THREE.Mesh(new THREE.SphereGeometry(0.2, 28, 22), holoSolid(0x9a7bd6, 0.6));
+      s.cell.add(s.mem, nuc); g.add(beaker, water, s.cell);
+      s.flow = new RisingPoints(g, { n: 70, size: 0.05, color: 0xbff4ff }); // tái dùng cho dòng nước
+      s.acc = 0; s.scale = 1;
+      c.addLabel('Tế bào', 0, 0.75, 0);
+    },
+    update(dt, t, c) {
+      const s = c.state, p = c.params;
+      // <50 nhược trương (nước vào, trương) · >50 ưu trương (nước ra, co)
+      const target = THREE.MathUtils.clamp(1.35 - (p.conc / 100) * 0.85, 0.6, 1.4);
+      s.scale += (target - s.scale) * Math.min(dt * 2.5, 1);
+      s.cell.scale.setScalar(s.scale);
+      // Dòng nước: vào (nhược) hay ra (ưu); đẳng trương ~ đứng yên
+      const inward = p.conc < 48, outward = p.conc > 52;
+      s.acc += dt * 14;
+      while (s.acc >= 1 && (inward || outward)) {
+        s.acc -= 1; const a = Math.random() * Math.PI * 2, rr = 0.95;
+        const ex = Math.cos(a) * rr, ez = Math.sin(a) * rr, ey = (Math.random() - .5) * 0.8;
+        if (inward) s.flow.spawn(ex, ey, ez, 0, 4); else s.flow.spawn(s.mem.position.x, 0, s.mem.position.z, 0, 4);
+      }
+      // RisingPoints bay lên — ở đây chỉ cần hiệu ứng hạt mờ quanh tế bào
+      s.flow.update(dt, 0.7);
+    },
+    readout(c) {
+      const p = c.params;
+      const env = p.conc < 48 ? 'Nhược trương' : p.conc > 52 ? 'Ưu trương' : 'Đẳng trương';
+      const flow = p.conc < 48 ? 'Nước đi VÀO tế bào' : p.conc > 52 ? 'Nước đi RA ngoài' : 'Cân bằng';
+      const state = p.conc < 48 ? 'Tế bào TRƯƠNG (có thể vỡ)' : p.conc > 52 ? 'Tế bào CO nguyên sinh' : 'Bình thường';
+      return { title: 'Hiện tượng thẩm thấu', lines: [
+        { k: 'Nồng độ ngoài', v: p.conc + '%' },
+        { k: 'Môi trường', v: env },
+        { k: 'Chiều di chuyển', v: flow, wide: true },
+        { k: 'Trạng thái tế bào', v: state, wide: true },
+      ] };
+    },
+  },
+
+  // ── TOÁN: Đồ thị hàm số bậc hai (Parabol) ────────────────────────────────
+  'parabola-lab': {
+    label: 'Đồ thị Parabol (tương tác)', subject: 'math',
+    params: [
+      { key: 'a', label: 'Hệ số a', min: -3, max: 3, step: 0.5, value: 1, unit: '' },
+      { key: 'b', label: 'Hệ số b', min: -4, max: 4, step: 0.5, value: 0, unit: '' },
+      { key: 'c', label: 'Hệ số c', min: -3, max: 3, step: 0.5, value: -1, unit: '' },
+    ],
+    build(c) {
+      const g = c.group, s = c.state; s.SX = 0.62; s.SY = 0.42; s.N = 100;
+      const axis = (x1, y1, x2, y2, col) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, Math.hypot(x2-x1, y2-y1), 6), glowMat(col, 0.4));
+        m.position.set((x1+x2)/2, (y1+y2)/2, 0); m.rotation.z = Math.atan2(y2-y1, x2-x1) - Math.PI/2; return m; };
+      g.add(axis(-2.1, 0, 2.1, 0, 0x8ab4ff), axis(0, -1.7, 0, 2.2, 0x8affa0));
+      c.addLabel('x', 2.2, 0, 0); c.addLabel('y', 0, 2.3, 0);
+      const pos = new Float32Array((s.N + 1) * 3);
+      s.curveGeo = new THREE.BufferGeometry(); s.curveGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      s.curve = new THREE.Line(s.curveGeo, glowMat(0xffc24d, 0.95));
+      s.vertex = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 14), glowMat(0x35f5b0, 1));
+      s.root1 = new THREE.Mesh(new THREE.SphereGeometry(0.055, 14, 12), glowMat(0xff5a8a, 1));
+      s.root2 = new THREE.Mesh(new THREE.SphereGeometry(0.055, 14, 12), glowMat(0xff5a8a, 1));
+      g.add(s.curve, s.vertex, s.root1, s.root2);
+      s.vlabel = c.addLabel('I', 0, 0, 0);
+    },
+    update(dt, t, c) {
+      const s = c.state, p = c.params, arr = s.curveGeo.attributes.position.array;
+      const X0 = -3.2, X1 = 3.2, clampY = (yw) => THREE.MathUtils.clamp(yw, -1.7, 2.2);
+      for (let i = 0; i <= s.N; i++) { const x = X0 + (X1 - X0) * (i / s.N), y = p.a*x*x + p.b*x + p.c;
+        arr[i*3] = THREE.MathUtils.clamp(x * s.SX, -2.05, 2.05); arr[i*3+1] = clampY(y * s.SY); arr[i*3+2] = 0; }
+      s.curveGeo.attributes.position.needsUpdate = true;
+      if (Math.abs(p.a) > 1e-6) {                            // đỉnh
+        const xv = -p.b / (2 * p.a), yv = p.c - p.b*p.b / (4*p.a);
+        s.vertex.visible = true; s.vertex.position.set(THREE.MathUtils.clamp(xv*s.SX,-2.05,2.05), clampY(yv*s.SY), .01);
+        s.vlabel.visible = true; s.vlabel.position.copy(s.vertex.position).add(new THREE.Vector3(.14,.12,0));
+      } else { s.vertex.visible = false; s.vlabel.visible = false; }
+      const D = p.b*p.b - 4*p.a*p.c;                          // nghiệm
+      if (Math.abs(p.a) > 1e-6 && D >= 0) {
+        const x1 = (-p.b - Math.sqrt(D)) / (2*p.a), x2 = (-p.b + Math.sqrt(D)) / (2*p.a);
+        s.root1.visible = Math.abs(x1) <= 3.3; s.root1.position.set(x1*s.SX, 0, .01);
+        s.root2.visible = Math.abs(x2) <= 3.3; s.root2.position.set(x2*s.SX, 0, .01);
+      } else { s.root1.visible = s.root2.visible = false; }
+    },
+    readout(c) {
+      const p = c.params;
+      const term = (v, sym, first) => { if (v === 0) return ''; const sign = v < 0 ? '−' : (first ? '' : '+'); const av = Math.abs(v); return ` ${sign} ${av === 1 && sym ? '' : av}${sym}`; };
+      let eq = 'y =' + (term(p.a,'x²',true) || ' 0') + term(p.b,'x') + term(p.c,'');
+      const lines = [{ k: 'Hàm số', v: eq.replace('y =  ','y = ').trim(), wide: true }];
+      if (Math.abs(p.a) < 1e-6) { lines.push({ k: 'Lưu ý', v: 'a = 0 → đường thẳng', wide: true }); }
+      else {
+        const xv = -p.b/(2*p.a), yv = p.c - p.b*p.b/(4*p.a), D = p.b*p.b - 4*p.a*p.c;
+        lines.push({ k: 'Đỉnh I', v: `(${xv.toFixed(2)} ; ${yv.toFixed(2)})` });
+        lines.push({ k: 'Trục đối xứng', v: 'x = ' + xv.toFixed(2) });
+        lines.push({ k: 'Biệt thức Δ', v: D.toFixed(2) });
+        lines.push({ k: 'Nghiệm', v: D < 0 ? 'Vô nghiệm' : D === 0 ? 'x = ' + (-p.b/(2*p.a)).toFixed(2)
+          : `${((-p.b-Math.sqrt(D))/(2*p.a)).toFixed(2)} ; ${((-p.b+Math.sqrt(D))/(2*p.a)).toFixed(2)}`, wide: true });
+        lines.push({ k: 'Bề lõm', v: p.a > 0 ? 'Hướng lên' : 'Hướng xuống' });
+      }
+      return { title: 'Hàm số bậc hai', lines };
+    },
+  },
 };
 
 export const SIM_IDS = Object.keys(SIMS);

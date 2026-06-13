@@ -52,7 +52,7 @@ public sealed class AuthController : Controller
             return RedirectToAction("Index", "Dashboard");
 
         ViewData["ReturnUrl"] = returnUrl;
-        ViewBag.Role = (role ?? "student").ToLower();
+        ViewBag.Role = NormalizeRole(role);
 
         // MẶC ĐỊNH: concept "Quantum Access Terminal".
         // Bản luxury cũ vẫn giữ nguyên, xem qua: /Auth/Login?ui=luxury
@@ -69,7 +69,7 @@ public sealed class AuthController : Controller
     public async Task<IActionResult> Login(LoginRequest model, string? returnUrl = null, string? role = null)
     {
         // Giữ lại role để view hiển thị đúng form khi có lỗi
-        ViewBag.Role = (role ?? "student").ToLower();
+        ViewBag.Role = NormalizeRole(role);
 
         // Khi lỗi: ở lại đúng giao diện mặc định (Quantum Access Terminal)
         if (!ModelState.IsValid)
@@ -117,7 +117,7 @@ public sealed class AuthController : Controller
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction("Index", "Dashboard");
 
-        ViewBag.Role = (role ?? "student").ToLower();
+        ViewBag.Role = NormalizeRole(role);
         return View();
     }
 
@@ -127,7 +127,7 @@ public sealed class AuthController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ForgotPassword(string phone, string? role = null)
     {
-        role = (role ?? "student").ToLower();
+        role = NormalizeRole(role);
         ViewBag.Role = role;
 
         var normalized = NormalizePhone(phone ?? string.Empty);
@@ -165,7 +165,7 @@ public sealed class AuthController : Controller
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction("Index", "Dashboard");
 
-        ViewBag.Role        = (role ?? "student").ToLower();
+        ViewBag.Role        = NormalizeRole(role);
         ViewBag.Phone       = phone ?? string.Empty;
         ViewBag.MaskedPhone = TempData["MaskedPhone"];
         if (_env.IsDevelopment()) ViewBag.OtpDev = TempData["OtpDev"];
@@ -178,7 +178,7 @@ public sealed class AuthController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult VerifyOtp(string phone, string otp, string? role = null)
     {
-        role = (role ?? "student").ToLower();
+        role = NormalizeRole(role);
         ViewBag.Role  = role;
         ViewBag.Phone = phone;
 
@@ -230,7 +230,7 @@ public sealed class AuthController : Controller
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction("Index", "Dashboard");
 
-        role = (role ?? "student").ToLower();
+        role = NormalizeRole(role);
 
         if (string.IsNullOrWhiteSpace(token) ||
             !_cache.TryGetValue<string>($"fp:reset:{token}", out _))
@@ -251,7 +251,7 @@ public sealed class AuthController : Controller
     public async Task<IActionResult> ResetPassword(
         string token, string newPassword, string confirmPassword, string? role = null)
     {
-        role = (role ?? "student").ToLower();
+        role = NormalizeRole(role);
         ViewBag.Role  = role;
         ViewBag.Token = token;
 
@@ -464,4 +464,15 @@ public sealed class AuthController : Controller
 
     private static string MaskPhone(string phone) =>
         phone.Length >= 6 ? phone[..3] + "****" + phone[^2..] : "****";
+
+    // Whitelist vai trò dùng cho theming các trang Auth (Login/ForgotPassword/VerifyOtp/ResetPassword).
+    // `role` đến từ query string nên phải chốt về tập giá trị an toàn đã biết — vừa chống XSS reflected
+    // (defense-in-depth), vừa tránh giá trị lạ làm vỡ giao diện theo vai trò. Khớp whitelist trong các view Login.
+    private static readonly string[] _validAuthRoles = { "student", "teacher", "supervisor", "parent", "admin" };
+
+    private static string NormalizeRole(string? role)
+    {
+        var normalized = (role ?? "student").Trim().ToLowerInvariant();
+        return _validAuthRoles.Contains(normalized) ? normalized : "student";
+    }
 }

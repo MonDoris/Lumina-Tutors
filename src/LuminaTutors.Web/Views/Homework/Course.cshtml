@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Bài tập môn học";
     var course      = ViewBag.Course as StudentCourseDto;
-    var assignments = ViewBag.Assignments as IReadOnlyList<StudentAssignmentDto> ?? [];
+    var assignments = ViewBag.Assignments as IReadOnlyList<StudentAssignmentDto> ?? new List<StudentAssignmentDto>();
     var now         = DateTime.UtcNow;
 
     string TypeLabel(AssignmentType t) => t switch {

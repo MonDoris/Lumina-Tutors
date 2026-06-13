@@ -2,7 +2,7 @@
 @model IReadOnlyList<LuminaTutors.Application.DTOs.Communication.ConversationDto>
 @{
     ViewData["Title"] = "Hộp thư — Giám thị";
-    var contacts = ViewBag.ParentContacts as List<SupervisorController.ParentContactItem> ?? [];
+    var contacts = ViewBag.ParentContacts as List<SupervisorController.ParentContactItem> ?? new List<SupervisorController.ParentContactItem>();
     var grouped  = contacts.GroupBy(c => c.ClassName).OrderBy(g => g.Key).ToList();
 }
 

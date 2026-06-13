@@ -38,7 +38,7 @@ public sealed class OnlineClassroomService : IOnlineClassroomService
             s.MaxParticipants,
             s.Participants.Count,
             s.TeacherId,
-            s.Teacher.FullName
+            s.Teacher?.FullName ?? "Không rõ"   // Teacher có thể null nếu GV đã bị xóa (orphan FK)
         )).ToList();
 
         return Result<IReadOnlyList<OnlineSessionListDto>>.Success(dtos);
@@ -186,9 +186,9 @@ public sealed class OnlineClassroomService : IOnlineClassroomService
         var user = await _uow.Users.FindAsync(u => true, ct: ct); // load all - small set
         var dtos = list.Select(p => new ParticipantDto(
             p.UserId,
-            p.User.FullName,
-            p.User.AvatarUrl,
-            p.User.Role?.RoleCode ?? "STUDENT",
+            p.User?.FullName ?? "Không rõ",      // User có thể null nếu tài khoản đã bị xóa
+            p.User?.AvatarUrl,
+            p.User?.Role?.RoleCode ?? "STUDENT",
             p.JoinedAt,
             p.LeftAt,
             p.IsAttended,
@@ -278,8 +278,8 @@ public sealed class OnlineClassroomService : IOnlineClassroomService
             .OrderBy(m => m.SentAt)
             .Select(m => new ChatMessageDto(
                 m.Id, m.SenderId,
-                m.Sender.FullName,
-                m.Sender.AvatarUrl,
+                m.Sender?.FullName ?? "Không rõ",   // Sender có thể null nếu tài khoản đã bị xóa
+                m.Sender?.AvatarUrl,
                 m.Content,
                 m.MessageType,
                 m.SentAt))

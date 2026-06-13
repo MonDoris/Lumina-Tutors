@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authApi } from '../api/client';
+import { authApi, setUnauthorizedHandler } from '../api/client';
 
 const MOBILE_ROLES = ['STUDENT', 'TEACHER', 'PARENT', 'SUPERVISOR'];
 
@@ -42,6 +42,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
       finally { setIsLoading(false); }
     })();
+  }, []);
+
+  // Token hết hạn (401 bất kỳ) → xoá phiên, app tự quay về màn đăng nhập.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      AsyncStorage.removeItem('jwt_token');
+      AsyncStorage.removeItem('user_data');
+      setToken(null);
+      setUser(null);
+    });
+    return () => setUnauthorizedHandler(null);
   }, []);
 
   const login = async (email: string, password: string): Promise<string | null> => {

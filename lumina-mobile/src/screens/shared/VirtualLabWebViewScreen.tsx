@@ -14,12 +14,12 @@ import { WebView } from 'react-native-webview';
 import { BASE_URL, onlineApi } from '../../api/client';
 
 interface Props {
-  sessionCode: string;
+  room: string;        // mã phòng Nexus (6 chữ số)
   labName?: string;
   onClose: () => void;
 }
 
-export default function VirtualLabWebViewScreen({ sessionCode, labName, onClose }: Props) {
+export default function VirtualLabWebViewScreen({ room, labName, onClose }: Props) {
   const webViewRef  = useRef<WebView>(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
@@ -42,19 +42,20 @@ export default function VirtualLabWebViewScreen({ sessionCode, labName, onClose 
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [flashInfo]);
 
-  /* ── Get bridge token ───────────────────────────────────────────── */
+  /* ── Get bridge token → mở phòng 3D Nexus qua cầu nối WebView ─────── */
   useEffect(() => {
     (async () => {
       try {
         const res  = await onlineApi.webviewToken();
         const code = res.data?.code;
         if (!code) { setError('Không lấy được mã xác thực. Thử lại sau.'); return; }
-        setUrl(`${BASE_URL}/VirtualLab/MobileEntry?sessionCode=${encodeURIComponent(sessionCode)}&code=${code}`);
+        setUrl(`${BASE_URL}/LuminaNexus/MobileEntry?room=${encodeURIComponent(room)}&code=${code}`);
       } catch (e: any) {
+        if (e?.response?.status === 401) { setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'); return; }
         setError(`Lỗi kết nối: ${e?.message ?? 'Không xác định'}`);
       }
     })();
-  }, [sessionCode]);
+  }, [room]);
 
   /* ── Error state ────────────────────────────────────────────────── */
   if (error) {
@@ -105,12 +106,18 @@ export default function VirtualLabWebViewScreen({ sessionCode, labName, onClose 
         javaScriptEnabled
         domStorageEnabled
         allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction={false}
+        mediaCapturePermissionGrantType="grant"
         allowsFullscreenVideo
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => { setLoading(false); flashInfo(); }}
         onError={(e) => {
           setLoading(false);
           setError(`Không thể tải phòng lab:\n${e.nativeEvent.description}`);
+        }}
+        onHttpError={(e) => {
+          if (e.nativeEvent.statusCode >= 500)
+            setError(`Lỗi máy chủ (${e.nativeEvent.statusCode}). Thử lại sau.`);
         }}
         injectedJavaScript={INJECTED_JS}
         onMessage={() => {}}

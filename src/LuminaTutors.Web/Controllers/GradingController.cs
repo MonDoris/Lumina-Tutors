@@ -102,7 +102,7 @@ public sealed class GradingController : Controller
 
         TempData[result.IsSuccess ? "Success" : "Error"] =
             result.IsSuccess
-                ? $"Đã nhập {result.Data!.Count} điểm thành công."
+                ? $"Đã nhập {result.Data?.Count ?? 0} điểm thành công."
                 : result.Error;
 
         return RedirectToAction(nameof(GradeBook), new { subjectAssignmentId = model.SubjectAssignmentId });

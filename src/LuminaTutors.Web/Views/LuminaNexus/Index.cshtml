@@ -52,8 +52,16 @@
     <div class="hud-readout">
         <div>FPS <span class="v" id="hudFps">--</span></div>
         <div>EXPLODE <span class="v" id="hudExplode">0%</span></div>
-        <div>ROOM <span class="v">@roomId</span></div>
     </div>
+
+    <!-- Room code — giáo viên chia sẻ cho học sinh để tham gia -->
+    <button class="roomcode" id="roomCode" type="button" data-room="@roomId"
+            aria-label="Mã phòng @roomId — bấm để sao chép link mời">
+        <span class="roomcode__k">MÃ PHÒNG</span>
+        <span class="roomcode__v">@roomId</span>
+        <i class="roomcode__ic" aria-hidden="true">⧉</i>
+        <span class="roomcode__toast" id="roomToast"></span>
+    </button>
 
     <!-- TABLET control panel (Clinical Luxury) -->
     <section class="tablet" role="toolbar" aria-label="Bảng điều khiển giảng dạy">
@@ -161,6 +169,34 @@
         subject: '@Html.Raw(defaultTag)',
         initialScene: '@Html.Raw(initialScene)'
     };
+
+    // ── Mã phòng: bấm để sao chép LINK MỜI (hoặc mã) cho học sinh ──────────
+    (function () {
+        var btn = document.getElementById('roomCode'); if (!btn) return;
+        var toast = document.getElementById('roomToast');
+        var room = btn.getAttribute('data-room');
+        var link = location.origin + '/LuminaNexus?room=' + encodeURIComponent(room);
+        var t;
+        function flash(msg) {
+            if (!toast) return;
+            toast.textContent = msg; btn.classList.add('copied');
+            clearTimeout(t); t = setTimeout(function () { btn.classList.remove('copied'); }, 2200);
+        }
+        btn.addEventListener('click', function () {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(link).then(function () { flash('Đã sao chép link mời ✓'); },
+                    function () { fallback(); });
+            } else { fallback(); }
+        });
+        function fallback() {
+            var ta = document.createElement('textarea');
+            ta.value = link; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); flash('Đã sao chép link mời ✓'); }
+            catch (e) { flash('Mã phòng: ' + room); }
+            document.body.removeChild(ta);
+        }
+    })();
 </script>
 <script type="module" src="~/js/nexus/nexus-init.js" asp-append-version="true"></script>
 </body>

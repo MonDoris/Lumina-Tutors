@@ -140,6 +140,10 @@ public sealed class MobileApiController : ControllerBase
     [HttpPost("student/ai-tutor/{sessionId:int}/messages")]
     public async Task<IActionResult> SendAiMessage(int sessionId, [FromBody] SendMessageRequest dto)
     {
+        // dto có thể null nếu body rỗng/sai content-type ([FromBody] không bind được) → tránh NRE.
+        if (dto is null || string.IsNullOrWhiteSpace(dto.Content))
+            return BadRequest(new { message = "Tin nhắn không được để trống." });
+
         var result = await _aiTutor.SendMessageAsync(SchoolId(), sessionId, UserId(), dto.Content);
         return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
     }
@@ -473,6 +477,37 @@ public sealed class MobileApiController : ControllerBase
     {
         var result = await _virtualLab.GetActiveSessionsAsync(SchoolId());
         return result.IsSuccess ? Ok(result.Data) : BadRequest(new { message = result.Error });
+    }
+
+    // ══ Holographic Nexus — phòng 3D thời gian thực ════════════════════════════
+
+    /// <summary>POST /api/mobile/nexus/room — giáo viên tạo mã phòng 3D (6 chữ số).
+    /// App dùng mã này + webview-token để mở /LuminaNexus/MobileEntry trong WebView.</summary>
+    [HttpPost("nexus/room")]
+    public IActionResult CreateNexusRoom()
+    {
+        if (!(User.IsInRole("TEACHER") || User.IsInRole("ADMIN")))
+            return StatusCode(403, new { message = "Chỉ giáo viên được tạo phòng." });
+
+        var room = Random.Shared.Next(100000, 1000000).ToString();
+        return Ok(new
+        {
+            room,
+            // Đường dẫn WebView: app gắn thêm &code=<webview-token> rồi mở
+            mobileEntryPath = $"/LuminaNexus/MobileEntry?room={room}"
+        });
+    }
+
+    /// <summary>POST /api/mobile/nexus/join — học sinh (mọi vai trò) tham gia phòng 3D
+    /// bằng mã. Trả về đường dẫn WebView để app mở (gắn thêm &amp;code=&lt;webview-token&gt;).</summary>
+    [HttpPost("nexus/join")]
+    public IActionResult JoinNexusRoom([FromBody] JoinByCodeDto dto)
+    {
+        var room = (dto?.RoomCode ?? "").Trim().ToUpperInvariant();
+        if (room.Length is < 4 or > 20)
+            return BadRequest(new { message = "Mã phòng không hợp lệ." });
+
+        return Ok(new { room, mobileEntryPath = $"/LuminaNexus/MobileEntry?room={room}" });
     }
 
     // ══ WebView bridge token ═════════════════════════════════════════════════

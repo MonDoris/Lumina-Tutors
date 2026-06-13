@@ -154,8 +154,24 @@ public sealed class QuestionBankService : IQuestionBankService
         var q = await _uow.QuestionBanks.FindOneAsync(
             x => x.SchoolId == schoolId && x.Id == questionId, ct: ct);
         if (q is null) return Result.Failure("Không tìm thấy câu hỏi.");
+
+        // Câu hỏi đang nằm trong một đề thi (FK QuizExamQuestions) thì không thể xóa.
+        // Kiểm tra trước để báo lỗi thân thiện thay vì để SaveChanges ném SqlException → 500.
+        var usedInExam = await _uow.QuizExamQuestions.AnyAsync(x => x.QuestionId == questionId, ct);
+        if (usedInExam)
+            return Result.Failure("Câu hỏi đang được sử dụng trong một đề thi nên không thể xóa. Vui lòng gỡ khỏi đề thi trước.");
+
         _uow.QuestionBanks.Remove(q);
-        await _uow.SaveChangesAsync(ct);
+        try
+        {
+            await _uow.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            // Lưới an toàn cho mọi ràng buộc khóa ngoại khác (vd: đáp án/lượt làm bài tham chiếu).
+            _logger.LogWarning(ex, "Không thể xóa câu hỏi {QuestionId}: vi phạm ràng buộc khóa ngoại", questionId);
+            return Result.Failure("Không thể xóa câu hỏi vì đang được sử dụng ở nơi khác.");
+        }
         return Result.Success();
     }
 

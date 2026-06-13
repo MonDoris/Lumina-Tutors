@@ -2,8 +2,8 @@
 @using LuminaTutors.Domain.Enums
 @{
     ViewData["Title"] = "Quản lý bài tập";
-    var assignments = ViewBag.Assignments as IReadOnlyList<AssignmentListDto> ?? [];
-    var sas         = ViewBag.SubjectAssignments as IReadOnlyList<SubjectAssignmentOptionDto> ?? [];
+    var assignments = ViewBag.Assignments as IReadOnlyList<AssignmentListDto> ?? new List<AssignmentListDto>();
+    var sas         = ViewBag.SubjectAssignments as IReadOnlyList<SubjectAssignmentOptionDto> ?? new List<SubjectAssignmentOptionDto>();
 
     // Group assignments by "Subject – Class"
     var grouped = assignments

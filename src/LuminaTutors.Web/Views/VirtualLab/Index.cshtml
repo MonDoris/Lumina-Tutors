@@ -71,10 +71,14 @@
     </div>
 </div>
 
-@* ── NEW: Holographic Nexus — phòng học 3D real-time + streaming ───────────── *@
-<a asp-controller="LuminaNexus" asp-action="Index" asp-route-room="nexus-demo"
-   asp-route-subject="@(ViewBag.DefaultSubjectTag as string)"
-   class="nexus-banner" data-testid="nexus-entry">
+@* ── Holographic Nexus — phòng học 3D real-time + streaming ───────────────── *@
+@{
+    var nexusHref = isTeacher
+        ? Url.Action("Create", "LuminaNexus", new { subject = ViewBag.DefaultSubjectTag as string })
+        : "#joinNexus";
+    var nexusCta = isTeacher ? "Tạo phòng mới" : "Nhập mã tham gia";
+}
+<a href="@nexusHref" class="nexus-banner" data-testid="nexus-entry">
     <div class="nexus-banner__glow"></div>
     <div class="nexus-banner__main">
         <span class="nexus-banner__badge">MỚI</span>
@@ -82,13 +86,21 @@
         <div>
             <div class="nexus-banner__title">Holographic Nexus — Phòng học 3D thời gian thực</div>
             <div class="nexus-banner__desc">
-                Streaming video qua SFU thuần C#, đồng bộ mô hình 3D &amp; âm thanh không gian (spatial audio).
-                Hai chế độ: Lecture (giáo viên dẫn) · Lab (tự do khám phá).
+                @if (isTeacher)
+                {
+                    <text>Tạo phòng có <b>mã 6 ký tự</b> để chia sẻ; đồng bộ thí nghiệm tương tác,
+                    video &amp; âm thanh không gian real-time. Học sinh tham gia được cả trên điện thoại.</text>
+                }
+                else
+                {
+                    <text>Nhập <b>mã phòng</b> giáo viên cung cấp để vào học 3D thời gian thực:
+                    xem thí nghiệm tương tác và video đồng bộ, ngay trên trình duyệt hoặc điện thoại.</text>
+                }
             </div>
         </div>
     </div>
     <div class="nexus-banner__cta">
-        Vào Nexus <i class="bi bi-arrow-right"></i>
+        @nexusCta <i class="bi bi-arrow-right"></i>
     </div>
 </a>
 
@@ -249,96 +261,55 @@
     <!-- ── RIGHT: Create / Join ──────────────────────────────────────────────── -->
     <div class="col-lg-4">
 
-        <!-- Join by code -->
-        <div class="lt-card lt-mb-4">
-            <div class="lt-card__header">
-                <h3 class="lt-card__title">
-                    <i class="bi bi-door-open-fill" style="color:var(--lt-gold);margin-right:6px"></i>
-                    Tham gia phòng
-                </h3>
-            </div>
-            <div class="lt-card__body">
-                @if (Model.Any())
-                {
-                    <!-- Active rooms available — let user pick directly (no manual code entry) -->
-                    <p style="font-size:.8rem;color:var(--lt-text-muted);margin-bottom:12px">
-                        <i class="bi bi-info-circle"></i>
-                        Chọn phòng đang hoạt động bên dưới để tham gia ngay.
-                    </p>
-                    <div style="display:flex;flex-direction:column;gap:8px">
-                        @foreach (var s in Model)
-                        {
-                            <form asp-action="Join" method="post">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="SessionCode" value="@s.SessionCode"/>
-                                <button type="submit"
-                                        class="lt-btn lt-btn--outline"
-                                        style="width:100%;justify-content:space-between;padding:.6rem 1rem">
-                                    <span style="font-weight:600;font-size:.85rem">@s.SessionName</span>
-                                    <code style="background:var(--lt-navy-900);color:var(--lt-gold);
-                                                 font-size:.8rem;padding:2px 8px;border-radius:6px;
-                                                 letter-spacing:.1em;font-weight:700">
-                                        @s.SessionCode
-                                    </code>
-                                </button>
-                            </form>
-                        }
-                    </div>
-                    <hr style="margin:14px 0;border-color:var(--lt-border)"/>
-                    <p style="font-size:.78rem;color:var(--lt-text-muted);margin-bottom:8px">
-                        Hoặc nhập mã thủ công:
-                    </p>
-                    <form asp-action="Join" method="post" style="display:flex;gap:8px">
-                        @Html.AntiForgeryToken()
-                        <input name="SessionCode" class="lt-input"
-                               placeholder="AB3K7Z" maxlength="6"
-                               style="text-transform:uppercase;letter-spacing:.15em;font-weight:700;font-size:1rem;flex:1"/>
-                        <button type="submit" class="lt-btn lt-btn--primary">
-                            <i class="bi bi-box-arrow-in-right"></i>
-                        </button>
-                    </form>
-                }
-                else
-                {
-                    <!-- No active rooms — show manual code input -->
-                    <form asp-action="Join" method="post">
-                        @Html.AntiForgeryToken()
-                        <div class="lt-form-group lt-mb-3">
-                            <label class="lt-label">Mã phòng (6 ký tự)</label>
-                            <input name="SessionCode" class="lt-input"
-                                   placeholder="VD: AB3K7Z" maxlength="6"
-                                   style="text-transform:uppercase;letter-spacing:.15em;font-weight:700;font-size:1.1rem"
-                                   required/>
-                            <p class="lt-form-hint">Nhận mã từ giáo viên hướng dẫn thí nghiệm</p>
-                        </div>
-                        <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
-                            <i class="bi bi-box-arrow-in-right"></i> Vào phòng
-                        </button>
-                    </form>
-                }
-            </div>
-        </div>
-
-        @* Tạo phòng lab cũ đã được thay bằng "Holographic Nexus" (banner phía trên) —
-           giáo viên mở phòng 3D thời gian thực trực tiếp tại đó. *@
+        @* ── Lobby phòng học 3D thời gian thực (Holographic Nexus) ───────────── *@
         @if (isTeacher)
         {
-            <div class="lt-card" style="background:oklch(96% 0.008 240)">
-                <div class="lt-card__body" style="padding:1.1rem">
-                    <div style="font-weight:600;font-size:.9rem;margin-bottom:.4rem;color:var(--lt-navy)">
-                        <i class="bi bi-broadcast" style="color:var(--lt-gold)"></i> Mở phòng 3D thời gian thực
-                    </div>
-                    <p style="font-size:.82rem;color:var(--lt-text-muted);line-height:1.55;margin-bottom:.8rem">
-                        Vào <b>Holographic Nexus</b> để giảng dạy 3D trực tiếp: chọn môn &amp; thí nghiệm,
-                        thao tác mô phỏng tương tác, học sinh xem đồng bộ real-time.
+            <div class="lt-card lt-mb-4">
+                <div class="lt-card__header">
+                    <h3 class="lt-card__title">
+                        <i class="bi bi-plus-circle-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                        Mở phòng học 3D mới
+                    </h3>
+                </div>
+                <div class="lt-card__body">
+                    <p style="font-size:.82rem;color:var(--lt-text-muted);line-height:1.55;margin-bottom:.9rem">
+                        Hệ thống tạo <b>mã phòng 6 ký tự</b>; chia sẻ mã (hoặc link) cho học sinh để vào cùng phòng —
+                        đồng bộ thí nghiệm &amp; video real-time, tham gia được cả trên điện thoại.
                     </p>
-                    <a asp-controller="LuminaNexus" asp-action="Index" asp-route-room="nexus-demo"
+                    <a asp-controller="LuminaNexus" asp-action="Create"
+                       asp-route-subject="@(ViewBag.DefaultSubjectTag as string)"
                        class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
-                        <i class="bi bi-arrow-right-circle"></i> Vào Nexus
+                        <i class="bi bi-broadcast"></i> Tạo phòng &amp; vào dạy
                     </a>
                 </div>
             </div>
         }
+
+        <!-- Tham gia bằng mã (mọi vai trò) -->
+        <div class="lt-card" id="joinNexus">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-door-open-fill" style="color:var(--lt-gold);margin-right:6px"></i>
+                    Tham gia bằng mã phòng
+                </h3>
+            </div>
+            <div class="lt-card__body">
+                <form asp-controller="LuminaNexus" asp-action="Index" method="get">
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Mã phòng (6 chữ số)</label>
+                        <input name="room" class="lt-input" placeholder="VD: 348201" maxlength="6"
+                               type="text" inputmode="numeric" pattern="[0-9]{6}" autocomplete="off"
+                               oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                               style="letter-spacing:.3em;font-weight:700;font-size:1.3rem;text-align:center"
+                               required/>
+                        <p class="lt-form-hint">Nhận mã số từ giáo viên hướng dẫn buổi học</p>
+                    </div>
+                    <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                        <i class="bi bi-box-arrow-in-right"></i> Vào phòng
+                    </button>
+                </form>
+            </div>
+        </div>
 
     </div>
 </div>
@@ -349,55 +320,5 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw-3d.js').catch(() => {});
     }
-
-    // Scene options grouped by subject tag
-    const scenesByTag = {
-        chemistry: [
-            { val: 'titration',    label: 'Chuẩn độ axit-bazơ' },
-            { val: 'electrolysis', label: 'Điện phân nước' },
-            { val: 'distillation', label: 'Chưng cất đơn giản' },
-        ],
-        physics: [
-            { val: 'pendulum', label: 'Con lắc đơn' },
-            { val: 'spring',   label: 'Con lắc lò xo' },
-            { val: 'optics',   label: 'Quang học — khúc xạ ánh sáng' },
-        ],
-        biology: [
-            { val: 'cell',           label: 'Quan sát tế bào' },
-            { val: 'dna',            label: 'Cấu trúc DNA' },
-            { val: 'photosynthesis', label: 'Quang hợp' },
-        ],
-        math: [
-            { val: 'polyhedron', label: 'Khám phá đa diện đều' },
-            { val: 'vectors',    label: 'Vector 3D & tích có hướng' },
-        ],
-    };
-
-    function filterScenes(tag) {
-        const sel = document.getElementById('sceneTypeSelect');
-        if (!sel) return;
-        sel.innerHTML = '<option value="">— Chọn thí nghiệm —</option>';
-        const scenes = scenesByTag[tag];
-        if (!scenes || !scenes.length) {
-            // Show all when no tag selected
-            Object.entries(scenesByTag).forEach(([t, list]) => {
-                const grp = document.createElement('optgroup');
-                grp.label = { chemistry:'⚗️ Hóa học', physics:'⚙️ Vật lý', biology:'🧬 Sinh học', math:'📐 Toán học' }[t] || t;
-                list.forEach(s => {
-                    const opt = new Option(s.label, s.val);
-                    grp.appendChild(opt);
-                });
-                sel.appendChild(grp);
-            });
-        } else {
-            scenes.forEach(s => sel.appendChild(new Option(s.label, s.val)));
-        }
-    }
-
-    // Init: fire filterScenes with the pre-selected subject (from teacher's primary subject)
-    (function() {
-        const tagSel = document.getElementById('subjectTagSelect');
-        if (tagSel) filterScenes(tagSel.value);
-    })();
     </script>
 }

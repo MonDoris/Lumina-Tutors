@@ -69,6 +69,14 @@ public sealed class QuizBankController : Controller
         var schoolId  = GetSchoolId();
         var teacherId = GetUserId();
 
+        // OptionLabel là 1 ký tự (A–Z) nên nhãn tự động chỉ hỗ trợ tối đa 26 đáp án.
+        // Vượt quá sẽ khiến (char)('A' + idx) sinh ký tự rác → chặn sớm với thông báo rõ ràng.
+        if (Math.Min(optionLabel.Count, optionText.Count) > 26)
+        {
+            TempData["Error"] = "Một câu hỏi chỉ hỗ trợ tối đa 26 đáp án (A–Z).";
+            return RedirectToAction(nameof(Create));
+        }
+
         var options = optionLabel
             .Zip(optionText, (label, text) => (label, text))
             .Select((pair, idx) => new CreateOptionRequest(
@@ -122,6 +130,14 @@ public sealed class QuizBankController : Controller
         [FromForm] int correctIndex)
     {
         var schoolId = GetSchoolId();
+
+        // OptionLabel là 1 ký tự (A–Z) nên nhãn tự động chỉ hỗ trợ tối đa 26 đáp án.
+        // Vượt quá sẽ khiến (char)('A' + idx) sinh ký tự rác → chặn sớm với thông báo rõ ràng.
+        if (Math.Min(optionLabel.Count, optionText.Count) > 26)
+        {
+            TempData["Error"] = "Một câu hỏi chỉ hỗ trợ tối đa 26 đáp án (A–Z).";
+            return RedirectToAction(nameof(Edit), new { id });
+        }
 
         var options = optionLabel
             .Zip(optionText, (label, text) => (label, text))

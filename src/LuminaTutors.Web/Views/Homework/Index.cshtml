@@ -1,7 +1,7 @@
 @using LuminaTutors.Application.DTOs.Homework
 @{
     ViewData["Title"] = "Bài tập của tôi";
-    var courses = ViewBag.Courses as IReadOnlyList<StudentCourseDto> ?? [];
+    var courses = ViewBag.Courses as IReadOnlyList<StudentCourseDto> ?? new List<StudentCourseDto>();
     var subjectColors = new[] { "#1e40af","#065f46","#7e22ce","#9a3412","#0c4a6e","#4c1d95","#134e4a","#7f1d1d" };
 }
 

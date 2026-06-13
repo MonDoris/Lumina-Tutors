@@ -63,6 +63,11 @@ public sealed class AiTutorController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Send(int sessionId, [FromBody] SendMessageRequest request)
     {
+        // request có thể null nếu body rỗng/sai content-type ([FromBody] không bind được) → tránh NRE.
+        // Đồng thời chặn nội dung rỗng ngay tại đây để khỏi gọi AI lãng phí token.
+        if (request is null || string.IsNullOrWhiteSpace(request.Content))
+            return BadRequest(new { error = "Tin nhắn không được để trống." });
+
         var result = await _aiTutor.SendMessageAsync(SchoolId(), sessionId, UserId(), request.Content);
         if (!result.IsSuccess)
             return BadRequest(new { error = result.Error });

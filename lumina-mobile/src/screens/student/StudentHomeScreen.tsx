@@ -9,7 +9,7 @@ import {
   LoadingView, EmptyView, SectionTitle, StatCard,
   TabPage, Card, ScorePill, NotifItem, Badge, scoreColor,
 } from '../../components/ui';
-import { studentApi, commonApi, onlineApi, virtualLabApi } from '../../api/client';
+import { studentApi, commonApi, onlineApi, nexusApi } from '../../api/client';
 import ClassroomWebViewScreen from '../shared/ClassroomWebViewScreen';
 import VirtualLabWebViewScreen from '../shared/VirtualLabWebViewScreen';
 
@@ -582,7 +582,7 @@ function OnlineLearningTab() {
 
   if (loading) return <LoadingView />;
 
-  const activeSessions   = sessions.filter((s: any) => s.status === 'Active');
+  const activeSessions   = sessions.filter((s: any) => s.status === 'Live');
   const upcomingSessions = sessions.filter((s: any) => s.status === 'Scheduled');
 
   return (
@@ -664,7 +664,7 @@ function OnlineLearningTab() {
 }
 
 function OnlineSessionCard({ session, onOpen }: { session: any; onOpen?: (s: any) => void }) {
-  const isActive = session.status === 'Active';
+  const isActive = session.status === 'Live';
   return (
     <View style={[s.sessionCard, isActive && s.sessionCardActive]}>
       <View style={{ flex: 1 }}>
@@ -697,30 +697,22 @@ function OnlineSessionCard({ session, onOpen }: { session: any; onOpen?: (s: any
 
 /* ── Virtual Lab ────────────────────────────────────────────── */
 function VirtualLabTab() {
-  const [sessions,       setSessions]       = useState<any[]>([]);
-  const [loading,        setLoading]        = useState(true);
-  const [sessionCode,    setSessionCode]    = useState('');
-  const [activeLabCode,  setActiveLabCode]  = useState<string | null>(null);
-  const [activeLabName,  setActiveLabName]  = useState<string | undefined>(undefined);
-  const [joining,        setJoining]        = useState(false);
-
-  useEffect(() => {
-    virtualLabApi.sessions()
-      .then(r => setSessions(r.data ?? []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const [roomCode,      setRoomCode]      = useState('');
+  const [activeLabCode, setActiveLabCode] = useState<string | null>(null);
+  const [joining,       setJoining]       = useState(false);
 
   const joinByCode = async () => {
-    const code = sessionCode.trim().toUpperCase();
-    if (!code) { Alert.alert('Lỗi', 'Vui lòng nhập mã phòng lab'); return; }
+    const code = roomCode.trim();
+    if (code.length < 4) { Alert.alert('Lỗi', 'Vui lòng nhập mã phòng lab (6 chữ số)'); return; }
     setJoining(true);
-    setActiveLabCode(code);
-    setActiveLabName(undefined);
-    setJoining(false);
+    try {
+      const r = await nexusApi.joinByCode(code);   // chuẩn hoá + xác thực phiên
+      setRoomCode('');
+      setActiveLabCode(r.data?.room ?? code);
+    } catch (e: any) {
+      Alert.alert('Không vào được', e?.response?.data?.message ?? 'Mã phòng không hợp lệ');
+    } finally { setJoining(false); }
   };
-
-  if (loading) return <LoadingView />;
 
   return (
     <>
@@ -729,13 +721,12 @@ function VirtualLabTab() {
       visible={!!activeLabCode}
       animationType="slide"
       statusBarTranslucent
-      onRequestClose={() => { setActiveLabCode(null); setActiveLabName(undefined); }}
+      onRequestClose={() => setActiveLabCode(null)}
     >
       {activeLabCode ? (
         <VirtualLabWebViewScreen
-          sessionCode={activeLabCode}
-          labName={activeLabName}
-          onClose={() => { setActiveLabCode(null); setActiveLabName(undefined); }}
+          room={activeLabCode}
+          onClose={() => setActiveLabCode(null)}
         />
       ) : null}
     </Modal>
@@ -743,7 +734,7 @@ function VirtualLabTab() {
     <TabPage>
       <View style={[s.onlineBanner, { backgroundColor: '#0f172a' }]}>
         <Text style={s.onlineBannerTitle}>🔬 Phòng Lab 3D</Text>
-        <Text style={s.onlineBannerSub}>Thí nghiệm hóa học, vật lý, sinh học trong không gian 3D</Text>
+        <Text style={s.onlineBannerSub}>Thí nghiệm hóa, lý, sinh, toán tương tác — đồng bộ thời gian thực</Text>
       </View>
 
       {/* Nhập mã phòng */}
@@ -752,9 +743,9 @@ function VirtualLabTab() {
         <View style={s.joinRow}>
           <TextInput
             style={s.joinInput}
-            value={sessionCode}
-            onChangeText={t => setSessionCode(t.replace(/\D/g, ''))}
-            placeholder="VD: 123456"
+            value={roomCode}
+            onChangeText={t => setRoomCode(t.replace(/\D/g, ''))}
+            placeholder="VD: 163653"
             placeholderTextColor="#94a3b8"
             keyboardType="number-pad"
             maxLength={6}
@@ -769,41 +760,7 @@ function VirtualLabTab() {
         </View>
       </View>
 
-      {/* Phòng lab đang mở */}
-      {sessions.length > 0 && (
-        <>
-          <SectionTitle>🟢 Phòng lab đang mở ({sessions.length})</SectionTitle>
-          {sessions.map((lab: any) => (
-            <TouchableOpacity
-              key={lab.id}
-              activeOpacity={0.85}
-              onPress={() => { setActiveLabCode(lab.sessionCode); setActiveLabName(lab.title ?? lab.subjectTag); }}
-            >
-              <View style={[s.sessionCard, { borderLeftColor: '#10b981' }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.sessionTitle}>{lab.title ?? `Lab ${lab.subjectTag}`}</Text>
-                  <Text style={s.sessionTeacher}>👨‍🏫 {lab.teacherName}</Text>
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 6, alignItems: 'center' }}>
-                    <View style={[s.roomCodeBadge, { backgroundColor: '#ecfdf5' }]}>
-                      <Text style={[s.roomCodeText, { color: '#10b981' }]}>{lab.sessionCode}</Text>
-                    </View>
-                    <Text style={{ fontSize: 11, color: '#94a3b8' }}>
-                      {lab.participantCount ?? 0} người tham gia
-                    </Text>
-                  </View>
-                </View>
-                <View style={[s.enterBtn, { backgroundColor: '#10b981' }]}>
-                  <Text style={s.enterBtnText}>Vào lab →</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </>
-      )}
-
-      {sessions.length === 0 && (
-        <EmptyView icon="🔬" text="Không có phòng lab nào đang mở. Nhập mã phòng để tham gia." />
-      )}
+      <EmptyView icon="🔬" text="Nhận mã phòng 6 chữ số từ giáo viên rồi nhập ở trên để vào phòng 3D thời gian thực." />
     </TabPage>
     </>
   );

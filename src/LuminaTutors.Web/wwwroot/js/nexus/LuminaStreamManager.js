@@ -67,21 +67,44 @@ export class LuminaStreamManager {
     return pc;
   }
 
-  // ── PUBLISH luồng local lên SFU ─────────────────────────────────────────
-  async publish({ video = true, audio = true } = {}) {
-    this.localStream = await navigator.mediaDevices.getUserMedia({
-      video: video ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
-      audio: audio ? { echoCancellation: true, noiseSuppression: true } : false,
-    });
+  // ── LẤY camera/mic local ────────────────────────────────────────────────
+  // Tách riêng khỏi SFU: giáo viên phải thấy được camera của mình NGAY, không
+  // phụ thuộc việc bắt tay với SFU có thành công hay không. Nếu xin cả mic+cam
+  // thất bại (thường do không có/không cấp mic) thì thử lại CHỈ camera.
+  async getLocalMedia({ video = true, audio = true } = {}) {
+    const vc = video ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false;
+    try {
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        video: vc,
+        audio: audio ? { echoCancellation: true, noiseSuppression: true } : false,
+      });
+    } catch (err) {
+      if (video && audio) {
+        // Mic có thể bị từ chối → vẫn cho giáo viên lên hình bằng camera.
+        this.localStream = await navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
+      } else {
+        throw err;
+      }
+    }
+    return this.localStream;
+  }
+
+  // ── ĐẨY luồng local đã lấy lên SFU (để học sinh xem) ────────────────────
+  // BEST-EFFORT: lỗi ở đây KHÔNG được làm mất preview camera của giáo viên.
+  async publishLocal() {
+    if (!this.localStream) throw new Error('Chưa có luồng local để publish');
     this.publisherPc = this._newPc('publisher:self');
     this.localStream.getTracks().forEach((t) => this.publisherPc.addTrack(t, this.localStream));
 
     const offer = await this.publisherPc.createOffer();
     await this.publisherPc.setLocalDescription(offer);
     const answerSdp = await this.hub.invoke('Publish', offer.sdp);
+    if (!answerSdp) throw new Error('SFU không trả answer SDP');
     await this.publisherPc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
-    return this.localStream;
   }
+
+  // Tương thích ngược: lấy media rồi publish luôn.
+  async publish(opts) { await this.getLocalMedia(opts); await this.publishLocal(); return this.localStream; }
 
   async subscribe(peerId) {
     await this.hub.invoke('Subscribe', peerId); // SFU sẽ gửi 'RtcOffer'

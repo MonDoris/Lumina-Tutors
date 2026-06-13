@@ -2,7 +2,7 @@
 @using LuminaTutors.Domain.Enums
 @{
     ViewData["Title"] = "Giao bài tập mới";
-    var sas             = ViewBag.SubjectAssignments as IReadOnlyList<SubjectAssignmentOptionDto> ?? [];
+    var sas             = ViewBag.SubjectAssignments as IReadOnlyList<SubjectAssignmentOptionDto> ?? new List<SubjectAssignmentOptionDto>();
     var preselectedSaId = ViewBag.PreselectedSaId as int? ?? 0;
 }
 

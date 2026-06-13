@@ -2,7 +2,7 @@
 @model LuminaTutors.Application.DTOs.Attendance.LeaveRequestListDto
 @{
     ViewData["Title"] = "Đơn xin nghỉ";
-    var children = ViewBag.Children as List<ParentController.ChildItem> ?? [];
+    var children = ViewBag.Children as List<ParentController.ChildItem> ?? new List<ParentController.ChildItem>();
 }
 
 @section Styles {<style>

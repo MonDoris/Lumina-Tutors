@@ -4,7 +4,7 @@
 @model StudentAttendanceSummaryDto?
 @{
     ViewData["Title"] = "Điểm danh";
-    var children   = ViewBag.Children  as List<ParentController.ChildItem> ?? [];
+    var children   = ViewBag.Children  as List<ParentController.ChildItem> ?? new List<ParentController.ChildItem>();
     var semesters  = ViewBag.Semesters as IReadOnlyList<SemesterSelectDto>        ?? new List<SemesterSelectDto>();
     var studentId  = ViewBag.StudentId  as int?;
     var semesterId = ViewBag.SemesterId as int?;
