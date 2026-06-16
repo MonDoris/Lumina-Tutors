@@ -354,3 +354,28 @@ public class OnlineSlide : BaseEntity
 
     public OnlineSession Session { get; set; } = null!;
 }
+
+// ─── SessionRecording ─────────────────────────────────────────────────────────
+
+/// <summary>
+/// Bản ghi (video) của một buổi học — phòng online (WebRTC) hoặc phòng 3D (Nexus).
+/// Lưu metadata + đường dẫn file .webm. Denormalized (snapshot tên giáo viên, nhãn
+/// phòng, số học sinh) để dùng chung cho cả hai loại phòng — phòng 3D Nexus không
+/// có session lưu trong DB nên không thể tham chiếu khoá ngoại.
+/// </summary>
+public class SessionRecording : TenantEntity
+{
+    public RecordingSource Source          { get; set; }
+    public int?     OnlineSessionId        { get; set; }   // FK nếu là phòng online
+    public string   RoomLabel              { get; set; } = string.Empty;  // tiêu đề buổi / mã phòng
+    public int      TeacherId              { get; set; }
+    public string   TeacherName            { get; set; } = string.Empty;  // snapshot tên giáo viên
+    public DateTime StartedAt              { get; set; }
+    public DateTime EndedAt                { get; set; }
+    public int      ParticipantCount       { get; set; }   // số học sinh tham gia buổi học
+    public string   FileUrl                { get; set; } = string.Empty;
+    public long     FileSizeBytes          { get; set; }
+
+    public School         School        { get; set; } = null!;
+    public OnlineSession? OnlineSession  { get; set; }
+}

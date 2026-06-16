@@ -5,6 +5,7 @@
     var displayName  = ViewBag.DisplayName as string ?? "Học viên";
     var defaultTag   = ViewBag.DefaultSubjectTag as string ?? "";
     var initialScene = ViewBag.InitialScene as string ?? "";
+    var iceServersJson = ViewBag.IceServersJson as string ?? "[{\"urls\":\"stun:stun.l.google.com:19302\"}]";
     var disabled     = isTeacher ? null : "disabled";
 }
 <!DOCTYPE html>
@@ -63,6 +64,32 @@
         <span class="roomcode__toast" id="roomToast"></span>
     </button>
 
+    <!-- DANH SÁCH NGƯỜI TRONG PHÒNG — bấm nút để mở/đóng -->
+    <button class="roster-toggle" id="rosterToggle" type="button"
+            aria-label="Xem danh sách người trong phòng">
+        <span class="roster-toggle__ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                 stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/>
+                <circle cx="9" cy="7" r="3.2"/>
+                <path d="M22 19v-1a4 4 0 0 0-3-3.87"/>
+                <path d="M16 4.13a4 4 0 0 1 0 6.74"/>
+            </svg>
+        </span>
+        <span class="roster-toggle__count" id="rosterCount">0</span>
+        <span class="roster-toggle__lbl">Trong phòng</span>
+    </button>
+    <aside class="roster-panel" id="rosterPanel" aria-label="Danh sách người trong phòng">
+        <div class="roster-panel__head">
+            <span>NGƯỜI TRONG PHÒNG</span>
+            <span class="roster-panel__n"><b id="rosterHeadCount">0</b> người</span>
+        </div>
+        <ul class="roster-list" id="rosterList"></ul>
+    </aside>
+
+    <!-- Thông báo khi có người vào phòng -->
+    <div class="roster-toast" id="rosterToast" aria-live="polite"></div>
+
     <!-- TABLET control panel (Clinical Luxury) -->
     <section class="tablet" role="toolbar" aria-label="Bảng điều khiển giảng dạy">
         <div class="tablet__bezel">
@@ -71,6 +98,8 @@
                 <span class="tablet__status">
                     <i class="dot" id="statusDot"></i><span id="statusTxt">CONNECTING…</span>
                 </span>
+                <button class="tablet__collapse" id="tabletCollapse" type="button"
+                        aria-label="Thu gọn / mở bảng điều khiển">▾</button>
             </header>
 
             @if (isTeacher)
@@ -154,6 +183,30 @@
         <div class="commwidget__glow" aria-hidden="true"></div>
     </aside>
 
+    <!-- THANH ĐIỀU KHIỂN PHÒNG (mic / camera / giơ tay / ghi hình / rời phòng) -->
+    <div class="nexus-controls" role="toolbar" aria-label="Điều khiển phòng học">
+        @if (isTeacher)
+        {
+            <button class="nx-ctl" id="nxMic" type="button" title="Tắt/bật micro" aria-label="Micro">
+                <span class="nx-ic" id="nxMicIc">🎙️</span>
+            </button>
+            <button class="nx-ctl" id="nxCam" type="button" title="Tắt/bật camera" aria-label="Camera">
+                <span class="nx-ic" id="nxCamIc">🎥</span>
+            </button>
+        }
+        <button class="nx-ctl" id="nxHand" type="button" title="Giơ tay" aria-label="Giơ tay">
+            <span class="nx-ic">✋</span>
+        </button>
+        <button class="nx-ctl" id="nxRec" type="button" title="Ghi hình buổi học" aria-label="Ghi hình">
+            <span class="nx-ic" id="nxRecIc">⏺️</span>
+        </button>
+        <button class="nx-ctl nx-ctl--end" id="nxLeave" type="button"
+                title="@(isTeacher ? "Kết thúc phòng" : "Rời phòng")" aria-label="@(isTeacher ? "Kết thúc phòng" : "Rời phòng")">
+            <span class="nx-ic">📞</span>
+        </button>
+    </div>
+    <div class="nexus-rec-badge" id="nxRecBadge"><span class="nx-recdot"></span>REC <span id="nxRecTime">00:00</span></div>
+
     <!-- Hidden media pool -->
     <div id="nexus-video-pool" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0"></div>
 </div>
@@ -167,7 +220,8 @@
         isTeacher: @(isTeacher ? "true" : "false"),
         displayName: '@Html.Raw(displayName.Replace("'", "\\'"))',
         subject: '@Html.Raw(defaultTag)',
-        initialScene: '@Html.Raw(initialScene)'
+        initialScene: '@Html.Raw(initialScene)',
+        iceServers: @Html.Raw(iceServersJson)
     };
 
     // ── Mã phòng: bấm để sao chép LINK MỜI (hoặc mã) cho học sinh ──────────

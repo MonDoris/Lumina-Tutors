@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using LuminaTutors.Application.Interfaces.Services;
 using LuminaTutors.Web.Models;
 using Microsoft.AspNetCore.Authentication;
@@ -23,11 +24,38 @@ public sealed class LuminaNexusController : Controller
 {
     private readonly IAccountService _accountService;
     private readonly IMemoryCache    _cache;
+    private readonly IConfiguration  _config;
 
-    public LuminaNexusController(IAccountService accountService, IMemoryCache cache)
+    public LuminaNexusController(IAccountService accountService, IMemoryCache cache, IConfiguration config)
     {
         _accountService = accountService;
         _cache          = cache;
+        _config         = config;
+    }
+
+    /// <summary>
+    /// ICE servers cho client (cùng bộ với SFU). Trả JSON dạng mảng
+    /// [{ urls, username?, credential? }] để nhúng vào NEXUS_CONFIG.iceServers.
+    /// Thêm TURN trong cấu hình "Webrtc:IceServers" để điện thoại ở mạng khác /
+    /// sau NAT đối xứng kết nối được. Mặc định chỉ STUN Google.
+    /// </summary>
+    private string BuildClientIceServersJson()
+    {
+        var list = new List<Dictionary<string, string>>();
+        foreach (var node in _config.GetSection("Webrtc:IceServers").GetChildren())
+        {
+            var urls = node["urls"];
+            if (string.IsNullOrWhiteSpace(urls)) continue;
+            var entry = new Dictionary<string, string> { ["urls"] = urls };
+            var username   = node["username"];
+            var credential = node["credential"];
+            if (!string.IsNullOrWhiteSpace(username))   entry["username"]   = username;
+            if (!string.IsNullOrWhiteSpace(credential)) entry["credential"] = credential;
+            list.Add(entry);
+        }
+        if (list.Count == 0)
+            list.Add(new Dictionary<string, string> { ["urls"] = "stun:stun.l.google.com:19302" });
+        return JsonSerializer.Serialize(list);
     }
 
     // Bộ thẻ môn học dùng trong phòng Lab 3D (đồng bộ với VirtualLab)
@@ -88,6 +116,7 @@ public sealed class LuminaNexusController : Controller
 
         ViewBag.DefaultSubjectTag = subjectTag;
         ViewBag.InitialScene      = string.IsNullOrWhiteSpace(scene) ? null : scene.Trim();
+        ViewBag.IceServersJson    = BuildClientIceServersJson();
 
         return View();
     }

@@ -76,6 +76,7 @@ public class LuminaTutorsDbContext : DbContext
     public DbSet<SessionParticipant>   SessionParticipants   => Set<SessionParticipant>();
     public DbSet<OnlineRoomChat>       OnlineRoomChats       => Set<OnlineRoomChat>();
     public DbSet<OnlineSlide>          OnlineSlides          => Set<OnlineSlide>();
+    public DbSet<SessionRecording>     SessionRecordings     => Set<SessionRecording>();
     public DbSet<QuestionImportJob>    QuestionImportJobs    => Set<QuestionImportJob>();
 
     // ── Grading ───────────────────────────────────────────────────────────────

@@ -8,7 +8,18 @@
  */
 import * as THREE from 'three';
 
-const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+// ICE servers: ưu tiên bộ do server bơm vào (NEXUS_CONFIG.iceServers — đồng bộ
+// với SFU, có thể gồm TURN để điện thoại ở mạng khác / sau NAT kết nối được).
+// Fallback STUN Google khi cấu hình rỗng. Đọc động (không cache ở mức module)
+// để tránh phụ thuộc thứ tự nạp script.
+function iceConfig() {
+  const fromServer = (typeof window !== 'undefined' && window.NEXUS_CONFIG && window.NEXUS_CONFIG.iceServers) || null;
+  return {
+    iceServers: Array.isArray(fromServer) && fromServer.length
+      ? fromServer
+      : [{ urls: 'stun:stun.l.google.com:19302' }],
+  };
+}
 
 export class LuminaStreamManager {
   /**
@@ -60,7 +71,7 @@ export class LuminaStreamManager {
   }
 
   _newPc(pcKey) {
-    const pc = new RTCPeerConnection(ICE);
+    const pc = new RTCPeerConnection(iceConfig());
     pc.onicecandidate = (e) => {
       if (e.candidate) this.hub.invoke('SendIceCandidate', pcKey, JSON.stringify(e.candidate)).catch(() => {});
     };

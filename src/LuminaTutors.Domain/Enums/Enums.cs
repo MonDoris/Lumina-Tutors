@@ -361,6 +361,13 @@ public enum OnlineSessionStatus
     Cancelled = 4
 }
 
+/// <summary>Loại phòng tạo ra bản ghi buổi học.</summary>
+public enum RecordingSource
+{
+    Online = 1,   // Phòng học online (WebRTC)
+    Lab3D  = 2    // Phòng học 3D (Lumina Nexus)
+}
+
 public enum ChatMessageType
 {
     Text   = 1,

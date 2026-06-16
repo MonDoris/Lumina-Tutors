@@ -411,3 +411,27 @@ public class QuestionImportJobConfiguration : IEntityTypeConfiguration<QuestionI
             .HasForeignKey(x => x.TargetSubjectId).OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public class SessionRecordingConfiguration : IEntityTypeConfiguration<SessionRecording>
+{
+    public void Configure(EntityTypeBuilder<SessionRecording> b)
+    {
+        b.ToTable("SessionRecordings");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("RecordingId").UseIdentityColumn();
+
+        b.Property(x => x.Source).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.RoomLabel).IsRequired().HasMaxLength(300);
+        b.Property(x => x.TeacherName).IsRequired().HasMaxLength(150);
+        b.Property(x => x.FileUrl).IsRequired().HasMaxLength(1000);
+        b.Property(x => x.StartedAt).IsRequired();
+        b.Property(x => x.EndedAt).IsRequired();
+
+        b.HasIndex(x => x.SchoolId).HasDatabaseName("IX_SessionRecordings_School");
+
+        b.HasOne(x => x.School).WithMany()
+            .HasForeignKey(x => x.SchoolId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.OnlineSession).WithMany()
+            .HasForeignKey(x => x.OnlineSessionId).OnDelete(DeleteBehavior.SetNull);
+    }
+}

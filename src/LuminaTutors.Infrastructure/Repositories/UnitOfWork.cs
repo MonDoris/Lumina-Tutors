@@ -70,6 +70,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<SessionParticipant>?   _sessionParticipants;
     private IRepository<OnlineRoomChat>?       _onlineRoomChats;
     private IRepository<OnlineSlide>?          _onlineSlides;
+    private IRepository<SessionRecording>?     _sessionRecordings;
     private IRepository<QuizExam>?             _quizExams;
     private IRepository<QuizExamQuestion>?     _quizExamQuestions;
     private IRepository<StudentQuizAttempt>?   _studentQuizAttempts;
@@ -157,6 +158,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<SessionParticipant>   SessionParticipants   => Get(ref _sessionParticipants);
     public IRepository<OnlineRoomChat>       OnlineRoomChats       => Get(ref _onlineRoomChats);
     public IRepository<OnlineSlide>          OnlineSlides          => Get(ref _onlineSlides);
+    public IRepository<SessionRecording>     SessionRecordings     => Get(ref _sessionRecordings);
     public IRepository<QuestionImportJob>    QuestionImportJobs    => Get(ref _questionImportJobs);
     public IRepository<QuizExam>             QuizExams             => Get(ref _quizExams);
     public IRepository<QuizExamQuestion>     QuizExamQuestions     => Get(ref _quizExamQuestions);

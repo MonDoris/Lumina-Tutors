@@ -66,6 +66,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<SessionParticipant>   SessionParticipants   { get; }
     IRepository<OnlineRoomChat>       OnlineRoomChats       { get; }
     IRepository<OnlineSlide>          OnlineSlides          { get; }
+    IRepository<SessionRecording>     SessionRecordings     { get; }
     IRepository<QuizExamQuestion>     QuizExamQuestions     { get; }
     IRepository<StudentQuizAttempt>   StudentQuizAttempts   { get; }
     IRepository<StudentQuizAnswer>    StudentQuizAnswers    { get; }

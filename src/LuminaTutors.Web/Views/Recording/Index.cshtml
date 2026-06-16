@@ -1,0 +1,92 @@
+@using LuminaTutors.Application.DTOs.Recording
+@{
+    ViewData["Title"] = "Bản ghi buổi học";
+    var recordings = ViewBag.Recordings as IReadOnlyList<RecordingListItemDto> ?? new List<RecordingListItemDto>();
+
+    string Dur(int s)
+    {
+        var t = TimeSpan.FromSeconds(s);
+        return t.Hours > 0 ? $"{t.Hours}:{t.Minutes:00}:{t.Seconds:00}" : $"{t.Minutes}:{t.Seconds:00}";
+    }
+    string Size(long b) => b >= 1 << 20 ? $"{b / 1024d / 1024d:0.#} MB" : $"{b / 1024d:0} KB";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-record-circle-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Bản ghi buổi học
+        </h1>
+        <p class="lt-page-subtitle">Video các buổi học online và phòng học 3D đã được ghi lại</p>
+    </div>
+    <span class="lt-badge" style="background:rgba(201,169,110,.12);color:var(--lt-gold);font-weight:600">
+        @recordings.Count bản ghi
+    </span>
+</div>
+
+@if (recordings.Count == 0)
+{
+    <div class="lt-card">
+        <div class="lt-card__body" style="text-align:center;padding:48px 16px">
+            <i class="bi bi-camera-reels" style="font-size:2.6rem;color:var(--lt-text-muted);opacity:.5"></i>
+            <p style="margin-top:12px;color:var(--lt-text-muted)">Chưa có bản ghi nào. Bản ghi sẽ xuất hiện ở đây khi giáo viên bấm <b>Ghi hình</b> trong phòng học.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="lt-card">
+        <div class="lt-card__body" style="padding:0;overflow-x:auto">
+            <table class="lt-table">
+                <thead>
+                    <tr>
+                        <th style="width:110px">Ngày</th>
+                        <th style="width:160px">Giờ bắt đầu – kết thúc</th>
+                        <th>Lớp / Buổi học</th>
+                        <th style="width:110px">Loại phòng</th>
+                        <th style="width:160px">Giáo viên dạy</th>
+                        <th style="width:90px;text-align:center">Học sinh</th>
+                        <th style="width:90px;text-align:center">Thời lượng</th>
+                        <th style="width:120px;text-align:right">Bản ghi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in recordings)
+                    {
+                        var st = r.StartedAt.ToLocalTime();
+                        var et = r.EndedAt.ToLocalTime();
+                        var is3D = r.SourceLabel.Contains("3D");
+                        <tr>
+                            <td style="font-size:.82rem;white-space:nowrap">@st.ToString("dd/MM/yyyy")</td>
+                            <td style="font-size:.8rem;font-variant-numeric:tabular-nums;white-space:nowrap">
+                                @st.ToString("HH:mm:ss") <span style="color:var(--lt-text-muted)">–</span> @et.ToString("HH:mm:ss")
+                            </td>
+                            <td><div style="font-weight:600;font-size:.85rem">@r.RoomLabel</div></td>
+                            <td>
+                                <span class="lt-badge"
+                                      style="font-size:.72rem;font-weight:600;@(is3D
+                                          ? "background:rgba(127,90,240,.12);color:#7c5af0"
+                                          : "background:rgba(26,115,232,.12);color:#1a73e8")">
+                                    <i class="bi @(is3D ? "bi-badge-vr-fill" : "bi-camera-video-fill")"></i> @r.SourceLabel
+                                </span>
+                            </td>
+                            <td style="font-size:.84rem">@r.TeacherName</td>
+                            <td style="text-align:center;font-weight:700;font-size:.9rem">@r.ParticipantCount</td>
+                            <td style="text-align:center;font-size:.8rem;color:var(--lt-text-muted)">@Dur(r.DurationSeconds)</td>
+                            <td style="text-align:right;white-space:nowrap">
+                                <a href="@r.FileUrl" target="_blank" rel="noopener"
+                                   class="lt-btn lt-btn--sm lt-btn--outline" title="Xem bản ghi">
+                                    <i class="bi bi-play-fill"></i>
+                                </a>
+                                <a href="@r.FileUrl" download
+                                   class="lt-btn lt-btn--sm lt-btn--outline" title="Tải về (@Size(r.FileSizeBytes))">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -61,6 +61,14 @@ public sealed class LuminaRtcHub : Hub
             .Select(id => ToPeer(Participants[id]))
             .ToList();
 
+        // Roster đầy đủ: mọi người đang trong phòng (kể cả học sinh chưa publish)
+        // để client dựng danh sách "ai đang trong phòng lab". `peers` ở trên chỉ
+        // gồm người đang phát media nên không đủ cho mục đích điểm danh.
+        var roster = Rooms[roomId].Keys
+            .Where(id => id != Context.ConnectionId && Participants.ContainsKey(id))
+            .Select(id => ToPeer(Participants[id]))
+            .ToList();
+
         await Clients.Caller.SendAsync("RoomJoined", new
         {
             roomId,
@@ -71,7 +79,8 @@ public sealed class LuminaRtcHub : Hub
             sims = RoomSims.TryGetValue(roomId, out var sq)
                 ? sq.ToDictionary(x => x.Key, x => x.Value)
                 : new Dictionary<string, double>(),
-            peers
+            peers,
+            roster
         });
         await Clients.OthersInGroup(roomId).SendAsync("PeerJoined", ToPeer(p));
 
@@ -222,6 +231,28 @@ public sealed class LuminaRtcHub : Hub
         if (!Participants.TryGetValue(Context.ConnectionId, out var p)) return;
         payload.PeerId = Context.ConnectionId;
         await Clients.OthersInGroup(p.RoomId).SendAsync("AvatarMoved", payload);
+    }
+
+    // ── GIƠ TAY ────────────────────────────────────────────────────────────────
+    public async Task RaiseHand()
+    {
+        if (!Participants.TryGetValue(Context.ConnectionId, out var p)) return;
+        await Clients.OthersInGroup(p.RoomId)
+            .SendAsync("HandRaised", new { peerId = Context.ConnectionId, displayName = p.DisplayName });
+    }
+
+    public async Task LowerHand()
+    {
+        if (!Participants.TryGetValue(Context.ConnectionId, out var p)) return;
+        await Clients.OthersInGroup(p.RoomId)
+            .SendAsync("HandLowered", new { peerId = Context.ConnectionId });
+    }
+
+    // ── KẾT THÚC PHÒNG (chỉ giáo viên) — báo mọi người rời ────────────────────
+    public async Task EndRoom()
+    {
+        if (!Participants.TryGetValue(Context.ConnectionId, out var p) || p.Role != "teacher") return;
+        await Clients.OthersInGroup(p.RoomId).SendAsync("RoomEnded");
     }
 
     // ── DISCONNECT ─────────────────────────────────────────────────────────────

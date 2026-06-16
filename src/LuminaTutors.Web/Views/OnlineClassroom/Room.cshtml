@@ -322,8 +322,10 @@ html.in-webview #video-grid.spotlight-mode .spotlight-pip{width:110px;height:80p
   .tb-title { font-size: .78rem; }
   .tb-badge { font-size: .68rem; padding: 2px 7px; }
   #clock { font-size: .7rem; }
-  /* Bottombar: icons only, bigger touch targets */
-  #bottombar { padding: 0 6px; justify-content: space-around; }
+  /* Bottombar: chỉ còn Mic / Cam / Thêm / Kết thúc — căn giữa, không tràn */
+  #bottombar { padding: 0 6px; justify-content: center; }
+  .bb-left, .bb-right, .bb-extra { display: none !important; }
+  .bb-more { display: flex !important; }
   .bb-info   { display: none; }
   .ctl-label { display: none; }
   .ctl-wrap  { gap: 0; }
@@ -362,7 +364,9 @@ html.in-webview .ctl-end  { width: 60px; height: 52px; }
 html.in-webview .ctl-wrap { gap: 0; }
 html.in-webview .ctl-view { width: 38px; height: 38px; border-radius: 10px; padding: 0; font-size: .95rem; }
 html.in-webview .ctl-action { width: 42px; height: 42px; border-radius: 10px; padding: 0; font-size: 1rem; }
-html.in-webview #bottombar { padding: 0 6px; justify-content: space-around; }
+html.in-webview #bottombar { padding: 0 6px; justify-content: center; }
+html.in-webview .bb-left, html.in-webview .bb-right, html.in-webview .bb-extra { display: none !important; }
+html.in-webview .bb-more { display: flex !important; }
 html.in-webview #topbar { padding: 0 10px; }
 html.in-webview #side-panel { top: 44px; bottom: 76px; border-radius: 16px 16px 0 0; width: 100%; }
 html.in-webview #topbar, html.in-webview #bottombar { transition: opacity .2s ease; }
@@ -437,6 +441,30 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
 #bg-overlay{position:fixed;inset:0;z-index:499;background:rgba(0,0,0,.5);display:none}
 #bg-overlay.show{display:block}
 
+/* ── MORE (⋮) SHEET — mobile overflow menu ──────────────────────────── */
+.bb-more{display:none}              /* desktop: ẩn nút Thêm (thanh đủ rộng) */
+#more-sheet{
+    position:fixed;bottom:0;left:0;right:0;z-index:500;background:var(--surface);
+    border-radius:20px 20px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.7);
+    transform:translateY(110%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+    max-height:78vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,16px)
+}
+#more-sheet.open{transform:translateY(0)}
+.ms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ms-item{
+    display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;
+    border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+    color:var(--text);font-size:.85rem;font-weight:500;text-align:left;transition:.15s
+}
+.ms-item:hover{background:rgba(255,255,255,.08)}
+.ms-item i{font-size:1.15rem;color:var(--gold);flex-shrink:0}
+
+/* ── Trạng thái đang ghi hình ───────────────────────────────────────── */
+.ctl.rec-active{background:rgba(234,67,53,.22)!important;color:#ff6b5e!important;animation:recpulse 1.4s infinite}
+@@keyframes recpulse{0%,100%{box-shadow:0 0 0 0 rgba(234,67,53,.55)}50%{box-shadow:0 0 0 7px rgba(234,67,53,0)}}
+.ms-item.rec-active{border-color:rgba(234,67,53,.5);color:#ff6b5e;background:rgba(234,67,53,.1)}
+.ms-item.rec-active i{color:#ff6b5e}
+
 /* ── MODAL ──────────────────────────────────────────── */
 #modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;
            display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -455,6 +483,11 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
     </div>
 
     <div class="tb-right">
+      <span id="rec-indicator" class="tb-badge"
+            style="display:none;align-items:center;gap:6px;background:rgba(234,67,53,.18);color:#ff6b5e">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--danger);animation:blink 1.2s infinite"></span>
+        REC <span id="rec-time" style="font-feature-settings:'tnum'">00:00</span>
+      </span>
       @if (session?.Status == OnlineSessionStatus.Live)
       {
           <span class="tb-badge live">
@@ -523,7 +556,7 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
   <footer id="bottombar">
 
     <!-- Left: info + view switches -->
-    <div class="bb-group" style="gap:12px">
+    <div class="bb-group bb-left" style="gap:12px">
       <div class="bb-info">
         <span class="bb-time" id="bb-clock"></span>
         <span class="bb-room">Mã phòng: <b>@session?.RoomCode</b></span>
@@ -555,6 +588,23 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
         <span class="ctl-label">Camera</span>
       </div>
 
+      <!-- Ghi hình — desktop hiện ở thanh; mobile nằm trong sheet "Thêm" -->
+      <div class="ctl-wrap bb-extra">
+        <button class="ctl ctl-on" id="btn-record" onclick="toggleRecord()" title="Ghi hình buổi học">
+          <i class="bi bi-record-circle"></i>
+        </button>
+        <span class="ctl-label">Ghi hình</span>
+      </div>
+
+      <!-- More (⋮) — mobile only; mở bottom-sheet gom các nút phụ -->
+      <div class="ctl-wrap bb-more">
+        <button class="ctl ctl-on" id="btn-more" onclick="openMoreMenu()" title="Thêm">
+          <i class="bi bi-three-dots"></i>
+          <span id="more-unread" style="position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--danger);display:none"></span>
+        </button>
+        <span class="ctl-label">Thêm</span>
+      </div>
+
       @if (isHost)
       {
           <div class="ctl-wrap">
@@ -577,7 +627,7 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
           </div>
       }
 
-      <div class="ctl-wrap">
+      <div class="ctl-wrap bb-extra">
         <button class="ctl ctl-on" id="btn-hand" onclick="raiseHand()" title="Giơ tay">
           <i class="bi bi-hand-index-thumb-fill"></i>
         </button>
@@ -585,7 +635,7 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
       </div>
       @if (isHost)
       {
-          <div class="ctl-wrap">
+          <div class="ctl-wrap bb-extra">
             <button class="ctl ctl-on" id="btn-screen" onclick="shareScreen()" title="Chia sẻ màn hình">
               <i class="bi bi-display-fill"></i>
             </button>
@@ -595,7 +645,7 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
     </div>
 
     <!-- Right: panel toggles + background -->
-    <div class="bb-group" style="justify-content:flex-end;gap:8px">
+    <div class="bb-group bb-right" style="justify-content:flex-end;gap:8px">
       <div class="ctl-wrap">
         <button class="ctl ctl-action" id="btn-people" onclick="togglePanel('people')" title="Thành viên">
           <i class="bi bi-people-fill"></i>
@@ -650,7 +700,7 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
 </div>
 
 <!-- ══ BACKGROUND / LAYOUT PICKER PANEL ════════════════════════════ -->
-<div id="bg-overlay" onclick="closeBgPanel()"></div>
+<div id="bg-overlay" onclick="closeSheets()"></div>
 <div id="bg-panel">
   <div class="bp-drag"></div>
   <div class="bp-header">
@@ -722,6 +772,59 @@ html.in-webview #app.bars-hidden #bottombar { opacity: 0; pointer-events: none; 
       <button class="bp-vbg-btn" id="vbg-dark" onclick="setAvatarBg('dark')">
         <div class="bp-vbg-prev" style="background:linear-gradient(135deg,#232526,#414345)"></div>
         <span class="bp-vbg-label">Tối giản</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MORE (⋮) SHEET — mobile overflow menu, kiểu Google Meet ═════════ -->
+<div id="more-sheet">
+  <div class="bp-drag"></div>
+  <div class="bp-header">
+    <span><i class="bi bi-grid-fill" style="color:var(--gold);margin-right:6px"></i>Tùy chọn</span>
+    <button class="bp-close" onclick="closeSheets()"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <!-- Chế độ xem -->
+  <div class="bp-section">
+    <div class="bp-section-title">Chế độ xem</div>
+    <div class="bp-layouts">
+      <button class="bp-layout-btn sel" id="m-v-video" onclick="switchView('video');closeSheets()">
+        <i class="bi bi-camera-video-fill"></i> Video
+      </button>
+      <button class="bp-layout-btn" id="m-v-wb" onclick="switchView('wb');closeSheets()">
+        <i class="bi bi-easel2-fill"></i> Bảng
+      </button>
+      <button class="bp-layout-btn" id="m-v-slide" onclick="switchView('slide');closeSheets()">
+        <i class="bi bi-file-slides-fill"></i> Slide
+      </button>
+    </div>
+  </div>
+
+  <!-- Hành động -->
+  <div class="bp-section">
+    <div class="bp-section-title">Hành động</div>
+    <div class="ms-grid">
+      <button class="ms-item" id="m-record" onclick="toggleRecord();closeSheets()">
+        <i class="bi bi-record-circle"></i><span id="m-record-label">Ghi hình</span>
+      </button>
+      <button class="ms-item" onclick="raiseHand();closeSheets()">
+        <i class="bi bi-hand-index-thumb-fill"></i><span>Giơ tay</span>
+      </button>
+      @if (isHost)
+      {
+          <button class="ms-item" onclick="shareScreen();closeSheets()">
+            <i class="bi bi-display-fill"></i><span>Chia sẻ màn hình</span>
+          </button>
+      }
+      <button class="ms-item" onclick="closeSheets();togglePanel('people')">
+        <i class="bi bi-people-fill"></i><span>Thành viên (<span id="m-people-count">0</span>)</span>
+      </button>
+      <button class="ms-item" onclick="closeSheets();togglePanel('chat')">
+        <i class="bi bi-chat-dots-fill"></i><span>Trò chuyện</span>
+      </button>
+      <button class="ms-item" onclick="closeSheets();openBgPanel()">
+        <i class="bi bi-palette-fill"></i><span>Nền &amp; Bố cục</span>
       </button>
     </div>
   </div>
@@ -818,6 +921,7 @@ function switchView(v){
 
     ['video','wb','slide'].forEach(n=>{
         document.getElementById('btn-v-'+n)?.classList.toggle('active-view', n===v);
+        document.getElementById('m-v-'+n)?.classList.toggle('sel', n===v);
     });
     if(v==='wb') initWhiteboard();
 }
@@ -828,7 +932,7 @@ function togglePanel(tab){
     panelOpen=true; panelTab=tab;
     document.getElementById('side-panel').classList.add('open');
     switchPanelTab(tab);
-    if(tab==='chat'){ unreadCount=0; document.getElementById('unread-dot').style.display='none'; }
+    if(tab==='chat'){ unreadCount=0; document.getElementById('unread-dot').style.display='none'; const _mu=document.getElementById('more-unread'); if(_mu) _mu.style.display='none'; }
 }
 function closePanel(){
     panelOpen=false;
@@ -843,7 +947,7 @@ function switchPanelTab(tab){
     document.getElementById('pane-chat').style.display   = tab==='chat'   ? 'flex'  : 'none';
     document.getElementById('btn-people')?.classList.toggle('active', tab==='people'&&panelOpen);
     document.getElementById('btn-chat')?.classList.toggle('active', tab==='chat'&&panelOpen);
-    if(tab==='chat'){ unreadCount=0; document.getElementById('unread-dot').style.display='none'; }
+    if(tab==='chat'){ unreadCount=0; document.getElementById('unread-dot').style.display='none'; const _mu=document.getElementById('more-unread'); if(_mu) _mu.style.display='none'; }
 }
 
 // ── PARTICIPANTS RENDER ──────────────────────────────────────────────
@@ -852,6 +956,7 @@ function renderParticipants(){
     const count = Object.values(participants).filter(p=>p.isOnline).length;
     document.getElementById('people-count').textContent = count;
     document.getElementById('p-count2').textContent     = count;
+    const _mpc = document.getElementById('m-people-count'); if(_mpc) _mpc.textContent = count;
 
     list.innerHTML='';
     Object.values(participants)
@@ -910,6 +1015,7 @@ function appendMsg(msg){
     if(!panelOpen || panelTab!=='chat'){
         unreadCount++;
         document.getElementById('unread-dot').style.display='block';
+        const _mu=document.getElementById('more-unread'); if(_mu) _mu.style.display='block';
     }
 }
 function sendChat(){
@@ -1055,13 +1161,22 @@ function relayout(){
 
 // ── BACKGROUND PICKER ────────────────────────────────────────────────
 function openBgPanel(){
+    document.getElementById('more-sheet')?.classList.remove('open');
     document.getElementById('bg-panel').classList.add('open');
     document.getElementById('bg-overlay').classList.add('show');
 }
-function closeBgPanel(){
-    document.getElementById('bg-panel').classList.remove('open');
-    document.getElementById('bg-overlay').classList.remove('show');
+// ── MORE (⋮) bottom-sheet ───────────────────────────────────────────
+function openMoreMenu(){
+    document.getElementById('bg-panel')?.classList.remove('open');
+    document.getElementById('more-sheet').classList.add('open');
+    document.getElementById('bg-overlay').classList.add('show');
 }
+function closeSheets(){
+    document.getElementById('more-sheet')?.classList.remove('open');
+    document.getElementById('bg-panel')?.classList.remove('open');
+    document.getElementById('bg-overlay')?.classList.remove('show');
+}
+function closeBgPanel(){ closeSheets(); }
 
 // Room color themes
 function applyTheme(name){
@@ -1231,6 +1346,123 @@ async function initSignalR(){
     await connection.start();
     await connection.invoke('JoinRoom',SESSION_ID);
     if(IS_HOST) await connection.invoke('NotifySessionStarted',SESSION_ID).catch(()=>{});
+}
+
+// ── GHI HÌNH (ghép ô video + trộn audio → tải .webm) ─────────────────
+// Hoạt động hoàn toàn ở client (web & WebView): vẽ mọi <video> lên 1 canvas,
+// gộp mic của mình + tiếng của mọi người, ghi bằng MediaRecorder rồi tải về máy.
+let _rec = { mr:null, chunks:[], on:false, raf:0, timer:0, secs:0, actx:null };
+
+function toggleRecord(){ _rec.on ? stopRecording() : startRecording(); }
+
+async function startRecording(){
+    if(!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream){
+        toast('Trình duyệt không hỗ trợ ghi hình','error'); return;
+    }
+    try{
+        const canvas=document.createElement('canvas'); canvas.width=1280; canvas.height=720;
+        const ctx=canvas.getContext('2d');
+        const drawCover=(v,x,y,w,h)=>{
+            if(!v.videoWidth) return;
+            const vr=v.videoWidth/v.videoHeight, dr=w/h; let sx,sy,sw,sh;
+            if(vr>dr){ sh=v.videoHeight; sw=sh*dr; sx=(v.videoWidth-sw)/2; sy=0; }
+            else      { sw=v.videoWidth;  sh=sw/dr; sx=0; sy=(v.videoHeight-sh)/2; }
+            ctx.drawImage(v,sx,sy,sw,sh,x,y,w,h);
+        };
+        const frame=()=>{
+            ctx.fillStyle='#16181b'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            const vids=[...document.querySelectorAll('#video-grid video')].filter(v=>v.videoWidth>0);
+            const n=vids.length||1;
+            const cols=n<=1?1:n<=2?2:n<=4?2:n<=6?3:n<=9?3:4, rows=Math.ceil(n/cols);
+            const cw=canvas.width/cols, ch=canvas.height/rows;
+            vids.forEach((v,i)=>drawCover(v,(i%cols)*cw+3,Math.floor(i/cols)*ch+3,cw-6,ch-6));
+        };
+        // Dùng setInterval (KHÔNG dùng rAF): rAF bị dừng khi tab chạy nền sẽ làm
+        // bản ghi đóng băng. setInterval ~15fps giữ canvas luôn được vẽ.
+        frame();
+        _rec.raf=setInterval(frame, 66);
+        const vStream=canvas.captureStream(25);
+
+        _rec.actx=new (window.AudioContext||window.webkitAudioContext)();
+        try{ await _rec.actx.resume(); }catch(e){}
+        const dest=_rec.actx.createMediaStreamDestination();
+        let _na=0;
+        const addAudio=(s)=>{ const a=s&&s.getAudioTracks&&s.getAudioTracks(); if(a&&a.length){ try{ _rec.actx.createMediaStreamSource(new MediaStream([a[0]])).connect(dest); _na++; }catch(e){} } };
+        addAudio(localStream);
+        [...document.querySelectorAll('#video-grid video')].forEach(v=>addAudio(v.srcObject));
+
+        // Chỉ kèm track audio khi có nguồn thật — tránh track câm làm MediaRecorder treo (0 dữ liệu).
+        const _audioTracks = _na>0 ? dest.stream.getAudioTracks() : [];
+        const mixed=new MediaStream([vStream.getVideoTracks()[0], ..._audioTracks]);
+        const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+            .find(m=>MediaRecorder.isTypeSupported(m))||'';
+        _rec.mr=new MediaRecorder(mixed, mime?{mimeType:mime,videoBitsPerSecond:2500000}:undefined);
+        _rec.chunks=[];
+        _rec.mr.ondataavailable=e=>{ if(e.data&&e.data.size) _rec.chunks.push(e.data); };
+        _rec.mr.onstop=finalizeRecording;
+        _rec.mr.start(1000);
+        _rec.on=true; _rec.secs=0; _rec.startTs=Date.now(); updateRecUI(true);
+        _rec.timer=setInterval(()=>{ _rec.secs++; updateRecTimer(); },1000);
+        toast('🔴 Đang ghi hình buổi học');
+    }catch(e){ toast('Không ghi hình được: '+e.message,'error'); cleanupRec(); }
+}
+
+function stopRecording(){
+    if(_rec.mr && _rec.mr.state!=='inactive'){ try{ _rec.mr.stop(); }catch(e){ cleanupRec(); } }
+    else cleanupRec();
+}
+
+function finalizeRecording(){
+    const blob=new Blob(_rec.chunks,{type:'video/webm'});
+    if(blob.size){
+        const url=URL.createObjectURL(blob), a=document.createElement('a');
+        const ts=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+        a.href=url; a.download=`lumina-buoihoc-${ts}.webm`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),15000);
+        uploadRecording(blob);                  // lưu lên server (DB + trang Admin)
+        toast('✅ Đã lưu bản ghi vào máy','success');
+    } else { toast('Bản ghi rỗng','error'); }
+    cleanupRec();
+}
+// Gửi bản ghi + metadata lên server (số học sinh = số người trong phòng ngoài giáo viên)
+function uploadRecording(blob){
+    try{
+        const studentCount = Object.keys(participants).length;
+        const fd=new FormData();
+        fd.append('file', blob, 'rec.webm');
+        fd.append('source','Online');
+        fd.append('onlineSessionId', String(SESSION_ID));
+        fd.append('roomLabel', (document.querySelector('.tb-title')?.textContent||'').trim());
+        fd.append('startedAtMs', String(_rec.startTs||Date.now()));
+        fd.append('endedAtMs', String(Date.now()));
+        fd.append('participantCount', String(studentCount));
+        fetch('/Recording/Save',{method:'POST',body:fd})
+            .then(r=>toast(r.ok?'☁️ Đã lưu bản ghi lên hệ thống':'Lưu lên hệ thống thất bại', r.ok?'success':'error'))
+            .catch(()=>toast('Không gửi được bản ghi lên hệ thống','error'));
+    }catch(e){}
+}
+
+function cleanupRec(){
+    _rec.on=false;
+    clearInterval(_rec.raf); clearInterval(_rec.timer);
+    if(_rec.actx){ _rec.actx.close().catch(()=>{}); _rec.actx=null; }
+    _rec.mr=null; _rec.chunks=[];
+    updateRecUI(false);
+}
+
+function updateRecUI(on){
+    const b=document.getElementById('btn-record');
+    if(b){ b.classList.toggle('rec-active',on); const i=b.querySelector('i'); if(i) i.className=on?'bi bi-stop-fill':'bi bi-record-circle'; }
+    const m=document.getElementById('m-record'); if(m) m.classList.toggle('rec-active',on);
+    const ml=document.getElementById('m-record-label'); if(ml) ml.textContent=on?'Dừng ghi':'Ghi hình';
+    const ind=document.getElementById('rec-indicator'); if(ind) ind.style.display=on?'inline-flex':'none';
+    if(!on) updateRecTimer(true);
+}
+function updateRecTimer(reset){
+    const s=reset?0:_rec.secs;
+    const el=document.getElementById('rec-time');
+    if(el) el.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 }
 
 // ── MOBILE TAP-TO-HIDE / SHOW CONTROLS ─────────────────────────────

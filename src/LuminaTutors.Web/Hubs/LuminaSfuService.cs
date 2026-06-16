@@ -57,20 +57,39 @@ public sealed class LuminaSfuService : ILuminaSfuService
     private readonly ConcurrentDictionary<string, Subscription> _subscriptions = new();   // key = subscriptionId
     private readonly ConcurrentDictionary<string, RTCPeerConnection> _pcByKey = new();    // cho trickle ICE
 
-    public LuminaSfuService(IHubContext<LuminaRtcHub> hub, ILogger<LuminaSfuService> logger)
+    // ICE servers dùng chung cho mọi PeerConnection. Đọc từ cấu hình "Webrtc:IceServers"
+    // (xem appsettings) để có thể thêm TURN — bắt buộc khi điện thoại ở mạng khác/NAT
+    // đối xứng không thể kết nối trực tiếp tới server. Mặc định chỉ có STUN Google.
+    private readonly List<RTCIceServer> _iceServers;
+
+    public LuminaSfuService(IHubContext<LuminaRtcHub> hub, ILogger<LuminaSfuService> logger, IConfiguration config)
     {
         _hub = hub;
         _logger = logger;
+        _iceServers = BuildIceServers(config);
+        _logger.LogInformation("SFU ICE servers: {Urls}", string.Join(", ", _iceServers.Select(s => s.urls)));
     }
 
-    private static RTCPeerConnection NewPc() => new(new RTCConfiguration
+    private static List<RTCIceServer> BuildIceServers(IConfiguration config)
     {
-        iceServers = new List<RTCIceServer>
+        var servers = new List<RTCIceServer>();
+        foreach (var node in config.GetSection("Webrtc:IceServers").GetChildren())
         {
-            new() { urls = "stun:stun.l.google.com:19302" }
-            // Production: thêm TURN server riêng để mobile sau NAT đối xứng kết nối được.
+            var urls = node["urls"];
+            if (string.IsNullOrWhiteSpace(urls)) continue;
+            var server = new RTCIceServer { urls = urls };
+            var username = node["username"];
+            var credential = node["credential"];
+            if (!string.IsNullOrWhiteSpace(username))   server.username = username;
+            if (!string.IsNullOrWhiteSpace(credential)) server.credential = credential;
+            servers.Add(server);
         }
-    });
+        if (servers.Count == 0)
+            servers.Add(new RTCIceServer { urls = "stun:stun.l.google.com:19302" });
+        return servers;
+    }
+
+    private RTCPeerConnection NewPc() => new(new RTCConfiguration { iceServers = _iceServers });
 
     // ── PUBLISHER: client offer -> SFU answer ─────────────────────────────────
     public async Task<string> CreatePublisherAsync(string roomId, string connId, string sdpOffer)
@@ -86,8 +105,14 @@ public sealed class LuminaSfuService : ILuminaSfuService
         pc.addTrack(new MediaStreamTrack(Vp8Format(),  MediaStreamStatusEnum.RecvOnly));
 
         // FORWARD: nhận gói RTP nào, đẩy ngay tới mọi subscriber của publisher này.
+        // Log gói RTP ĐẦU TIÊN mỗi loại media để xác nhận luồng của giáo viên
+        // thực sự tới được server (tách biệt với việc subscriber có nhận được hay không).
+        var loggedMedia = new ConcurrentDictionary<SDPMediaTypesEnum, byte>();
         pc.OnRtpPacketReceived += (IPEndPoint rep, SDPMediaTypesEnum media, RTPPacket pkt) =>
         {
+            if (loggedMedia.TryAdd(media, 0))
+                _logger.LogInformation("SFU ← RTP đầu tiên từ publisher {Conn} ({Media})", connId, media);
+
             foreach (var sub in pub.Subscribers.Values)
             {
                 if (sub.Pc.connectionState != RTCPeerConnectionState.connected) continue;
@@ -106,7 +131,7 @@ public sealed class LuminaSfuService : ILuminaSfuService
         pc.onicecandidate += c => PushIce(connId, pcKey, c);
         pc.onconnectionstatechange += s =>
         {
-            _logger.LogDebug("Publisher {Conn} -> {State}", connId, s);
+            _logger.LogInformation("SFU publisher {Conn} -> {State}", connId, s);
             if (s is RTCPeerConnectionState.failed or RTCPeerConnectionState.closed)
                 RemovePeer(roomId, connId);
         };
@@ -146,6 +171,10 @@ public sealed class LuminaSfuService : ILuminaSfuService
         pc.onicecandidate += c => PushIce(subscriberConnId, pcKey, c);
         pc.onconnectionstatechange += s =>
         {
+            // "connected" = đường media tới người xem (vd: điện thoại) đã thông.
+            // Kẹt ở "checking" rồi "failed" = ICE không bắt tay được → cần TURN
+            // hoặc mở UDP qua firewall. Đây là điểm chẩn đoán quan trọng nhất.
+            _logger.LogInformation("SFU subscriber {Sub} (xem {Target}) -> {State}", subId, targetPeerId, s);
             if (s is RTCPeerConnectionState.failed or RTCPeerConnectionState.closed)
                 CloseSubscription(subId);
         };

@@ -28,7 +28,34 @@ const els = {
   simPanel: $('simPanel'), simTitle: $('simTitle'), simLines: $('simLines'),
   feed: $('teacherFeed'), camPlaceholder: $('camPlaceholder'), commName: $('commName'),
   commGlow: document.querySelector('.commwidget__glow'),
+  rosterToggle: $('rosterToggle'), rosterCount: $('rosterCount'), rosterHeadCount: $('rosterHeadCount'),
+  rosterPanel: $('rosterPanel'), rosterList: $('rosterList'), rosterToast: $('rosterToast'),
+  tablet: document.querySelector('.tablet'), tabletCollapse: $('tabletCollapse'),
+  nxMic: $('nxMic'), nxMicIc: $('nxMicIc'), nxCam: $('nxCam'), nxCamIc: $('nxCamIc'),
+  nxHand: $('nxHand'), nxRec: $('nxRec'), nxRecIc: $('nxRecIc'), nxLeave: $('nxLeave'),
+  nxRecBadge: $('nxRecBadge'), nxRecTime: $('nxRecTime'),
 };
+
+// ── Mobile chrome: thu gọn bảng điều khiển để vùng 3D thoáng, dễ nhìn thí nghiệm.
+// Trên màn hình hẹp (≤760px) mặc định gập; chạm chevron để mở/đóng.
+(function initMobileChrome() {
+  const tablet = els.tablet;
+  if (!tablet) return;
+  const mq = window.matchMedia('(max-width: 760px)');
+  const apply = (matches) => tablet.classList.toggle('is-collapsed', matches);
+  apply(mq.matches);
+  const onChange = (e) => apply(e.matches);
+  if (mq.addEventListener) mq.addEventListener('change', onChange);
+  else if (mq.addListener) mq.addListener(onChange);
+  els.tabletCollapse?.addEventListener('click', () => tablet.classList.toggle('is-collapsed'));
+})();
+
+// ── Danh sách người trong phòng (roster) ──────────────────────────────────────
+// peerId -> { name, role }. Dựng từ RoomJoined.roster (+ self), cập nhật realtime
+// qua PeerJoined / PeerLeft. Cả giáo viên lẫn học sinh đều thấy.
+const roster = new Map();
+let selfPeerId = null;
+let joinToastTimer = null;
 
 // ── Thí nghiệm theo môn học (đồng bộ nhãn với Lumina3DEngine.SCENE_LABELS) ─────
 const SUBJECTS = [
@@ -114,16 +141,23 @@ async function main() {
   if (CFG.isTeacher) { wirePickers(engine, startScene); buildChemTray(engine); }
 
   // ── Stream manager (WebRTC + spatial audio) ─────────────────────────────
+  let lastRemoteAudio = null;   // tiếng giáo viên (để học sinh ghi hình kèm âm thanh)
   const streams = new LuminaStreamManager(hub, engine.getListener(), {
     // Audio remote (giáo viên) -> gắn PositionalAudio vào specimen (zoom gần = to hơn)
-    onRemoteAudio: (peerId, stream) => attachPositionalAudio(engine.specimen, engine.getListener(), stream),
+    onRemoteAudio: (peerId, stream) => { lastRemoteAudio = stream; attachPositionalAudio(engine.specimen, engine.getListener(), stream); },
     // Video remote (giáo viên) -> đổ vào comm widget
     onPeerVideo: (peerId, _el, stream) => showFeed(stream),
   });
 
   // ── Roster ───────────────────────────────────────────────────────────────
-  hub.on('RoomJoined', ({ peers, role, scene, chem, sims }) => {
+  hub.on('RoomJoined', ({ selfId, peers, roster: initialRoster, role, scene, chem, sims }) => {
     setStatus(true, 'SYNC 20Hz · ' + role.toUpperCase());
+    // Dựng lại danh sách người trong phòng: bản thân + những người đã có sẵn.
+    selfPeerId = selfId;
+    roster.clear();
+    roster.set(selfId, { name: CFG.displayName, role });
+    (initialRoster || []).forEach((p) => roster.set(p.peerId, { name: p.displayName, role: p.role }));
+    renderRoster();
     // Người vào sau (học sinh): đồng bộ đúng thí nghiệm giáo viên đang chiếu
     if (scene && !CFG.isTeacher) engine.setScene(scene, false);
     // Bàn phản ứng: phát lại các hóa chất đã cho vào cốc (tức thì, không animation)
@@ -133,6 +167,63 @@ async function main() {
     peers.forEach((p) => streams.subscribe(p.peerId));
   });
   hub.on('NewPublisher', (peer) => streams.subscribe(peer.peerId));
+
+  // ── Có người vào / rời phòng -> cập nhật danh sách + thông báo ───────────
+  hub.on('PeerJoined', (peer) => {
+    roster.set(peer.peerId, { name: peer.displayName, role: peer.role });
+    renderRoster();
+    showJoinToast(peer.displayName, peer.role);
+  });
+  hub.on('PeerLeft', (peerId) => {
+    roster.delete(peerId);
+    renderRoster();
+  });
+
+  // ── Giơ tay / kết thúc phòng (realtime) ──────────────────────────────────
+  hub.on('HandRaised', ({ peerId, displayName }) => {
+    const e = roster.get(peerId); if (e) e.hand = true;
+    renderRoster(); showHandToast(displayName);
+  });
+  hub.on('HandLowered', ({ peerId }) => {
+    const e = roster.get(peerId); if (e) e.hand = false;
+    renderRoster();
+  });
+  hub.on('RoomEnded', () => { alert('Giáo viên đã kết thúc phòng học.'); leaveNexus(hub); });
+
+  // ── Nút mở / đóng danh sách người trong phòng ──────────────────────────
+  els.rosterToggle?.addEventListener('click', () => {
+    const open = els.rosterPanel?.classList.toggle('show');
+    els.rosterToggle.classList.toggle('is-open', open);
+  });
+
+  // ── Thanh điều khiển: mic / camera / giơ tay / ghi hình / rời phòng ─────
+  let micOn = true, camOn = true, handUp = false;
+  els.nxMic?.addEventListener('click', () => {
+    micOn = !micOn;
+    streams.localStream?.getAudioTracks().forEach((t) => (t.enabled = micOn));
+    els.nxMic.classList.toggle('off', !micOn);
+    if (els.nxMicIc) els.nxMicIc.textContent = micOn ? '🎙️' : '🔇';
+  });
+  els.nxCam?.addEventListener('click', () => {
+    camOn = !camOn;
+    streams.localStream?.getVideoTracks().forEach((t) => (t.enabled = camOn));
+    els.nxCam.classList.toggle('off', !camOn);
+    if (els.nxCamIc) els.nxCamIc.textContent = camOn ? '🎥' : '📷';
+    if (els.feed) els.feed.style.opacity = camOn ? '1' : '0';
+  });
+  els.nxHand?.addEventListener('click', () => {
+    handUp = !handUp;
+    els.nxHand.classList.toggle('is-active', handUp);
+    hub.invoke(handUp ? 'RaiseHand' : 'LowerHand').catch(() => {});
+    const me = roster.get(selfPeerId); if (me) { me.hand = handUp; renderRoster(); }
+  });
+  els.nxRec?.addEventListener('click', () => toggleNexusRecord(streams, () => lastRemoteAudio));
+  els.nxLeave?.addEventListener('click', () => {
+    const teacher = CFG.isTeacher;
+    if (!confirm(teacher ? 'Kết thúc phòng học cho mọi người?' : 'Rời khỏi phòng học?')) return;
+    if (teacher) hub.invoke('EndRoom').catch(() => {});
+    leaveNexus(hub);
+  });
   hub.onreconnecting(() => setStatus(false, 'RECONNECTING'));
   hub.onreconnected(() => setStatus(true, 'SYNC 20Hz'));
   hub.onclose(() => setStatus(false, 'OFFLINE'));
@@ -300,10 +391,149 @@ function renderChemPanel(st) {
     els.chemDesc.textContent = st.note || (st.last ? st.last.desc : 'Chưa có phản ứng — chọn hóa chất để bắt đầu.');
 }
 
+// ── Roster: render danh sách + thông báo người vào phòng ──────────────────────
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Chữ cái viết tắt cho avatar (chữ đầu của tên đầu + tên cuối). */
+function initials(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+const roleLabel = (role) => (role === 'teacher' ? 'Giáo viên' : 'Học sinh');
+
+/** Vẽ lại danh sách người trong phòng (giáo viên trước, rồi A→Z theo tên). */
+function renderRoster() {
+  const total = roster.size;
+  if (els.rosterCount) els.rosterCount.textContent = String(total);
+  if (els.rosterHeadCount) els.rosterHeadCount.textContent = String(total);
+  if (!els.rosterList) return;
+
+  const entries = [...roster.entries()].sort((a, b) => {
+    if (a[1].role !== b[1].role) return a[1].role === 'teacher' ? -1 : 1;
+    return (a[1].name || '').localeCompare(b[1].name || '', 'vi');
+  });
+
+  els.rosterList.innerHTML = entries.map(([id, p]) => {
+    const self = id === selfPeerId ? ' is-self' : '';
+    const youTag = id === selfPeerId ? ' <i>(bạn)</i>' : '';
+    const badgeMod = p.role === 'teacher' ? 'roster-badge--t' : 'roster-badge--s';
+    const handIc = p.hand ? '<span style="font-size:.9rem;margin-right:2px" title="Đang giơ tay">✋</span>' : '';
+    return `<li class="roster-item${self}">
+        <span class="roster-ava" data-role="${p.role}">${escapeHtml(initials(p.name))}</span>
+        <span class="roster-name">${escapeHtml(p.name || 'Học viên')}${youTag}</span>
+        ${handIc}
+        <span class="roster-badge ${badgeMod}">${roleLabel(p.role)}</span>
+      </li>`;
+  }).join('');
+}
+
+/** Thông báo nổi khi có người mới vào phòng. */
+function showJoinToast(name, role) {
+  if (!els.rosterToast) return;
+  els.rosterToast.innerHTML =
+    `<i class="roster-toast__dot"></i><span><b>${escapeHtml(name || 'Học viên')}</b> · ${roleLabel(role)} đã vào phòng</span>`;
+  els.rosterToast.classList.add('show');
+  clearTimeout(joinToastTimer);
+  joinToastTimer = setTimeout(() => els.rosterToast.classList.remove('show'), 3200);
+}
+
+/** Thông báo khi có người giơ tay. */
+function showHandToast(name) {
+  if (!els.rosterToast) return;
+  els.rosterToast.innerHTML =
+    `<i class="roster-toast__dot" style="background:#f5d76e;box-shadow:0 0 8px rgba(245,215,110,.6)"></i><span>✋ <b>${escapeHtml(name || 'Học viên')}</b> giơ tay</span>`;
+  els.rosterToast.classList.add('show');
+  clearTimeout(joinToastTimer);
+  joinToastTimer = setTimeout(() => els.rosterToast.classList.remove('show'), 3200);
+}
+
+// ── GHI HÌNH PHÒNG 3D (canvas WebGL + trộn audio → tải .webm) ─────────────────
+let _nxRec = { mr: null, chunks: [], on: false, timer: 0, secs: 0, actx: null };
+function toggleNexusRecord(streams, getRemote) { _nxRec.on ? stopNexusRecord() : startNexusRecord(streams, getRemote); }
+async function startNexusRecord(streams, getRemote) {
+  if (!window.MediaRecorder || !els.canvas || !els.canvas.captureStream) { alert('Trình duyệt không hỗ trợ ghi hình'); return; }
+  try {
+    const vStream = els.canvas.captureStream(25);            // canvas hologram WebGL
+    _nxRec.actx = new (window.AudioContext || window.webkitAudioContext)();
+    try { await _nxRec.actx.resume(); } catch (e) {}
+    const dest = _nxRec.actx.createMediaStreamDestination();
+    let na = 0;
+    const addAudio = (s) => { const a = s && s.getAudioTracks && s.getAudioTracks(); if (a && a.length) { try { _nxRec.actx.createMediaStreamSource(new MediaStream([a[0]])).connect(dest); na++; } catch (e) {} } };
+    addAudio(streams && streams.localStream);               // mic giáo viên (nếu có)
+    addAudio(getRemote && getRemote());                     // tiếng giáo viên (phía học sinh)
+    const audioTracks = na > 0 ? dest.stream.getAudioTracks() : [];
+    const mixed = new MediaStream([vStream.getVideoTracks()[0], ...audioTracks]);
+    const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((m) => MediaRecorder.isTypeSupported(m)) || '';
+    _nxRec.mr = new MediaRecorder(mixed, mime ? { mimeType: mime, videoBitsPerSecond: 3000000 } : undefined);
+    _nxRec.chunks = [];
+    _nxRec.mr.ondataavailable = (e) => { if (e.data && e.data.size) _nxRec.chunks.push(e.data); };
+    _nxRec.mr.onstop = finalizeNexusRecord;
+    _nxRec.mr.start(1000);
+    _nxRec.on = true; _nxRec.secs = 0; _nxRec.startTs = Date.now(); updateNxRecUI(true);
+    _nxRec.timer = setInterval(() => { _nxRec.secs++; updateNxRecTime(); }, 1000);
+  } catch (e) { alert('Không ghi hình được: ' + e.message); cleanupNxRec(); }
+}
+function stopNexusRecord() { if (_nxRec.mr && _nxRec.mr.state !== 'inactive') { try { _nxRec.mr.stop(); } catch (e) { cleanupNxRec(); } } else cleanupNxRec(); }
+function finalizeNexusRecord() {
+  const blob = new Blob(_nxRec.chunks, { type: 'video/webm' });
+  if (blob.size) {
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    a.href = url; a.download = `lumina-3d-${ts}.webm`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
+    uploadNexusRecording(blob);                 // lưu lên server (DB + trang Admin)
+  }
+  cleanupNxRec();
+}
+// Gửi bản ghi phòng 3D + metadata lên server
+function uploadNexusRecording(blob) {
+  try {
+    const students = [...roster.values()].filter((p) => p.role !== 'teacher').length;
+    const fd = new FormData();
+    fd.append('file', blob, 'rec.webm');
+    fd.append('source', 'Lab3D');
+    fd.append('roomLabel', 'Phòng 3D · ' + (CFG.roomId || ''));
+    fd.append('startedAtMs', String(_nxRec.startTs || Date.now()));
+    fd.append('endedAtMs', String(Date.now()));
+    fd.append('participantCount', String(students));
+    fetch('/Recording/Save', { method: 'POST', body: fd }).catch(() => {});
+  } catch (e) {}
+}
+function cleanupNxRec() {
+  _nxRec.on = false; clearInterval(_nxRec.timer);
+  if (_nxRec.actx) { _nxRec.actx.close().catch(() => {}); _nxRec.actx = null; }
+  _nxRec.mr = null; _nxRec.chunks = [];
+  updateNxRecUI(false);
+}
+function updateNxRecUI(on) {
+  els.nxRec?.classList.toggle('rec-on', on);
+  if (els.nxRecIc) els.nxRecIc.textContent = on ? '⏹️' : '⏺️';
+  els.nxRecBadge?.classList.toggle('show', on);
+  if (!on) updateNxRecTime(true);
+}
+function updateNxRecTime(reset) {
+  const s = reset ? 0 : _nxRec.secs;
+  if (els.nxRecTime) els.nxRecTime.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+
+/** Rời / kết thúc phòng: dừng ghi (nếu đang ghi), ngắt hub, về trang chủ. */
+function leaveNexus(hub) {
+  try { if (_nxRec.on) stopNexusRecord(); } catch (e) {}
+  try { hub && hub.stop && hub.stop(); } catch (e) {}
+  window.location.href = '/Dashboard';
+}
+
 function showFeed(stream) {
   if (!els.feed) return;
   els.feed.srcObject = stream; els.feed.style.display = 'block';
   if (els.camPlaceholder) els.camPlaceholder.style.display = 'none';
+  // Trên mobile, camera bị ẩn cho tới khi có luồng thật — đánh dấu để hiện thumbnail.
+  document.body.classList.add('nexus-has-feed');
 }
 function setStatus(online, text) {
   els.statusDot?.classList.toggle('online', online);
