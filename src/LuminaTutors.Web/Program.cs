@@ -86,6 +86,12 @@ try
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("AdminOnly",       p => p.RequireRole("ADMIN"));
+        // Quản trị hệ thống: quản lý gói E-Selling (catalog gói/add-on, đăng ký của mọi trường)
+        options.AddPolicy("SystemAdmin",     p => p.RequireRole("SYSADMIN"));
+        // Chỉ Nhà trường (ADMIN) — KHÔNG gồm Quản trị hệ thống: dùng cho việc mua/đăng ký
+        // gói dịch vụ của chính trường. SYSADMIN là bên bán nên không đăng ký gói.
+        options.AddPolicy("SchoolAdminOnly", p => p.RequireAssertion(ctx =>
+            ctx.User.IsInRole("ADMIN") && !ctx.User.IsInRole("SYSADMIN")));
         options.AddPolicy("TeacherOrAdmin",  p => p.RequireRole("TEACHER", "ADMIN"));
         options.AddPolicy("FinanceAccess",   p => p.RequireRole("ACCOUNTANT", "ADMIN"));
         options.AddPolicy("SupervisorAccess",p => p.RequireRole("SUPERVISOR", "ADMIN"));
@@ -130,9 +136,20 @@ try
     var app = builder.Build();
 
     // ── Dev Seeder ────────────────────────────────────────────────────────────
+    // KHÔNG để lỗi seeding/migration làm sập app lúc khởi động: nếu LocalDB chưa
+    // sẵn sàng, web server vẫn chạy (tránh lỗi VS "web server is no longer running").
     if (app.Environment.IsDevelopment())
     {
-        await LuminaTutors.Infrastructure.Data.DatabaseSeeder.SeedAsync(app.Services);
+        try
+        {
+            await LuminaTutors.Infrastructure.Data.DatabaseSeeder.SeedAsync(app.Services);
+        }
+        catch (Exception seedEx)
+        {
+            Log.Warning(seedEx,
+                "Bỏ qua seeding do lỗi cơ sở dữ liệu lúc khởi động — ứng dụng vẫn chạy. " +
+                "Kiểm tra LocalDB (sqllocaldb start mssqllocaldb) rồi tải lại trang/khởi động lại.");
+        }
     }
 
     // ── Forwarded headers (chạy SAU Cloudflare Tunnel / ngrok / reverse proxy) ──
@@ -156,6 +173,55 @@ try
     {
         app.UseDeveloperExceptionPage();
     }
+
+    // ── Mất kết nối CSDL (LocalDB cold-start/treo) → trang thân thiện ──────────
+    // Đặt SAU trang lỗi dev nên middleware này (lớp trong) bắt lỗi CSDL trước và
+    // hiển thị hướng dẫn; các lỗi lập trình khác vẫn ném lên trang lỗi dev để debug.
+    app.Use(async (ctx, next) =>
+    {
+        try { await next(); }
+        catch (Exception ex) when (IsDbDown(ex) && !ctx.Response.HasStarted)
+        {
+            Log.Warning(ex, "CSDL không kết nối được khi xử lý {Path}", ctx.Request.Path);
+            ctx.Response.StatusCode  = StatusCodes.Status503ServiceUnavailable;
+            ctx.Response.ContentType = "text/html; charset=utf-8";
+            await ctx.Response.WriteAsync(DbDownPage());
+        }
+    });
+
+    static bool IsDbDown(Exception ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException)
+        {
+            var m = e.Message ?? "";
+            if (e.GetType().Name == "SqlException"
+                || m.Contains("LocalDB", StringComparison.OrdinalIgnoreCase)
+                || m.Contains("network-related", StringComparison.OrdinalIgnoreCase)
+                || m.Contains("RetryLimitExceeded", StringComparison.OrdinalIgnoreCase)
+                || m.Contains("connection to SQL Server", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    static string DbDownPage() =>
+        "<!DOCTYPE html><html lang='vi'><head><meta charset='utf-8'>" +
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>" +
+        "<title>Mất kết nối cơ sở dữ liệu</title></head>" +
+        "<body style='margin:0;font-family:system-ui,Segoe UI,sans-serif;background:#0b1726;color:#eaf1fb;" +
+        "min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px'>" +
+        "<div style='max-width:460px;text-align:center;background:rgba(255,255,255,.05);" +
+        "border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:38px 32px'>" +
+        "<div style='font-size:3rem'>🗄️</div>" +
+        "<h1 style='font-size:1.3rem;margin:14px 0 8px;color:#fff'>Chưa kết nối được cơ sở dữ liệu</h1>" +
+        "<p style='color:#a9bbd4;line-height:1.6;font-size:.95rem;margin:0 0 10px'>" +
+        "LocalDB đang khởi động lại hoặc tạm thời không phản hồi. Vui lòng thử lại sau giây lát.</p>" +
+        "<p style='color:#7e90ad;font-size:.8rem;margin:0 0 22px'>Nếu vẫn lỗi, mở PowerShell chạy: " +
+        "<code style='background:rgba(0,0,0,.35);padding:2px 7px;border-radius:6px'>sqllocaldb start mssqllocaldb</code></p>" +
+        "<a href='javascript:location.reload()' style='display:inline-block;" +
+        "background:linear-gradient(135deg,#e7cf86,#c9a84c);color:#3a2e08;text-decoration:none;" +
+        "font-weight:700;padding:12px 26px;border-radius:11px'>&#8635; Thử lại</a>" +
+        "</div></body></html>";
 
     if (!app.Environment.IsDevelopment())
         app.UseHttpsRedirection();

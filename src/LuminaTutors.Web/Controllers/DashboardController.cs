@@ -40,6 +40,10 @@ public sealed class DashboardController : Controller
 
     public async Task<IActionResult> Index()
     {
+        // SYSADMIN (bên bán) không dùng dashboard trường — chuyển về khu E-Selling
+        if (User.IsInRole("SYSADMIN"))
+            return RedirectToAction("Subscriptions", "Subscription");
+
         var userId   = GetCurrentUserId();
         var schoolId = GetCurrentSchoolId();
         var roleCode = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;

@@ -3,6 +3,8 @@
     var isAuth   = User.Identity?.IsAuthenticated == true;
     var fullName = User.FindFirstValue(ClaimTypes.Name) ?? "";
     var roleCode = User.FindFirstValue(ClaimTypes.Role) ?? "";
+    var roleName = User.FindFirstValue("RoleName") ?? roleCode;
+    var isSysAdmin = User.IsInRole("SYSADMIN");
     var school   = User.FindFirstValue("SchoolName") ?? "Lumina Tutors";
     var avatarUrl = User.FindFirstValue("AvatarUrl");
     var initials = fullName.Length > 0 ? string.Concat(fullName.Split(' ').TakeLast(2).Select(p => p[0])) : "LT";
@@ -144,7 +146,9 @@
         <!-- Navigation -->
         <nav class="lt-nav" role="navigation">
 
-            <!-- Core -->
+            <!-- Core (ẩn với SYSADMIN — vai trò bên bán, không dùng dashboard trường) -->
+            @if (!isSysAdmin)
+            {
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Tổng quan</div>
                 <a asp-controller="Dashboard" asp-action="Index" class="@Nav("Dashboard")">
@@ -160,6 +164,7 @@
                     }
                 </a>
             </div>
+            }
 
             <!-- Academic -->
             @if (roleCode is "ADMIN" or "TEACHER")
@@ -298,15 +303,18 @@
                     <span class="lt-nav__icon"><i class="bi bi-sliders"></i></span>
                     Cấu hình học vụ
                 </a>
-                <a asp-controller="Subscription" asp-action="Index" class="@Nav("Subscription")"
-                   style="position:relative">
-                    <span class="lt-nav__icon"><i class="bi bi-gem"></i></span>
-                    Gói dịch vụ
-                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
-                                 background:var(--lt-gold);color:var(--lt-navy);
-                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
-                                 padding:1px 5px;border-radius:4px;line-height:1.4">SaaS</span>
-                </a>
+                @if (!isSysAdmin)
+                {
+                    <a asp-controller="Subscription" asp-action="Index" class="@Nav("Subscription", "Index")"
+                       style="position:relative">
+                        <span class="lt-nav__icon"><i class="bi bi-gem"></i></span>
+                        Gói dịch vụ
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                     background:var(--lt-gold);color:var(--lt-navy);
+                                     font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                     padding:1px 5px;border-radius:4px;line-height:1.4">SaaS</span>
+                    </a>
+                }
             </div>
 
             <!-- Subjects (Admin only) -->
@@ -328,6 +336,31 @@
                 <a asp-controller="Auth" asp-action="InviteLinks" class="@Nav("Auth", "InviteLinks")">
                     <span class="lt-nav__icon"><i class="bi bi-link-45deg"></i></span>
                     Liên kết mời
+                </a>
+            </div>
+            }
+
+            <!-- E-Selling (Quản trị hệ thống) -->
+            @if (isSysAdmin)
+            {
+            <div class="lt-nav__section">
+                <div class="lt-nav__section-label">E-Selling (Hệ thống)</div>
+                <a asp-controller="Subscription" asp-action="Catalog" class="@Nav("Subscription", "Catalog")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-box-seam-fill"></i></span>
+                    Quản lý gói &amp; add-on
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">ADMIN</span>
+                </a>
+                <a asp-controller="Subscription" asp-action="Subscriptions" class="@Nav("Subscription", "Subscriptions")">
+                    <span class="lt-nav__icon"><i class="bi bi-diagram-3-fill"></i></span>
+                    Đăng ký các trường
+                </a>
+                <a asp-controller="Subscription" asp-action="Schools" class="@Nav("Subscription", "Schools")">
+                    <span class="lt-nav__icon"><i class="bi bi-buildings-fill"></i></span>
+                    Quản lý trường
                 </a>
             </div>
             }
@@ -430,7 +463,7 @@
                 </div>
                 <div class="lt-flex-1">
                     <div class="lt-sidebar__user-name">@fullName</div>
-                    <div class="lt-sidebar__user-role">@roleCode</div>
+                    <div class="lt-sidebar__user-role">@roleName</div>
                 </div>
                 <form asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
                     @Html.AntiForgeryToken()

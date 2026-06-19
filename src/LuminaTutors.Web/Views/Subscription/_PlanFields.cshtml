@@ -1,0 +1,47 @@
+@model LuminaTutors.Application.DTOs.Subscription.PlanEditRequest
+@{ var m = Model; }
+
+<div style="display:grid;grid-template-columns:1fr 90px;gap:10px">
+    <div>
+        <label class="lt-label">Mã gói</label>
+        <input name="PlanCode" class="lt-input" value="@m?.PlanCode" placeholder="VD: PREMIUM" required maxlength="30" />
+    </div>
+    <div>
+        <label class="lt-label">Bậc</label>
+        <input name="Tier" type="number" min="0" max="99" class="lt-input" value="@(m?.Tier ?? 1)" />
+    </div>
+</div>
+
+<div style="margin-top:8px">
+    <label class="lt-label">Tên gói</label>
+    <input name="Name" class="lt-input" value="@m?.Name" required maxlength="100" />
+</div>
+
+<div style="margin-top:8px">
+    <label class="lt-label">Mô tả</label>
+    <textarea name="Description" class="lt-input" rows="2" maxlength="500">@m?.Description</textarea>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px">
+    <div>
+        <label class="lt-label">Giá/tháng</label>
+        <input name="MonthlyPrice" type="number" step="1000" min="0" class="lt-input" value="@((m?.MonthlyPrice ?? 0m).ToString("0"))" />
+    </div>
+    <div>
+        <label class="lt-label">Giá/quý</label>
+        <input name="QuarterlyPrice" type="number" step="1000" min="0" class="lt-input" value="@((m?.QuarterlyPrice ?? 0m).ToString("0"))" />
+    </div>
+    <div>
+        <label class="lt-label">Giá/năm</label>
+        <input name="YearlyPrice" type="number" step="1000" min="0" class="lt-input" value="@((m?.YearlyPrice ?? 0m).ToString("0"))" />
+    </div>
+</div>
+
+<div style="display:flex;gap:18px;margin-top:12px">
+    <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:#475569">
+        <input type="checkbox" name="IncludesAiTutor" value="true" checked="@(m?.IncludesAiTutor == true)" /> Gồm Gia Sư AI
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;color:#475569">
+        <input type="checkbox" name="IncludesVirtualLab" value="true" checked="@(m?.IncludesVirtualLab == true)" /> Gồm Phòng 3D
+    </label>
+</div>

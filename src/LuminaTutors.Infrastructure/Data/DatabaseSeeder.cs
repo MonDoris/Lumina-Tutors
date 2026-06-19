@@ -25,8 +25,13 @@ public static class DatabaseSeeder
         "accountant@lumina.edu.vn",
     ];
 
-    private const string AdminEmail    = "admin@lumina.edu.vn";
+    private const string AdminEmail    = "admin@lumina.edu.vn";   // → SYSADMIN (Quản trị hệ thống)
     private const string AdminPassword = "Admin@123";
+
+    private const string SchoolAdminEmail    = "nhatruong@lumina.edu.vn";  // → ADMIN (Nhà trường)
+    private const string SchoolAdminPassword = "Truong@123";
+
+    private const string SchoolName = "Marie Curie High School";
 
     public static async Task SeedAsync(IServiceProvider services)
     {
@@ -35,8 +40,8 @@ public static class DatabaseSeeder
         var logger       = scope.ServiceProvider.GetRequiredService<ILogger<LuminaTutorsDbContext>>();
         var hasher       = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
-        // ── 1. Apply pending migrations ───────────────────────────────────────
-        await db.Database.MigrateAsync();
+        // ── 1. Apply pending migrations (chờ LocalDB cold-start) ──────────────
+        await MigrateWithRetryAsync(db, logger);
 
         // ── 2. Remove non-admin demo accounts from old seeder ─────────────────
         var demoUsers = await db.Users
@@ -72,14 +77,14 @@ public static class DatabaseSeeder
                 string.Join(", ", demoUsers.Select(u => u.Email)));
         }
 
-        // ── 3. Ensure default School exists ───────────────────────────────────
+        // ── 3. Ensure default School exists & tên là Marie Curie High School ────
         var school = await db.Schools.FirstOrDefaultAsync();
         if (school is null)
         {
             school = new School
             {
-                SchoolCode = "LUMINA001",
-                SchoolName = "Lumina Tutors",
+                SchoolCode = "MARIECURIE",
+                SchoolName = SchoolName,
                 Address    = "Việt Nam",
                 IsActive   = true
             };
@@ -87,40 +92,69 @@ public static class DatabaseSeeder
             await db.SaveChangesAsync();
             logger.LogInformation("🏫 Created default school '{Name}' (Id={Id})", school.SchoolName, school.Id);
         }
-
-        // ── 4. Ensure Admin account exists ────────────────────────────────────
-        var adminExists = await db.Users
-            .AnyAsync(u => u.Email == AdminEmail && u.SchoolId == school.Id);
-
-        if (!adminExists)
+        else if (school.SchoolName != SchoolName)
         {
-            var adminRole = await db.Roles.FirstOrDefaultAsync(r => r.RoleCode == "ADMIN");
-            if (adminRole is null)
-            {
-                logger.LogError("ADMIN role not found — cannot seed admin user.");
-                return;
-            }
+            var oldName = school.SchoolName;
+            school.SchoolName = SchoolName;
+            await db.SaveChangesAsync();
+            logger.LogInformation("🏫 Renamed school '{Old}' → '{New}'", oldName, SchoolName);
+        }
 
-            var admin = new User
+        // ── 4. Tài khoản quản trị ─────────────────────────────────────────────
+        // • admin@lumina.edu.vn  → SYSADMIN (Quản trị hệ thống: toàn quyền + E-Selling)
+        // • nhatruong@lumina.edu.vn → ADMIN (Nhà trường)
+        var sysAdminRole = await db.Roles.FirstOrDefaultAsync(r => r.RoleCode == "SYSADMIN");
+        var schoolRole   = await db.Roles.FirstOrDefaultAsync(r => r.RoleCode == "ADMIN");
+        if (sysAdminRole is null || schoolRole is null)
+        {
+            logger.LogError("Roles SYSADMIN/ADMIN not found — cannot seed admin users.");
+            return;
+        }
+
+        // 4a. Quản trị hệ thống (giữ admin@lumina.edu.vn, nâng lên SYSADMIN nếu cần)
+        var sysAdmin = await db.Users.FirstOrDefaultAsync(u => u.Email == AdminEmail && u.SchoolId == school.Id);
+        if (sysAdmin is null)
+        {
+            sysAdmin = new User
             {
                 SchoolId        = school.Id,
-                RoleId          = adminRole.Id,
+                RoleId          = sysAdminRole.Id,
                 Email           = AdminEmail,
-                FullName        = "Quản trị viên",
+                FullName        = "Quản trị hệ thống",
                 IsActive        = true,
                 IsEmailVerified = true,
                 PasswordHash    = string.Empty
             };
-            admin.PasswordHash = hasher.HashPassword(admin, AdminPassword);
-
-            db.Users.Add(admin);
+            sysAdmin.PasswordHash = hasher.HashPassword(sysAdmin, AdminPassword);
+            db.Users.Add(sysAdmin);
             await db.SaveChangesAsync();
-
-            logger.LogInformation("👤 Created admin account: {Email} / {Password}", AdminEmail, AdminPassword);
+            logger.LogInformation("👑 Created system admin (SYSADMIN): {Email} / {Password}", AdminEmail, AdminPassword);
         }
-        else
+        else if (sysAdmin.RoleId != sysAdminRole.Id)
         {
-            logger.LogInformation("ℹ️  Admin account already exists — skipping seed.");
+            sysAdmin.RoleId = sysAdminRole.Id;   // nâng tài khoản admin hiện có → SYSADMIN
+            await db.SaveChangesAsync();
+            logger.LogInformation("👑 Upgraded {Email} to SYSADMIN (Quản trị hệ thống).", AdminEmail);
+        }
+
+        // 4b. Tài khoản Nhà trường (ADMIN)
+        var schoolAdmin = await db.Users.FirstOrDefaultAsync(u => u.Email == SchoolAdminEmail && u.SchoolId == school.Id);
+        if (schoolAdmin is null)
+        {
+            schoolAdmin = new User
+            {
+                SchoolId        = school.Id,
+                RoleId          = schoolRole.Id,
+                Email           = SchoolAdminEmail,
+                FullName        = "Quản trị Nhà trường",
+                IsActive        = true,
+                IsEmailVerified = true,
+                PasswordHash    = string.Empty
+            };
+            schoolAdmin.PasswordHash = hasher.HashPassword(schoolAdmin, SchoolAdminPassword);
+            db.Users.Add(schoolAdmin);
+            await db.SaveChangesAsync();
+            logger.LogInformation("🏫 Created school admin (Nhà trường): {Email} / {Password}", SchoolAdminEmail, SchoolAdminPassword);
         }
 
         // ── 5. Ensure AcademicYear 2025-2026 + 2 semesters exist ─────────────
@@ -173,6 +207,33 @@ public static class DatabaseSeeder
 
         // ── 6. Seed gói dịch vụ (SaaS) + add-on + đăng ký mặc định ───────────────
         await SeedSubscriptionsAsync(db, school, logger);
+    }
+
+    /// <summary>
+    /// Áp migration nhưng chịu được việc LocalDB tự tắt khi idle: lần kết nối đầu
+    /// thường timeout vì instance đang cold-start, nên thử lại vài lần với delay tăng dần.
+    /// </summary>
+    private static async Task MigrateWithRetryAsync(
+        LuminaTutorsDbContext db, ILogger logger, int maxAttempts = 5)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await db.Database.MigrateAsync();
+                if (attempt > 1)
+                    logger.LogInformation("✅ Kết nối DB thành công ở lần thử {Attempt}.", attempt);
+                return;
+            }
+            catch (Exception ex) when (attempt < maxAttempts)
+            {
+                var delay = TimeSpan.FromSeconds(attempt * 3);   // 3s, 6s, 9s, 12s
+                logger.LogWarning(
+                    "⏳ DB chưa sẵn sàng (lần {Attempt}/{Max}): {Msg}. Thử lại sau {Delay}s…",
+                    attempt, maxAttempts, ex.GetBaseException().Message, delay.TotalSeconds);
+                await Task.Delay(delay);
+            }
+        }
     }
 
     /// <summary>

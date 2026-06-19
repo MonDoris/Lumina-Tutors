@@ -1,9 +1,11 @@
 using LuminaTutors.Application.DTOs.Subscription;
 using LuminaTutors.Application.Interfaces.Services;
 using LuminaTutors.Domain.Common;
+using LuminaTutors.Domain.Entities.Identity;
 using LuminaTutors.Domain.Entities.Subscription;
 using LuminaTutors.Domain.Enums;
 using LuminaTutors.Domain.Interfaces.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -17,11 +19,13 @@ namespace LuminaTutors.Application.Services;
 public sealed class SubscriptionService : ISubscriptionService
 {
     private readonly IUnitOfWork _uow;
+    private readonly IPasswordHasher<User> _hasher;
     private readonly ILogger<SubscriptionService> _logger;
 
-    public SubscriptionService(IUnitOfWork uow, ILogger<SubscriptionService> logger)
+    public SubscriptionService(IUnitOfWork uow, IPasswordHasher<User> hasher, ILogger<SubscriptionService> logger)
     {
         _uow    = uow;
+        _hasher = hasher;
         _logger = logger;
     }
 
@@ -427,6 +431,421 @@ public sealed class SubscriptionService : ISubscriptionService
         if (created > 0)
             _logger.LogInformation("Auto-renew: created {Count} pending renewal order(s) for due subscriptions", created);
         return created;
+    }
+
+    // ─── E-Selling admin (SYSADMIN): catalog gói/add-on ───────────────────────
+
+    public async Task<Result<CatalogDto>> GetCatalogAsync(CancellationToken ct = default)
+    {
+        var plans  = (await _uow.SubscriptionPlans.GetAllAsync(ct)).OrderBy(p => p.Tier).ToList();
+        var addOns = (await _uow.SubscriptionAddOns.GetAllAsync(ct)).OrderBy(a => a.Name).ToList();
+
+        return Result<CatalogDto>.Success(new CatalogDto
+        {
+            Plans = plans.Select(p => new SubscriptionPlanDto
+            {
+                PlanId             = p.Id,
+                PlanCode           = p.PlanCode,
+                Name               = p.Name,
+                Description        = p.Description,
+                Tier               = p.Tier,
+                MonthlyPrice       = p.MonthlyPrice,
+                QuarterlyPrice     = p.QuarterlyPrice,
+                YearlyPrice        = p.YearlyPrice,
+                IncludesAiTutor    = p.IncludesAiTutor,
+                IncludesVirtualLab = p.IncludesVirtualLab,
+                IsActive           = p.IsActive
+            }).ToList(),
+            AddOns = addOns.Select(a => new SubscriptionAddOnDto
+            {
+                AddOnId        = a.Id,
+                AddOnCode      = a.AddOnCode,
+                Name           = a.Name,
+                Description    = a.Description,
+                Feature        = a.Feature.ToString(),
+                MonthlyPrice   = a.MonthlyPrice,
+                QuarterlyPrice = a.QuarterlyPrice,
+                YearlyPrice    = a.YearlyPrice,
+                IsActive       = a.IsActive
+            }).ToList()
+        });
+    }
+
+    public async Task<Result> SavePlanAsync(PlanEditRequest r, CancellationToken ct = default)
+    {
+        var code = r.PlanCode.Trim().ToUpperInvariant();
+        if (r.PlanId is null or 0)
+        {
+            if (await _uow.SubscriptionPlans.AnyAsync(p => p.PlanCode == code, ct))
+                return Result.Failure("Mã gói đã tồn tại.", "DUP_CODE");
+            var plan = new SubscriptionPlan();
+            ApplyPlan(plan, r, code);
+            await _uow.SubscriptionPlans.AddAsync(plan, ct);
+        }
+        else
+        {
+            var plan = await _uow.SubscriptionPlans.GetByIdAsync(r.PlanId.Value, ct);
+            if (plan is null) return Result.Failure("Gói không tồn tại.", "NOT_FOUND");
+            if (await _uow.SubscriptionPlans.AnyAsync(p => p.PlanCode == code && p.Id != plan.Id, ct))
+                return Result.Failure("Mã gói đã tồn tại.", "DUP_CODE");
+            ApplyPlan(plan, r, code);
+        }
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("Catalog: saved plan {Code}", code);
+        return Result.Success();
+    }
+
+    public async Task<Result> TogglePlanActiveAsync(int planId, CancellationToken ct = default)
+    {
+        var plan = await _uow.SubscriptionPlans.GetByIdAsync(planId, ct);
+        if (plan is null) return Result.Failure("Gói không tồn tại.", "NOT_FOUND");
+        plan.IsActive = !plan.IsActive;
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    public async Task<Result> SaveAddOnAsync(AddOnEditRequest r, CancellationToken ct = default)
+    {
+        var code = r.AddOnCode.Trim().ToUpperInvariant();
+        if (r.AddOnId is null or 0)
+        {
+            if (await _uow.SubscriptionAddOns.AnyAsync(a => a.AddOnCode == code, ct))
+                return Result.Failure("Mã add-on đã tồn tại.", "DUP_CODE");
+            var addOn = new SubscriptionAddOn();
+            ApplyAddOn(addOn, r, code);
+            await _uow.SubscriptionAddOns.AddAsync(addOn, ct);
+        }
+        else
+        {
+            var addOn = await _uow.SubscriptionAddOns.GetByIdAsync(r.AddOnId.Value, ct);
+            if (addOn is null) return Result.Failure("Add-on không tồn tại.", "NOT_FOUND");
+            if (await _uow.SubscriptionAddOns.AnyAsync(a => a.AddOnCode == code && a.Id != addOn.Id, ct))
+                return Result.Failure("Mã add-on đã tồn tại.", "DUP_CODE");
+            ApplyAddOn(addOn, r, code);
+        }
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("Catalog: saved add-on {Code}", code);
+        return Result.Success();
+    }
+
+    public async Task<Result> ToggleAddOnActiveAsync(int addOnId, CancellationToken ct = default)
+    {
+        var addOn = await _uow.SubscriptionAddOns.GetByIdAsync(addOnId, ct);
+        if (addOn is null) return Result.Failure("Add-on không tồn tại.", "NOT_FOUND");
+        addOn.IsActive = !addOn.IsActive;
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    public async Task<Result<IReadOnlyList<SchoolSubscriptionRowDto>>> GetAllSubscriptionsAsync(CancellationToken ct = default)
+    {
+        var subs = await _uow.SchoolSubscriptions.FindAsync(
+            s => true,
+            include: q => q.Include(s => s.Plan)
+                           .Include(s => s.AddOns).ThenInclude(a => a.AddOn),
+            ct: ct);
+        var subBySchool = subs
+            .GroupBy(s => s.SchoolId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var schools = await _uow.Schools.GetAllAsync(ct);
+
+        // Liệt kê MỌI trường — trường chưa mua gói hiển thị "Chưa đăng ký"
+        var rows = schools.OrderBy(s => s.SchoolName).Select(school =>
+        {
+            if (subBySchool.TryGetValue(school.Id, out var s))
+            {
+                return new SchoolSubscriptionRowDto
+                {
+                    HasSubscription  = true,
+                    SchoolId         = school.Id,
+                    SchoolName       = school.SchoolName,
+                    PlanName         = s.Plan.Name,
+                    Status           = s.Status.ToString(),
+                    BillingCycle     = s.BillingCycle.ToString(),
+                    CurrentPeriodEnd = s.CurrentPeriodEnd,
+                    AutoRenew        = s.AutoRenew,
+                    IsActive         = s.Status == SubscriptionStatus.Active && s.CurrentPeriodEnd >= Today,
+                    AddOns           = string.Join(", ", s.AddOns
+                                           .Where(a => a.IsActive && a.ActiveUntil >= Today)
+                                           .Select(a => a.AddOn.Name))
+                };
+            }
+            return new SchoolSubscriptionRowDto
+            {
+                HasSubscription = false,
+                SchoolId        = school.Id,
+                SchoolName      = school.SchoolName,
+                Status          = "NotSubscribed",
+                IsActive        = false,
+                AddOns          = ""
+            };
+        }).ToList();
+
+        return Result<IReadOnlyList<SchoolSubscriptionRowDto>>.Success(rows);
+    }
+
+    // ─── Doanh thu ────────────────────────────────────────────────────────────
+
+    public async Task<Result<RevenueReportDto>> GetRevenueReportAsync(CancellationToken ct = default)
+    {
+        var paid = await _uow.SubscriptionOrders.FindAsync(
+            o => o.Status == SubscriptionOrderStatus.Paid, ct);
+
+        var now   = DateTime.UtcNow;
+        var total = paid.Sum(o => o.Amount);
+        var thisMonth = paid
+            .Where(o => o.PaidAt.HasValue && o.PaidAt.Value.Year == now.Year && o.PaidAt.Value.Month == now.Month)
+            .Sum(o => o.Amount);
+
+        var monthly = new List<RevenuePointDto>();
+        var firstOfMonth = new DateTime(now.Year, now.Month, 1);
+        for (var i = 11; i >= 0; i--)
+        {
+            var d   = firstOfMonth.AddMonths(-i);
+            var amt = paid
+                .Where(o => o.PaidAt.HasValue && o.PaidAt.Value.Year == d.Year && o.PaidAt.Value.Month == d.Month)
+                .Sum(o => o.Amount);
+            monthly.Add(new RevenuePointDto { Label = d.ToString("MM/yy"), Amount = amt });
+        }
+
+        var activeSubs = await _uow.SchoolSubscriptions.CountAsync(
+            s => s.Status == SubscriptionStatus.Active && s.CurrentPeriodEnd >= Today, ct);
+
+        return Result<RevenueReportDto>.Success(new RevenueReportDto
+        {
+            TotalRevenue        = total,
+            ThisMonthRevenue    = thisMonth,
+            PaidOrders          = paid.Count,
+            ActiveSubscriptions = activeSubs,
+            Monthly             = monthly
+        });
+    }
+
+    // ─── Onboard trường mới + tài khoản Nhà trường ────────────────────────────
+
+    public async Task<Result> OnboardSchoolAsync(OnboardSchoolRequest r, CancellationToken ct = default)
+    {
+        var email = r.AdminEmail.Trim().ToLowerInvariant();
+
+        var role = (await _uow.Roles.FindAsync(x => x.RoleCode == "ADMIN", ct)).FirstOrDefault();
+        if (role is null)
+            return Result.Failure("Thiếu vai trò Nhà trường (ADMIN) trong hệ thống.", "CONFIG");
+
+        var code = string.IsNullOrWhiteSpace(r.SchoolCode)
+            ? GenerateSchoolCode(r.SchoolName)
+            : r.SchoolCode.Trim().ToUpperInvariant();
+        if (await _uow.Schools.AnyAsync(s => s.SchoolCode == code, ct))
+            code = $"{code}{Random.Shared.Next(100, 999)}";
+
+        try
+        {
+            await _uow.ExecuteInTransactionAsync(async () =>
+            {
+                var school = new School
+                {
+                    SchoolCode = code,
+                    SchoolName = r.SchoolName.Trim(),
+                    IsActive   = true
+                };
+                await _uow.Schools.AddAsync(school, ct);
+                await _uow.SaveChangesAsync(ct);   // để có school.Id
+
+                var user = new User
+                {
+                    SchoolId        = school.Id,
+                    RoleId          = role.Id,
+                    Email           = email,
+                    FullName        = r.AdminFullName.Trim(),
+                    IsActive        = true,
+                    IsEmailVerified = true,
+                    PasswordHash    = string.Empty
+                };
+                user.PasswordHash = _hasher.HashPassword(user, r.AdminPassword);
+                await _uow.Users.AddAsync(user, ct);
+                await _uow.SaveChangesAsync(ct);
+            }, ct);
+
+            _logger.LogInformation("Onboarded school {Name} ({Code}) with Nhà trường admin {Email}",
+                r.SchoolName, code, email);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Onboard school failed for {Name}", r.SchoolName);
+            return Result.Failure("Có lỗi khi tạo trường. Vui lòng thử lại.", "ERROR");
+        }
+    }
+
+    private static string GenerateSchoolCode(string name)
+    {
+        var ascii = new string(name.Where(c => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+                                    .Take(8).ToArray()).ToUpperInvariant();
+        return string.IsNullOrEmpty(ascii) ? $"SCH{Random.Shared.Next(1000, 9999)}" : ascii;
+    }
+
+    // ─── Quản lý tài khoản trường (CRUD) ──────────────────────────────────────
+
+    public async Task<Result<IReadOnlyList<SchoolAccountDto>>> GetSchoolsAsync(CancellationToken ct = default)
+    {
+        var schools = await _uow.Schools.GetAllAsync(ct);
+        var admins = (await _uow.Users.FindAsync(u => u.Role.RoleCode == "ADMIN", ct))
+            .GroupBy(u => u.SchoolId).ToDictionary(g => g.Key, g => g.OrderBy(u => u.Id).First());
+        var subs = (await _uow.SchoolSubscriptions.FindAsync(s => true,
+                        include: q => q.Include(s => s.Plan), ct))
+            .GroupBy(s => s.SchoolId).ToDictionary(g => g.Key, g => g.First());
+
+        var rows = new List<SchoolAccountDto>();
+        foreach (var sc in schools.OrderBy(s => s.SchoolName))
+        {
+            admins.TryGetValue(sc.Id, out var ad);
+            subs.TryGetValue(sc.Id, out var sub);
+            var students = await _uow.StudentProfiles.CountAsync(p => p.SchoolId == sc.Id, ct);
+            var classes  = await _uow.Classes.CountAsync(c => c.SchoolId == sc.Id, ct);
+            var users    = await _uow.Users.CountAsync(u => u.SchoolId == sc.Id, ct);
+            rows.Add(new SchoolAccountDto
+            {
+                SchoolId           = sc.Id,
+                SchoolCode         = sc.SchoolCode,
+                SchoolName         = sc.SchoolName,
+                IsActive           = sc.IsActive,
+                AdminUserId        = ad?.Id ?? 0,
+                AdminFullName      = ad?.FullName,
+                AdminEmail         = ad?.Email,
+                AdminActive        = ad?.IsActive ?? false,
+                PlanName           = sub?.Plan?.Name,
+                SubscriptionStatus = sub != null ? sub.Status.ToString() : "None",
+                SubscriptionActive = sub != null && sub.Status == SubscriptionStatus.Active && sub.CurrentPeriodEnd >= Today,
+                UserCount          = users,
+                StudentCount       = students,
+                ClassCount         = classes,
+                CanDelete          = students == 0 && classes == 0,
+                CreatedAt          = sc.CreatedAt
+            });
+        }
+        return Result<IReadOnlyList<SchoolAccountDto>>.Success(rows);
+    }
+
+    public async Task<Result> UpdateSchoolAsync(UpdateSchoolRequest req, CancellationToken ct = default)
+    {
+        var school = await _uow.Schools.GetByIdAsync(req.SchoolId, ct);
+        if (school is null) return Result.Failure("Trường không tồn tại.", "NOT_FOUND");
+
+        school.SchoolName = req.SchoolName.Trim();
+
+        // Tracked query (FindAsync dùng AsNoTracking nên sửa sẽ không lưu)
+        var admin = await _uow.Users.AsQueryable()
+            .Where(u => u.SchoolId == req.SchoolId && u.Role.RoleCode == "ADMIN")
+            .OrderBy(u => u.Id).FirstOrDefaultAsync(ct);
+        if (admin is not null)
+        {
+            var email = req.AdminEmail.Trim().ToLowerInvariant();
+            if (!string.Equals(email, admin.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                if (await _uow.Users.AnyAsync(u => u.SchoolId == req.SchoolId && u.Email == email && u.Id != admin.Id, ct))
+                    return Result.Failure("Email đã được dùng trong trường này.", "EMAIL_EXISTS");
+                admin.Email = email;
+            }
+            admin.FullName = req.AdminFullName.Trim();
+            admin.IsActive = req.AdminActive;
+        }
+
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("Updated school {Id} ({Name})", req.SchoolId, school.SchoolName);
+        return Result.Success();
+    }
+
+    public async Task<Result> ToggleSchoolActiveAsync(int schoolId, int currentSchoolId, CancellationToken ct = default)
+    {
+        if (schoolId == currentSchoolId) return Result.Failure("Không thể tạm khóa trường của chính bạn.", "SELF");
+        var school = await _uow.Schools.GetByIdAsync(schoolId, ct);
+        if (school is null) return Result.Failure("Trường không tồn tại.", "NOT_FOUND");
+
+        school.IsActive = !school.IsActive;
+        var users = await _uow.Users.AsQueryable().Where(u => u.SchoolId == schoolId).ToListAsync(ct);
+        foreach (var u in users) u.IsActive = school.IsActive;   // chặn/mở đăng nhập theo trạng thái trường
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("School {Id} active -> {Active}", schoolId, school.IsActive);
+        return Result.Success();
+    }
+
+    public async Task<Result> ResetSchoolAdminPasswordAsync(int schoolId, string newPassword, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            return Result.Failure("Mật khẩu tối thiểu 6 ký tự.", "WEAK");
+
+        var admin = await _uow.Users.AsQueryable()
+            .Where(u => u.SchoolId == schoolId && u.Role.RoleCode == "ADMIN")
+            .OrderBy(u => u.Id).FirstOrDefaultAsync(ct);
+        if (admin is null) return Result.Failure("Không tìm thấy tài khoản Nhà trường.", "NOT_FOUND");
+
+        admin.PasswordHash = _hasher.HashPassword(admin, newPassword);
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("Reset Nhà trường password for school {Id}", schoolId);
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteSchoolAsync(int schoolId, int currentSchoolId, CancellationToken ct = default)
+    {
+        if (schoolId == currentSchoolId) return Result.Failure("Không thể xóa trường của chính bạn.", "SELF");
+        var school = await _uow.Schools.GetByIdAsync(schoolId, ct);
+        if (school is null) return Result.Failure("Trường không tồn tại.", "NOT_FOUND");
+
+        var students = await _uow.StudentProfiles.CountAsync(p => p.SchoolId == schoolId, ct);
+        var classes  = await _uow.Classes.CountAsync(c => c.SchoolId == schoolId, ct);
+        if (students > 0 || classes > 0)
+            return Result.Failure("Trường đã có dữ liệu học vụ — hãy 'Tạm khóa' thay vì xóa.", "HAS_DATA");
+
+        try
+        {
+            await _uow.ExecuteInTransactionAsync(async () =>
+            {
+                var orders = await _uow.SubscriptionOrders.FindAsync(o => o.SchoolId == schoolId, ct);
+                _uow.SubscriptionOrders.RemoveRange(orders);          // order items cascade
+
+                var schoolSubs = await _uow.SchoolSubscriptions.FindAsync(s => s.SchoolId == schoolId, ct);
+                _uow.SchoolSubscriptions.RemoveRange(schoolSubs);     // add-ons cascade
+
+                var users = await _uow.Users.FindAsync(u => u.SchoolId == schoolId, ct);
+                _uow.Users.RemoveRange(users);                        // refresh tokens cascade
+
+                _uow.Schools.Remove(school);
+                await _uow.SaveChangesAsync(ct);
+            }, ct);
+            _logger.LogInformation("Deleted school {Id} ({Name})", schoolId, school.SchoolName);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Delete school {Id} failed", schoolId);
+            return Result.Failure("Không xóa được do còn dữ liệu liên quan. Hãy dùng 'Tạm khóa'.", "FK");
+        }
+    }
+
+    private static void ApplyPlan(SubscriptionPlan p, PlanEditRequest r, string code)
+    {
+        p.PlanCode           = code;
+        p.Name               = r.Name.Trim();
+        p.Description         = r.Description?.Trim();
+        p.Tier               = r.Tier;
+        p.MonthlyPrice       = r.MonthlyPrice;
+        p.QuarterlyPrice     = r.QuarterlyPrice;
+        p.YearlyPrice        = r.YearlyPrice;
+        p.IncludesAiTutor    = r.IncludesAiTutor;
+        p.IncludesVirtualLab = r.IncludesVirtualLab;
+        p.IsActive           = r.IsActive;
+    }
+
+    private static void ApplyAddOn(SubscriptionAddOn a, AddOnEditRequest r, string code)
+    {
+        a.AddOnCode      = code;
+        a.Name           = r.Name.Trim();
+        a.Description     = r.Description?.Trim();
+        a.Feature        = r.Feature;
+        a.MonthlyPrice   = r.MonthlyPrice;
+        a.QuarterlyPrice = r.QuarterlyPrice;
+        a.YearlyPrice    = r.YearlyPrice;
+        a.IsActive       = r.IsActive;
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

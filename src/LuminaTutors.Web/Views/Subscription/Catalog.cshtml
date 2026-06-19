@@ -1,0 +1,226 @@
+@using LuminaTutors.Application.DTOs.Subscription
+@model CatalogDto
+@{
+    ViewData["Title"] = "Quản lý gói E-Selling";
+    var maxTier = Model.Plans.Count > 0 ? Model.Plans.Max(p => p.Tier) : 0;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+    <link rel="stylesheet" href="~/css/esell.css" asp-append-version="true" />
+}
+
+<div class="sx">
+
+    <!-- ══ HERO ══ -->
+    <section class="sx-hero" data-rise>
+        <div class="sx-hero__inner">
+            <div class="sx-hero__top">
+                <div>
+                    <span class="sx-eyebrow"><span class="dot"></span> Lumina Command · Danh mục sản phẩm</span>
+                    <h1>Quản lý <span class="accent">gói &amp; tính năng</span></h1>
+                    <p>Thiết kế gói dịch vụ, định giá và bật/tắt các tính năng số bán cho nhà trường.</p>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <a asp-action="Subscriptions" class="sx-btn sx-btn--ghost"><i class="bi bi-grid-1x2"></i> Bảng điều khiển</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ PLANS ══ -->
+    <div class="sx-sec-head">
+        <h2 class="sx-sec-title"><span class="bar"></span> Gói dịch vụ</h2>
+        <button class="sx-btn sx-btn--gold sx-btn--sm" type="button"
+                onclick="document.getElementById('newPlan').style.display='flex';this.style.display='none'">
+            <i class="bi bi-plus-lg"></i> Thêm gói
+        </button>
+    </div>
+
+    <div class="sx-grid-cards" style="margin-bottom:32px">
+
+        <!-- form thêm gói mới -->
+        <div class="sx-card sx-plan" id="newPlan" style="display:none" data-rise>
+            <div class="sx-card__b">
+                <h3 class="sx-plan__name">Gói mới</h3>
+                <form asp-action="SavePlan" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="IsActive" value="true" />
+                    <div class="sx-edit" style="border-top:none;margin-top:10px;padding-top:0">
+                        @await Html.PartialAsync("_PlanFields", (PlanEditRequest?)null)
+                    </div>
+                    <button type="submit" class="sx-btn sx-btn--gold sx-btn--block" style="margin-top:14px">
+                        <i class="bi bi-check-lg"></i> Tạo gói
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @foreach (var p in Model.Plans)
+        {
+            var featured = p.IsActive && p.Tier == maxTier;
+            <div class="sx-card sx-plan @(featured ? "is-featured" : "") @(p.IsActive ? "" : "is-off")" data-rise>
+                <div class="sx-card__b" style="display:flex;flex-direction:column;height:100%">
+                    <div class="sx-plan__head">
+                        <div>
+                            <h3 class="sx-plan__name">@p.Name</h3>
+                            <span class="sx-plan__code mono">@p.PlanCode · bậc @p.Tier</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            @if (p.IsActive)
+                            {
+                                <span class="sx-pill sx-pill--ok">Đang bán</span>
+                            }
+                            else
+                            {
+                                <span class="sx-pill sx-pill--off">Đã ẩn</span>
+                            }
+                            <form asp-action="TogglePlan" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@p.PlanId" />
+                                <button type="submit" class="sx-btn sx-btn--light sx-btn--icon sx-btn--sm" title="@(p.IsActive ? "Ẩn khỏi bảng giá" : "Hiện lại")">
+                                    <i class="bi @(p.IsActive ? "bi-eye-slash" : "bi-eye")"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(p.Description))
+                    {
+                        <p style="color:var(--muted);font-size:.84rem;margin:10px 0 0;min-height:34px">@p.Description</p>
+                    }
+
+                    <div class="sx-price">
+                        <span class="amt mono">@p.MonthlyPrice.ToString("N0")</span>
+                        <span class="per">đ / tháng</span>
+                    </div>
+                    <div class="sx-price-alt mono">@p.QuarterlyPrice.ToString("N0")đ/quý · @p.YearlyPrice.ToString("N0")đ/năm</div>
+
+                    <ul class="sx-feats">
+                        <li><i class="bi @(p.IncludesAiTutor ? "bi-check-circle-fill yes" : "bi-x-circle no")"></i> Gia Sư AI</li>
+                        <li><i class="bi @(p.IncludesVirtualLab ? "bi-check-circle-fill yes" : "bi-x-circle no")"></i> Phòng học 3D</li>
+                    </ul>
+
+                    <div style="margin-top:auto">
+                        <button type="button" class="sx-btn sx-btn--light sx-btn--block"
+                                onclick="var e=document.getElementById('pe-@p.PlanId');e.style.display=e.style.display==='block'?'none':'block'">
+                            <i class="bi bi-sliders"></i> Chỉnh sửa
+                        </button>
+                        <div id="pe-@p.PlanId" class="sx-edit" style="display:none">
+                            <form asp-action="SavePlan" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="PlanId" value="@p.PlanId" />
+                                <input type="hidden" name="IsActive" value="@(p.IsActive ? "true" : "false")" />
+                                @{
+                                    var planReq = new PlanEditRequest(p.PlanId, p.PlanCode, p.Name, p.Description, p.Tier,
+                                        p.MonthlyPrice, p.QuarterlyPrice, p.YearlyPrice, p.IncludesAiTutor, p.IncludesVirtualLab, p.IsActive);
+                                }
+                                @await Html.PartialAsync("_PlanFields", planReq)
+                                <button type="submit" class="sx-btn sx-btn--primary sx-btn--block" style="margin-top:14px">
+                                    <i class="bi bi-save"></i> Lưu thay đổi
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- ══ ADD-ONS ══ -->
+    <div class="sx-sec-head">
+        <h2 class="sx-sec-title"><span class="bar"></span> Tính năng bán thêm</h2>
+        <button class="sx-btn sx-btn--gold sx-btn--sm" type="button"
+                onclick="document.getElementById('newAddOn').style.display='flex';this.style.display='none'">
+            <i class="bi bi-plus-lg"></i> Thêm add-on
+        </button>
+    </div>
+
+    <div class="sx-grid-cards">
+
+        <div class="sx-card sx-plan" id="newAddOn" style="display:none" data-rise>
+            <div class="sx-card__b">
+                <h3 class="sx-plan__name">Add-on mới</h3>
+                <form asp-action="SaveAddOn" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="IsActive" value="true" />
+                    <div class="sx-edit" style="border-top:none;margin-top:10px;padding-top:0">
+                        @await Html.PartialAsync("_AddOnFields", (AddOnEditRequest?)null)
+                    </div>
+                    <button type="submit" class="sx-btn sx-btn--gold sx-btn--block" style="margin-top:14px">
+                        <i class="bi bi-check-lg"></i> Tạo add-on
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @foreach (var a in Model.AddOns)
+        {
+            <div class="sx-card sx-plan @(a.IsActive ? "" : "is-off")" data-rise>
+                <div class="sx-card__b" style="display:flex;flex-direction:column;height:100%">
+                    <div class="sx-plan__head">
+                        <div>
+                            <h3 class="sx-plan__name">
+                                <i class="bi @(a.Feature == "AiTutor" ? "bi-robot" : "bi-badge-vr-fill")" style="color:var(--indigo)"></i>
+                                @a.Name
+                            </h3>
+                            <span class="sx-plan__code mono">@a.AddOnCode</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            @if (a.IsActive)
+                            {
+                                <span class="sx-pill sx-pill--ok">Đang bán</span>
+                            }
+                            else
+                            {
+                                <span class="sx-pill sx-pill--off">Đã ẩn</span>
+                            }
+                            <form asp-action="ToggleAddOn" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@a.AddOnId" />
+                                <button type="submit" class="sx-btn sx-btn--light sx-btn--icon sx-btn--sm" title="@(a.IsActive ? "Ẩn" : "Hiện lại")">
+                                    <i class="bi @(a.IsActive ? "bi-eye-slash" : "bi-eye")"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(a.Description))
+                    {
+                        <p style="color:var(--muted);font-size:.84rem;margin:10px 0 0;min-height:34px">@a.Description</p>
+                    }
+
+                    <div class="sx-price">
+                        <span class="amt mono">@a.MonthlyPrice.ToString("N0")</span>
+                        <span class="per">đ / tháng</span>
+                    </div>
+                    <div class="sx-price-alt mono">@a.QuarterlyPrice.ToString("N0")đ/quý · @a.YearlyPrice.ToString("N0")đ/năm</div>
+
+                    <div style="margin-top:auto;padding-top:14px">
+                        <button type="button" class="sx-btn sx-btn--light sx-btn--block"
+                                onclick="var e=document.getElementById('ae-@a.AddOnId');e.style.display=e.style.display==='block'?'none':'block'">
+                            <i class="bi bi-sliders"></i> Chỉnh sửa
+                        </button>
+                        <div id="ae-@a.AddOnId" class="sx-edit" style="display:none">
+                            <form asp-action="SaveAddOn" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="AddOnId" value="@a.AddOnId" />
+                                <input type="hidden" name="IsActive" value="@(a.IsActive ? "true" : "false")" />
+                                @{
+                                    var feat = Enum.Parse<LuminaTutors.Domain.Enums.PremiumFeature>(a.Feature);
+                                    var addReq = new AddOnEditRequest(a.AddOnId, a.AddOnCode, a.Name, a.Description, feat,
+                                        a.MonthlyPrice, a.QuarterlyPrice, a.YearlyPrice, a.IsActive);
+                                }
+                                @await Html.PartialAsync("_AddOnFields", addReq)
+                                <button type="submit" class="sx-btn sx-btn--primary sx-btn--block" style="margin-top:14px">
+                                    <i class="bi bi-save"></i> Lưu thay đổi
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+</div>

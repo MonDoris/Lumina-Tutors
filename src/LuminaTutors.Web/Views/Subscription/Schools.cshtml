@@ -1,0 +1,198 @@
+@using LuminaTutors.Application.DTOs.Subscription
+@model IReadOnlyList<SchoolAccountDto>
+@{
+    ViewData["Title"] = "Quản lý trường";
+    var ownSchoolId = (int)(ViewBag.OwnSchoolId ?? 0);
+    string Initials(string name)
+    {
+        var parts = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpperInvariant();
+        return (parts[0].Substring(0,1) + parts[^1].Substring(0,1)).ToUpperInvariant();
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+    <link rel="stylesheet" href="~/css/esell.css" asp-append-version="true" />
+}
+
+<div class="sx">
+
+    <!-- ══ HERO ══ -->
+    <section class="sx-hero" data-rise>
+        <div class="sx-hero__inner">
+            <div class="sx-hero__top">
+                <div>
+                    <span class="sx-eyebrow"><span class="dot"></span> Lumina Command · Quản trị tenant</span>
+                    <h1>Quản lý <span class="accent">tài khoản trường</span></h1>
+                    <p>Tạo, cập nhật, tạm khóa và xoá tài khoản Nhà trường trên nền tảng.</p>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <button type="button" class="sx-btn sx-btn--gold"
+                            onclick="document.getElementById('onboardCard').style.display='block';this.style.display='none';document.getElementById('obSchoolName').focus()">
+                        <i class="bi bi-building-add"></i> Thêm trường
+                    </button>
+                    <a asp-action="Subscriptions" class="sx-btn sx-btn--ghost"><i class="bi bi-grid-1x2"></i> Bảng điều khiển</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ ONBOARD ══ -->
+    <div class="sx-panel" id="onboardCard" style="display:none" data-rise>
+        <div class="sx-panel__b">
+            <div class="sx-sec-head" style="margin-top:0">
+                <h2 class="sx-sec-title"><span class="bar"></span> Tạo trường mới &amp; tài khoản Nhà trường</h2>
+            </div>
+            <form asp-action="OnboardSchool" method="post">
+                @Html.AntiForgeryToken()
+                <div class="sx-grid2">
+                    <div class="sx-field"><label>Tên trường</label>
+                        <input id="obSchoolName" name="SchoolName" class="sx-input" required maxlength="150" placeholder="VD: THPT Nguyễn Du" /></div>
+                    <div class="sx-field"><label>Người quản trị (Nhà trường)</label>
+                        <input name="AdminFullName" class="sx-input" required maxlength="150" placeholder="VD: Nguyễn Văn A" /></div>
+                    <div class="sx-field"><label>Email đăng nhập</label>
+                        <input name="AdminEmail" type="email" class="sx-input" required maxlength="150" placeholder="admin@truong.edu.vn" /></div>
+                    <div class="sx-field"><label>Mật khẩu tạm (≥ 6 ký tự)</label>
+                        <input name="AdminPassword" type="text" class="sx-input" required minlength="6" maxlength="100" placeholder="Cấp cho Nhà trường" /></div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:16px">
+                    <button type="submit" class="sx-btn sx-btn--gold"><i class="bi bi-check-lg"></i> Tạo trường</button>
+                    <button type="button" class="sx-btn sx-btn--light" onclick="document.getElementById('onboardCard').style.display='none'">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="sx-sec-head">
+        <h2 class="sx-sec-title"><span class="bar"></span> Danh sách trường</h2>
+        <span class="sx-pill sx-pill--info">@Model.Count trường</span>
+    </div>
+
+    <!-- ══ SCHOOL CARDS ══ -->
+    <div class="sx-grid-cards">
+        @foreach (var s in Model)
+        {
+            var isOwn = s.SchoolId == ownSchoolId;
+            <div class="sx-card @(s.IsActive ? "" : "is-off")" data-rise style="@(s.IsActive ? "" : "opacity:.7")">
+                <div class="sx-card__b">
+                    <div class="sx-plan__head">
+                        <div class="sx-school">
+                            <div class="sx-ava">@Initials(s.SchoolName)</div>
+                            <div>
+                                <div class="nm">@s.SchoolName</div>
+                                <div class="sub mono">@s.SchoolCode · ID #@s.SchoolId</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px">
+                            @if (isOwn) { <span class="sx-pill sx-pill--gold">Của bạn</span> }
+                            @if (s.IsActive) { <span class="sx-pill sx-pill--ok">Hoạt động</span> }
+                            else { <span class="sx-pill sx-pill--off">Tạm khóa</span> }
+                        </div>
+                    </div>
+
+                    <div class="sx-divider"></div>
+
+                    <div style="font-size:.88rem;display:flex;align-items:center;gap:8px">
+                        <i class="bi bi-person-badge" style="color:var(--indigo)"></i>
+                        <b>@(s.AdminFullName ?? "— chưa có quản trị —")</b>
+                        @if (s.AdminUserId > 0)
+                        {
+                            @if (s.AdminActive) { <span class="sx-pill sx-pill--ok" style="margin-left:auto">Mở</span> }
+                            else { <span class="sx-pill sx-pill--off" style="margin-left:auto">Khóa</span> }
+                        }
+                    </div>
+                    <div class="mono" style="font-size:.8rem;color:var(--muted);margin-top:4px">
+                        <i class="bi bi-envelope"></i> @(s.AdminEmail ?? "—")
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px">
+                        @if (!string.IsNullOrEmpty(s.PlanName))
+                        {
+                            <span class="sx-pill @(s.SubscriptionActive ? "sx-pill--gold" : "sx-pill--off")">@s.PlanName</span>
+                        }
+                        else
+                        {
+                            <span class="sx-pill sx-pill--off">Chưa đăng ký</span>
+                        }
+                        <span class="sub mono" style="font-size:.78rem;color:var(--muted)">
+                            <i class="bi bi-people"></i> @s.UserCount · <i class="bi bi-mortarboard"></i> @s.StudentCount · <i class="bi bi-building"></i> @s.ClassCount
+                        </span>
+                    </div>
+
+                    <!-- actions -->
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+                        <button type="button" class="sx-btn sx-btn--light sx-btn--sm"
+                                onclick="var e=document.getElementById('se-@s.SchoolId');e.style.display=e.style.display==='block'?'none':'block'">
+                            <i class="bi bi-pencil-square"></i> Chỉnh sửa
+                        </button>
+                        <button type="button" class="sx-btn sx-btn--light sx-btn--sm"
+                                onclick="var e=document.getElementById('sr-@s.SchoolId');e.style.display=e.style.display==='block'?'none':'block'">
+                            <i class="bi bi-key"></i> Đặt lại MK
+                        </button>
+                        @if (!isOwn)
+                        {
+                            <form asp-action="ToggleSchoolActive" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@s.SchoolId" />
+                                <button type="submit" class="sx-btn sx-btn--light sx-btn--sm">
+                                    <i class="bi @(s.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i> @(s.IsActive ? "Tạm khóa" : "Mở khóa")
+                                </button>
+                            </form>
+                            @if (s.CanDelete)
+                            {
+                                <form asp-action="DeleteSchool" method="post" style="display:inline"
+                                      onsubmit="return confirm('Xóa vĩnh viễn trường @s.SchoolName và tài khoản của trường?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@s.SchoolId" />
+                                    <button type="submit" class="sx-btn sx-btn--danger sx-btn--sm"><i class="bi bi-trash3"></i> Xóa</button>
+                                </form>
+                            }
+                        }
+                    </div>
+
+                    <!-- edit form -->
+                    <div id="se-@s.SchoolId" class="sx-edit" style="display:none">
+                        <form asp-action="UpdateSchool" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="SchoolId" value="@s.SchoolId" />
+                            <div class="sx-field" style="margin-bottom:10px">
+                                <label>Tên trường</label>
+                                <input name="SchoolName" class="sx-input" value="@s.SchoolName" required maxlength="150" />
+                            </div>
+                            <div class="sx-grid2">
+                                <div class="sx-field"><label>Tên quản trị</label>
+                                    <input name="AdminFullName" class="sx-input" value="@s.AdminFullName" required maxlength="150" /></div>
+                                <div class="sx-field"><label>Email đăng nhập</label>
+                                    <input name="AdminEmail" type="email" class="sx-input" value="@s.AdminEmail" required maxlength="150" /></div>
+                            </div>
+                            <label class="sx-check" style="margin-top:12px">
+                                <input type="checkbox" name="AdminActive" value="true" checked="@(s.AdminActive)" /> Cho phép tài khoản đăng nhập
+                            </label>
+                            <button type="submit" class="sx-btn sx-btn--primary sx-btn--block" style="margin-top:14px">
+                                <i class="bi bi-save"></i> Lưu thay đổi
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- reset password form -->
+                    <div id="sr-@s.SchoolId" class="sx-edit" style="display:none">
+                        <form asp-action="ResetSchoolPassword" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@s.SchoolId" />
+                            <div class="sx-field">
+                                <label>Mật khẩu mới cho Nhà trường (≥ 6 ký tự)</label>
+                                <input name="newPassword" type="text" class="sx-input" required minlength="6" maxlength="100" placeholder="Nhập mật khẩu mới" />
+                            </div>
+                            <button type="submit" class="sx-btn sx-btn--primary sx-btn--block" style="margin-top:12px">
+                                <i class="bi bi-key"></i> Đặt lại mật khẩu
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+</div>

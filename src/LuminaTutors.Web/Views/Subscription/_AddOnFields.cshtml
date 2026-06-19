@@ -1,0 +1,42 @@
+@using LuminaTutors.Domain.Enums
+@model LuminaTutors.Application.DTOs.Subscription.AddOnEditRequest
+@{ var m = Model; }
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div>
+        <label class="lt-label">Mã add-on</label>
+        <input name="AddOnCode" class="lt-input" value="@m?.AddOnCode" placeholder="VD: AI_TUTOR" required maxlength="30" />
+    </div>
+    <div>
+        <label class="lt-label">Tính năng mở khóa</label>
+        <select name="Feature" class="lt-select">
+            <option value="AiTutor" selected="@(m?.Feature == PremiumFeature.AiTutor)">Gia Sư AI</option>
+            <option value="VirtualLab" selected="@(m?.Feature == PremiumFeature.VirtualLab)">Phòng học 3D</option>
+        </select>
+    </div>
+</div>
+
+<div style="margin-top:8px">
+    <label class="lt-label">Tên add-on</label>
+    <input name="Name" class="lt-input" value="@m?.Name" required maxlength="100" />
+</div>
+
+<div style="margin-top:8px">
+    <label class="lt-label">Mô tả</label>
+    <textarea name="Description" class="lt-input" rows="2" maxlength="500">@m?.Description</textarea>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:8px">
+    <div>
+        <label class="lt-label">Giá/tháng</label>
+        <input name="MonthlyPrice" type="number" step="1000" min="0" class="lt-input" value="@((m?.MonthlyPrice ?? 0m).ToString("0"))" />
+    </div>
+    <div>
+        <label class="lt-label">Giá/quý</label>
+        <input name="QuarterlyPrice" type="number" step="1000" min="0" class="lt-input" value="@((m?.QuarterlyPrice ?? 0m).ToString("0"))" />
+    </div>
+    <div>
+        <label class="lt-label">Giá/năm</label>
+        <input name="YearlyPrice" type="number" step="1000" min="0" class="lt-input" value="@((m?.YearlyPrice ?? 0m).ToString("0"))" />
+    </div>
+</div>

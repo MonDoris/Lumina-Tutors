@@ -4,12 +4,13 @@ namespace LuminaTutors.Domain.Enums;
 
 public enum RoleCode
 {
-    Admin       = 1,
+    Admin       = 1,   // mã "ADMIN" — nay là vai trò "Nhà trường" (quản trị 1 trường)
     Teacher     = 2,
     Student     = 3,
     Parent      = 4,
     Supervisor  = 5,
-    Accountant  = 6
+    Accountant  = 6,
+    SystemAdmin = 7    // mã "SYSADMIN" — quản trị hệ thống: toàn quyền + quản lý gói E-Selling
 }
 
 // ─── Education Level ─────────────────────────────────────────────────────────

@@ -91,6 +91,10 @@ public sealed class AuthController : Controller
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
 
+        // SYSADMIN (bên bán) vào thẳng khu E-Selling; các vai trò khác về Dashboard trường
+        if (loginData.RoleCode == "SYSADMIN")
+            return RedirectToAction("Subscriptions", "Subscription");
+
         return RedirectToAction("Index", "Dashboard");
     }
 
@@ -425,12 +429,16 @@ public sealed class AuthController : Controller
 
     private async Task SignInUserAsync(LoginResponse data, bool rememberMe)
     {
+        // Quản trị hệ thống (SYSADMIN) là vai trò "bên bán" thuần: chỉ giữ claim
+        // "SYSADMIN" → chỉ qua được policy SystemAdmin (quản lý gói E-Selling), KHÔNG
+        // có quyền các chức năng quản trị trường (AdminOnly, FinanceAccess, …).
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, data.UserId.ToString()),
             new(ClaimTypes.Name,           data.FullName),
             new(ClaimTypes.Email,          data.Email),
             new(ClaimTypes.Role,           data.RoleCode),
+            new("RoleName",                data.RoleName ?? data.RoleCode),
             new("SchoolId",                data.SchoolId.ToString()),
             new("SchoolName",              data.SchoolName),
             new("AvatarUrl",               data.AvatarUrl ?? string.Empty)

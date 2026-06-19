@@ -36,7 +36,7 @@ public sealed class SubscriptionController : Controller
 
     // ── GET /Subscription ─────────────────────────────────────────────────────
 
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> Index()
     {
         var result = await _service.GetOverviewAsync(SchoolId);
@@ -52,7 +52,7 @@ public sealed class SubscriptionController : Controller
     // ── POST /Subscription/ChangePlan ─────────────────────────────────────────
     // Đăng ký mới hoặc nâng cấp lên gói cao hơn.
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOnly")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> ChangePlan(ChangePlanRequest request)
     {
         var result = await _service.SubscribeOrUpgradeAsync(SchoolId, UserId, request);
@@ -66,7 +66,7 @@ public sealed class SubscriptionController : Controller
 
     // ── POST /Subscription/BuyAddOn ───────────────────────────────────────────
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOnly")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> BuyAddOn(int addOnId)
     {
         var result = await _service.BuyAddOnAsync(SchoolId, UserId, addOnId);
@@ -80,7 +80,7 @@ public sealed class SubscriptionController : Controller
 
     // ── POST /Subscription/Renew ──────────────────────────────────────────────
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOnly")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> Renew()
     {
         var result = await _service.CreateRenewalOrderAsync(SchoolId, UserId);
@@ -94,7 +94,7 @@ public sealed class SubscriptionController : Controller
 
     // ── POST /Subscription/SetAutoRenew ───────────────────────────────────────
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOnly")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> SetAutoRenew(bool enabled)
     {
         var result = await _service.SetAutoRenewAsync(SchoolId, enabled);
@@ -106,7 +106,7 @@ public sealed class SubscriptionController : Controller
 
     // ── POST /Subscription/Cancel ─────────────────────────────────────────────
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOnly")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> Cancel()
     {
         var result = await _service.CancelAsync(SchoolId);
@@ -118,7 +118,7 @@ public sealed class SubscriptionController : Controller
 
     // ── POST /Subscription/RunRenewals — chạy thủ công job đến hạn (cron có thể gọi) ─
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOnly")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> RunRenewals()
     {
         var count = await _service.ProcessDueRenewalsAsync();
@@ -128,7 +128,7 @@ public sealed class SubscriptionController : Controller
 
     // ── GET /Subscription/Pay/5 — trang thanh toán cho 1 đơn ──────────────────
 
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> Pay(int id)
     {
         var result = await _service.GetOrderAsync(id, SchoolId);
@@ -140,7 +140,7 @@ public sealed class SubscriptionController : Controller
 
     // ── POST /Subscription/MarkPaid/5 — xác nhận thanh toán thủ công (offline) ─
 
-    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "AdminOnly")]
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> MarkPaid(int id)
     {
         var order = await _service.GetOrderAsync(id, SchoolId);
@@ -164,7 +164,7 @@ public sealed class SubscriptionController : Controller
 
     // ── GET /Subscription/PayVnPay/5 — tạo URL VNPay & chuyển hướng ───────────
 
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "SchoolAdminOnly")]
     public async Task<IActionResult> PayVnPay(int id)
     {
         if (!VnPayEnabled)
@@ -282,6 +282,138 @@ public sealed class SubscriptionController : Controller
             ? "Thanh toán thành công. Hệ thống sẽ kích hoạt gói trong giây lát."
             : "Thanh toán không thành công hoặc đã bị hủy.";
         return RedirectToAction(nameof(Index));
+    }
+
+    // ═══ E-Selling admin (SYSADMIN) ═══════════════════════════════════════════
+
+    // ── GET /Subscription/Catalog — quản lý gói & add-on ──────────────────────
+    [Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> Catalog()
+    {
+        var result = await _service.GetCatalogAsync();
+        if (!result.IsSuccess)
+        {
+            TempData["Error"] = result.Error;
+            return View(new CatalogDto());
+        }
+        return View(result.Data);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> SavePlan(PlanEditRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Dữ liệu gói không hợp lệ.";
+            return RedirectToAction(nameof(Catalog));
+        }
+        var result = await _service.SavePlanAsync(request);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess ? "Đã lưu gói dịch vụ." : result.Error;
+        return RedirectToAction(nameof(Catalog));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> TogglePlan(int id)
+    {
+        var result = await _service.TogglePlanActiveAsync(id);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess ? "Đã cập nhật trạng thái gói." : result.Error;
+        return RedirectToAction(nameof(Catalog));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> SaveAddOn(AddOnEditRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Dữ liệu add-on không hợp lệ.";
+            return RedirectToAction(nameof(Catalog));
+        }
+        var result = await _service.SaveAddOnAsync(request);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess ? "Đã lưu add-on." : result.Error;
+        return RedirectToAction(nameof(Catalog));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> ToggleAddOn(int id)
+    {
+        var result = await _service.ToggleAddOnActiveAsync(id);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess ? "Đã cập nhật trạng thái add-on." : result.Error;
+        return RedirectToAction(nameof(Catalog));
+    }
+
+    // ── GET /Subscription/Subscriptions — doanh thu + đăng ký của tất cả trường ─
+    [Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> Subscriptions()
+    {
+        var subs    = await _service.GetAllSubscriptionsAsync();
+        var revenue = await _service.GetRevenueReportAsync();
+        return View(new AllSubscriptionsVm
+        {
+            Revenue = revenue.IsSuccess ? revenue.Data! : new RevenueReportDto(),
+            Rows    = subs.IsSuccess ? subs.Data!.ToList() : new List<SchoolSubscriptionRowDto>()
+        });
+    }
+
+    // ── POST /Subscription/OnboardSchool — tạo trường + tài khoản Nhà trường ──
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> OnboardSchool(OnboardSchoolRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Dữ liệu chưa hợp lệ. Kiểm tra tên trường, email và mật khẩu (≥ 6 ký tự).";
+            return RedirectToAction(nameof(Subscriptions));
+        }
+        var result = await _service.OnboardSchoolAsync(request);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess
+            ? $"Đã tạo trường \"{request.SchoolName}\" và tài khoản Nhà trường ({request.AdminEmail})."
+            : result.Error;
+        return RedirectToAction(nameof(Subscriptions));
+    }
+
+    // ── GET /Subscription/Schools — quản lý tài khoản các trường (CRUD) ───────
+    [Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> Schools()
+    {
+        var result = await _service.GetSchoolsAsync();
+        ViewBag.OwnSchoolId = SchoolId;
+        return View(result.IsSuccess ? result.Data : new List<SchoolAccountDto>());
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> UpdateSchool(UpdateSchoolRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Dữ liệu chưa hợp lệ. Kiểm tra tên trường và email.";
+            return RedirectToAction(nameof(Schools));
+        }
+        var r = await _service.UpdateSchoolAsync(request);
+        TempData[r.IsSuccess ? "Success" : "Error"] = r.IsSuccess ? "Đã cập nhật thông tin trường." : r.Error;
+        return RedirectToAction(nameof(Schools));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> ToggleSchoolActive(int id)
+    {
+        var r = await _service.ToggleSchoolActiveAsync(id, SchoolId);
+        TempData[r.IsSuccess ? "Success" : "Error"] = r.IsSuccess ? "Đã đổi trạng thái trường." : r.Error;
+        return RedirectToAction(nameof(Schools));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> ResetSchoolPassword(int id, string? newPassword)
+    {
+        var r = await _service.ResetSchoolAdminPasswordAsync(id, newPassword ?? "");
+        TempData[r.IsSuccess ? "Success" : "Error"] = r.IsSuccess ? "Đã đặt lại mật khẩu Nhà trường." : r.Error;
+        return RedirectToAction(nameof(Schools));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> DeleteSchool(int id)
+    {
+        var r = await _service.DeleteSchoolAsync(id, SchoolId);
+        TempData[r.IsSuccess ? "Success" : "Error"] = r.IsSuccess ? "Đã xóa trường." : r.Error;
+        return RedirectToAction(nameof(Schools));
     }
 
     // ── GET /Subscription/Locked?feature=AiTutor — trang chặn tính năng ───────

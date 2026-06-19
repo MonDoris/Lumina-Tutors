@@ -17,14 +17,15 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
 
         b.HasIndex(x => x.RoleCode).IsUnique().HasDatabaseName("UQ_Roles_Code");
 
-        // Seed the 6 fixed roles
+        // Seed the fixed roles
         b.HasData(
-            new Role { Id = 1, RoleName = "Quản trị viên", RoleCode = "ADMIN",      Description = "Quản trị toàn bộ hệ thống" },
-            new Role { Id = 2, RoleName = "Giáo viên",     RoleCode = "TEACHER",    Description = "Tạo bài giảng, quản lý lớp, chấm điểm" },
-            new Role { Id = 3, RoleName = "Học sinh",       RoleCode = "STUDENT",    Description = "Học trực tuyến, vào phòng 3D, làm bài tập" },
-            new Role { Id = 4, RoleName = "Phụ huynh",     RoleCode = "PARENT",     Description = "Theo dõi học lực, điểm danh, nhận thông báo" },
-            new Role { Id = 5, RoleName = "Giám thị",      RoleCode = "SUPERVISOR", Description = "Giám sát kỷ luật toàn trường, coi thi, nề nếp" },
-            new Role { Id = 6, RoleName = "Kế toán",       RoleCode = "ACCOUNTANT", Description = "Quản lý học phí, hóa đơn và báo cáo tài chính" }
+            new Role { Id = 1, RoleName = "Nhà trường",     RoleCode = "ADMIN",      Description = "Quản trị toàn bộ một trường: học vụ, nhân sự, tài chính, gói dịch vụ của trường" },
+            new Role { Id = 2, RoleName = "Giáo viên",      RoleCode = "TEACHER",    Description = "Tạo bài giảng, quản lý lớp, chấm điểm" },
+            new Role { Id = 3, RoleName = "Học sinh",        RoleCode = "STUDENT",    Description = "Học trực tuyến, vào phòng 3D, làm bài tập" },
+            new Role { Id = 4, RoleName = "Phụ huynh",      RoleCode = "PARENT",     Description = "Theo dõi học lực, điểm danh, nhận thông báo" },
+            new Role { Id = 5, RoleName = "Giám thị",       RoleCode = "SUPERVISOR", Description = "Giám sát kỷ luật toàn trường, coi thi, nề nếp" },
+            new Role { Id = 6, RoleName = "Kế toán",        RoleCode = "ACCOUNTANT", Description = "Quản lý học phí, hóa đơn và báo cáo tài chính" },
+            new Role { Id = 7, RoleName = "Quản trị viên",  RoleCode = "SYSADMIN",   Description = "Quản trị hệ thống: toàn quyền mọi chức năng + quản lý gói E-Selling (catalog gói/add-on, đăng ký của mọi trường)" }
         );
     }
 }

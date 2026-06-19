@@ -1,0 +1,240 @@
+@using LuminaTutors.Application.DTOs.Subscription
+@model AllSubscriptionsVm
+@{
+    ViewData["Title"] = "Bảng điều khiển E-Selling";
+    var rev = Model.Revenue;
+    var pts = rev.Monthly;
+
+    string CycleVi(string s) => s switch { "Monthly"=>"Tháng","Quarterly"=>"Quý","Yearly"=>"Năm", _=>s };
+    string StatusVi(string s) => s switch {
+        "Active"=>"Đang hoạt động","PendingPayment"=>"Chờ thanh toán","Expired"=>"Hết hạn",
+        "Cancelled"=>"Đã hủy","NotSubscribed"=>"Chưa đăng ký", _=>s };
+    string Money(decimal v) =>
+          v >= 1_000_000_000m ? (v/1_000_000_000m).ToString("0.#") + " tỷ"
+        : v >= 1_000_000m     ? (v/1_000_000m).ToString("0.#") + " tr"
+        : v.ToString("N0");
+    string Initials(string name)
+    {
+        var parts = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpperInvariant();
+        return (parts[0].Substring(0,1) + parts[^1].Substring(0,1)).ToUpperInvariant();
+    }
+
+    // ── Hình học biểu đồ vùng (area chart) ──
+    System.Func<double,string> C = v => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    int    n = pts.Count;
+    double W=880, H=300, PL=64, PR=18, PT=18, PB=34;
+    double plotW = W-PL-PR, plotH = H-PT-PB, baseY = PT+plotH;
+    decimal maxAmt = n>0 ? pts.Max(p=>p.Amount) : 0m;
+    double plotMax = (double)(maxAmt<=0 ? 1m : maxAmt) * 1.15;
+    double step = n>1 ? plotW/(n-1) : plotW;
+    bool hasData = rev.TotalRevenue > 0 && n > 0;
+
+    var xy = new List<(double x,double y)>();
+    for (int i=0;i<n;i++)
+    {
+        double x = PL + i*step;
+        double y = baseY - (plotMax<=0 ? 0 : ((double)pts[i].Amount/plotMax)*plotH);
+        xy.Add((x,y));
+    }
+
+    var gGrid = new System.Text.StringBuilder();
+    var gArea = new System.Text.StringBuilder();
+    var gLine = new System.Text.StringBuilder();
+    var gDots = new System.Text.StringBuilder();
+    if (hasData)
+    {
+        for (int g=0; g<=4; g++)
+        {
+            double gy = PT + plotH*g/4.0;
+            decimal val = (decimal)(plotMax*(4-g)/4.0);
+            gGrid.Append($"<line x1=\"{C(PL)}\" y1=\"{C(gy)}\" x2=\"{C(W-PR)}\" y2=\"{C(gy)}\" stroke=\"#eef2f8\" stroke-width=\"1\"/>");
+            gGrid.Append($"<text x=\"{C(PL-10)}\" y=\"{C(gy+3)}\" text-anchor=\"end\" font-size=\"9.5\" fill=\"#9aa7bd\" font-family=\"JetBrains Mono,monospace\">{Money(val)}</text>");
+        }
+        var area = new System.Text.StringBuilder();
+        area.Append($"M {C(xy[0].x)} {C(baseY)}");
+        foreach (var p in xy) area.Append($" L {C(p.x)} {C(p.y)}");
+        area.Append($" L {C(xy[n-1].x)} {C(baseY)} Z");
+        gArea.Append($"<path d=\"{area}\" fill=\"url(#sxArea)\"/>");
+
+        var line = new System.Text.StringBuilder();
+        for (int i=0;i<n;i++) line.Append((i==0?"M ":" L ") + C(xy[i].x) + " " + C(xy[i].y));
+        gLine.Append($"<path d=\"{line}\" fill=\"none\" stroke=\"url(#sxLine)\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/>");
+
+        for (int i=0;i<n;i++)
+        {
+            bool last = i==n-1;
+            double r = last ? 5 : 3;
+            gDots.Append($"<circle cx=\"{C(xy[i].x)}\" cy=\"{C(xy[i].y)}\" r=\"{C(r)}\" fill=\"#fff\" stroke=\"#34e3c6\" stroke-width=\"2\"><title>{pts[i].Label}: {pts[i].Amount.ToString("N0")}đ</title></circle>");
+            gDots.Append($"<text x=\"{C(xy[i].x)}\" y=\"{C(baseY+18)}\" text-anchor=\"middle\" font-size=\"9\" fill=\"#9aa7bd\" font-family=\"JetBrains Mono,monospace\">{pts[i].Label}</text>");
+            if (pts[i].Amount>0 && last)
+                gDots.Append($"<text x=\"{C(xy[i].x)}\" y=\"{C(xy[i].y-12)}\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\" fill=\"#14233a\" font-family=\"JetBrains Mono,monospace\">{Money(pts[i].Amount)}</text>");
+        }
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+    <link rel="stylesheet" href="~/css/esell.css" asp-append-version="true" />
+}
+
+<div class="sx">
+
+    <!-- ══ HERO ══ -->
+    <section class="sx-hero" data-rise>
+        <div class="sx-hero__inner">
+            <div class="sx-hero__top">
+                <div>
+                    <span class="sx-eyebrow"><span class="dot"></span> Lumina Command · Chuyển đổi số giáo dục</span>
+                    <h1>Bảng điều khiển <span class="accent">E-Selling</span></h1>
+                    <p>Theo dõi doanh thu nền tảng, vận hành gói dịch vụ và đưa các trường lên hành trình số hoá.</p>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <a asp-action="Schools" class="sx-btn sx-btn--gold"><i class="bi bi-buildings"></i> Quản lý trường</a>
+                    <a asp-action="Catalog" class="sx-btn sx-btn--ghost"><i class="bi bi-box-seam"></i> Quản lý gói</a>
+                </div>
+            </div>
+
+            <div class="sx-kpis">
+                <div class="sx-kpi sx-kpi--gold">
+                    <div class="sx-kpi__ic"><i class="bi bi-cash-stack"></i></div>
+                    <div class="sx-kpi__label">Tổng doanh thu</div>
+                    <div class="sx-kpi__val mono">@rev.TotalRevenue.ToString("N0")<small>đ</small></div>
+                </div>
+                <div class="sx-kpi sx-kpi--aqua">
+                    <div class="sx-kpi__ic"><i class="bi bi-graph-up-arrow"></i></div>
+                    <div class="sx-kpi__label">Doanh thu tháng này</div>
+                    <div class="sx-kpi__val mono">@rev.ThisMonthRevenue.ToString("N0")<small>đ</small></div>
+                </div>
+                <div class="sx-kpi sx-kpi--indigo">
+                    <div class="sx-kpi__ic"><i class="bi bi-receipt"></i></div>
+                    <div class="sx-kpi__label">Đơn đã thanh toán</div>
+                    <div class="sx-kpi__val mono">@rev.PaidOrders</div>
+                </div>
+                <div class="sx-kpi sx-kpi--sky">
+                    <div class="sx-kpi__ic"><i class="bi bi-mortarboard-fill"></i></div>
+                    <div class="sx-kpi__label">Trường đang hoạt động</div>
+                    <div class="sx-kpi__val mono">@rev.ActiveSubscriptions</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ REVENUE CHART ══ -->
+    <div class="sx-card" style="margin-bottom:24px" data-rise>
+        <div class="sx-card__b">
+            <div class="sx-sec-head" style="margin-top:0">
+                <div>
+                    <h2 class="sx-sec-title"><span class="bar"></span> Doanh thu 12 tháng</h2>
+                    <p class="sx-sec-sub">Tổng hợp đơn gói &amp; add-on đã thanh toán</p>
+                </div>
+                <div class="sx-legend"><span class="k"><span class="sw"></span> Doanh thu / tháng</span></div>
+            </div>
+            @if (!hasData)
+            {
+                <div class="sx-chart-empty">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <p style="margin:10px 0 0">Chưa có doanh thu. Số liệu sẽ hiện khi các trường thanh toán gói.</p>
+                </div>
+            }
+            else
+            {
+                <svg viewBox="0 0 880 300" class="sx-chart" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Biểu đồ doanh thu 12 tháng">
+                    <defs>
+                        <linearGradient id="sxArea" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#8a9bff" stop-opacity="0.30" />
+                            <stop offset="100%" stop-color="#34e3c6" stop-opacity="0.02" />
+                        </linearGradient>
+                        <linearGradient id="sxLine" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#8a9bff" />
+                            <stop offset="100%" stop-color="#34e3c6" />
+                        </linearGradient>
+                    </defs>
+                    @Html.Raw(gGrid.ToString())
+                    @Html.Raw(gArea.ToString())
+                    @Html.Raw(gLine.ToString())
+                    @Html.Raw(gDots.ToString())
+                </svg>
+            }
+        </div>
+    </div>
+
+    <!-- ══ SCHOOLS TABLE ══ -->
+    <div class="sx-card" data-rise>
+        <div class="sx-card__b">
+            <div class="sx-sec-head" style="margin-top:0">
+                <h2 class="sx-sec-title"><span class="bar"></span> Các trường trên nền tảng</h2>
+                <span class="sx-pill sx-pill--info">@Model.Rows.Count trường</span>
+            </div>
+        </div>
+        <div class="sx-table-wrap">
+            <table class="sx-table">
+                <thead>
+                    <tr>
+                        <th style="padding-left:22px">Trường</th>
+                        <th>Gói</th>
+                        <th>Chu kỳ</th>
+                        <th>Tính năng</th>
+                        <th>Hiệu lực đến</th>
+                        <th>Thanh toán</th>
+                        <th style="padding-right:22px">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Rows.Count == 0)
+                    {
+                        <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px">Chưa có trường nào.</td></tr>
+                    }
+                    @foreach (var s in Model.Rows)
+                    {
+                        <tr>
+                            <td style="padding-left:22px">
+                                <div class="sx-school">
+                                    <div class="sx-ava">@Initials(s.SchoolName)</div>
+                                    <div>
+                                        <div class="nm">@s.SchoolName</div>
+                                        <div class="sub mono">ID #@s.SchoolId</div>
+                                    </div>
+                                </div>
+                            </td>
+                            @if (!s.HasSubscription)
+                            {
+                                <td colspan="5" style="color:var(--muted);font-style:italic">Chưa đăng ký gói dịch vụ</td>
+                                <td style="padding-right:22px"><span class="sx-pill sx-pill--off"><i class="bi bi-dash-circle"></i> Chưa đăng ký</span></td>
+                            }
+                            else
+                            {
+                                <td><span class="sx-pill sx-pill--gold">@s.PlanName</span></td>
+                                <td>@CycleVi(s.BillingCycle)</td>
+                                <td><span class="sub" style="font-size:.82rem;color:var(--muted)">@(string.IsNullOrEmpty(s.AddOns) ? "—" : s.AddOns)</span></td>
+                                <td class="mono">@s.CurrentPeriodEnd.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (s.AutoRenew)
+                                    {
+                                        <span class="sx-pill sx-pill--info"><i class="bi bi-arrow-repeat"></i> Định kỳ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="sx-pill sx-pill--off"><i class="bi bi-1-circle"></i> Một lần</span>
+                                    }
+                                </td>
+                                <td style="padding-right:22px">
+                                    @if (s.IsActive)
+                                    {
+                                        <span class="sx-pill sx-pill--ok"><i class="bi bi-check-circle-fill"></i> @StatusVi(s.Status)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="sx-pill sx-pill--danger"><i class="bi bi-exclamation-circle"></i> @StatusVi(s.Status)</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>

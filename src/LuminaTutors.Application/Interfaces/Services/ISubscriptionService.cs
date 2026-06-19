@@ -46,4 +46,27 @@ public interface ISubscriptionService
     /// đơn gia hạn (chờ thanh toán). Dùng cho cron/job định kỳ. Trả số đơn gia hạn đã tạo.
     /// </summary>
     Task<int> ProcessDueRenewalsAsync(CancellationToken ct = default);
+
+    // ─── E-Selling admin (SYSADMIN) ──────────────────────────────────────────
+    // Quản lý "bên bán": catalog gói/add-on và xem đăng ký của mọi trường.
+
+    Task<Result<CatalogDto>> GetCatalogAsync(CancellationToken ct = default);
+    Task<Result> SavePlanAsync(PlanEditRequest request, CancellationToken ct = default);
+    Task<Result> TogglePlanActiveAsync(int planId, CancellationToken ct = default);
+    Task<Result> SaveAddOnAsync(AddOnEditRequest request, CancellationToken ct = default);
+    Task<Result> ToggleAddOnActiveAsync(int addOnId, CancellationToken ct = default);
+    Task<Result<IReadOnlyList<SchoolSubscriptionRowDto>>> GetAllSubscriptionsAsync(CancellationToken ct = default);
+
+    /// <summary>Báo cáo doanh thu E-Selling (đơn đã thanh toán) + chuỗi 12 tháng gần nhất.</summary>
+    Task<Result<RevenueReportDto>> GetRevenueReportAsync(CancellationToken ct = default);
+
+    /// <summary>Tạo trường mới + tài khoản Nhà trường (ADMIN) cho trường đó.</summary>
+    Task<Result> OnboardSchoolAsync(OnboardSchoolRequest request, CancellationToken ct = default);
+
+    // ─── Quản lý tài khoản trường (CRUD) ─────────────────────────────────────
+    Task<Result<IReadOnlyList<SchoolAccountDto>>> GetSchoolsAsync(CancellationToken ct = default);
+    Task<Result> UpdateSchoolAsync(UpdateSchoolRequest request, CancellationToken ct = default);
+    Task<Result> ToggleSchoolActiveAsync(int schoolId, int currentSchoolId, CancellationToken ct = default);
+    Task<Result> ResetSchoolAdminPasswordAsync(int schoolId, string newPassword, CancellationToken ct = default);
+    Task<Result> DeleteSchoolAsync(int schoolId, int currentSchoolId, CancellationToken ct = default);
 }
