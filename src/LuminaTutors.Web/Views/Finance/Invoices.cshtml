@@ -124,12 +124,21 @@
                             </span>
                         </td>
                         <td class="lt-td--dim">@inv.CreatedAt.ToString("dd/MM/yyyy")</td>
-                        <td>
+                        <td style="white-space:nowrap">
                             <a asp-action="InvoiceDetails" asp-route-id="@inv.InvoiceId"
                                class="lt-btn lt-btn--outline lt-btn--sm lt-btn--icon"
                                title="Xem chi tiết" data-testid="btn-view-invoice">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            @if (inv.Status != "Paid" && inv.Status != "Cancelled")
+                            {
+                                <a href="/Payment/Create/@inv.InvoiceId"
+                                   class="lt-btn lt-btn--sm"
+                                   style="background:#0d63c9;color:#fff;border-color:#0d63c9"
+                                   title="Thanh toán online qua VNPay">
+                                    <i class="bi bi-credit-card-2-front"></i> VNPay
+                                </a>
+                            }
                         </td>
                     </tr>
                 }

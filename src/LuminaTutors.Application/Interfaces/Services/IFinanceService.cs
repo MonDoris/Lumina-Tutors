@@ -1,5 +1,6 @@
 using LuminaTutors.Application.DTOs.Finance;
 using LuminaTutors.Domain.Common;
+using LuminaTutors.Domain.Enums;
 
 namespace LuminaTutors.Application.Interfaces.Services;
 
@@ -19,6 +20,9 @@ public interface IFinanceService
 
     // Payments
     Task<Result<PaymentSummaryDto>>                  RecordPaymentAsync(int schoolId, int processedByUserId, RecordPaymentRequest request, CancellationToken ct = default);
+
+    /// <summary>Xác nhận thanh toán VNPay từ IPN (không cần đăng nhập). Idempotent — tra theo Id hóa đơn.</summary>
+    Task<VnPayConfirmResult>                          ConfirmVnPayPaymentAsync(int invoiceId, decimal gatewayAmount, string? transactionNo, string? gatewayRaw, CancellationToken ct = default);
 
     // Reports
     Task<Result<MonthlyFinanceReportDto>>            GetMonthlyReportAsync(int schoolId, int month, int year, CancellationToken ct = default);

@@ -135,6 +135,17 @@ try
         await LuminaTutors.Infrastructure.Data.DatabaseSeeder.SeedAsync(app.Services);
     }
 
+    // ── Forwarded headers (chạy SAU Cloudflare Tunnel / ngrok / reverse proxy) ──
+    // Giúp app nhận đúng scheme (https) & host gốc khi đứng sau tunnel — cần cho
+    // cookie Secure, redirect và sinh URL tuyệt đối. Tunnel chạy cục bộ nên proxy
+    // là loopback (được tin mặc định). Phải đặt TRƯỚC mọi middleware khác.
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost
+    });
+
     // ── Middleware Pipeline ────────────────────────────────────────────────────
     if (!app.Environment.IsDevelopment())
     {

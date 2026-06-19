@@ -314,6 +314,50 @@ public sealed class FinanceService : IFinanceService
         }
     }
 
+    public async Task<VnPayConfirmResult> ConfirmVnPayPaymentAsync(
+        int invoiceId, decimal gatewayAmount, string? transactionNo, string? gatewayRaw, CancellationToken ct = default)
+    {
+        var invoice = await _uow.TuitionInvoices.GetByIdAsync(
+            invoiceId, include: q => q.Include(i => i.Payments), ct: ct);
+
+        if (invoice is null)                       return VnPayConfirmResult.NotFound;
+        if (invoice.Status == InvoiceStatus.Paid)  return VnPayConfirmResult.AlreadyConfirmed;
+        if (gatewayAmount != invoice.FinalAmount)  return VnPayConfirmResult.InvalidAmount;
+
+        await _uow.BeginTransactionAsync(ct);
+        try
+        {
+            await _uow.TuitionPayments.AddAsync(new TuitionPayment
+            {
+                InvoiceId         = invoice.Id,
+                SchoolId          = invoice.SchoolId,
+                AmountPaid        = gatewayAmount,
+                PaymentDate       = DateTime.UtcNow,
+                PaymentMethod     = PaymentMethod.VnPay,
+                TransactionCode   = transactionNo,
+                GatewayResponse   = gatewayRaw,
+                PaymentStatus     = PaymentStatus.Success,
+                Note              = "Thanh toán online qua VNPay",
+                ProcessedByUserId = null               // hệ thống tự xác nhận
+            }, ct);
+
+            invoice.Status = InvoiceStatus.Paid;
+
+            await _uow.SaveChangesAsync(ct);
+            await _uow.CommitTransactionAsync(ct);
+
+            _logger.LogInformation("VNPay confirmed: Invoice={Id} Amount={Amount} TxnNo={Txn}",
+                invoice.Id, gatewayAmount, transactionNo);
+            return VnPayConfirmResult.Ok;
+        }
+        catch (Exception ex)
+        {
+            await _uow.RollbackTransactionAsync(ct);
+            _logger.LogError(ex, "VNPay confirm failed for invoice {Id}", invoiceId);
+            return VnPayConfirmResult.Error;
+        }
+    }
+
     // ─── Reports ──────────────────────────────────────────────────────────────
 
     public async Task<Result<MonthlyFinanceReportDto>> GetMonthlyReportAsync(

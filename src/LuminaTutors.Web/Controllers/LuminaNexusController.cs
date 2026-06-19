@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using System.Text.Json;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Web.Filters;
 using LuminaTutors.Web.Models;
+using LuminaTutors.Domain.Enums;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +22,7 @@ namespace LuminaTutors.Web.Controllers;
 /// giáo viên đang dạy (tự dò qua hồ sơ tài khoản).
 /// </summary>
 [Authorize(Policy = "LabAccess")]
+[RequireFeature(PremiumFeature.VirtualLab)]
 public sealed class LuminaNexusController : Controller
 {
     private readonly IAccountService _accountService;

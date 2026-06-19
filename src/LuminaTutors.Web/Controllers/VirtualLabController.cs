@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.Lab;
 using LuminaTutors.Web.Models;
+using LuminaTutors.Web.Filters;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Domain.Enums;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +14,7 @@ using Microsoft.Extensions.Caching.Memory;
 namespace LuminaTutors.Web.Controllers;
 
 [Authorize(Policy = "AnyAuthenticated")]
+[RequireFeature(PremiumFeature.VirtualLab)]
 public sealed class VirtualLabController : Controller
 {
     private readonly IVirtualLabService _labService;

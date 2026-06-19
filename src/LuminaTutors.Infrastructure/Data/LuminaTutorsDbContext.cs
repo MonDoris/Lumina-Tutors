@@ -10,6 +10,7 @@ using LuminaTutors.Domain.Entities.HR;
 using LuminaTutors.Domain.Entities.Identity;
 using LuminaTutors.Domain.Entities.Learning;
 using LuminaTutors.Domain.Entities.Profiles;
+using LuminaTutors.Domain.Entities.Subscription;
 using LuminaTutors.Domain.Entities.System;
 using System.Reflection;
 
@@ -117,6 +118,14 @@ public class LuminaTutorsDbContext : DbContext
     // ── AI Tutor ──────────────────────────────────────────────────────────────
     public DbSet<AiTutorSession> AiTutorSessions => Set<AiTutorSession>();
     public DbSet<AiTutorMessage> AiTutorMessages => Set<AiTutorMessage>();
+
+    // ── Subscription (SaaS plans / add-ons) ─────────────────────────────────────
+    public DbSet<SubscriptionPlan>        SubscriptionPlans        => Set<SubscriptionPlan>();
+    public DbSet<SubscriptionAddOn>       SubscriptionAddOns       => Set<SubscriptionAddOn>();
+    public DbSet<SchoolSubscription>      SchoolSubscriptions      => Set<SchoolSubscription>();
+    public DbSet<SchoolSubscriptionAddOn> SchoolSubscriptionAddOns => Set<SchoolSubscriptionAddOn>();
+    public DbSet<SubscriptionOrder>       SubscriptionOrders       => Set<SubscriptionOrder>();
+    public DbSet<SubscriptionOrderItem>   SubscriptionOrderItems   => Set<SubscriptionOrderItem>();
 
     // ── System ────────────────────────────────────────────────────────────────
     public DbSet<SystemConfig> SystemConfigs => Set<SystemConfig>();

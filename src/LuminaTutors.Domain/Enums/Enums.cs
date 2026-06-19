@@ -207,6 +207,73 @@ public enum PaymentStatus
     Refunded = 4
 }
 
+/// <summary>Kết quả xác nhận thanh toán VNPay (map sang RspCode của IPN).</summary>
+public enum VnPayConfirmResult
+{
+    Ok               = 0,   // RspCode 00 — xác nhận thành công
+    NotFound         = 1,   // RspCode 01 — không tìm thấy hóa đơn
+    AlreadyConfirmed = 2,   // RspCode 02 — hóa đơn đã thanh toán trước đó
+    InvalidAmount    = 3,   // RspCode 04 — số tiền không khớp
+    Error            = 4    // RspCode 99 — lỗi khác
+}
+
+// ─── Subscription / SaaS Plan ──────────────────────────────────────────────────
+
+/// <summary>Tính năng cao cấp mở khóa theo gói/add-on (cấp trường).</summary>
+public enum PremiumFeature
+{
+    AiTutor    = 1,   // Gia Sư AI
+    VirtualLab = 2    // Phòng học 3D (Lab ảo + Lumina Nexus)
+}
+
+/// <summary>Chu kỳ thanh toán gói đăng ký: tháng / quý / năm.</summary>
+public enum SubscriptionCycle
+{
+    Monthly   = 1,
+    Quarterly = 2,
+    Yearly    = 3
+}
+
+public enum SubscriptionStatus
+{
+    PendingPayment = 1,   // vừa đăng ký, chờ thanh toán lần đầu
+    Active         = 2,   // đang hiệu lực
+    Expired        = 3,   // hết hạn (chưa gia hạn)
+    Cancelled      = 4    // đã hủy (không tự gia hạn)
+}
+
+public enum SubscriptionOrderType
+{
+    New      = 1,   // đăng ký mới / đăng ký lại
+    Upgrade  = 2,   // nâng cấp lên gói cao hơn
+    AddOn    = 3,   // mua thêm tính năng lẻ
+    Renewal  = 4    // gia hạn định kỳ
+}
+
+public enum SubscriptionOrderStatus
+{
+    Pending   = 1,
+    Paid      = 2,
+    Cancelled = 3,
+    Failed    = 4
+}
+
+public enum SubscriptionItemType
+{
+    Plan  = 1,
+    AddOn = 2
+}
+
+/// <summary>Kết quả xác nhận thanh toán đơn đăng ký (idempotent, dùng cho IPN VNPay).</summary>
+public enum SubscriptionConfirmResult
+{
+    Ok               = 0,
+    NotFound         = 1,
+    AlreadyConfirmed = 2,
+    InvalidAmount    = 3,
+    Error            = 4
+}
+
 // ─── HR ──────────────────────────────────────────────────────────────────────
 
 public enum ContractStatus

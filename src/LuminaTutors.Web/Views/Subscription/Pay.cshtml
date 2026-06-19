@@ -1,0 +1,84 @@
+@using LuminaTutors.Application.DTOs.Subscription
+@model SubscriptionOrderDto
+@{
+    ViewData["Title"] = "Thanh toán đơn";
+    var vnPayEnabled = (bool)(ViewBag.VnPayEnabled ?? false);
+    var isPaid       = Model.Status == "Paid";
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Thanh toán đơn @Model.OrderCode</h1>
+        <p class="lt-page-subtitle">Hoàn tất thanh toán để kích hoạt gói / tính năng</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <a asp-action="Index" class="lt-btn lt-btn--outline"><i class="bi bi-arrow-left"></i> Quay lại</a>
+    </div>
+</div>
+
+<div style="max-width:640px">
+    <div class="lt-card lt-mb-4">
+        <div class="lt-card__body">
+            <table class="lt-table">
+                <thead>
+                    <tr><th>Hạng mục</th><th class="lt-th--right">Thành tiền</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.Description</td>
+                            <td class="lt-th--right">@item.Amount.ToString("N0")đ</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td style="font-weight:800">Tổng cộng</td>
+                        <td class="lt-th--right" style="font-weight:800;font-size:1.15rem;color:var(--lt-navy)">@Model.Amount.ToString("N0")đ</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top:10px;color:#64748b;font-size:.85rem">
+                Kỳ hiệu lực: <b>@Model.PeriodStart.ToString("dd/MM/yyyy")</b> – <b>@Model.PeriodEnd.ToString("dd/MM/yyyy")</b>
+            </div>
+        </div>
+    </div>
+
+    @if (isPaid)
+    {
+        <div class="lt-card">
+            <div class="lt-card__body" style="text-align:center;padding:32px">
+                <i class="bi bi-check-circle-fill" style="font-size:2.4rem;color:#22c55e"></i>
+                <p style="margin:12px 0 0;font-weight:700;color:var(--lt-navy)">Đơn này đã được thanh toán.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="lt-card">
+            <div class="lt-card__body">
+                <h3 style="font-size:1rem;font-weight:800;color:var(--lt-navy);margin:0 0 14px">Chọn hình thức thanh toán</h3>
+
+                @if (vnPayEnabled)
+                {
+                    <a asp-action="PayVnPay" asp-route-id="@Model.OrderId" class="lt-btn lt-btn--primary lt-btn--full" style="margin-bottom:10px">
+                        <i class="bi bi-credit-card-2-front"></i> Thanh toán qua VNPay
+                    </a>
+                }
+                else
+                {
+                    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin-bottom:12px;color:#9a3412;font-size:.85rem">
+                        <i class="bi bi-info-circle"></i> Thanh toán online (VNPay) chưa được bật. Bạn có thể xác nhận thủ công sau khi đã chuyển khoản.
+                    </div>
+                }
+
+                <form asp-action="MarkPaid" asp-route-id="@Model.OrderId" method="post"
+                      onsubmit="return confirm('Xác nhận đã nhận thanh toán cho đơn này?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="lt-btn lt-btn--outline lt-btn--full">
+                        <i class="bi bi-check2-square"></i> Xác nhận đã thanh toán (thủ công)
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+</div>

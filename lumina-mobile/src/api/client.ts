@@ -2,10 +2,15 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ── Cấu hình kết nối ──────────────────────────────────────────────────────────
-// Chọn 1 trong 3 tùy theo môi trường:
+// Chọn 1 tùy môi trường:
 //
-// [A] Laptop Hotspot (KHUYẾN NGHỊ - không cần cài thêm gì):
-//     Bật Mobile Hotspot trên Windows → điện thoại kết nối vào hotspot laptop
+// [D] Cloudflare Tunnel — KHUYẾN NGHỊ để chạy & ĐỒNG BỘ MỌI MẠNG (cùng/khác wifi, 4G).
+//     Trên laptop chạy:   cloudflared tunnel --url http://localhost:60481
+//     → nhận URL https://xxxxx.trycloudflare.com, dán vào dòng dưới (KHÔNG có "/" cuối).
+//     Lưu ý: URL đổi mỗi lần chạy lại tunnel (trừ khi dùng tunnel có tên/domain riêng).
+// export const BASE_URL = 'https://xxxxx.trycloudflare.com';
+//
+// [A] Laptop Hotspot (chỉ chạy khi điện thoại nối CÙNG hotspot laptop):
 export const BASE_URL = 'http://192.168.137.1:60481';
 //
 // [B] Radmin VPN (cần cài Radmin VPN app trên điện thoại):

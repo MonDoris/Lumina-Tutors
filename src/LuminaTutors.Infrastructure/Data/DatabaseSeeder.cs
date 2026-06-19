@@ -1,5 +1,7 @@
 using LuminaTutors.Domain.Entities.Academic;
 using LuminaTutors.Domain.Entities.Identity;
+using LuminaTutors.Domain.Entities.Subscription;
+using LuminaTutors.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -167,6 +169,77 @@ public static class DatabaseSeeder
             );
             await db.SaveChangesAsync();
             logger.LogInformation("📚 Created Học Kỳ 1 & Học Kỳ 2 for AcademicYear {AY}", ay.YearName);
+        }
+
+        // ── 6. Seed gói dịch vụ (SaaS) + add-on + đăng ký mặc định ───────────────
+        await SeedSubscriptionsAsync(db, school, logger);
+    }
+
+    /// <summary>
+    /// Tạo catalog gói (Basic/Premium) + add-on (AI Tutor, Virtual Lab) và đảm bảo
+    /// trường mặc định có một đăng ký Premium đang hoạt động để các tính năng cao cấp
+    /// dùng được ngay. Idempotent — bỏ qua nếu đã có.
+    /// </summary>
+    private static async Task SeedSubscriptionsAsync(
+        LuminaTutorsDbContext db, School school, ILogger logger)
+    {
+        if (!await db.SubscriptionPlans.AnyAsync())
+        {
+            db.SubscriptionPlans.AddRange(
+                new SubscriptionPlan
+                {
+                    PlanCode = "BASIC", Name = "Gói Cơ Bản", Tier = 1,
+                    Description = "Quản lý học vụ, điểm danh, sổ điểm, tài chính cơ bản. Không gồm AI & Phòng 3D.",
+                    MonthlyPrice = 990_000M, QuarterlyPrice = 2_700_000M, YearlyPrice = 9_900_000M,
+                    IncludesAiTutor = false, IncludesVirtualLab = false, IsActive = true
+                },
+                new SubscriptionPlan
+                {
+                    PlanCode = "PREMIUM", Name = "Gói Cao Cấp", Tier = 2,
+                    Description = "Toàn bộ tính năng Cơ Bản + Gia Sư AI + Phòng học 3D (Lab ảo & Lumina Nexus).",
+                    MonthlyPrice = 2_490_000M, QuarterlyPrice = 6_900_000M, YearlyPrice = 24_900_000M,
+                    IncludesAiTutor = true, IncludesVirtualLab = true, IsActive = true
+                });
+            await db.SaveChangesAsync();
+            logger.LogInformation("💎 Seeded subscription plans: BASIC, PREMIUM");
+        }
+
+        if (!await db.SubscriptionAddOns.AnyAsync())
+        {
+            db.SubscriptionAddOns.AddRange(
+                new SubscriptionAddOn
+                {
+                    AddOnCode = "AI_TUTOR", Name = "Gia Sư AI", Feature = PremiumFeature.AiTutor,
+                    Description = "Trợ giảng AI trả lời câu hỏi cho học sinh 24/7.",
+                    MonthlyPrice = 790_000M, QuarterlyPrice = 2_100_000M, YearlyPrice = 7_900_000M, IsActive = true
+                },
+                new SubscriptionAddOn
+                {
+                    AddOnCode = "VIRTUAL_LAB", Name = "Phòng học 3D", Feature = PremiumFeature.VirtualLab,
+                    Description = "Lab thí nghiệm 3D ảo & phòng học hologram Lumina Nexus.",
+                    MonthlyPrice = 990_000M, QuarterlyPrice = 2_700_000M, YearlyPrice = 9_900_000M, IsActive = true
+                });
+            await db.SaveChangesAsync();
+            logger.LogInformation("🧩 Seeded subscription add-ons: AI_TUTOR, VIRTUAL_LAB");
+        }
+
+        // Đảm bảo trường mặc định có đăng ký Premium đang hoạt động (để demo không bị khóa tính năng)
+        if (!await db.SchoolSubscriptions.AnyAsync(s => s.SchoolId == school.Id))
+        {
+            var premium = await db.SubscriptionPlans.FirstAsync(p => p.PlanCode == "PREMIUM");
+            var today   = DateOnly.FromDateTime(DateTime.UtcNow);
+            db.SchoolSubscriptions.Add(new SchoolSubscription
+            {
+                SchoolId         = school.Id,
+                PlanId           = premium.Id,
+                BillingCycle     = SubscriptionCycle.Yearly,
+                Status           = SubscriptionStatus.Active,
+                StartDate        = today,
+                CurrentPeriodEnd = today.AddYears(1),
+                AutoRenew        = true
+            });
+            await db.SaveChangesAsync();
+            logger.LogInformation("🏷️  Default school '{Name}' subscribed to PREMIUM (active 1 year)", school.SchoolName);
         }
     }
 }

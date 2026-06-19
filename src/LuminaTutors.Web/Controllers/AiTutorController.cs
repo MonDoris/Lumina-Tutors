@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using LuminaTutors.Application.DTOs.AI;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Domain.Enums;
+using LuminaTutors.Web.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +22,7 @@ public sealed class AiTutorController : Controller
 
     // ─── Student: danh sách phiên ─────────────────────────────────────────────
 
+    [RequireFeature(PremiumFeature.AiTutor)]
     public async Task<IActionResult> Index()
     {
         var result = await _aiTutor.GetStudentSessionsAsync(SchoolId(), UserId());
@@ -33,7 +36,7 @@ public sealed class AiTutorController : Controller
 
     // ─── Student: tạo phiên mới ───────────────────────────────────────────────
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, RequireFeature(PremiumFeature.AiTutor)]
     public async Task<IActionResult> Create(string title)
     {
         var result = await _aiTutor.CreateSessionAsync(SchoolId(), UserId(), title);
@@ -47,6 +50,7 @@ public sealed class AiTutorController : Controller
 
     // ─── Student: giao diện trò chuyện ────────────────────────────────────────
 
+    [RequireFeature(PremiumFeature.AiTutor)]
     public async Task<IActionResult> Chat(int id)
     {
         var sessionResult = await _aiTutor.GetSessionAsync(SchoolId(), id, UserId());
@@ -60,7 +64,7 @@ public sealed class AiTutorController : Controller
 
     // ─── Student: gửi tin nhắn (AJAX) ────────────────────────────────────────
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpPost, ValidateAntiForgeryToken, RequireFeature(PremiumFeature.AiTutor)]
     public async Task<IActionResult> Send(int sessionId, [FromBody] SendMessageRequest request)
     {
         // request có thể null nếu body rỗng/sai content-type ([FromBody] không bind được) → tránh NRE.

@@ -6,6 +6,7 @@
     var userId   = (int)(ViewBag.UserId ?? 0);
     var isHost   = (bool)(ViewBag.IsHost ?? false);
     var userName = ViewBag.UserName as string ?? "Người dùng";
+    var iceServersJson = ViewBag.IceServersJson as string ?? "[{\"urls\":\"stun:stun.l.google.com:19302\"}]";
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -879,7 +880,9 @@ const COLORS = ['#1a73e8','#34a853','#ea4335','#f9ab00','#9c27b0','#ff5722','#00
 function avatarColor(name){ let h=0; for(let c of name) h=(h<<5)-h+c.charCodeAt(0); return COLORS[Math.abs(h)%COLORS.length]; }
 function initials(name){ return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
 
-const iceConfig = { iceServers:[{urls:'stun:stun.l.google.com:19302'}] };
+// ICE servers do server bơm vào (cấu hình Webrtc:IceServers — thêm TURN để video
+// chạy được khi học sinh ở mạng khác). Fallback STUN Google nếu cấu hình rỗng.
+const iceConfig = { iceServers: @Html.Raw(iceServersJson) };
 
 // ── CLOCK ───────────────────────────────────────────────────────────
 (function tick(){

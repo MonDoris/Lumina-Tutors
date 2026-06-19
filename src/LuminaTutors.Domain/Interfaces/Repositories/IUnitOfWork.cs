@@ -9,6 +9,7 @@ using LuminaTutors.Domain.Entities.HR;
 using LuminaTutors.Domain.Entities.Identity;
 using LuminaTutors.Domain.Entities.Learning;
 using LuminaTutors.Domain.Entities.Profiles;
+using LuminaTutors.Domain.Entities.Subscription;
 using LuminaTutors.Domain.Entities.System;
 
 namespace LuminaTutors.Domain.Interfaces.Repositories;
@@ -110,6 +111,14 @@ public interface IUnitOfWork : IDisposable
     // ── AI Tutor ──────────────────────────────────────────────────────────────
     IRepository<AiTutorSession> AiTutorSessions { get; }
     IRepository<AiTutorMessage> AiTutorMessages { get; }
+
+    // ── Subscription (SaaS plans / add-ons) ─────────────────────────────────────
+    IRepository<SubscriptionPlan>        SubscriptionPlans        { get; }
+    IRepository<SubscriptionAddOn>       SubscriptionAddOns       { get; }
+    IRepository<SchoolSubscription>      SchoolSubscriptions      { get; }
+    IRepository<SchoolSubscriptionAddOn> SchoolSubscriptionAddOns { get; }
+    IRepository<SubscriptionOrder>       SubscriptionOrders       { get; }
+    IRepository<SubscriptionOrderItem>   SubscriptionOrderItems   { get; }
 
     // ── Transaction ───────────────────────────────────────────────────────────
     Task<int> SaveChangesAsync(CancellationToken ct = default);

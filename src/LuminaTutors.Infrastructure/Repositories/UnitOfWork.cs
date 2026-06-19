@@ -13,6 +13,7 @@ using LuminaTutors.Domain.Entities.HR;
 using LuminaTutors.Domain.Entities.Identity;
 using LuminaTutors.Domain.Entities.Learning;
 using LuminaTutors.Domain.Entities.Profiles;
+using LuminaTutors.Domain.Entities.Subscription;
 using LuminaTutors.Domain.Entities.System;
 using LuminaTutors.Domain.Interfaces.Repositories;
 using LuminaTutors.Infrastructure.Data;
@@ -108,6 +109,13 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<AiTutorSession>? _aiTutorSessions;
     private IRepository<AiTutorMessage>? _aiTutorMessages;
 
+    private IRepository<SubscriptionPlan>?        _subscriptionPlans;
+    private IRepository<SubscriptionAddOn>?       _subscriptionAddOns;
+    private IRepository<SchoolSubscription>?      _schoolSubscriptions;
+    private IRepository<SchoolSubscriptionAddOn>? _schoolSubscriptionAddOns;
+    private IRepository<SubscriptionOrder>?       _subscriptionOrders;
+    private IRepository<SubscriptionOrderItem>?   _subscriptionOrderItems;
+
     public UnitOfWork(LuminaTutorsDbContext context) => _context = context;
 
     // ── Lazy property helpers ─────────────────────────────────────────────────
@@ -195,6 +203,13 @@ public class UnitOfWork : IUnitOfWork
 
     public IRepository<AiTutorSession> AiTutorSessions => Get(ref _aiTutorSessions);
     public IRepository<AiTutorMessage> AiTutorMessages => Get(ref _aiTutorMessages);
+
+    public IRepository<SubscriptionPlan>        SubscriptionPlans        => Get(ref _subscriptionPlans);
+    public IRepository<SubscriptionAddOn>       SubscriptionAddOns       => Get(ref _subscriptionAddOns);
+    public IRepository<SchoolSubscription>      SchoolSubscriptions      => Get(ref _schoolSubscriptions);
+    public IRepository<SchoolSubscriptionAddOn> SchoolSubscriptionAddOns => Get(ref _schoolSubscriptionAddOns);
+    public IRepository<SubscriptionOrder>       SubscriptionOrders       => Get(ref _subscriptionOrders);
+    public IRepository<SubscriptionOrderItem>   SubscriptionOrderItems   => Get(ref _subscriptionOrderItems);
 
     // ── Transaction Management ────────────────────────────────────────────────
 

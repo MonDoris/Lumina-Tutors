@@ -1,0 +1,295 @@
+@using LuminaTutors.Application.DTOs.Subscription
+@model SubscriptionOverviewDto
+@{
+    ViewData["Title"] = "Gói dịch vụ";
+    var c = Model.Current;
+    string CycleVi(string code) => code switch
+    {
+        "Monthly"   => "Tháng",
+        "Quarterly" => "Quý",
+        "Yearly"    => "Năm",
+        _           => code
+    };
+    string StatusVi(string s) => s switch
+    {
+        "Active"         => "Đang hoạt động",
+        "PendingPayment" => "Chờ thanh toán",
+        "Expired"        => "Hết hạn",
+        "Cancelled"      => "Đã hủy gia hạn",
+        _                => s
+    };
+    string OrderTypeVi(string t) => t switch
+    {
+        "New"     => "Đăng ký mới",
+        "Upgrade" => "Nâng cấp",
+        "AddOn"   => "Mua thêm",
+        "Renewal" => "Gia hạn",
+        _         => t
+    };
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Gói dịch vụ &amp; Đăng ký</h1>
+        <p class="lt-page-subtitle">Nâng cấp gói, mua thêm tính năng (Gia Sư AI, Phòng 3D) và quản lý đăng ký định kỳ</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <form asp-action="RunRenewals" method="post" class="d-inline"
+              onsubmit="return confirm('Chạy xử lý các đăng ký đến hạn?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="lt-btn lt-btn--outline" title="Đánh dấu hết hạn + tạo đơn gia hạn cho các đăng ký quá hạn">
+                <i class="bi bi-arrow-repeat"></i> Xử lý đến hạn
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ── Đăng ký hiện tại ───────────────────────────────────────────── -->
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__body">
+        @if (!c.HasSubscription)
+        {
+            <div style="text-align:center;padding:24px 0">
+                <i class="bi bi-box-seam" style="font-size:2rem;color:#94a3b8"></i>
+                <p style="margin:10px 0 0;color:#64748b">Trường chưa đăng ký gói nào. Chọn một gói bên dưới để bắt đầu.</p>
+            </div>
+        }
+        else
+        {
+            <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
+                <div>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <span style="font-size:1.4rem;font-weight:800;color:var(--lt-navy)">@c.PlanName</span>
+                        @if (c.IsActive)
+                        {
+                            <span class="lt-badge lt-badge--success">@StatusVi(c.Status)</span>
+                        }
+                        else
+                        {
+                            <span class="lt-badge lt-badge--danger">@StatusVi(c.Status)</span>
+                        }
+                        @if (!c.AutoRenew)
+                        {
+                            <span class="lt-badge lt-badge--warning">Mua một lần</span>
+                        }
+                        else
+                        {
+                            <span class="lt-badge lt-badge--info">Định kỳ (@CycleVi(c.BillingCycle))</span>
+                        }
+                    </div>
+                    <div style="margin-top:8px;color:#64748b;font-size:.9rem">
+                        Hiệu lực đến <b>@c.CurrentPeriodEnd.ToString("dd/MM/yyyy")</b>
+                        @if (c.IsActive) { <text>— còn <b>@c.DaysRemaining</b> ngày</text> }
+                    </div>
+                    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+                        <span class="lt-badge @(c.HasAiTutor ? "lt-badge--success" : "lt-badge--gray")">
+                            <i class="bi @(c.HasAiTutor ? "bi-check-circle" : "bi-x-circle")"></i> Gia Sư AI
+                        </span>
+                        <span class="lt-badge @(c.HasVirtualLab ? "lt-badge--success" : "lt-badge--gray")">
+                            <i class="bi @(c.HasVirtualLab ? "bi-check-circle" : "bi-x-circle")"></i> Phòng 3D
+                        </span>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <form asp-action="Renew" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="lt-btn lt-btn--primary">
+                            <i class="bi bi-arrow-clockwise"></i> Gia hạn ngay
+                        </button>
+                    </form>
+                    @if (c.AutoRenew)
+                    {
+                        <form asp-action="SetAutoRenew" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="enabled" value="false" />
+                            <button type="submit" class="lt-btn lt-btn--outline" title="Chuyển sang mua một lần">
+                                <i class="bi bi-pause-circle"></i> Tắt tự gia hạn
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="SetAutoRenew" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="enabled" value="true" />
+                            <button type="submit" class="lt-btn lt-btn--outline" title="Tự động gia hạn mỗi kỳ">
+                                <i class="bi bi-play-circle"></i> Bật tự gia hạn
+                            </button>
+                        </form>
+                    }
+                    <form asp-action="Cancel" method="post" class="d-inline"
+                          onsubmit="return confirm('Hủy gia hạn? Trường vẫn dùng đến hết kỳ đã trả.');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="lt-btn lt-btn--outline" style="color:var(--lt-danger)">
+                            <i class="bi bi-x-circle"></i> Hủy
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- ── Bảng giá / Nâng cấp gói ────────────────────────────────────── -->
+<h2 style="font-size:1.1rem;font-weight:800;color:var(--lt-navy);margin:0 0 14px">Chọn gói</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:28px">
+    @foreach (var p in Model.Plans)
+    {
+        <div class="lt-card" style="@(p.IsCurrent ? "border:2px solid var(--lt-gold)" : "")">
+            <div class="lt-card__body">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <h3 style="font-size:1.15rem;font-weight:800;color:var(--lt-navy);margin:0">@p.Name</h3>
+                    @if (p.IsCurrent)
+                    {
+                        <span class="lt-badge lt-badge--gold">Đang dùng</span>
+                    }
+                </div>
+                <p style="color:#64748b;font-size:.85rem;min-height:38px;margin:8px 0">@p.Description</p>
+
+                <div style="font-size:1.5rem;font-weight:800;color:var(--lt-navy)">
+                    @p.MonthlyPrice.ToString("N0")<span style="font-size:.85rem;font-weight:600;color:#94a3b8">đ/tháng</span>
+                </div>
+                <div style="color:#94a3b8;font-size:.8rem;margin-bottom:12px">
+                    @p.QuarterlyPrice.ToString("N0")đ/quý · @p.YearlyPrice.ToString("N0")đ/năm
+                </div>
+
+                <ul style="list-style:none;padding:0;margin:0 0 14px;font-size:.85rem;color:#475569">
+                    <li style="margin-bottom:4px"><i class="bi @(p.IncludesAiTutor ? "bi-check-lg text-success" : "bi-dash text-muted")"></i> Gia Sư AI</li>
+                    <li><i class="bi @(p.IncludesVirtualLab ? "bi-check-lg text-success" : "bi-dash text-muted")"></i> Phòng học 3D</li>
+                </ul>
+
+                @if (p.IsCurrent)
+                {
+                    <button class="lt-btn lt-btn--outline" style="width:100%" disabled>Gói hiện tại</button>
+                }
+                else
+                {
+                    <form asp-action="ChangePlan" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="PlanId" value="@p.PlanId" />
+                        <div style="display:flex;gap:8px;margin-bottom:8px">
+                            <select name="Cycle" class="lt-select" style="flex:1">
+                                <option value="Monthly">Theo tháng</option>
+                                <option value="Quarterly">Theo quý</option>
+                                <option value="Yearly" selected>Theo năm</option>
+                            </select>
+                            <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;color:#475569;white-space:nowrap">
+                                <input type="checkbox" name="AutoRenew" value="true" checked /> Tự gia hạn
+                            </label>
+                        </div>
+                        <button type="submit" class="lt-btn lt-btn--primary" style="width:100%">
+                            @(p.IsUpgrade ? "Nâng cấp lên gói này" : (c.IsActive ? "Chuyển gói này" : "Đăng ký"))
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ── Tính năng mua thêm (add-on) ────────────────────────────────── -->
+<h2 style="font-size:1.1rem;font-weight:800;color:var(--lt-navy);margin:0 0 14px">Mua thêm tính năng</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:28px">
+    @foreach (var a in Model.AddOns)
+    {
+        <div class="lt-card">
+            <div class="lt-card__body">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <h3 style="font-size:1.05rem;font-weight:800;color:var(--lt-navy);margin:0">
+                        <i class="bi @(a.Feature == "AiTutor" ? "bi-robot" : "bi-badge-vr-fill")"></i> @a.Name
+                    </h3>
+                    @if (a.InCurrentPlan)
+                    {
+                        <span class="lt-badge lt-badge--success">Đã có trong gói</span>
+                    }
+                    else if (a.IsOwned)
+                    {
+                        <span class="lt-badge lt-badge--info">Đã mua</span>
+                    }
+                </div>
+                <p style="color:#64748b;font-size:.85rem;min-height:38px;margin:8px 0">@a.Description</p>
+                <div style="font-size:1.25rem;font-weight:800;color:var(--lt-navy);margin-bottom:4px">
+                    @a.MonthlyPrice.ToString("N0")<span style="font-size:.8rem;font-weight:600;color:#94a3b8">đ/tháng</span>
+                </div>
+                @if (a.ActiveUntil.HasValue)
+                {
+                    <div style="color:#94a3b8;font-size:.8rem;margin-bottom:10px">Hiệu lực đến @a.ActiveUntil.Value.ToString("dd/MM/yyyy")</div>
+                }
+
+                @if (a.IsOwned)
+                {
+                    <button class="lt-btn lt-btn--outline" style="width:100%" disabled>Đã sở hữu</button>
+                }
+                else
+                {
+                    <form asp-action="BuyAddOn" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="addOnId" value="@a.AddOnId" />
+                        <button type="submit" class="lt-btn lt-btn--gold" style="width:100%">
+                            <i class="bi bi-cart-plus"></i> Mua thêm
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ── Lịch sử đơn ────────────────────────────────────────────────── -->
+<h2 style="font-size:1.1rem;font-weight:800;color:var(--lt-navy);margin:0 0 14px">Đơn gần đây</h2>
+<div class="lt-card">
+    <div class="lt-card__body" style="padding:0">
+        <table class="lt-table">
+            <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Loại</th>
+                    <th>Chu kỳ</th>
+                    <th class="lt-th--right">Số tiền</th>
+                    <th>Kỳ hiệu lực</th>
+                    <th>Trạng thái</th>
+                    <th class="lt-th--right">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.RecentOrders.Count == 0)
+                {
+                    <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Chưa có đơn nào.</td></tr>
+                }
+                @foreach (var o in Model.RecentOrders)
+                {
+                    <tr>
+                        <td><b>@o.OrderCode</b></td>
+                        <td>@OrderTypeVi(o.OrderType)</td>
+                        <td>@CycleVi(o.BillingCycle)</td>
+                        <td class="lt-th--right">@o.Amount.ToString("N0")đ</td>
+                        <td style="font-size:.82rem;color:#64748b">@o.PeriodStart.ToString("dd/MM/yy") – @o.PeriodEnd.ToString("dd/MM/yy")</td>
+                        <td>
+                            @if (o.Status == "Paid")
+                            {
+                                <span class="lt-badge lt-badge--success">Đã thanh toán</span>
+                            }
+                            else if (o.Status == "Pending")
+                            {
+                                <span class="lt-badge lt-badge--warning">Chờ thanh toán</span>
+                            }
+                            else
+                            {
+                                <span class="lt-badge lt-badge--gray">@o.Status</span>
+                            }
+                        </td>
+                        <td class="lt-th--right">
+                            @if (o.Status == "Pending")
+                            {
+                                <a asp-action="Pay" asp-route-id="@o.OrderId" class="lt-btn lt-btn--primary lt-btn--sm">
+                                    <i class="bi bi-credit-card"></i> Thanh toán
+                                </a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

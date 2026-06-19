@@ -41,6 +41,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IQuestionBankService,     QuestionBankService>();
         services.AddScoped<ILeaveRequestService,     LeaveRequestService>();
         services.AddScoped<IRecordingService,        RecordingService>();
+        services.AddScoped<ISubscriptionService,     SubscriptionService>();
 
         return services;
     }

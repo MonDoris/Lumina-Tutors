@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using LuminaTutors.Application.DTOs.OnlineClassroom;
 using LuminaTutors.Web.Models;
 using LuminaTutors.Application.Interfaces.Services;
@@ -15,16 +16,40 @@ public sealed class OnlineClassroomController : Controller
 {
     private readonly IOnlineClassroomService _service;
     private readonly IMemoryCache            _cache;
+    private readonly IConfiguration          _config;
     private readonly ILogger<OnlineClassroomController> _logger;
 
     public OnlineClassroomController(
         IOnlineClassroomService service,
         IMemoryCache            cache,
+        IConfiguration          config,
         ILogger<OnlineClassroomController> logger)
     {
         _service = service;
         _cache   = cache;
+        _config  = config;
         _logger  = logger;
+    }
+
+    /// <summary>
+    /// ICE servers cho client WebRTC (cùng cấu hình "Webrtc:IceServers" với phòng 3D).
+    /// Thêm TURN ở đây để video chạy được khi học sinh ở MẠNG KHÁC (4G/wifi khác).
+    /// </summary>
+    private string BuildIceServersJson()
+    {
+        var list = new List<Dictionary<string, string>>();
+        foreach (var node in _config.GetSection("Webrtc:IceServers").GetChildren())
+        {
+            var urls = node["urls"];
+            if (string.IsNullOrWhiteSpace(urls)) continue;
+            var entry = new Dictionary<string, string> { ["urls"] = urls };
+            if (!string.IsNullOrWhiteSpace(node["username"]))   entry["username"]   = node["username"]!;
+            if (!string.IsNullOrWhiteSpace(node["credential"])) entry["credential"] = node["credential"]!;
+            list.Add(entry);
+        }
+        if (list.Count == 0)
+            list.Add(new Dictionary<string, string> { ["urls"] = "stun:stun.l.google.com:19302" });
+        return JsonSerializer.Serialize(list);
     }
 
     // ── GET /OnlineClassroom ──────────────────────────────────────────────────
@@ -143,10 +168,11 @@ public sealed class OnlineClassroomController : Controller
         var result = await _service.GetByIdAsync(SchoolId, id);
         if (!result.IsSuccess) return NotFound();
 
-        ViewBag.Session   = result.Data!;
-        ViewBag.UserId    = UserId;
-        ViewBag.IsHost    = result.Data!.TeacherId == UserId;
-        ViewBag.UserName  = User.FindFirstValue(ClaimTypes.Name) ?? "Người dùng";
+        ViewBag.Session        = result.Data!;
+        ViewBag.UserId         = UserId;
+        ViewBag.IsHost         = result.Data!.TeacherId == UserId;
+        ViewBag.UserName       = User.FindFirstValue(ClaimTypes.Name) ?? "Người dùng";
+        ViewBag.IceServersJson = BuildIceServersJson();
         return View();
     }
 
