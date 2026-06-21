@@ -375,6 +375,7 @@ public sealed class SubscriptionController : Controller
     {
         var subs    = await _service.GetAllSubscriptionsAsync();
         var revenue = await _service.GetRevenueReportAsync();
+        ViewBag.OwnSchoolId = SchoolId;            // để view đánh số ID hiển thị (trường hệ thống = 0)
         return View(new AllSubscriptionsVm
         {
             Revenue = revenue.IsSuccess ? revenue.Data! : new RevenueReportDto(),
@@ -455,6 +456,17 @@ public sealed class SubscriptionController : Controller
             nameof(PremiumFeature.VirtualLab) => "Phòng học 3D",
             _                                 => "tính năng cao cấp"
         };
+        ViewBag.IsAdmin = User.IsInRole("ADMIN");
+        return View();
+    }
+
+    // ── GET /Subscription/Inactive — trường chưa có gói đang hoạt động ─────────
+    // Đích chuyển hướng của RequireActiveSubscriptionFilter. Mở cho mọi vai trò để
+    // giáo viên/học sinh cũng thấy thông báo; admin có nút đăng ký gói.
+
+    [Authorize(Policy = "AnyAuthenticated")]
+    public IActionResult Inactive()
+    {
         ViewBag.IsAdmin = User.IsInRole("ADMIN");
         return View();
     }

@@ -1,4 +1,5 @@
 @using System.Security.Claims
+@inject LuminaTutors.Application.Interfaces.Services.ISubscriptionService SubsSvc
 @{
     var isAuth   = User.Identity?.IsAuthenticated == true;
     var fullName = User.FindFirstValue(ClaimTypes.Name) ?? "";
@@ -8,6 +9,11 @@
     var school   = User.FindFirstValue("SchoolName") ?? "Lumina Tutors";
     var avatarUrl = User.FindFirstValue("AvatarUrl");
     var initials = fullName.Length > 0 ? string.Concat(fullName.Split(' ').TakeLast(2).Select(p => p[0])) : "LT";
+
+    // Quyền tính năng cao cấp để hiện/khóa nút AI & 3D trên menu (đọc trực tiếp DB, luôn cập nhật)
+    var schoolIdNav   = int.TryParse(User.FindFirstValue("SchoolId"), out var sidNav) ? sidNav : 0;
+    var hasAiTutor    = isAuth && schoolIdNav > 0 && await SubsSvc.HasFeatureAsync(schoolIdNav, LuminaTutors.Domain.Enums.PremiumFeature.AiTutor);
+    var hasVirtualLab = isAuth && schoolIdNav > 0 && await SubsSvc.HasFeatureAsync(schoolIdNav, LuminaTutors.Domain.Enums.PremiumFeature.VirtualLab);
 
     string Nav(string ctrl, string? action = "Index")
         => Context.Request.Path.StartsWithSegments($"/{ctrl}", StringComparison.OrdinalIgnoreCase)
@@ -187,23 +193,45 @@
                     <span class="lt-nav__icon"><i class="bi bi-journal-text"></i></span>
                     Sổ điểm TT22
                 </a>
-                <a asp-controller="AiTutor" asp-action="Index" class="@Nav("AiTutor")"
-                   style="position:relative">
+                <a href="@(hasAiTutor ? Url.Action("Index", "AiTutor") : Url.Action("Locked", "Subscription", new { feature = "AiTutor" }))"
+                   class="@Nav("AiTutor")"
+                   style="position:relative@(hasAiTutor ? "" : ";opacity:.7")"
+                   title="@(hasAiTutor ? null : "Cần nâng cấp gói để dùng Gia Sư AI")">
                     <span class="lt-nav__icon"><i class="bi bi-robot"></i></span>
                     Gia Sư AI
-                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
-                                 background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
-                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
-                                 padding:1px 5px;border-radius:4px;line-height:1.4">AI</span>
+                    @if (hasAiTutor)
+                    {
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                     background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
+                                     font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                     padding:1px 5px;border-radius:4px;line-height:1.4">AI</span>
+                    }
+                    else
+                    {
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                     background:#e2e8f0;color:#64748b;
+                                     font-size:.62rem;padding:1px 5px;border-radius:4px;line-height:1.4"><i class="bi bi-lock-fill"></i></span>
+                    }
                 </a>
-                <a asp-controller="VirtualLab" asp-action="Index" class="@Nav("VirtualLab")"
-                   style="position:relative">
+                <a href="@(hasVirtualLab ? Url.Action("Index", "VirtualLab") : Url.Action("Locked", "Subscription", new { feature = "VirtualLab" }))"
+                   class="@Nav("VirtualLab")"
+                   style="position:relative@(hasVirtualLab ? "" : ";opacity:.7")"
+                   title="@(hasVirtualLab ? null : "Cần nâng cấp gói để dùng Phòng học 3D")">
                     <span class="lt-nav__icon"><i class="bi bi-badge-vr-fill"></i></span>
                     Lab 3D ảo
-                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
-                                 background:var(--lt-gold);color:var(--lt-navy);
-                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
-                                 padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
+                    @if (hasVirtualLab)
+                    {
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                     background:var(--lt-gold);color:var(--lt-navy);
+                                     font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                     padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
+                    }
+                    else
+                    {
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                     background:#e2e8f0;color:#64748b;
+                                     font-size:.62rem;padding:1px 5px;border-radius:4px;line-height:1.4"><i class="bi bi-lock-fill"></i></span>
+                    }
                 </a>
                 <a asp-controller="OnlineClassroom" asp-action="Index" class="@Nav("OnlineClassroom")"
                    style="position:relative">
@@ -422,14 +450,25 @@
                     <span class="lt-nav__icon"><i class="bi bi-journal-text"></i></span>
                     Bảng điểm
                 </a>
-                <a asp-controller="AiTutor" asp-action="Index" class="@Nav("AiTutor")"
-                   style="position:relative">
+                <a href="@(hasAiTutor ? Url.Action("Index", "AiTutor") : Url.Action("Locked", "Subscription", new { feature = "AiTutor" }))"
+                   class="@Nav("AiTutor")"
+                   style="position:relative@(hasAiTutor ? "" : ";opacity:.7")"
+                   title="@(hasAiTutor ? null : "Cần nâng cấp gói để dùng Gia Sư AI")">
                     <span class="lt-nav__icon"><i class="bi bi-robot"></i></span>
                     Gia Sư AI
-                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
-                                 background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
-                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
-                                 padding:1px 5px;border-radius:4px;line-height:1.4">AI</span>
+                    @if (hasAiTutor)
+                    {
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                     background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;
+                                     font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                     padding:1px 5px;border-radius:4px;line-height:1.4">AI</span>
+                    }
+                    else
+                    {
+                        <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                     background:#e2e8f0;color:#64748b;
+                                     font-size:.62rem;padding:1px 5px;border-radius:4px;line-height:1.4"><i class="bi bi-lock-fill"></i></span>
+                    }
                 </a>
                 <a asp-controller="Homework" asp-action="Index" class="@Nav("Homework")">
                     <span class="lt-nav__icon"><i class="bi bi-journal-bookmark-fill"></i></span>

@@ -3,6 +3,14 @@
 @{
     ViewData["Title"] = "Quản lý trường";
     var ownSchoolId = (int)(ViewBag.OwnSchoolId ?? 0);
+
+    // ID hiển thị (không phải khóa chính): trường hệ thống (Demo = trường của Sysadmin) = 0,
+    // các trường khác đánh 1, 2, 3… theo thứ tự SchoolId. Lỗ hổng do xóa trường không ảnh hưởng.
+    var displayNo = new Dictionary<int, int>();
+    var seq = 0;
+    foreach (var sc in Model.OrderBy(x => x.SchoolId))
+        displayNo[sc.SchoolId] = sc.SchoolId == ownSchoolId ? 0 : ++seq;
+
     string Initials(string name)
     {
         var parts = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -82,7 +90,7 @@
                             <div class="sx-ava">@Initials(s.SchoolName)</div>
                             <div>
                                 <div class="nm">@s.SchoolName</div>
-                                <div class="sub mono">ID: @s.SchoolId.ToString("D3")</div>
+                                <div class="sub mono">ID: @displayNo[s.SchoolId].ToString("D3")</div>
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px">

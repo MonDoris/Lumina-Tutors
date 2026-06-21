@@ -7,6 +7,7 @@ using Serilog;
 using LuminaTutors.Application.Extensions;
 using LuminaTutors.Infrastructure.Extensions;
 using LuminaTutors.Web.Hubs;
+using LuminaTutors.Web.Filters;
 
 // ── Bootstrap Serilog ─────────────────────────────────────────────────────────
 Log.Logger = new LoggerConfiguration()
@@ -36,7 +37,8 @@ try
     builder.Services.AddApplication();
 
     // ── MVC ───────────────────────────────────────────────────────────────────
-    var mvcBuilder = builder.Services.AddControllersWithViews()
+    var mvcBuilder = builder.Services.AddControllersWithViews(o =>
+            o.Filters.Add<RequireActiveSubscriptionFilter>())   // cổng: bắt buộc có gói đang hoạt động
         .AddViewOptions(o => o.HtmlHelperOptions.ClientValidationEnabled = true)
         .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 

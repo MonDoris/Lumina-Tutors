@@ -41,6 +41,9 @@ public interface ISubscriptionService
     /// <summary>Trường có quyền dùng tính năng này không (gói bao gồm hoặc add-on còn hiệu lực)?</summary>
     Task<bool> HasFeatureAsync(int schoolId, PremiumFeature feature, CancellationToken ct = default);
 
+    /// <summary>Trường có gói dịch vụ đang hoạt động (đã thanh toán, còn trong kỳ hiệu lực) không?</summary>
+    Task<bool> HasActiveSubscriptionAsync(int schoolId, CancellationToken ct = default);
+
     /// <summary>
     /// Xử lý các đăng ký đã quá hạn: đánh dấu hết hạn; nếu bật auto-renew thì tự sinh
     /// đơn gia hạn (chờ thanh toán). Dùng cho cron/job định kỳ. Trả số đơn gia hạn đã tạo.

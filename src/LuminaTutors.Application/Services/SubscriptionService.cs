@@ -397,6 +397,12 @@ public sealed class SubscriptionService : ISubscriptionService
         return sub.AddOns.Any(a => a.IsActive && a.ActiveUntil >= Today && a.AddOn.Feature == feature);
     }
 
+    public async Task<bool> HasActiveSubscriptionAsync(int schoolId, CancellationToken ct = default)
+    {
+        var sub = await LoadSubscriptionAsync(schoolId, ct);
+        return sub is not null && sub.Status == SubscriptionStatus.Active && sub.CurrentPeriodEnd >= Today;
+    }
+
     // ─── Process due renewals (cron) ──────────────────────────────────────────
 
     public async Task<int> ProcessDueRenewalsAsync(CancellationToken ct = default)

@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Trường chưa đăng ký gói";
+    var isAdmin = (bool)(ViewBag.IsAdmin ?? false);
+}
+
+<div style="max-width:560px;margin:48px auto;text-align:center">
+    <div class="lt-card">
+        <div class="lt-card__body" style="padding:40px 32px">
+            <div style="font-size:3rem;line-height:1">🔒</div>
+            <h1 style="font-size:1.35rem;font-weight:800;color:var(--lt-navy);margin:14px 0 8px">
+                Trường chưa đăng ký gói dịch vụ
+            </h1>
+            <p style="color:#64748b;line-height:1.6;margin:0 0 22px">
+                Hệ thống cần một <b>gói dịch vụ đang hoạt động</b> (kể cả gói Cơ Bản) để sử dụng
+                các chức năng như quản lý lớp, học sinh, điểm danh, sổ điểm, tài chính…
+            </p>
+
+            @if (isAdmin)
+            {
+                <a asp-controller="Subscription" asp-action="Index" class="lt-btn lt-btn--primary lt-btn--lg">
+                    <i class="bi bi-stars"></i> Đăng ký gói ngay
+                </a>
+            }
+            else
+            {
+                <div style="background:#f1f5f9;border-radius:10px;padding:14px;color:#475569;font-size:.9rem">
+                    <i class="bi bi-info-circle"></i> Vui lòng liên hệ <b>quản trị viên nhà trường</b> để đăng ký gói dịch vụ.
+                </div>
+            }
+            <div style="margin-top:18px">
+                <a asp-controller="Auth" asp-action="Logout" style="color:#64748b;text-decoration:none;font-size:.88rem">
+                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
