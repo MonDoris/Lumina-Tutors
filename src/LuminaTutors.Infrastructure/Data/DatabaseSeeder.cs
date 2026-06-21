@@ -284,15 +284,16 @@ public static class DatabaseSeeder
             logger.LogInformation("🧩 Seeded subscription add-ons: AI_TUTOR, VIRTUAL_LAB");
         }
 
-        // Đảm bảo trường mặc định có đăng ký Premium đang hoạt động (để demo không bị khóa tính năng)
+        // Trường mặc định khởi đầu ở gói Cơ Bản (KHÔNG gồm AI & Phòng 3D) để demo đúng
+        // luồng chặn tính năng: phải nâng cấp lên Premium / mua add-on mới mở khóa AI/3D.
         if (!await db.SchoolSubscriptions.AnyAsync(s => s.SchoolId == school.Id))
         {
-            var premium = await db.SubscriptionPlans.FirstAsync(p => p.PlanCode == "PREMIUM");
-            var today   = DateOnly.FromDateTime(DateTime.UtcNow);
+            var basic = await db.SubscriptionPlans.FirstAsync(p => p.PlanCode == "BASIC");
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
             db.SchoolSubscriptions.Add(new SchoolSubscription
             {
                 SchoolId         = school.Id,
-                PlanId           = premium.Id,
+                PlanId           = basic.Id,
                 BillingCycle     = SubscriptionCycle.Yearly,
                 Status           = SubscriptionStatus.Active,
                 StartDate        = today,
@@ -300,7 +301,7 @@ public static class DatabaseSeeder
                 AutoRenew        = true
             });
             await db.SaveChangesAsync();
-            logger.LogInformation("🏷️  Default school '{Name}' subscribed to PREMIUM (active 1 year)", school.SchoolName);
+            logger.LogInformation("🏷️  Default school '{Name}' subscribed to BASIC (active 1 year)", school.SchoolName);
         }
     }
 }

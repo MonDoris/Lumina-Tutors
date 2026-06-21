@@ -127,6 +127,7 @@ public class SchoolSubscriptionRowDto
 {
     public bool     HasSubscription  { get; init; }
     public int      SchoolId         { get; init; }
+    public string   SchoolCode       { get; init; } = "";
     public string   SchoolName       { get; init; } = "";
     public string   PlanName         { get; init; } = "";
     public string   Status           { get; init; } = "";

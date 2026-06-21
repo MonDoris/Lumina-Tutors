@@ -559,6 +559,7 @@ public sealed class SubscriptionService : ISubscriptionService
                 {
                     HasSubscription  = true,
                     SchoolId         = school.Id,
+                    SchoolCode       = school.SchoolCode,
                     SchoolName       = school.SchoolName,
                     PlanName         = s.Plan.Name,
                     Status           = s.Status.ToString(),
@@ -575,6 +576,7 @@ public sealed class SubscriptionService : ISubscriptionService
             {
                 HasSubscription = false,
                 SchoolId        = school.Id,
+                SchoolCode      = school.SchoolCode,
                 SchoolName      = school.SchoolName,
                 Status          = "NotSubscribed",
                 IsActive        = false,

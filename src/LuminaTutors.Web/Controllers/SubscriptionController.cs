@@ -32,7 +32,7 @@ public sealed class SubscriptionController : Controller
 
     private int    SchoolId => int.Parse(User.FindFirstValue("SchoolId") ?? "0");
     private int    UserId   => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
-    private bool   VnPayEnabled => _config.GetValue("VnPay:Enabled", false);
+    private bool   VnPayEnabled => _config.GetValue("VnPay:Enabled", true);
 
     // ── GET /Subscription ─────────────────────────────────────────────────────
 
@@ -263,7 +263,7 @@ public sealed class SubscriptionController : Controller
     // ── GET /Subscription/VnPayReturn — người dùng quay về từ VNPay ────────────
 
     [AllowAnonymous, HttpGet]
-    public IActionResult VnPayReturn()
+    public async Task<IActionResult> VnPayReturn()
     {
         var hashSecret = _config["VnPay:HashSecret"] ?? "";
         var vnp = new VnPayLibrary();
@@ -278,9 +278,37 @@ public sealed class SubscriptionController : Controller
 
         var ok = vnp.GetResponseData("vnp_ResponseCode") == "00"
               && vnp.GetResponseData("vnp_TransactionStatus") == "00";
-        TempData[ok ? "Success" : "Error"] = ok
-            ? "Thanh toán thành công. Hệ thống sẽ kích hoạt gói trong giây lát."
-            : "Thanh toán không thành công hoặc đã bị hủy.";
+        if (!ok)
+        {
+            TempData["Error"] = "Thanh toán không thành công hoặc đã bị hủy.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Kích hoạt ngay khi người dùng quay về, không chờ IPN (quan trọng khi chạy
+        // localhost / chưa khai báo IPN URL — VNPay không gọi server-to-server được).
+        // ConfirmOrderPaymentAsync idempotent: nếu IPN đã xác nhận trước đó → AlreadyConfirmed (no-op).
+        var orderId = ParseOrderId(vnp.GetResponseData("vnp_TxnRef"));
+        var amount  = long.TryParse(vnp.GetResponseData("vnp_Amount"), out var a) ? a / 100m : -1m;
+
+        if (orderId is null)
+        {
+            TempData["Error"] = "Thanh toán thành công nhưng không xác định được đơn để kích hoạt. Vui lòng liên hệ hỗ trợ.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var result = await _service.ConfirmOrderPaymentAsync(
+            orderId.Value, amount, PaymentMethod.VnPay,
+            vnp.GetResponseData("vnp_TransactionNo"), Request.QueryString.Value);
+
+        TempData[result is SubscriptionConfirmResult.Ok or SubscriptionConfirmResult.AlreadyConfirmed ? "Success" : "Error"] =
+            result switch
+            {
+                SubscriptionConfirmResult.Ok               => "Thanh toán thành công. Gói/tính năng đã được kích hoạt.",
+                SubscriptionConfirmResult.AlreadyConfirmed => "Thanh toán thành công. Gói/tính năng đã được kích hoạt.",
+                SubscriptionConfirmResult.InvalidAmount    => "Thanh toán thành công nhưng số tiền không khớp. Vui lòng liên hệ hỗ trợ.",
+                SubscriptionConfirmResult.NotFound         => "Không tìm thấy đơn tương ứng để kích hoạt.",
+                _                                          => "Thanh toán thành công nhưng kích hoạt gói gặp lỗi. Vui lòng thử lại hoặc liên hệ hỗ trợ."
+            };
         return RedirectToAction(nameof(Index));
     }
 
