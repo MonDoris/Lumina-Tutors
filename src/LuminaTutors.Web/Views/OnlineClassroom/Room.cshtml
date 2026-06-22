@@ -1108,7 +1108,7 @@ function raiseHand(){
     if(handRaised){ connection?.invoke('RaiseHand',SESSION_ID).catch(()=>{}); btn.classList.add('active'); toast('🖐️ Bạn đã giơ tay'); }
     else { connection?.invoke('LowerHand',SESSION_ID,USER_ID).catch(()=>{}); btn.classList.remove('active'); }
 }
-function confirmEnd(){ if(confirm('Kết thúc buổi học cho tất cả mọi người?')) document.getElementById('end-form').submit(); }
+function confirmEnd(){ var go=function(){document.getElementById('end-form').submit();}; if(window.ltConfirm){ltConfirm('Kết thúc buổi học cho tất cả mọi người?',go);}else if(confirm('Kết thúc buổi học cho tất cả mọi người?')){go();} }
 function leaveRoom(){
     connection?.invoke('LeaveRoom',SESSION_ID).catch(()=>{});
     window.location='@Url.Action("Index","OnlineClassroom")';

@@ -227,3 +227,46 @@ public record UpdateSchoolRequest(
     [Required(ErrorMessage = "Vui lòng nhập email."), EmailAddress(ErrorMessage = "Email không hợp lệ."), MaxLength(150)] string AdminEmail,
     bool AdminActive = true
 );
+
+// ─── Chi tiết một trường (SYSADMIN): thành viên + thống kê + xếp loại học lực ─────
+
+public class SchoolMemberDto
+{
+    public int     UserId      { get; init; }
+    public string  FullName    { get; init; } = "";
+    public string  Email       { get; init; } = "";
+    public string? PhoneNumber { get; init; }
+    public bool    IsActive    { get; init; }
+}
+
+/// <summary>Một lát của biểu đồ tròn xếp loại học lực.</summary>
+public class ClassificationSliceDto
+{
+    public string Label   { get; init; } = "";   // Xuất sắc / Giỏi / Trung bình / Yếu / Kém
+    public int    Count   { get; init; }
+    public double Percent { get; init; }
+}
+
+public class SchoolDetailDto
+{
+    public int     SchoolId           { get; init; }
+    public string  SchoolCode         { get; init; } = "";
+    public string  SchoolName         { get; init; } = "";
+    public bool    IsActive           { get; init; }
+    public string  PlanName           { get; init; } = "Chưa đăng ký";
+    public bool    SubscriptionActive { get; init; }
+
+    public int TotalStudents    { get; init; }
+    public int TotalTeachers    { get; init; }
+    public int TotalParents     { get; init; }
+    public int TotalAccountants { get; init; }
+
+    public IReadOnlyList<SchoolMemberDto> Teachers    { get; init; } = new List<SchoolMemberDto>();
+    public IReadOnlyList<SchoolMemberDto> Students    { get; init; } = new List<SchoolMemberDto>();
+    public IReadOnlyList<SchoolMemberDto> Parents     { get; init; } = new List<SchoolMemberDto>();
+    public IReadOnlyList<SchoolMemberDto> Accountants { get; init; } = new List<SchoolMemberDto>();
+
+    /// <summary>Phân bố xếp loại học lực toàn trường — dữ liệu cho biểu đồ tròn.</summary>
+    public IReadOnlyList<ClassificationSliceDto> Classification { get; init; } = new List<ClassificationSliceDto>();
+    public int GradedStudentCount { get; init; }   // số HS đã có điểm tổng kết để xếp loại
+}

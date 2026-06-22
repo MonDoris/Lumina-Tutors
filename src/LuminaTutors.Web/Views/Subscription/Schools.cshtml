@@ -131,6 +131,9 @@
 
                     <!-- actions -->
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+                        <a asp-action="SchoolDetail" asp-route-id="@s.SchoolId" class="sx-btn sx-btn--gold sx-btn--sm">
+                            <i class="bi bi-eye"></i> Chi tiết
+                        </a>
                         <button type="button" class="sx-btn sx-btn--light sx-btn--sm"
                                 onclick="var e=document.getElementById('se-@s.SchoolId');e.style.display=e.style.display==='block'?'none':'block'">
                             <i class="bi bi-pencil-square"></i> Chỉnh sửa

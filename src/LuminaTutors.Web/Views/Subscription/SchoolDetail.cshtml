@@ -1,0 +1,171 @@
+@using System.Globalization
+@using LuminaTutors.Application.DTOs.Subscription
+@model SchoolDetailDto
+@{
+    ViewData["Title"] = $"Chi tiết trường — {Model.SchoolName}";
+
+    // Vẽ donut: số phải định dạng InvariantCulture để tránh dấu phẩy thập phân (vi-VN) làm hỏng SVG.
+    string F(double v) => v.ToString("0.###", CultureInfo.InvariantCulture);
+    double R = 55, Circ = 2 * Math.PI * 55, accLen = 0;
+    string Color(string l) => l switch
+    {
+        "Xuất sắc"    => "#16a34a",
+        "Giỏi"        => "#2563eb",
+        "Trung bình"  => "#f59e0b",
+        "Yếu"         => "#f97316",
+        _             => "#dc2626"
+    };
+
+    var groups = new (string Title, string Icon, IReadOnlyList<SchoolMemberDto> List)[]
+    {
+        ("Giáo viên", "bi-person-video3", Model.Teachers),
+        ("Học sinh",  "bi-mortarboard",   Model.Students),
+        ("Phụ huynh", "bi-people",        Model.Parents),
+        ("Kế toán",   "bi-cash-coin",     Model.Accountants),
+    };
+}
+
+@section Styles {
+    <style>
+        .sd-head { display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px }
+        .sd-title { font-size:1.5rem;font-weight:800;color:var(--lt-navy);margin:0 }
+        .sd-sub { color:#64748b;font-size:.85rem;margin-top:2px }
+        .sd-badge-plan { background:#eef2ff;color:#4338ca;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700 }
+        .sd-badge-plan.off { background:#fef2f2;color:#b91c1c }
+
+        .sd-kpis { display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px }
+        .sd-kpi { background:#fff;border:1px solid #eef0f4;border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px }
+        .sd-kpi__ico { width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:1.3rem;color:#fff;flex:none }
+        .sd-kpi__val { font-size:1.6rem;font-weight:800;color:var(--lt-navy);line-height:1 }
+        .sd-kpi__lbl { color:#64748b;font-size:.82rem;margin-top:4px }
+
+        .sd-grid { display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start;margin-bottom:22px }
+        .sd-card { background:#fff;border:1px solid #eef0f4;border-radius:16px;padding:18px 20px }
+        .sd-card__head { font-weight:800;color:var(--lt-navy);margin-bottom:14px;display:flex;align-items:center;gap:8px }
+        .sd-card__head .sd-badge { margin-left:auto;background:#f1f5f9;color:#475569;border-radius:20px;padding:1px 10px;font-size:.78rem;font-weight:700 }
+
+        .sd-donut-wrap { display:flex;flex-direction:column;align-items:center;gap:16px }
+        .sd-legend { width:100%;display:flex;flex-direction:column;gap:8px }
+        .sd-legend__row { display:flex;align-items:center;gap:10px;font-size:.88rem }
+        .sd-legend__sw { width:12px;height:12px;border-radius:3px;flex:none }
+        .sd-legend__name { color:#334155;font-weight:600 }
+        .sd-legend__val { margin-left:auto;color:#64748b }
+
+        .sd-members { display:grid;grid-template-columns:repeat(2,1fr);gap:18px }
+        .sd-list { max-height:340px;overflow:auto }
+        .sd-table { width:100%;border-collapse:collapse;font-size:.86rem }
+        .sd-table th { text-align:left;color:#94a3b8;font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid #eef0f4;position:sticky;top:0;background:#fff }
+        .sd-table td { padding:8px;border-bottom:1px solid #f4f6f9;color:#334155 }
+        .sd-dot { display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px }
+        .sd-empty { color:#94a3b8;font-style:italic;padding:18px 4px;text-align:center }
+
+        @@media (max-width:900px){ .sd-kpis{grid-template-columns:repeat(2,1fr)} .sd-grid{grid-template-columns:1fr} .sd-members{grid-template-columns:1fr} }
+    </style>
+}
+
+<div class="sd-head">
+    <div>
+        <h1 class="sd-title">@Model.SchoolName</h1>
+        <div class="sd-sub mono">@Model.SchoolCode ·
+            <span class="sd-badge-plan @(Model.SubscriptionActive ? "" : "off")">@Model.PlanName</span> ·
+            @(Model.IsActive ? "Đang hoạt động" : "Đã tạm khóa")
+        </div>
+    </div>
+    <a asp-action="Schools" class="lt-btn lt-btn--outline"><i class="bi bi-arrow-left"></i> Danh sách trường</a>
+</div>
+
+<div class="sd-kpis">
+    <div class="sd-kpi">
+        <div class="sd-kpi__ico" style="background:#2563eb"><i class="bi bi-mortarboard-fill"></i></div>
+        <div><div class="sd-kpi__val">@Model.TotalStudents</div><div class="sd-kpi__lbl">Học sinh</div></div>
+    </div>
+    <div class="sd-kpi">
+        <div class="sd-kpi__ico" style="background:#16a34a"><i class="bi bi-person-video3"></i></div>
+        <div><div class="sd-kpi__val">@Model.TotalTeachers</div><div class="sd-kpi__lbl">Giáo viên</div></div>
+    </div>
+    <div class="sd-kpi">
+        <div class="sd-kpi__ico" style="background:#f59e0b"><i class="bi bi-people-fill"></i></div>
+        <div><div class="sd-kpi__val">@Model.TotalParents</div><div class="sd-kpi__lbl">Phụ huynh</div></div>
+    </div>
+    <div class="sd-kpi">
+        <div class="sd-kpi__ico" style="background:#7c3aed"><i class="bi bi-cash-coin"></i></div>
+        <div><div class="sd-kpi__val">@Model.TotalAccountants</div><div class="sd-kpi__lbl">Kế toán</div></div>
+    </div>
+</div>
+
+<div class="sd-grid">
+    <div class="sd-card">
+        <div class="sd-card__head"><i class="bi bi-pie-chart-fill"></i> Xếp loại học lực</div>
+
+        @if (Model.GradedStudentCount == 0)
+        {
+            <div class="sd-empty"><i class="bi bi-info-circle"></i> Chưa có dữ liệu điểm tổng kết để xếp loại.</div>
+        }
+        else
+        {
+            <div class="sd-donut-wrap">
+                <svg viewBox="0 0 140 140" width="180" height="180" role="img" aria-label="Biểu đồ xếp loại học lực">
+                    <g transform="rotate(-90 70 70)">
+                        <circle cx="70" cy="70" r="@F(R)" fill="none" stroke="#eef0f4" stroke-width="22"></circle>
+                        @foreach (var s in Model.Classification)
+                        {
+                            var len = s.Percent / 100.0 * Circ;
+                            <circle cx="70" cy="70" r="@F(R)" fill="none" stroke="@Color(s.Label)" stroke-width="22"
+                                    stroke-dasharray="@F(len) @F(Circ - len)" stroke-dashoffset="@F(-accLen)"></circle>
+                            accLen += len;
+                        }
+                    </g>
+                    <text x="70" y="66" text-anchor="middle" style="font-size:22px;font-weight:800;fill:var(--lt-navy)">@Model.GradedStudentCount</text>
+                    <text x="70" y="84" text-anchor="middle" style="font-size:10px;fill:#94a3b8">học sinh</text>
+                </svg>
+
+                <div class="sd-legend">
+                    @foreach (var s in Model.Classification)
+                    {
+                        <div class="sd-legend__row">
+                            <span class="sd-legend__sw" style="background:@Color(s.Label)"></span>
+                            <span class="sd-legend__name">@s.Label</span>
+                            <span class="sd-legend__val">@s.Count HS · @s.Percent.ToString("0.#", CultureInfo.InvariantCulture)%</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="sd-members">
+        @foreach (var g in groups)
+        {
+            <div class="sd-card">
+                <div class="sd-card__head"><i class="bi @g.Icon"></i> @g.Title <span class="sd-badge">@g.List.Count</span></div>
+                @if (g.List.Count == 0)
+                {
+                    <div class="sd-empty">Chưa có</div>
+                }
+                else
+                {
+                    <div class="sd-list">
+                        <table class="sd-table">
+                            <thead>
+                                <tr><th>Họ tên</th><th>Email</th><th>SĐT</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var m in g.List)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="sd-dot" style="background:@(m.IsActive ? "#22c55e" : "#cbd5e1")" title="@(m.IsActive ? "Đang hoạt động" : "Đã khóa")"></span>
+                                            @m.FullName
+                                        </td>
+                                        <td class="mono" style="color:#64748b">@m.Email</td>
+                                        <td class="mono" style="color:#64748b">@(string.IsNullOrWhiteSpace(m.PhoneNumber) ? "—" : m.PhoneNumber)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

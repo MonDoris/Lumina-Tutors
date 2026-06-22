@@ -95,9 +95,13 @@ public sealed class AccountService : IAccountService
         if (!AllowedRoles.Contains(roleCode))
             return Result<AccountDetailDto>.Failure("INVALID_ROLE", "Vai trò không hợp lệ.");
 
-        // Check email uniqueness in school
+        // Email đăng nhập = phần tên + đuôi cố định theo vai trò trên domain gốc của trường
+        var schoolAdmin = (await _uow.Users.FindAsync(
+            u => u.SchoolId == schoolId && u.Role.RoleCode == "ADMIN", ct: ct)).FirstOrDefault();
+        var baseDomain = LuminaTutors.Application.Common.RoleEmail.BaseDomain(schoolAdmin?.Email);
+        var email = LuminaTutors.Application.Common.RoleEmail.Build(req.Email, roleCode, baseDomain);
         var existing = await _uow.Users.FindAsync(
-            u => u.SchoolId == schoolId && u.Email == req.Email.Trim().ToLowerInvariant(), ct: ct);
+            u => u.SchoolId == schoolId && u.Email == email, ct: ct);
         if (existing.Any())
             return Result<AccountDetailDto>.Failure("EMAIL_EXISTS", "Email đã được sử dụng trong trường này.");
 
@@ -117,7 +121,7 @@ public sealed class AccountService : IAccountService
                 {
                     SchoolId        = schoolId,
                     RoleId          = role.Id,
-                    Email           = req.Email.Trim().ToLowerInvariant(),
+                    Email           = email,
                     FullName        = req.FullName.Trim(),
                     PhoneNumber     = req.PhoneNumber?.Trim(),
                     AvatarUrl       = req.AvatarUrl,

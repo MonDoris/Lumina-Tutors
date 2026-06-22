@@ -4,81 +4,150 @@
     ViewData["Title"] = "Thanh toán đơn";
     var vnPayEnabled = (bool)(ViewBag.VnPayEnabled ?? false);
     var isPaid       = Model.Status == "Paid";
+
+    // Mã đơn ngắn gọn: bỏ đoạn ngày tháng ở giữa của các mã cũ (SUB004-202606-0002 → SUB004-0002).
+    string ShortCode(string code)
+    {
+        var p = (code ?? "").Split('-');
+        return p.Length == 3 ? $"{p[0]}-{p[2]}" : code;
+    }
+    var shortCode = ShortCode(Model.OrderCode);
 }
 
-<div class="lt-page-header">
-    <div>
-        <h1 class="lt-page-title">Thanh toán đơn @Model.OrderCode</h1>
-        <p class="lt-page-subtitle">Hoàn tất thanh toán để kích hoạt gói / tính năng</p>
-    </div>
-    <div class="lt-page-header__actions">
-        <a asp-action="Index" class="lt-btn lt-btn--outline"><i class="bi bi-arrow-left"></i> Quay lại</a>
-    </div>
-</div>
+@section Styles {
+    <style>
+        .pay-wrap { max-width:540px; margin:8px auto 48px; }
+        .pay-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        .pay-back { color:#64748b; text-decoration:none; font-size:.9rem; font-weight:600; display:inline-flex; align-items:center; gap:6px; }
+        .pay-back:hover { color:var(--lt-navy); }
+        .pay-ref { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.82rem; color:#475569; background:#fff; border:1px solid #e7eaf0; border-radius:20px; padding:5px 13px; display:inline-flex; align-items:center; gap:6px; }
 
-<div style="max-width:640px">
-    <div class="lt-card lt-mb-4">
-        <div class="lt-card__body">
-            <table class="lt-table">
-                <thead>
-                    <tr><th>Hạng mục</th><th class="lt-th--right">Thành tiền</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.Items)
-                    {
-                        <tr>
-                            <td>@item.Description</td>
-                            <td class="lt-th--right">@item.Amount.ToString("N0")đ</td>
-                        </tr>
-                    }
-                    <tr>
-                        <td style="font-weight:800">Tổng cộng</td>
-                        <td class="lt-th--right" style="font-weight:800;font-size:1.15rem;color:var(--lt-navy)">@Model.Amount.ToString("N0")đ</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div style="margin-top:10px;color:#64748b;font-size:.85rem">
-                Kỳ hiệu lực: <b>@Model.PeriodStart.ToString("dd/MM/yyyy")</b> – <b>@Model.PeriodEnd.ToString("dd/MM/yyyy")</b>
+        .pay-card { background:#fff; border:1px solid #eceef3; border-radius:18px; padding:24px; box-shadow:0 1px 3px rgba(16,24,40,.05); margin-bottom:16px; }
+
+        .pay-card__head { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+        .pay-ico { width:48px; height:48px; border-radius:14px; flex:none; display:grid; place-items:center; color:#fff; font-size:1.35rem; background:linear-gradient(135deg,var(--lt-navy),#1e3a5f); }
+        .pay-h1 { font-size:1.18rem; font-weight:800; color:var(--lt-navy); line-height:1.2; }
+        .pay-sub { color:#94a3b8; font-size:.84rem; margin-top:3px; }
+
+        .pay-items { display:flex; flex-direction:column; }
+        .pay-item { display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px dashed #eef0f4; }
+        .pay-item__name { color:#334155; }
+        .pay-item__amt { color:#334155; font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+        .pay-total { display:flex; justify-content:space-between; align-items:baseline; margin-top:18px; }
+        .pay-total__lbl { font-weight:700; color:#475569; }
+        .pay-total__val { font-size:1.75rem; font-weight:800; color:var(--lt-navy); font-variant-numeric:tabular-nums; }
+        .pay-total__val small { font-size:1rem; font-weight:700; color:#94a3b8; margin-left:2px; }
+
+        .pay-period { margin-top:16px; display:inline-flex; align-items:center; gap:8px; background:#f6f8fb; border-radius:10px; padding:9px 13px; color:#64748b; font-size:.85rem; }
+
+        .pay-method-h { font-size:1rem; font-weight:800; color:var(--lt-navy); margin-bottom:16px; }
+
+        .pay-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; border:none; cursor:pointer; border-radius:12px; padding:15px 18px; font-size:1rem; font-weight:700; text-decoration:none; transition:transform .15s, box-shadow .15s; position:relative; box-sizing:border-box; }
+        .pay-btn--vnpay { background:linear-gradient(135deg,#0f2440,#1b3a64); color:#fff; box-shadow:0 6px 16px rgba(15,36,64,.25); }
+        .pay-btn--vnpay:hover { transform:translateY(-1px); box-shadow:0 10px 24px rgba(15,36,64,.32); color:#fff; }
+        .pay-btn__arrow { position:absolute; right:18px; opacity:.65; }
+        .pay-vnpay-logo svg { display:block; }
+
+        .pay-secure { margin-top:13px; text-align:center; color:#94a3b8; font-size:.8rem; }
+        .pay-secure i { color:#22c55e; }
+
+        .pay-warn { background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:12px; margin-bottom:12px; color:#9a3412; font-size:.85rem; }
+        .pay-btn--outline { background:#fff; border:1px solid #d8dee8; color:#334155; }
+        .pay-btn--outline:hover { background:#f8fafc; color:#334155; }
+        .pay-btn--ghost { background:#f1f5f9; color:#334155; margin-top:6px; }
+        .pay-btn--ghost:hover { background:#e7edf3; color:#334155; }
+
+        .pay-done { text-align:center; padding:38px 24px; }
+        .pay-done__ico { font-size:2.7rem; color:#22c55e; line-height:1; }
+        .pay-done__t { font-weight:800; color:var(--lt-navy); font-size:1.12rem; margin-top:12px; }
+        .pay-done__s { color:#64748b; font-size:.88rem; margin:5px 0 20px; }
+    </style>
+}
+
+<div class="pay-wrap">
+    <div class="pay-top">
+        <a asp-action="Index" class="pay-back"><i class="bi bi-arrow-left"></i> Quay lại</a>
+        <span class="pay-ref"><i class="bi bi-receipt"></i> @shortCode</span>
+    </div>
+
+    <div class="pay-card">
+        <div class="pay-card__head">
+            <div class="pay-ico"><i class="bi bi-bag-check-fill"></i></div>
+            <div>
+                <div class="pay-h1">Thanh toán đơn hàng</div>
+                <div class="pay-sub">Hoàn tất để kích hoạt gói / tính năng</div>
             </div>
+        </div>
+
+        <div class="pay-items">
+            @foreach (var item in Model.Items)
+            {
+                <div class="pay-item">
+                    <span class="pay-item__name">@item.Description</span>
+                    <span class="pay-item__amt">@item.Amount.ToString("N0")đ</span>
+                </div>
+            }
+        </div>
+
+        <div class="pay-total">
+            <span class="pay-total__lbl">Tổng cộng</span>
+            <span class="pay-total__val">@Model.Amount.ToString("N0")<small>đ</small></span>
+        </div>
+
+        <div class="pay-period">
+            <i class="bi bi-calendar3"></i>
+            Hiệu lực <b>@Model.PeriodStart.ToString("dd/MM/yyyy")</b> → <b>@Model.PeriodEnd.ToString("dd/MM/yyyy")</b>
         </div>
     </div>
 
     @if (isPaid)
     {
-        <div class="lt-card">
-            <div class="lt-card__body" style="text-align:center;padding:32px">
-                <i class="bi bi-check-circle-fill" style="font-size:2.4rem;color:#22c55e"></i>
-                <p style="margin:12px 0 0;font-weight:700;color:var(--lt-navy)">Đơn này đã được thanh toán.</p>
-            </div>
+        <div class="pay-card pay-done">
+            <div class="pay-done__ico"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="pay-done__t">Đơn đã được thanh toán</div>
+            <div class="pay-done__s">Gói / tính năng đã được kích hoạt.</div>
+            <a asp-action="Index" class="pay-btn pay-btn--ghost">Về trang đăng ký</a>
         </div>
     }
     else
     {
-        <div class="lt-card">
-            <div class="lt-card__body">
-                <h3 style="font-size:1rem;font-weight:800;color:var(--lt-navy);margin:0 0 14px">Chọn hình thức thanh toán</h3>
+        <div class="pay-card">
+            <div class="pay-method-h">Chọn hình thức thanh toán</div>
 
-                @if (vnPayEnabled)
-                {
-                    <a asp-action="PayVnPay" asp-route-id="@Model.OrderId" class="lt-btn lt-btn--primary lt-btn--full" style="margin-bottom:10px">
-                        <i class="bi bi-credit-card-2-front"></i> Thanh toán qua VNPay
-                    </a>
-                }
-                else
-                {
-                    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin-bottom:12px;color:#9a3412;font-size:.85rem">
-                        <i class="bi bi-info-circle"></i> Thanh toán online (VNPay) chưa được bật. Bạn có thể xác nhận thủ công sau khi đã chuyển khoản.
-                    </div>
-                }
-
+            @if (vnPayEnabled)
+            {
+                <a asp-action="PayVnPay" asp-route-id="@Model.OrderId" class="pay-btn pay-btn--vnpay">
+                    <span class="pay-vnpay-logo">
+                        @* Logo VNPay gốc: thả file vào wwwroot/images/vnpay-logo.png. Nếu thiếu → tự fallback chip chữ. *@
+                        <img src="~/images/vnpay-logo.png" alt="VNPay"
+                             style="height:40px;width:40px;object-fit:contain;display:block;background:#fff;border-radius:6px;padding:3px"
+                             onerror="this.style.display='none';document.getElementById('vnpayLogoFallback').style.display='inline-flex';" />
+                        <span id="vnpayLogoFallback" style="display:none">
+                            <svg width="62" height="22" viewBox="0 0 62 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <rect width="62" height="22" rx="4" fill="#ffffff"></rect>
+                                <text x="31" y="16" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="800"><tspan fill="#ED1C24">VN</tspan><tspan fill="#005BAA">PAY</tspan></text>
+                            </svg>
+                        </span>
+                    </span>
+                    Thanh toán qua VNPay
+                    <i class="bi bi-arrow-right pay-btn__arrow"></i>
+                </a>
+                <div class="pay-secure"><i class="bi bi-shield-lock-fill"></i> Thanh toán an toàn, mã hóa qua cổng VNPay</div>
+            }
+            else
+            {
+                <div class="pay-warn">
+                    <i class="bi bi-info-circle"></i> Thanh toán online (VNPay) chưa được bật. Bạn có thể xác nhận thủ công sau khi đã chuyển khoản.
+                </div>
                 <form asp-action="MarkPaid" asp-route-id="@Model.OrderId" method="post"
                       onsubmit="return confirm('Xác nhận đã nhận thanh toán cho đơn này?');">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="lt-btn lt-btn--outline lt-btn--full">
+                    <button type="submit" class="pay-btn pay-btn--outline">
                         <i class="bi bi-check2-square"></i> Xác nhận đã thanh toán (thủ công)
                     </button>
                 </form>
-            </div>
+            }
         </div>
     }
 </div>

@@ -44,6 +44,9 @@ public interface ISubscriptionService
     /// <summary>Trường có gói dịch vụ đang hoạt động (đã thanh toán, còn trong kỳ hiệu lực) không?</summary>
     Task<bool> HasActiveSubscriptionAsync(int schoolId, CancellationToken ct = default);
 
+    /// <summary>Chi tiết một trường (SYSADMIN): thành viên theo vai trò + thống kê + phân bố xếp loại học lực.</summary>
+    Task<Result<SchoolDetailDto>> GetSchoolDetailAsync(int schoolId, CancellationToken ct = default);
+
     /// <summary>
     /// Xử lý các đăng ký đã quá hạn: đánh dấu hết hạn; nếu bật auto-renew thì tự sinh
     /// đơn gia hạn (chờ thanh toán). Dùng cho cron/job định kỳ. Trả số đơn gia hạn đã tạo.

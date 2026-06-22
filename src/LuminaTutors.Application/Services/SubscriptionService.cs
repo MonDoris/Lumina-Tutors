@@ -403,6 +403,88 @@ public sealed class SubscriptionService : ISubscriptionService
         return sub is not null && sub.Status == SubscriptionStatus.Active && sub.CurrentPeriodEnd >= Today;
     }
 
+    // ─── Chi tiết một trường (SYSADMIN) ───────────────────────────────────────
+
+    public async Task<Result<SchoolDetailDto>> GetSchoolDetailAsync(int schoolId, CancellationToken ct = default)
+    {
+        var school = await _uow.Schools.GetByIdAsync(schoolId, ct);
+        if (school is null) return Result<SchoolDetailDto>.Failure("Trường không tồn tại.", "NOT_FOUND");
+
+        var users = await _uow.Users.FindAsync(
+            u => u.SchoolId == schoolId,
+            include: q => q.Include(u => u.Role), ct: ct);
+
+        List<SchoolMemberDto> ByRole(string code) => users
+            .Where(u => u.Role.RoleCode == code)
+            .OrderBy(u => u.FullName)
+            .Select(u => new SchoolMemberDto
+            {
+                UserId      = u.Id,
+                FullName    = u.FullName,
+                Email       = u.Email,
+                PhoneNumber = u.PhoneNumber,
+                IsActive    = u.IsActive
+            })
+            .ToList();
+
+        var teachers    = ByRole("TEACHER");
+        var students    = ByRole("STUDENT");
+        var parents     = ByRole("PARENT");
+        var accountants = ByRole("ACCOUNTANT");
+
+        // Xếp loại học lực: GPA mỗi HS = trung bình ĐTBm các môn đã tính tổng kết.
+        var gradeBooks = await _uow.GradeBooks.FindAsync(
+            gb => gb.SchoolId == schoolId && gb.IsCalculated && gb.AverageScore != null, ct);
+
+        var order  = new[] { "Xuất sắc", "Giỏi", "Trung bình", "Yếu", "Kém" };
+        var counts = order.ToDictionary(k => k, _ => 0);
+        foreach (var g in gradeBooks.GroupBy(gb => gb.StudentId))
+            counts[ClassifyHocLuc(g.Average(x => x.AverageScore!.Value))]++;
+
+        var graded = counts.Values.Sum();
+        var classification = order
+            .Where(k => counts[k] > 0)
+            .Select(k => new ClassificationSliceDto
+            {
+                Label   = k,
+                Count   = counts[k],
+                Percent = graded == 0 ? 0 : Math.Round(counts[k] * 100.0 / graded, 1)
+            })
+            .ToList();
+
+        var sub = await LoadSubscriptionAsync(schoolId, ct);
+        var subActive = sub is not null && sub.Status == SubscriptionStatus.Active && sub.CurrentPeriodEnd >= Today;
+
+        return Result<SchoolDetailDto>.Success(new SchoolDetailDto
+        {
+            SchoolId           = school.Id,
+            SchoolCode         = school.SchoolCode,
+            SchoolName         = school.SchoolName,
+            IsActive           = school.IsActive,
+            PlanName           = sub?.Plan?.Name ?? "Chưa đăng ký",
+            SubscriptionActive = subActive,
+            TotalStudents      = students.Count,
+            TotalTeachers      = teachers.Count,
+            TotalParents       = parents.Count,
+            TotalAccountants   = accountants.Count,
+            Teachers           = teachers,
+            Students           = students,
+            Parents            = parents,
+            Accountants        = accountants,
+            Classification     = classification,
+            GradedStudentCount = graded
+        });
+    }
+
+    private static string ClassifyHocLuc(decimal gpa) => gpa switch
+    {
+        >= 9.0m => "Xuất sắc",
+        >= 7.0m => "Giỏi",
+        >= 5.0m => "Trung bình",
+        >= 3.5m => "Yếu",
+        _       => "Kém"
+    };
+
     // ─── Process due renewals (cron) ──────────────────────────────────────────
 
     public async Task<int> ProcessDueRenewalsAsync(CancellationToken ct = default)
@@ -634,7 +716,7 @@ public sealed class SubscriptionService : ISubscriptionService
 
     public async Task<Result> OnboardSchoolAsync(OnboardSchoolRequest r, CancellationToken ct = default)
     {
-        var email = r.AdminEmail.Trim().ToLowerInvariant();
+        var email = r.AdminEmail.Trim().ToLowerInvariant();   // admin giữ domain gốc — đây là domain gốc của trường
 
         var role = (await _uow.Roles.FindAsync(x => x.RoleCode == "ADMIN", ct)).FirstOrDefault();
         if (role is null)
@@ -875,7 +957,7 @@ public sealed class SubscriptionService : ISubscriptionService
         {
             SchoolId        = schoolId,
             SubscriptionId  = subscriptionId,
-            OrderCode       = $"SUB{schoolId:D3}-{DateTime.UtcNow:yyyyMM}-{seq + 1:D4}",
+            OrderCode       = $"SUB{schoolId:D3}-{seq + 1:D4}",   // mã ngắn: trường + số thứ tự
             OrderType       = type,
             Status          = SubscriptionOrderStatus.Pending,
             PlanId          = planId,

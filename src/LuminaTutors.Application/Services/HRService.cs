@@ -75,9 +75,13 @@ public sealed class HRService : IHRService
     public async Task<Result<TeacherDetailDto>> CreateTeacherAsync(
         int schoolId, CreateTeacherRequest request, CancellationToken ct = default)
     {
+        var schoolAdmin = (await _uow.Users.FindAsync(
+            u => u.SchoolId == schoolId && u.Role.RoleCode == "ADMIN", ct: ct)).FirstOrDefault();
+        var baseDomain = LuminaTutors.Application.Common.RoleEmail.BaseDomain(schoolAdmin?.Email);
+        var email = LuminaTutors.Application.Common.RoleEmail.Build(request.Email, nameof(RoleCode.Teacher), baseDomain);
         var existing = await _uow.Users.FindAsync(
             u => u.SchoolId == schoolId &&
-                 u.Email == request.Email.Trim().ToLowerInvariant(),
+                 u.Email == email,
             ct: ct);
 
         if (existing.Any())
@@ -95,7 +99,7 @@ public sealed class HRService : IHRService
             {
                 SchoolId        = schoolId,
                 RoleId          = teacherRole.Id,
-                Email           = request.Email.Trim().ToLowerInvariant(),
+                Email           = email,
                 FullName        = request.FullName.Trim(),
                 PhoneNumber     = request.PhoneNumber?.Trim(),
                 IsActive        = true,

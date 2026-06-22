@@ -408,6 +408,19 @@ public sealed class SubscriptionController : Controller
         return View(result.IsSuccess ? result.Data : new List<SchoolAccountDto>());
     }
 
+    // ── GET /Subscription/SchoolDetail/5 — chi tiết 1 trường (thành viên + xếp loại) ─
+    [Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> SchoolDetail(int id)
+    {
+        var result = await _service.GetSchoolDetailAsync(id);
+        if (!result.IsSuccess)
+        {
+            TempData["Error"] = result.Error;
+            return RedirectToAction(nameof(Schools));
+        }
+        return View(result.Data);
+    }
+
     [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
     public async Task<IActionResult> UpdateSchool(UpdateSchoolRequest request)
     {

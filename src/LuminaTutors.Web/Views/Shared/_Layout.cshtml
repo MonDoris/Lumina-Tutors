@@ -884,16 +884,26 @@ document.querySelectorAll('.lt-alert').forEach(el => {
     }
 
     // ── Show / hide ───────────────────────────────────────────────────────────
-    function show(msg, onOk) {
-        const cfg = detectType(msg);
-
-        // Reset icon classes
-        iconWrap.className = 'lt-cd__icon-wrap ' + cfg.wrapClass;
-        iconEl.className   = 'bi lt-cd__icon ' + cfg.iconClass;
-        okBtn.className    = 'lt-cd__btn lt-cd__btn-ok ' + cfg.btnClass;
-        okIcon.className   = 'bi ' + cfg.btnIcon;
-        okLabel.textContent= cfg.btnLabel;
-        document.getElementById('lt-cd-title').textContent = cfg.title;
+    function show(msg, onOk, isAlert) {
+        if (isAlert) {
+            // Chế độ thông báo (1 nút) — thay cho alert()
+            iconWrap.className = 'lt-cd__icon-wrap lt-cd__icon-wrap--info';
+            iconEl.className   = 'bi lt-cd__icon bi-info-circle-fill';
+            okBtn.className    = 'lt-cd__btn lt-cd__btn-ok lt-cd__btn-ok--info';
+            okIcon.className   = 'bi bi-check-lg';
+            okLabel.textContent= 'Đã hiểu';
+            document.getElementById('lt-cd-title').textContent = 'Thông báo';
+            cancelBtn.style.display = 'none';
+        } else {
+            cancelBtn.style.display = '';
+            const cfg = detectType(msg);
+            iconWrap.className = 'lt-cd__icon-wrap ' + cfg.wrapClass;
+            iconEl.className   = 'bi lt-cd__icon ' + cfg.iconClass;
+            okBtn.className    = 'lt-cd__btn lt-cd__btn-ok ' + cfg.btnClass;
+            okIcon.className   = 'bi ' + cfg.btnIcon;
+            okLabel.textContent= cfg.btnLabel;
+            document.getElementById('lt-cd-title').textContent = cfg.title;
+        }
         msgEl.textContent  = msg;
 
         pendingAction = onOk;
@@ -971,10 +981,29 @@ document.querySelectorAll('.lt-alert').forEach(el => {
         }
     }, true /* capture phase — fires before onclick */);
 
-    // ── Expose for manual use: window.ltConfirm(msg, callback) ───────────────
-    window.ltConfirm = function (msg, callback) {
-        show(msg, callback);
-    };
+    // ── Global interceptor: form onsubmit="return confirm('...')" ─────────────
+    // Chạy ở capture phase nên chặn được confirm() gốc trước khi nó kịp hiện.
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!form || !form.getAttribute) return;
+        const os = form.getAttribute('onsubmit');
+        if (!os) return;
+        const m = RE_CONFIRM.exec(os);
+        if (!m) return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const msg = m[2].replace(/\\n/g, '\n').replace(/\\'/g, "'").replace(/\\"/g, '"');
+        show(msg, () => {
+            form.removeAttribute('onsubmit'); // tránh confirm() gốc khi gửi lại
+            form.submit();                    // submit() không bắn lại sự kiện submit
+        });
+    }, true);
+
+    // ── Expose: window.ltConfirm(msg, onOk) / window.ltAlert(msg, onOk) ───────
+    window.ltConfirm = function (msg, callback) { show(msg, callback, false); };
+    window.ltAlert   = function (msg, callback) { show(msg, callback || null, true); };
 })();
 </script>
 </body>

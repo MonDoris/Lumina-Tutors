@@ -325,7 +325,7 @@ document.getElementById('filterKeyword').addEventListener('input', renderBank);
 document.getElementById('examForm').addEventListener('submit', e => {
     if (selectedIds.size === 0) {
         e.preventDefault();
-        alert('Vui lòng chọn ít nhất 1 câu hỏi cho đề thi.');
+        (window.ltAlert||alert)('Vui lòng chọn ít nhất 1 câu hỏi cho đề thi.');
     }
 });
 

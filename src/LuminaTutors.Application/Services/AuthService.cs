@@ -215,11 +215,18 @@ public sealed class AuthService : IAuthService
         if (invite is null || !invite.IsValid)
             return Result<LoginResponse>.Failure("INVITE_INVALID", "Liên kết không hợp lệ hoặc đã hết hạn.");
 
+        // Email đăng nhập = phần tên + đuôi cố định theo vai trò trên domain gốc của trường
+        var schoolAdmin = (await _uow.Users.FindAsync(
+            u => u.SchoolId == invite.SchoolId && u.Role.RoleCode == "ADMIN", ct: ct)).FirstOrDefault();
+        var baseDomain = LuminaTutors.Application.Common.RoleEmail.BaseDomain(schoolAdmin?.Email);
+        var email = LuminaTutors.Application.Common.RoleEmail.Build(
+            invite.TargetEmail ?? $"user_{invite.Token:N}@lumina.local", invite.TargetRole?.RoleCode, baseDomain);
+
         // Check email uniqueness within school
         if (!string.IsNullOrWhiteSpace(invite.TargetEmail))
         {
             var existing = await _uow.Users.FindAsync(
-                u => u.SchoolId == invite.SchoolId && u.Email == invite.TargetEmail,
+                u => u.SchoolId == invite.SchoolId && u.Email == email,
                 ct: ct);
 
             if (existing.Any())
@@ -233,7 +240,7 @@ public sealed class AuthService : IAuthService
             {
                 SchoolId        = invite.SchoolId,
                 RoleId          = invite.TargetRoleId,
-                Email           = invite.TargetEmail ?? $"user_{invite.Token:N}@lumina.local",
+                Email           = email,
                 FullName        = request.FullName.Trim(),
                 PhoneNumber     = request.PhoneNumber.Trim(),
                 IsActive        = true,

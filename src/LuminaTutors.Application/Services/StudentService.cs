@@ -101,8 +101,12 @@ public sealed class StudentService : IStudentService
     public async Task<Result<StudentDetailDto>> CreateAsync(
         int schoolId, CreateStudentRequest request, CancellationToken ct = default)
     {
+        var schoolAdmin = (await _uow.Users.FindAsync(
+            u => u.SchoolId == schoolId && u.Role.RoleCode == "ADMIN", ct: ct)).FirstOrDefault();
+        var baseDomain = LuminaTutors.Application.Common.RoleEmail.BaseDomain(schoolAdmin?.Email);
+        var email = LuminaTutors.Application.Common.RoleEmail.Build(request.Email, nameof(RoleCode.Student), baseDomain);
         var existing = await _uow.Users.FindAsync(
-            u => u.SchoolId == schoolId && u.Email == request.Email.Trim().ToLowerInvariant(),
+            u => u.SchoolId == schoolId && u.Email == email,
             ct: ct);
 
         if (existing.Any())
@@ -120,7 +124,7 @@ public sealed class StudentService : IStudentService
             {
                 SchoolId        = schoolId,
                 RoleId          = studentRole.Id,
-                Email           = request.Email.Trim().ToLowerInvariant(),
+                Email           = email,
                 FullName        = request.FullName.Trim(),
                 IsActive        = true,
                 IsEmailVerified = false,

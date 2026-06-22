@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Security.Claims;
+using LuminaTutors.Application.Common;
 using LuminaTutors.Application.DTOs.Auth;
 using LuminaTutors.Application.Interfaces.Services;
 using LuminaTutors.Web.Models;
@@ -84,6 +85,35 @@ public sealed class AuthController : Controller
         }
 
         var loginData = result.Data!;
+
+        // Cổng vai trò phải khớp vai trò thật của tài khoản — chọn nhầm cổng thì từ chối.
+        var expectedTab = loginData.RoleCode switch
+        {
+            "STUDENT"    => "student",
+            "TEACHER"    => "teacher",
+            "SUPERVISOR" => "supervisor",
+            "PARENT"     => "parent",
+            "ADMIN"      => "admin",
+            _            => null      // SYSADMIN / ACCOUNTANT: không có cổng riêng → cho qua
+        };
+        var selectedTab = NormalizeRole(role);
+        if (expectedTab is not null && selectedTab != expectedTab)
+        {
+            ModelState.AddModelError(string.Empty,
+                $"Tài khoản này là {RoleDisplayName(expectedTab)}, không phải {RoleDisplayName(selectedTab)}. Vui lòng chọn đúng cổng truy cập.");
+            _logger.LogWarning("Đăng nhập sai cổng: {Email} ({Role}) chọn cổng {Tab}", loginData.Email, loginData.RoleCode, selectedTab);
+            return View("LoginQuantum", model);
+        }
+
+        // Đối chiếu đuôi (subdomain) email với vai trò thật — email mang tiền tố sai thì từ chối.
+        var emailRole = RoleEmail.RoleOf(model.Email);
+        if (emailRole is not null && emailRole != loginData.RoleCode)
+        {
+            ModelState.AddModelError(string.Empty,
+                "Email không khớp vai trò tài khoản. Vui lòng dùng đúng địa chỉ đã được cấp.");
+            return View("LoginQuantum", model);
+        }
+
         await SignInUserAsync(loginData, model.RememberMe);
 
         _logger.LogInformation("User {UserId} ({Email}) signed in", loginData.UserId, loginData.Email);
@@ -483,4 +513,14 @@ public sealed class AuthController : Controller
         var normalized = (role ?? "student").Trim().ToLowerInvariant();
         return _validAuthRoles.Contains(normalized) ? normalized : "student";
     }
+
+    private static string RoleDisplayName(string tabRole) => tabRole switch
+    {
+        "student"    => "Học Sinh",
+        "teacher"    => "Giáo Viên",
+        "supervisor" => "Giám Thị",
+        "parent"     => "Phụ Huynh",
+        "admin"      => "Nhà Trường",
+        _            => "người dùng"
+    };
 }

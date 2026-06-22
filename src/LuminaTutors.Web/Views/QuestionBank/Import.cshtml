@@ -339,7 +339,7 @@ async function previewUrl() {
     const subjectId = document.querySelector('[name="TargetSubjectId"]').value;
     const difficulty= document.querySelector('[name="DefaultDifficulty"]').value;
 
-    if (!url) { alert('Vui lòng nhập URL'); return; }
+    if (!url) { (window.ltAlert||alert)('Vui lòng nhập URL'); return; }
 
     const btn = document.getElementById('preview-btn');
     btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang phân tích...';
@@ -359,7 +359,7 @@ async function previewUrl() {
 
         if (!resp.ok) {
             const err = await resp.json();
-            alert('Lỗi: ' + (err.error ?? 'Không thể phân tích URL'));
+            (window.ltAlert||alert)('Lỗi: ' + (err.error ?? 'Không thể phân tích URL'));
             return;
         }
 
@@ -386,7 +386,7 @@ async function previewUrl() {
 
         area.style.display = 'block';
     } catch(e) {
-        alert('Lỗi kết nối: ' + e.message);
+        (window.ltAlert||alert)('Lỗi kết nối: ' + e.message);
     } finally {
         btn.disabled = false; btn.innerHTML = '<i class="bi bi-eye-fill"></i> Xem trước';
     }
