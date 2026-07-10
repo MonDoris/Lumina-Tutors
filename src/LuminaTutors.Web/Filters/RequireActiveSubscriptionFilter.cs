@@ -25,7 +25,7 @@ internal sealed class RequireActiveSubscriptionFilter : IAsyncAuthorizationFilte
     // callback thanh toán). Khớp theo tên controller, không phân biệt hoa thường.
     private static readonly HashSet<string> Allowed = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Auth", "Account", "Subscription", "Home", "Payment"
+        "Auth", "Account", "Subscription", "Home", "Payment", "Support"
     };
 
     public RequireActiveSubscriptionFilter(ISubscriptionService subscriptions)

@@ -20,6 +20,15 @@ public class SubscriptionPlanDto
     public bool    IsActive           { get; init; }
     public bool    IsCurrent          { get; init; }   // gói trường đang dùng
     public bool    IsUpgrade          { get; init; }   // tier cao hơn gói hiện tại → có thể nâng cấp
+
+    // Quota tài khoản theo role (-1 = không giới hạn)
+    public int MaxTeachers    { get; init; } = -1;
+    public int MaxStudents    { get; init; } = -1;
+    public int MaxParents     { get; init; } = -1;
+    public int MaxAdmins      { get; init; } = -1;
+    public int MaxAccountants { get; init; } = -1;
+    public int MaxSupervisors { get; init; } = -1;
+    public int MaxClasses     { get; init; } = -1;
 }
 
 public class SubscriptionAddOnDto
@@ -36,6 +45,24 @@ public class SubscriptionAddOnDto
     public bool      IsOwned        { get; init; }   // đã có (qua gói hoặc đã mua)
     public bool      InCurrentPlan  { get; init; }   // gói hiện tại đã bao gồm sẵn
     public DateOnly? ActiveUntil    { get; init; }
+}
+
+/// <summary>Gói mua thêm slot tài khoản theo vai trò / lớp học (RoleQuotaAddOn).</summary>
+public class RoleQuotaAddOnDto
+{
+    public int       AddOnId      { get; init; }
+    public string    AddOnCode    { get; init; } = "";
+    public string    Name         { get; init; } = "";
+    public string?   Description  { get; init; }
+    public RoleCode? TargetRole   { get; init; }   // null = add-on lớp học
+    public int       ExtraQuota   { get; init; }
+    public int       ExtraClasses { get; init; }
+    public decimal   MonthlyPrice   { get; init; }
+    public decimal   QuarterlyPrice { get; init; }
+    public decimal   YearlyPrice    { get; init; }
+    public bool      IsActive     { get; init; }
+    public bool      IsOwned      { get; init; }   // trường đang sở hữu (còn hiệu lực)
+    public DateOnly? ActiveUntil  { get; init; }
 }
 
 // ─── Current state ──────────────────────────────────────────────────────────────
@@ -97,6 +124,7 @@ public class SubscriptionOverviewDto
     public CurrentSubscriptionDto    Current      { get; init; } = new();
     public List<SubscriptionPlanDto> Plans        { get; init; } = new();
     public List<SubscriptionAddOnDto> AddOns      { get; init; } = new();
+    public List<RoleQuotaAddOnDto>   QuotaAddOns  { get; init; } = new();
     public List<SubscriptionOrderDto> RecentOrders { get; init; } = new();
     public bool VnPayEnabled { get; set; }
 }
@@ -118,8 +146,9 @@ public record BuyAddOnRequest(
 /// <summary>Catalog cho trang quản trị E-Selling: toàn bộ gói & add-on (kể cả ẩn).</summary>
 public class CatalogDto
 {
-    public List<SubscriptionPlanDto>  Plans  { get; init; } = new();
-    public List<SubscriptionAddOnDto> AddOns { get; init; } = new();
+    public List<SubscriptionPlanDto>  Plans       { get; init; } = new();
+    public List<SubscriptionAddOnDto> AddOns      { get; init; } = new();
+    public List<RoleQuotaAddOnDto>    QuotaAddOns { get; init; } = new();
 }
 
 /// <summary>Một dòng trong bảng "đăng ký của các trường".</summary>
@@ -136,7 +165,15 @@ public class SchoolSubscriptionRowDto
     public bool     AutoRenew        { get; init; }
     public bool     IsActive         { get; init; }
     public string   AddOns           { get; init; } = "";   // tên add-on đang hoạt động, phân tách dấu phẩy
+    public int?     CurrentPlanId    { get; init; }
+    public IReadOnlyList<PlanHistoryItemDto> History { get; init; } = new List<PlanHistoryItemDto>();
 }
+
+/// <summary>Một mục lịch sử thay đổi gói của trường (suy từ đơn đăng ký).</summary>
+public record PlanHistoryItemDto(DateTime At, string OrderType, string PlanName, string Cycle, string Status, decimal Amount);
+
+/// <summary>Tùy chọn gói cho dropdown điều chỉnh (SYSADMIN).</summary>
+public record PlanOptionDto(int PlanId, string Name);
 
 public record PlanEditRequest(
     int?    PlanId,
@@ -149,7 +186,15 @@ public record PlanEditRequest(
     [Range(0, 1_000_000_000)] decimal YearlyPrice,
     bool IncludesAiTutor,
     bool IncludesVirtualLab,
-    bool IsActive = true
+    bool IsActive = true,
+    // Quota tài khoản theo role (-1 = không giới hạn)
+    [Range(-1, 1_000_000)] int MaxTeachers    = -1,
+    [Range(-1, 1_000_000)] int MaxStudents    = -1,
+    [Range(-1, 1_000_000)] int MaxParents     = -1,
+    [Range(-1, 1_000_000)] int MaxAdmins      = -1,
+    [Range(-1, 1_000_000)] int MaxAccountants = -1,
+    [Range(-1, 1_000_000)] int MaxSupervisors = -1,
+    [Range(-1, 1_000_000)] int MaxClasses     = -1
 );
 
 public record AddOnEditRequest(
@@ -158,6 +203,20 @@ public record AddOnEditRequest(
     [Required(ErrorMessage = "Vui lòng nhập tên add-on."), MaxLength(100)] string Name,
     [MaxLength(500)] string? Description,
     [Required] PremiumFeature Feature,
+    [Range(0, 1_000_000_000)] decimal MonthlyPrice,
+    [Range(0, 1_000_000_000)] decimal QuarterlyPrice,
+    [Range(0, 1_000_000_000)] decimal YearlyPrice,
+    bool IsActive = true
+);
+
+public record QuotaAddOnEditRequest(
+    int?    AddOnId,
+    [Required(ErrorMessage = "Vui lòng nhập mã add-on."), MaxLength(30)] string AddOnCode,
+    [Required(ErrorMessage = "Vui lòng nhập tên add-on."), MaxLength(100)] string Name,
+    [MaxLength(500)] string? Description,
+    RoleCode? TargetRole,                              // null = add-on lớp học
+    [Range(0, 1_000_000)] int ExtraQuota,
+    [Range(0, 1_000_000)] int ExtraClasses,
     [Range(0, 1_000_000_000)] decimal MonthlyPrice,
     [Range(0, 1_000_000_000)] decimal QuarterlyPrice,
     [Range(0, 1_000_000_000)] decimal YearlyPrice,
@@ -186,7 +245,15 @@ public class AllSubscriptionsVm
 {
     public RevenueReportDto Revenue { get; init; } = new();
     public List<SchoolSubscriptionRowDto> Rows { get; init; } = new();
+    public List<PlanOptionDto> Plans { get; init; } = new();         // cho dropdown điều chỉnh gói
+    public List<PaidOrderDto>  PaidOrderList { get; init; } = new();  // chi tiết các đơn đã thanh toán
 }
+
+/// <summary>Chi tiết một đơn đã thanh toán (cho dropdown ở KPI "Đơn đã thanh toán").</summary>
+public record PaidOrderDto(
+    int OrderId, string OrderCode, string SchoolName, string PlanName,
+    string OrderType, string Cycle, decimal Amount,
+    DateOnly PeriodStart, DateOnly PeriodEnd, DateTime? PaidAt);
 
 // ─── Onboard trường mới (SYSADMIN tạo Nhà trường) ─────────────────────────────
 

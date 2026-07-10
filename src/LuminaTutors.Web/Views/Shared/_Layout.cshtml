@@ -28,6 +28,9 @@
     <meta name="description" content="Lumina Tutors — Hệ thống quản lý giáo dục">
     <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} — Lumina Tutors" : "Lumina Tutors")</title>
 
+    <!-- Khôi phục trạng thái thu gọn sidebar TRƯỚC khi vẽ để tránh nhấp nháy -->
+    <script>try{if(localStorage.getItem('lt_sidebar_collapsed')==='1')document.documentElement.classList.add('lt-collapsed');}catch(e){}</script>
+
     <!-- DNS / TLS warm-up for external services (zero cost if not used) -->
     <link rel="preconnect" href="https://meet.jit.si" crossorigin>
     <link rel="dns-prefetch" href="https://meet.jit.si">
@@ -342,6 +345,10 @@
                                      font-size:.6rem;font-weight:800;letter-spacing:.04em;
                                      padding:1px 5px;border-radius:4px;line-height:1.4">SaaS</span>
                     </a>
+                    <a asp-controller="Support" asp-action="Index" class="@Nav("Support", "Index")">
+                        <span class="lt-nav__icon"><i class="bi bi-life-preserver"></i></span>
+                        Hỗ trợ
+                    </a>
                 }
             </div>
 
@@ -389,6 +396,10 @@
                 <a asp-controller="Subscription" asp-action="Schools" class="@Nav("Subscription", "Schools")">
                     <span class="lt-nav__icon"><i class="bi bi-buildings-fill"></i></span>
                     Quản lý trường
+                </a>
+                <a asp-controller="Support" asp-action="Inbox" class="@Nav("Support", "Inbox")">
+                    <span class="lt-nav__icon"><i class="bi bi-chat-left-text-fill"></i></span>
+                    Hộp thư hỗ trợ
                 </a>
             </div>
             }
@@ -524,6 +535,12 @@
                 <i class="bi bi-list" style="font-size:1.3rem"></i>
             </button>
 
+            <!-- Desktop: thu gọn / mở rộng sidebar -->
+            <button class="lt-topbar__btn d-none d-lg-flex" id="sidebarCollapse"
+                    aria-label="Thu gọn hoặc mở rộng menu" title="Thu gọn / mở rộng menu">
+                <i class="bi bi-text-indent-left" style="font-size:1.25rem"></i>
+            </button>
+
             <h1 class="lt-topbar__title">@(ViewData["Title"] ?? "Dashboard")</h1>
 
             <div class="lt-topbar__actions">
@@ -591,6 +608,24 @@ if (sidebarToggle && ltSidebar) {
     document.addEventListener('click', e => {
         if (!ltSidebar.contains(e.target) && !sidebarToggle.contains(e.target))
             ltSidebar.classList.remove('open');
+    });
+}
+
+// Sidebar thu gọn / mở rộng (desktop) — nhớ trạng thái qua localStorage
+const sidebarCollapse = document.getElementById('sidebarCollapse');
+if (sidebarCollapse) {
+    // Khi thu gọn chỉ còn icon → gán tooltip (title) từ nhãn để vẫn biết nút là gì.
+    // Chỉ lấy text node trực tiếp (bỏ icon & badge như AI/MỚI/khóa) rồi gộp khoảng trắng.
+    document.querySelectorAll('.lt-nav__item').forEach(a => {
+        if (a.title) return;
+        const label = Array.from(a.childNodes)
+            .filter(n => n.nodeType === Node.TEXT_NODE)
+            .map(n => n.textContent).join('').replace(/\s+/g, ' ').trim();
+        if (label) a.title = label;
+    });
+    sidebarCollapse.addEventListener('click', () => {
+        const collapsed = document.documentElement.classList.toggle('lt-collapsed');
+        try { localStorage.setItem('lt_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
     });
 }
 

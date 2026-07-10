@@ -33,7 +33,8 @@
   --lt-border-light:  #f0f0f0;
 
   /* Sidebar */
-  --sidebar-width:    260px;
+  --sidebar-width:            260px;
+  --sidebar-collapsed-width:  74px;
 
   /* Topbar */
   --topbar-height:    64px;
@@ -104,7 +105,7 @@ code, .lt-code {
   position: fixed;
   top: 0; left: 0;
   z-index: 1000;
-  transition: transform .3s var(--ease);
+  transition: transform .3s var(--ease), width .25s var(--ease);
 }
 
 /* Brand block */
@@ -272,6 +273,41 @@ code, .lt-code {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   SIDEBAR — CHẾ ĐỘ THU GỌN (RAIL CHỈ ICON) — chỉ trên desktop
+   Kích hoạt bằng class .lt-collapsed trên <html> (nhớ qua localStorage).
+   ════════════════════════════════════════════════════════════════ */
+@media (min-width: 1025px) {
+  .lt-collapsed .lt-sidebar { width: var(--sidebar-collapsed-width); }
+  .lt-collapsed .lt-main    { margin-left: var(--sidebar-collapsed-width); }
+
+  /* Ẩn nhãn chữ của mục menu bằng font-size:0 — icon vẫn giữ kích thước riêng */
+  .lt-collapsed .lt-nav__item {
+    justify-content: center;
+    padding: 11px 0;
+    gap: 0;
+    font-size: 0;
+  }
+  /* Ẩn badge (AI / MỚI / khóa / WebRTC…) khi thu gọn */
+  .lt-collapsed .lt-nav__item > span:not(.lt-nav__icon) { display: none; }
+
+  /* Ẩn tiêu đề nhóm */
+  .lt-collapsed .lt-nav__section-label { display: none; }
+  .lt-collapsed .lt-nav__section       { margin-bottom: 2px; }
+
+  /* Brand: chỉ giữ icon, căn giữa */
+  .lt-collapsed .lt-sidebar__brand       { padding: 22px 0 18px; }
+  .lt-collapsed .lt-sidebar__brand-logo  { justify-content: center; }
+  .lt-collapsed .lt-sidebar__brand-name,
+  .lt-collapsed .lt-sidebar__brand-sub   { display: none; }
+
+  /* Footer: chỉ giữ avatar, căn giữa */
+  .lt-collapsed .lt-sidebar__footer            { padding: 14px 0; }
+  .lt-collapsed .lt-sidebar__user              { justify-content: center; }
+  .lt-collapsed .lt-sidebar__user .lt-flex-1,
+  .lt-collapsed .lt-sidebar__user form         { display: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════
    MAIN AREA
    ════════════════════════════════════════════════════════════════ */
 .lt-main {
@@ -280,6 +316,8 @@ code, .lt-code {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0; /* cho phép co dưới min-content — bảng rộng cuộn trong wrapper thay vì tràn trang */
+  transition: margin-left .25s var(--ease);
 }
 
 /* ── Topbar ────────────────────────────────────────────────────── */

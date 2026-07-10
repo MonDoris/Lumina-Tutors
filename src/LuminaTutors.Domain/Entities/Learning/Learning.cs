@@ -282,6 +282,13 @@ public class VirtualLabSession : TenantEntity
     public bool   IsActive        { get; set; } = true;
     public int    MaxParticipants { get; set; } = 40;
 
+    /// <summary>
+    /// Trạng thái scene đã lưu (JSON map objectId→spec) cho phòng "Bảng vẽ Toán 3D"
+    /// (SceneType = "freedraw"). Cho phép mở lại phòng với nguyên hình đã vẽ kể cả
+    /// sau khi server khởi động lại. Null với các scene thí nghiệm dựng sẵn.
+    /// </summary>
+    public string? SceneJson { get; set; }
+
     // Navigation
     public School School  { get; set; } = null!;
     public User   Teacher { get; set; } = null!;

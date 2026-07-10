@@ -55,8 +55,13 @@
         "dna"          => "Cấu trúc DNA",
         "photosynthesis" => "Quang hợp",
         // Math
+        "freedraw"     => "Bảng vẽ Toán 3D cộng tác",
         "polyhedron"   => "Khám phá đa diện đều",
         "vectors"      => "Vector 3D & tích có hướng",
+        "circuit"      => "Mạch điện đơn giản",
+        "solar"        => "Hệ Mặt Trời",
+        "solids"       => "Khối tròn xoay",
+        "volcano"      => "Núi lửa baking soda",
         _              => scene
     };
 }
@@ -149,6 +154,99 @@
 </style>
 
 @* Thông báo Success/Error được render tập trung ở _Layout (tránh trùng 2 lần). *@
+
+@* ── Thư viện thí nghiệm theo môn ────────────────────────────────────────── *@
+@{
+    var experiments = new (string Subject, string Scene, string Desc, string Icon)[]
+    {
+        ("chemistry", "titration",      "Nhỏ giọt dung dịch chuẩn, xác định điểm tương đương qua đổi màu.", "bi-eyedropper"),
+        ("chemistry", "electrolysis",   "Dùng dòng điện tách nước thành khí H₂ và O₂.",                     "bi-lightning-charge-fill"),
+        ("chemistry", "distillation",   "Đun sôi và ngưng tụ để tách hỗn hợp chất lỏng.",                   "bi-thermometer-half"),
+        ("physics",   "pendulum",       "Khảo sát chu kỳ dao động của con lắc đơn.",                        "bi-stopwatch"),
+        ("physics",   "spring",         "Dao động điều hòa của vật gắn lò xo.",                             "bi-distribute-vertical"),
+        ("physics",   "optics",         "Đường đi tia sáng khi khúc xạ qua môi trường.",                    "bi-brightness-high-fill"),
+        ("biology",   "cell",           "Quan sát cấu trúc tế bào trong không gian 3D.",                    "bi-grid-3x3-gap-fill"),
+        ("biology",   "dna",            "Mô hình chuỗi xoắn kép DNA.",                                      "bi-bezier2"),
+        ("biology",   "photosynthesis", "Quá trình quang hợp ở lá cây.",                                    "bi-sun-fill"),
+        ("math",      "freedraw",       "Bảng vẽ Toán 3D cộng tác: tự do dựng điểm, đoạn, vector, khối, mặt — đồng bộ real-time.", "bi-pencil-fill"),
+        ("math",      "polyhedron",     "Khám phá 5 khối đa diện đều Platon.",                              "bi-box"),
+        ("math",      "vectors",        "Phép cộng vector và tích có hướng trong không gian.",              "bi-arrows-move"),
+        ("physics",   "circuit",        "Pin + bóng đèn + công tắc: đóng mạch để đèn sáng.",                "bi-lightning-charge-fill"),
+        ("physics",   "solar",          "Các hành tinh quay quanh Mặt Trời theo quỹ đạo.",                  "bi-moon-stars-fill"),
+        ("math",      "solids",         "Hình nón, trụ, cầu tự quay — kèm công thức thể tích.",             "bi-cone-striped"),
+        ("chemistry", "volcano",        "Baking soda + giấm sủi bọt CO₂ phun trào như núi lửa.",            "bi-fire"),
+    };
+    var subjectsOrder = new[] { "chemistry", "physics", "biology", "math" };
+}
+
+<style>
+    .exp-group { margin-bottom: 22px; }
+    .exp-group:last-child { margin-bottom: 0; }
+    .exp-group__head { display:flex; align-items:center; gap:9px; font-weight:800; color:var(--lt-navy); margin-bottom:12px; font-size:1rem; }
+    .exp-dot { width:11px; height:11px; border-radius:50%; flex:none; }
+    .exp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px; }
+    .exp-card { background:#fff; border:1px solid #e7eaf0; border-radius:14px; padding:16px; display:flex; flex-direction:column; transition:.15s; }
+    .exp-card:hover { border-color:#cbd5e1; box-shadow:0 6px 18px rgba(16,24,40,.07); transform:translateY(-2px); }
+    .exp-card__ic { width:42px; height:42px; border-radius:11px; background:#f1f5f9; display:grid; place-items:center; font-size:1.25rem; margin-bottom:11px; }
+    .exp-card__name { font-weight:700; color:var(--lt-navy); font-size:.95rem; }
+    .exp-card__desc { color:#64748b; font-size:.8rem; line-height:1.5; margin:5px 0 12px; flex:1; }
+    .exp-card__tag { font-size:.74rem; color:#94a3b8; display:inline-flex; align-items:center; gap:5px; }
+</style>
+
+<div class="lt-card lt-mb-4">
+    <div class="lt-card__header">
+        <h3 class="lt-card__title">
+            <i class="bi bi-flask" style="color:var(--lt-gold);margin-right:6px"></i>
+            Thư viện thí nghiệm 3D
+        </h3>
+        <span class="lt-badge lt-badge--navy">@experiments.Length thí nghiệm</span>
+    </div>
+    <div class="lt-card__body">
+        @if (isTeacher)
+        {
+            <p style="font-size:.84rem;color:var(--lt-text-muted);margin:0 0 18px">Chọn một thí nghiệm để mở phòng 3D — hệ thống tạo mã phòng để học sinh tham gia cùng.</p>
+        }
+        else
+        {
+            <p style="font-size:.84rem;color:var(--lt-text-muted);margin:0 0 18px">Các thí nghiệm sẵn có trong Phòng 3D. Nhập mã phòng từ giáo viên để cùng thực hành.</p>
+        }
+
+        @foreach (var subj in subjectsOrder)
+        {
+            var items = experiments.Where(e => e.Subject == subj).ToList();
+            if (items.Count == 0) { continue; }
+            <div class="exp-group">
+                <div class="exp-group__head"><span class="exp-dot" style="background:@SubjectColor(subj)"></span> @SubjectLabel(subj)</div>
+                <div class="exp-grid">
+                    @foreach (var e in items)
+                    {
+                        <div class="exp-card">
+                            <div class="exp-card__ic"><i class="bi @e.Icon" style="color:@SubjectColor(subj)"></i></div>
+                            <div class="exp-card__name">@SceneLabel(e.Scene)</div>
+                            <div class="exp-card__desc">@e.Desc</div>
+                            @if (isTeacher)
+                            {
+                                <form asp-action="Create" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="SessionName" value="@SceneLabel(e.Scene)" />
+                                    <input type="hidden" name="SubjectTag" value="@e.Subject" />
+                                    <input type="hidden" name="SceneType" value="@e.Scene" />
+                                    <button type="submit" class="lt-btn lt-btn--primary lt-btn--sm" style="width:100%;justify-content:center">
+                                        <i class="bi bi-play-circle-fill"></i> Mở thí nghiệm
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="exp-card__tag"><i class="bi bi-info-circle"></i> Tham gia qua mã phòng</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
 
 <div class="row g-4">
 
@@ -295,6 +393,33 @@
                     </div>
                     <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
                         <i class="bi bi-box-arrow-in-right"></i> Vào phòng
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @* ── Vào thẳng phòng Lab 3D / Bảng vẽ Toán bằng mã (VirtualLab) ───────── *@
+        <div class="lt-card lt-mt-4">
+            <div class="lt-card__header">
+                <h3 class="lt-card__title">
+                    <i class="bi bi-pencil-fill" style="color:#8b5cf6;margin-right:6px"></i>
+                    Vào phòng Lab / Bảng vẽ 3D
+                </h3>
+            </div>
+            <div class="lt-card__body">
+                <form asp-controller="VirtualLab" asp-action="Join" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="lt-form-group lt-mb-3">
+                        <label class="lt-label">Mã phòng Lab (6 chữ số)</label>
+                        <input name="SessionCode" class="lt-input" placeholder="VD: 263564" maxlength="6"
+                               type="text" inputmode="numeric" pattern="[0-9]{6}" autocomplete="off"
+                               oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                               style="letter-spacing:.3em;font-weight:700;font-size:1.3rem;text-align:center"
+                               required/>
+                        <p class="lt-form-hint">Mã do giáo viên chia sẻ khi mở phòng thí nghiệm 3D hoặc Bảng vẽ Toán cộng tác.</p>
+                    </div>
+                    <button type="submit" class="lt-btn lt-btn--primary" style="width:100%;justify-content:center">
+                        <i class="bi bi-box-arrow-in-right"></i> Vào phòng Lab
                     </button>
                 </form>
             </div>

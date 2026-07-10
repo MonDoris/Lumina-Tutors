@@ -1,0 +1,67 @@
+@using LuminaTutors.Application.DTOs.Support
+@model SupportThreadDto
+@{
+    ViewData["Title"] = $"Hỗ trợ — {Model.SchoolName}";
+}
+
+@section Styles {
+    <style>
+        .sc-chat { max-width:760px;background:#fff;border:1px solid #e7eaf0;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:70vh }
+        .sc-head { display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #eef0f4 }
+        .sc-ava { width:40px;height:40px;border-radius:50%;background:var(--lt-navy);color:#fff;display:grid;place-items:center;font-weight:800;font-size:.8rem;flex:none }
+        .sc-name { font-weight:800;color:var(--lt-navy) }
+        .sc-sub { font-size:.78rem;color:#94a3b8 }
+        .sc-body { flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:#f8fafc }
+        .sc-empty { margin:auto;color:#94a3b8;text-align:center;font-size:.9rem;max-width:340px }
+        .sc-row { display:flex }
+        .sc-row.me { justify-content:flex-end }
+        .sc-bubble { max-width:72%;padding:9px 13px;border-radius:14px;font-size:.9rem;line-height:1.45;white-space:pre-wrap;word-break:break-word }
+        .sc-row.me .sc-bubble { background:var(--lt-navy);color:#fff;border-bottom-right-radius:4px }
+        .sc-row.them .sc-bubble { background:#fff;color:#1f2937;border:1px solid #e7eaf0;border-bottom-left-radius:4px }
+        .sc-meta { font-size:.68rem;opacity:.7;margin-top:4px }
+        .sc-send { display:flex;gap:8px;padding:12px 14px;border-top:1px solid #eef0f4;background:#fff }
+        .sc-input { flex:1;border:1px solid #d8dee8;border-radius:10px;padding:10px 12px;font-size:.92rem;outline:none }
+        .sc-input:focus { border-color:var(--lt-navy) }
+    </style>
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">@Model.SchoolName</h1>
+        <p class="lt-page-subtitle">Luồng hỗ trợ với Nhà trường</p>
+    </div>
+    <div class="lt-page-header__actions">
+        <a asp-action="Inbox" class="lt-btn lt-btn--outline"><i class="bi bi-arrow-left"></i> Hộp thư</a>
+    </div>
+</div>
+
+<div class="sc-chat">
+    <div class="sc-head">
+        <div class="sc-ava">@(string.IsNullOrEmpty(Model.SchoolName) ? "?" : Model.SchoolName.Substring(0, 1).ToUpper())</div>
+        <div>
+            <div class="sc-name">@Model.SchoolName</div>
+            <div class="sc-sub">Nhà trường</div>
+        </div>
+    </div>
+    <div class="sc-body" id="scBody">
+        @if (Model.Messages.Count == 0)
+        {
+            <div class="sc-empty">Chưa có tin nhắn trong luồng này.</div>
+        }
+        @foreach (var m in Model.Messages)
+        {
+            var mine = m.FromSysAdmin;
+            <div class="sc-row @(mine ? "me" : "them")">
+                <div class="sc-bubble">@m.Text<div class="sc-meta">@m.SenderName · @m.SentAt.ToString("HH:mm dd/MM")</div></div>
+            </div>
+        }
+    </div>
+    <form class="sc-send" asp-action="Reply" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="schoolId" value="@Model.SchoolId" />
+        <input name="text" class="sc-input" placeholder="Trả lời Nhà trường..." autocomplete="off" required maxlength="2000" />
+        <button type="submit" class="lt-btn lt-btn--primary"><i class="bi bi-send-fill"></i> Gửi</button>
+    </form>
+</div>
+
+<script>var _b = document.getElementById('scBody'); if (_b) _b.scrollTop = _b.scrollHeight;</script>

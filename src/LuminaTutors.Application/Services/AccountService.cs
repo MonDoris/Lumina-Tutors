@@ -15,15 +15,17 @@ public sealed class AccountService : IAccountService
 {
     private readonly IUnitOfWork           _uow;
     private readonly IPasswordHasher<User> _hasher;
+    private readonly IQuotaService         _quota;
     private readonly ILogger<AccountService> _logger;
 
     private static readonly HashSet<string> AllowedRoles =
-        new(StringComparer.OrdinalIgnoreCase) { "STUDENT", "TEACHER", "SUPERVISOR", "PARENT" };
+        new(StringComparer.OrdinalIgnoreCase) { "STUDENT", "TEACHER", "SUPERVISOR", "PARENT", "ADMIN" };
 
-    public AccountService(IUnitOfWork uow, IPasswordHasher<User> hasher, ILogger<AccountService> logger)
+    public AccountService(IUnitOfWork uow, IPasswordHasher<User> hasher, IQuotaService quota, ILogger<AccountService> logger)
     {
         _uow    = uow;
         _hasher = hasher;
+        _quota  = quota;
         _logger = logger;
     }
 
@@ -94,6 +96,15 @@ public sealed class AccountService : IAccountService
         var roleCode = req.RoleCode.ToUpper();
         if (!AllowedRoles.Contains(roleCode))
             return Result<AccountDetailDto>.Failure("INVALID_ROLE", "Vai trò không hợp lệ.");
+
+        // Kiểm tra giới hạn tài khoản theo gói trước khi tạo
+        if (Enum.TryParse<RoleCode>(roleCode, ignoreCase: true, out var roleEnum))
+        {
+            var quotaCheck = await _quota.CanAddUserAsync(schoolId, roleEnum, ct);
+            if (!quotaCheck.IsSuccess)
+                return Result<AccountDetailDto>.Failure(
+                    quotaCheck.Error ?? "Đã đạt giới hạn tài khoản của gói.", quotaCheck.ErrorCode);
+        }
 
         // Email đăng nhập = phần tên + đuôi cố định theo vai trò trên domain gốc của trường
         var schoolAdmin = (await _uow.Users.FindAsync(
@@ -174,7 +185,18 @@ public sealed class AccountService : IAccountService
                             var parentEmailExists = await _uow.Users.AnyAsync(
                                 u => u.SchoolId == schoolId && u.Email == parentEmail, ct);
 
-                            if (!parentEmailExists)
+                            // Chỉ tạo phụ huynh mới khi còn quota; nếu hết, bỏ qua (không chặn tạo HS)
+                            var parentQuota = parentEmailExists
+                                ? Result<bool>.Success(true)
+                                : await _quota.CanAddUserAsync(schoolId, RoleCode.Parent, ct);
+
+                            if (!parentEmailExists && !parentQuota.IsSuccess)
+                            {
+                                _logger.LogWarning(
+                                    "Bỏ qua tạo phụ huynh liên kết cho HS {StudentId}: {Reason}",
+                                    user.Id, parentQuota.Error);
+                            }
+                            else if (!parentEmailExists)
                             {
                                 var parentRoles = await _uow.Roles.FindAsync(r => r.RoleCode == "PARENT", ct: ct);
                                 var parentRole  = parentRoles.FirstOrDefault();
@@ -453,8 +475,18 @@ public sealed class AccountService : IAccountService
     public async Task<Result> ToggleActiveAsync(int schoolId, int userId, CancellationToken ct = default)
     {
         var user = await _uow.Users.FindOneAsync(
-            u => u.Id == userId && u.SchoolId == schoolId, ct: ct);
+            u => u.Id == userId && u.SchoolId == schoolId,
+            include: q => q.Include(u => u.Role), ct: ct);
         if (user is null) return Result.Failure("NOT_FOUND", "Tài khoản không tồn tại.");
+
+        // Không cho phép vô hiệu hóa Quản trị trường cuối cùng còn hoạt động (tránh khóa mất quyền)
+        if (user.Role.RoleCode == "ADMIN" && user.IsActive)
+        {
+            var activeAdmins = await _uow.Users.CountAsync(
+                u => u.SchoolId == schoolId && u.IsActive && u.Role.RoleCode == "ADMIN", ct);
+            if (activeAdmins <= 1)
+                return Result.Failure("Phải còn ít nhất 1 Quản trị trường đang hoạt động.", "LAST_ADMIN");
+        }
 
         user.IsActive = !user.IsActive;
         await _uow.SaveChangesAsync(ct);
@@ -487,6 +519,15 @@ public sealed class AccountService : IAccountService
         if (user is null) return Result.Failure("NOT_FOUND", "Tài khoản không tồn tại.");
         if (!AllowedRoles.Contains(user.Role.RoleCode))
             return Result.Failure("FORBIDDEN", "Không thể xóa tài khoản này.");
+
+        // Không cho xóa Quản trị trường cuối cùng còn hoạt động (tránh khóa mất quyền)
+        if (user.Role.RoleCode == "ADMIN" && user.IsActive)
+        {
+            var activeAdmins = await _uow.Users.CountAsync(
+                u => u.SchoolId == schoolId && u.IsActive && u.Role.RoleCode == "ADMIN", ct);
+            if (activeAdmins <= 1)
+                return Result.Failure("Phải còn ít nhất 1 Quản trị trường đang hoạt động.", "LAST_ADMIN");
+        }
 
         // Soft delete (deactivate)
         user.IsActive = false;

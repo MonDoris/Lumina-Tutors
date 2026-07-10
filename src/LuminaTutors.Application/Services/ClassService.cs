@@ -16,12 +16,14 @@ public sealed class ClassService : IClassService
 {
     private readonly IUnitOfWork        _uow;
     private readonly IMapper            _mapper;
+    private readonly IQuotaService      _quota;
     private readonly ILogger<ClassService> _logger;
 
-    public ClassService(IUnitOfWork uow, IMapper mapper, ILogger<ClassService> logger)
+    public ClassService(IUnitOfWork uow, IMapper mapper, IQuotaService quota, ILogger<ClassService> logger)
     {
         _uow    = uow;
         _mapper = mapper;
+        _quota  = quota;
         _logger = logger;
     }
 
@@ -150,6 +152,12 @@ public sealed class ClassService : IClassService
     public async Task<Result<ClassDetailDto>> CreateAsync(
         int schoolId, CreateClassRequest request, CancellationToken ct = default)
     {
+        // Kiểm tra giới hạn số lớp học theo gói trước khi tạo
+        var quotaCheck = await _quota.CanAddClassAsync(schoolId, ct);
+        if (!quotaCheck.IsSuccess)
+            return Result<ClassDetailDto>.Failure(
+                quotaCheck.Error ?? "Đã đạt giới hạn số lớp học của gói.", quotaCheck.ErrorCode);
+
         var duplicate = await _uow.Classes.FindAsync(
             c => c.SchoolId == schoolId &&
                  c.AcademicYearId == request.AcademicYearId &&

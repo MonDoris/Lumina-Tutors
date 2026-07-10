@@ -74,7 +74,13 @@ public sealed class AiTutorController : Controller
 
         var result = await _aiTutor.SendMessageAsync(SchoolId(), sessionId, UserId(), request.Content);
         if (!result.IsSuccess)
-            return BadRequest(new { error = result.Error });
+            return result.ErrorCode switch
+            {
+                // Ollama không khả dụng → 503 để client biết đây là lỗi hệ thống tạm thời, không phải lỗi nhập liệu
+                "AI_ERROR"  => StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = result.Error }),
+                "NOT_FOUND" => NotFound(new { error = result.Error }),
+                _           => BadRequest(new { error = result.Error })  // INVALID và các lỗi client khác
+            };
 
         return Ok(new
         {

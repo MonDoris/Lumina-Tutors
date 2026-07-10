@@ -21,7 +21,8 @@
 }
 
 @section Styles {
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500..900;1,9..144,500..700&family=JetBrains+Mono:wght@500;700&display=swap">
     <link rel="stylesheet" href="~/css/esell.css" asp-append-version="true" />
 }
 
@@ -80,7 +81,7 @@
 
     <!-- ══ SCHOOL CARDS ══ -->
     <div class="sx-grid-cards">
-        @foreach (var s in Model)
+        @foreach (var s in Model.OrderBy(x => displayNo[x.SchoolId]))
         {
             var isOwn = s.SchoolId == ownSchoolId;
             <div class="sx-card @(s.IsActive ? "" : "is-off")" data-rise style="@(s.IsActive ? "" : "opacity:.7")">
@@ -151,15 +152,14 @@
                                     <i class="bi @(s.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i> @(s.IsActive ? "Tạm khóa" : "Mở khóa")
                                 </button>
                             </form>
-                            @if (s.CanDelete)
-                            {
-                                <form asp-action="DeleteSchool" method="post" style="display:inline"
-                                      onsubmit="return confirm('Xóa vĩnh viễn trường @s.SchoolName và tài khoản của trường?');">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@s.SchoolId" />
-                                    <button type="submit" class="sx-btn sx-btn--danger sx-btn--sm"><i class="bi bi-trash3"></i> Xóa</button>
-                                </form>
-                            }
+                            <form asp-action="DeleteSchool" method="post" style="display:inline"
+                                  data-name="@s.SchoolName"
+                                  data-hasdata="@((s.StudentCount > 0 || s.ClassCount > 0 || s.UserCount > 1).ToString().ToLowerInvariant())"
+                                  onsubmit="return confirmDeleteSchool(this);">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@s.SchoolId" />
+                                <button type="submit" class="sx-btn sx-btn--danger sx-btn--sm"><i class="bi bi-trash3"></i> Xóa</button>
+                            </form>
                         }
                     </div>
 
@@ -207,3 +207,127 @@
     </div>
 
 </div>
+
+<!-- ══ MODAL XÁC NHẬN XÓA TRƯỜNG ══ -->
+<div id="delSchoolModal" class="dsm" aria-hidden="true">
+    <div class="dsm__backdrop" data-dsm-close></div>
+    <div class="dsm__card" role="dialog" aria-modal="true" aria-labelledby="dsmTitle">
+        <div class="dsm__icon"><i class="bi bi-trash3-fill"></i></div>
+        <h3 class="dsm__title" id="dsmTitle">Xóa trường vĩnh viễn?</h3>
+        <p class="dsm__text">
+            Bạn sắp xóa trường <b id="dsmName" class="dsm__name">—</b> cùng <b>toàn bộ</b> dữ liệu liên quan
+            (tài khoản, lớp, điểm, điểm danh, gói đăng ký…).
+        </p>
+
+        <div class="dsm__warn" id="dsmWarn">
+            <i class="bi bi-exclamation-octagon-fill"></i>
+            <div>Trường này <b>đang có dữ liệu</b>. Sau khi xóa sẽ <b>không thể khôi phục</b>.</div>
+        </div>
+
+        <label class="dsm__label" for="dsmInput">Gõ <b>XÓA</b> để xác nhận</label>
+        <input id="dsmInput" class="dsm__input" type="text" autocomplete="off" spellcheck="false" placeholder="XÓA" />
+
+        <div class="dsm__actions">
+            <button type="button" class="dsm__btn dsm__btn--ghost" data-dsm-close>Hủy</button>
+            <button type="button" class="dsm__btn dsm__btn--danger" id="dsmConfirm" disabled>
+                <i class="bi bi-trash3"></i> Xóa vĩnh viễn
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dsm { position:fixed; inset:0; z-index:1080; display:none; align-items:center; justify-content:center; padding:20px; }
+    .dsm.is-open { display:flex; }
+    .dsm__backdrop { position:absolute; inset:0; background:rgba(8,15,30,.55); backdrop-filter:blur(4px); animation:dsmFade .18s ease; }
+    .dsm__card {
+        position:relative; width:100%; max-width:440px; background:#fff; border-radius:20px;
+        padding:26px 26px 22px; box-shadow:0 24px 60px rgba(8,15,30,.32); text-align:center;
+        animation:dsmPop .2s cubic-bezier(.2,.9,.3,1.2);
+    }
+    .dsm__icon {
+        width:62px; height:62px; margin:0 auto 14px; border-radius:50%;
+        display:grid; place-items:center; font-size:1.7rem; color:#dc2626;
+        background:radial-gradient(circle at 50% 40%, #fee2e2, #fecaca);
+    }
+    .dsm__title { margin:0 0 8px; font-size:1.2rem; font-weight:800; color:var(--lt-navy,#0f2440); }
+    .dsm__text { margin:0 0 14px; font-size:.9rem; line-height:1.5; color:#475569; }
+    .dsm__name { color:#0f2440; }
+    .dsm__warn {
+        display:none; gap:10px; text-align:left; align-items:flex-start;
+        background:#fff7ed; border:1px solid #fed7aa; color:#9a3412;
+        border-radius:12px; padding:11px 13px; font-size:.82rem; line-height:1.45; margin-bottom:16px;
+    }
+    .dsm__warn.is-on { display:flex; }
+    .dsm__warn i { font-size:1.05rem; color:#ea580c; margin-top:1px; flex:none; }
+    .dsm__label { display:block; text-align:left; font-size:.82rem; color:#64748b; margin-bottom:6px; }
+    .dsm__label b { color:#dc2626; letter-spacing:.04em; }
+    .dsm__input {
+        width:100%; box-sizing:border-box; padding:11px 14px; font-size:1rem; font-weight:700; letter-spacing:.1em;
+        text-align:center; border:1.5px solid #e2e8f0; border-radius:12px; outline:none; transition:.15s;
+    }
+    .dsm__input:focus { border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.14); }
+    .dsm__actions { display:flex; gap:10px; margin-top:18px; }
+    .dsm__btn {
+        flex:1; padding:12px 16px; border-radius:12px; font-size:.9rem; font-weight:700; cursor:pointer;
+        border:1px solid transparent; transition:.15s; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    }
+    .dsm__btn--ghost { background:#f1f5f9; color:#334155; }
+    .dsm__btn--ghost:hover { background:#e2e8f0; }
+    .dsm__btn--danger { background:#dc2626; color:#fff; }
+    .dsm__btn--danger:hover:not(:disabled) { background:#b91c1c; }
+    .dsm__btn--danger:disabled { opacity:.45; cursor:not-allowed; }
+    @@keyframes dsmFade { from { opacity:0 } to { opacity:1 } }
+    @@keyframes dsmPop  { from { opacity:0; transform:translateY(12px) scale(.96) } to { opacity:1; transform:none } }
+</style>
+
+<script>
+    (function () {
+        var modal   = document.getElementById('delSchoolModal');
+        if (!modal) return;
+        var nameEl  = document.getElementById('dsmName');
+        var warnEl  = document.getElementById('dsmWarn');
+        var input   = document.getElementById('dsmInput');
+        var confirm = document.getElementById('dsmConfirm');
+        var pending = null;            // form đang chờ xóa
+
+        function open(form) {
+            pending = form;
+            nameEl.textContent = form.dataset.name || 'trường này';
+            warnEl.classList.toggle('is-on', form.dataset.hasdata === 'true');
+            input.value = '';
+            confirm.disabled = true;
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            setTimeout(function () { input.focus(); }, 50);
+        }
+        function close() {
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+            pending = null;
+        }
+        // Chấp nhận mọi cách gõ "xóa": có/không dấu, hoa/thường, dấu thanh đặt ở vị trí nào
+        // (XÓA, XOÁ, xoa, Xoá… đều hợp lệ) bằng cách bỏ dấu rồi so khớp.
+        function valid() {
+            var t = (input.value || '').normalize('NFD').toUpperCase().replace(/[^A-Z]/g, '');
+            return t === 'XOA';
+        }
+
+        input.addEventListener('input', function () { confirm.disabled = !valid(); });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && valid()) { e.preventDefault(); confirm.click(); }
+        });
+        confirm.addEventListener('click', function () {
+            if (valid() && pending) { var f = pending; pending = null; f.submit(); }
+        });
+        modal.querySelectorAll('[data-dsm-close]').forEach(function (el) {
+            el.addEventListener('click', close);
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+        });
+
+        // Hàm gọi từ onsubmit của form xóa — mở modal, chặn submit mặc định.
+        window.confirmDeleteSchool = function (form) { open(form); return false; };
+    })();
+</script>

@@ -369,6 +369,22 @@ function getChatBody() {
     return el;
 }
 
+// Chỉ báo "đang soạn" (ba chấm) — tạo động nếu chưa có (vd phiên chưa có tin nhắn nào)
+function ensureTypingRow() {
+    let t = document.getElementById('typingRow');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = 'typingRow';
+        t.className = 'msg-row assistant';
+        t.style.display = 'none';
+        t.innerHTML =
+            '<svg class="msg-avatar" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="32" cy="32" r="32" fill="#1a2d45"/><path d="M32 10 L50 32 L32 54 L14 32 Z" fill="none" stroke="#c9a84c" stroke-width="1.8"/><circle cx="32" cy="32" r="3" fill="#c9a84c"/></svg>' +
+            '<div class="typing-bubble" role="status" aria-label="Gia Sư AI đang soạn"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+        getChatBody().appendChild(t);
+    }
+    return t;
+}
+
 function scrollBottom() {
     const body = document.getElementById('chatBody');
     if (body) body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' });
@@ -417,8 +433,9 @@ function appendMessage(role, content, time) {
         <div class="bubble ${role}">${esc(content)}${timeHtml}</div>
         ${isUser ? userAvatar : ''}`;
 
-    if (typingRow && typingRow.parentElement === body) {
-        body.insertBefore(row, typingRow);
+    const tr = document.getElementById('typingRow');
+    if (tr && tr.parentElement === body) {
+        body.insertBefore(row, tr);
     } else {
         body.appendChild(row);
     }
@@ -434,10 +451,11 @@ async function sendMessage() {
     input.value = ''; charCount.textContent = '0'; input.style.height = '';
     sendBtn.disabled = true;
 
-    // Move typing indicator into body if needed
+    // Hiện chỉ báo "đang soạn" (ba chấm); tạo mới nếu thiếu (vd phiên 0 tin nhắn)
     const body = getChatBody();
-    if (typingRow && typingRow.parentElement !== body) body.appendChild(typingRow);
-    typingRow.style.display = 'flex';
+    const tRow = ensureTypingRow();
+    if (tRow.parentElement !== body) body.appendChild(tRow);
+    tRow.style.display = 'flex';
     scrollBottom();
 
     const slowTimer = setTimeout(() => { slowHint.style.display = 'block'; }, 15000);
@@ -458,7 +476,7 @@ async function sendMessage() {
         clearTimeout(tid);
         clearTimeout(slowTimer);
         slowHint.style.display = 'none';
-        typingRow.style.display = 'none';
+        tRow.style.display = 'none';
 
         if (resp.ok) {
             const data = await resp.json();
@@ -470,7 +488,7 @@ async function sendMessage() {
     } catch (e) {
         clearTimeout(slowTimer);
         slowHint.style.display = 'none';
-        typingRow.style.display = 'none';
+        tRow.style.display = 'none';
         const msg = e.name === 'AbortError'
             ? '⏱ Hết thời gian chờ. Ollama có thể đang tải model, thử lại sau ít phút.'
             : '⚠ Không kết nối được Gia Sư AI. Kiểm tra Ollama đang chạy.';

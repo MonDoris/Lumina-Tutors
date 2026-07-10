@@ -7,6 +7,11 @@
     var classes     = (IReadOnlyList<(int ClassId, string ClassName)>)(ViewBag.ClassList ?? new List<(int, string)>());
     var activeRole  = Model?.RoleCode ?? presetRole;
 
+    // Đuôi email cố định theo vai trò + domain gốc của trường (lấy từ email admin đang đăng nhập)
+    var schoolDomain = LuminaTutors.Application.Common.RoleEmail.BaseDomain(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "");
+    var activePrefix = LuminaTutors.Application.Common.RoleEmail.PrefixFor(activeRole);
+    var emailSuffix  = activePrefix is null ? $"@{schoolDomain}" : $"@{activePrefix}.{schoolDomain}";
+
     var commonSubjects = new[]
     {
         "Toán học", "Ngữ văn", "Tiếng Anh", "Vật lý", "Hóa học",
@@ -17,7 +22,7 @@
 
 <style>
 /* ── Role selector ────────────────────────────────────────────────────────── */
-.role-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.role-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
 .role-card {
     border: 2px solid var(--lt-border);
     border-radius: 14px;
@@ -34,6 +39,7 @@
 .role-card.rc--teacher.rc--active  { border-color: #059669; }
 .role-card.rc--supervisor.rc--active { border-color: #c2410c; }
 .role-card.rc--parent.rc--active   { border-color: #7c3aed; }
+.role-card.rc--admin.rc--active    { border-color: #b45309; }
 
 .role-card__icon {
     width: 46px; height: 46px; border-radius: 12px;
@@ -46,12 +52,14 @@
 .rc--teacher.rc--active  .role-card__icon { background: #059669; color: #fff; }
 .rc--supervisor.rc--active .role-card__icon { background: #c2410c; color: #fff; }
 .rc--parent.rc--active   .role-card__icon { background: #7c3aed; color: #fff; }
+.rc--admin.rc--active    .role-card__icon { background: #b45309; color: #fff; }
 
 .role-card__label { font-size: .85rem; font-weight: 700; color: #374151; }
 .rc--student.rc--active  .role-card__label { color: var(--lt-navy); }
 .rc--teacher.rc--active  .role-card__label { color: #059669; }
 .rc--supervisor.rc--active .role-card__label { color: #c2410c; }
 .rc--parent.rc--active   .role-card__label { color: #7c3aed; }
+.rc--admin.rc--active    .role-card__label { color: #b45309; }
 .role-card__desc { font-size: .73rem; color: #94a3b8; margin-top: 3px; }
 
 /* ── Section divider ─────────────────────────────────────────────────────── */
@@ -200,6 +208,7 @@
                             ("TEACHER",    "bi-person-chalkboard","Giáo viên", "rc--teacher",    "Giảng dạy bộ môn"),
                             ("SUPERVISOR", "bi-shield-fill",       "Giám thị",  "rc--supervisor", "Quản lý kỷ luật"),
                             ("PARENT",     "bi-house-heart-fill", "Phụ huynh", "rc--parent",     "Phụ huynh học sinh"),
+                            ("ADMIN",      "bi-person-badge-fill","Quản trị trường", "rc--admin", "Đồng quản trị nhà trường"),
                         };
                     }
                     @foreach (var (code, icon, label, cssClass, desc) in roles)
@@ -261,8 +270,15 @@
 
                 <div class="form-row cols-2 lt-mb-3">
                     <div class="fld">
-                        <label>Email đăng nhập <span class="req">*</span></label>
-                        <input asp-for="Email" type="email" class="lt-input" placeholder="email@truong.edu.vn" required/>
+                        <label>Tên đăng nhập <span class="req">*</span></label>
+                        <div class="lt-input" style="display:flex;align-items:center;gap:2px;padding-top:0;padding-bottom:0">
+                            <input type="text" id="emailLocal" placeholder="vd: vovincent" autocomplete="off" spellcheck="false" required
+                                   value="@(Model?.Email != null && Model.Email.Contains('@') ? Model.Email.Split('@')[0] : Model?.Email)"
+                                   style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:inherit;padding:10px 0"
+                                   oninput="syncEmail()"/>
+                            <span id="emailSuffix" style="color:#64748b;white-space:nowrap;font-size:.92rem">@emailSuffix</span>
+                        </div>
+                        <input type="hidden" asp-for="Email" id="emailFull"/>
                         <span asp-validation-for="Email" class="lt-form-error"></span>
                     </div>
                     <div class="fld">
@@ -491,6 +507,24 @@
             </div>
         </div>
 
+        <!-- ADMIN section — no extra fields needed -->
+        <div id="panel-ADMIN" class="role-panel @(activeRole == "ADMIN" ? "rp--active" : "")">
+            <div class="lt-card lt-mb-4" style="border-left:4px solid #b45309;padding:0">
+                <div class="lt-card__body" style="padding:16px;background:oklch(97% 0.02 70)">
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <i class="bi bi-person-badge-fill" style="font-size:1.4rem;color:#b45309"></i>
+                        <div>
+                            <div style="font-weight:600;color:#374151">Tài khoản Quản trị trường (đồng quản trị)</div>
+                            <div style="font-size:.78rem;color:#94a3b8">
+                                Có toàn quyền quản lý trường như bạn. Email dùng tên miền gốc của trường (không tiền tố).
+                                Số lượng giới hạn theo gói dịch vụ.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- PARENT section -->
         <div id="panel-PARENT" class="role-panel @(activeRole == "PARENT" ? "rp--active" : "")">
             <div class="lt-card lt-mb-4">
@@ -579,7 +613,25 @@ function selectRole(code) {
     if (subjSel) subjSel.required = (code === 'TEACHER');
     const subjInp = document.getElementById('subjectInput');
     if (subjInp) subjInp.required = (code === 'TEACHER');
+
+    if (typeof syncEmail === 'function') syncEmail();
 }
+
+// ── Email: đuôi cố định theo vai trò + domain trường ──────────────────────────
+const EMAIL_PREFIX  = { STUDENT:'stu', TEACHER:'tea', SUPERVISOR:'sup', PARENT:'par' };
+const SCHOOL_DOMAIN = '@schoolDomain';
+function currentEmailSuffix() {
+    const role = (document.getElementById('roleCodeInput').value || 'STUDENT').toUpperCase();
+    const prefix = EMAIL_PREFIX[role];           // ADMIN (Quản trị trường) giữ domain gốc, không tiền tố
+    return prefix ? ('@@' + prefix + '.' + SCHOOL_DOMAIN) : ('@@' + SCHOOL_DOMAIN);
+}
+function syncEmail() {
+    const suffix = currentEmailSuffix();
+    const local  = (document.getElementById('emailLocal').value || '').trim().toLowerCase().replace(/\s+/g, '');
+    document.getElementById('emailSuffix').textContent = suffix;
+    document.getElementById('emailFull').value = local ? (local + suffix) : '';
+}
+document.addEventListener('DOMContentLoaded', syncEmail);
 
 // ── Parent toggle ─────────────────────────────────────────────────────────────
 let parentEnabled = false;

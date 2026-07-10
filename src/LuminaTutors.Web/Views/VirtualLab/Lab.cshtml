@@ -26,6 +26,10 @@
         "photosynthesis" => "Quang hợp",
         "polyhedron"     => "Đa diện đều",
         "vectors"        => "Vector 3D",
+        "circuit"        => "Mạch điện đơn giản",
+        "solar"          => "Hệ Mặt Trời",
+        "solids"         => "Khối tròn xoay",
+        "volcano"        => "Núi lửa baking soda",
         _                => sceneType
     };
 }
@@ -1796,6 +1800,161 @@ function buildVectorsScene() {
     ];
 }
 
+// ─ PHYSICS: Mạch điện đơn giản ───────────────────────────────────────────────
+function buildCircuitScene() {
+    const y = 1.95;
+    const base = new THREE.Mesh(new THREE.BoxGeometry(2.0, .08, 1.0),
+        new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: .85 }));
+    base.position.set(0, y - .12, 0); base.receiveShadow = true; scene.add(base);
+
+    // Pin (battery)
+    const battery = new THREE.Mesh(new THREE.BoxGeometry(.55, .28, .3),
+        new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: .4, metalness: .3 }));
+    battery.position.set(-.65, y, 0); battery.castShadow = true; scene.add(battery);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .07, 12),
+        new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: .8, roughness: .2 }));
+    cap.rotation.z = Math.PI / 2; cap.position.set(-.36, y, 0); scene.add(cap);
+
+    // Bóng đèn
+    const bulbMat = new THREE.MeshStandardMaterial({ color: 0xfff7cc, emissive: 0xffd000, emissiveIntensity: 1.4, roughness: .12, transparent: true, opacity: .92 });
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(.18, 24, 24), bulbMat);
+    bulb.position.set(.65, y + .2, 0); scene.add(bulb);
+    const bulbLight = new THREE.PointLight(0xffd24d, 1.2, 3.5); bulbLight.position.copy(bulb.position); scene.add(bulbLight);
+    const socket = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .14, 16),
+        new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: .7, roughness: .3 }));
+    socket.position.set(.65, y + .03, 0); scene.add(socket);
+
+    // Công tắc
+    const swBase = new THREE.Mesh(new THREE.BoxGeometry(.2, .06, .12),
+        new THREE.MeshStandardMaterial({ color: 0x374151 }));
+    swBase.position.set(0, y - .04, .34); scene.add(swBase);
+    const lever = new THREE.Mesh(new THREE.BoxGeometry(.17, .03, .035),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: .5, roughness: .3 }));
+    lever.position.set(0, y, .34); lever.rotation.z = .18; scene.add(lever);
+
+    // Dây dẫn
+    const wire = (a, b, col) => {
+        const dir = b.clone().sub(a); const len = dir.length();
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, len, 8),
+            new THREE.MeshStandardMaterial({ color: col, roughness: .5 }));
+        m.position.copy(a.clone().add(b).multiplyScalar(.5));
+        m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+        scene.add(m);
+    };
+    const wy = y - .08;
+    wire(new THREE.Vector3(-.65, wy, -.42), new THREE.Vector3(.65, wy, -.42), 0xb91c1c);
+    wire(new THREE.Vector3(.65, wy, -.42), new THREE.Vector3(.65, wy, 0), 0xb91c1c);
+    wire(new THREE.Vector3(-.65, wy, .42), new THREE.Vector3(0, wy, .34), 0x111827);
+    wire(new THREE.Vector3(0, wy, .34), new THREE.Vector3(.65, wy, .42), 0x111827);
+    wire(new THREE.Vector3(.65, wy, .42), new THREE.Vector3(.65, wy, 0), 0x111827);
+
+    experimentData.bulb = bulb; experimentData.bulbLight = bulbLight; experimentData.bulbOn = true;
+    experimentData.type = 'circuit';
+    experimentData.steps = [
+        { title: 'Mạch điện kín', desc: 'Pin → dây dẫn → công tắc → bóng đèn → về pin. Dòng điện chỉ chạy khi mạch kín.' },
+        { title: 'Nguồn điện', desc: 'Pin tạo hiệu điện thế giữa cực (+) và (−), đẩy các electron chuyển động thành dòng điện.' },
+        { title: 'Công tắc', desc: 'Đóng công tắc → mạch kín → đèn sáng. Mở công tắc → mạch hở → đèn tắt.' },
+        { title: 'Bóng đèn', desc: 'Dòng điện qua dây tóc làm nó nóng và phát sáng — tác dụng nhiệt của dòng điện.' },
+        { title: 'Định luật Ohm', desc: 'I = U / R. Hiệu điện thế càng lớn hoặc điện trở càng nhỏ thì dòng điện càng mạnh.' },
+    ];
+}
+
+// ─ SCIENCE: Hệ Mặt Trời ──────────────────────────────────────────────────────
+function buildSolarScene() {
+    const cy = 2.5;
+    const sun = new THREE.Mesh(new THREE.SphereGeometry(.42, 32, 32),
+        new THREE.MeshStandardMaterial({ color: 0xffae00, emissive: 0xff8a00, emissiveIntensity: 1.5, roughness: .5 }));
+    sun.position.set(0, cy, 0); scene.add(sun);
+    scene.add(Object.assign(new THREE.PointLight(0xffd27f, 2.0, 30), { position: sun.position.clone() }));
+
+    const defs = [
+        { name: 'Sao Thủy', r: .07, dist: .75, speed: 1.6, color: 0x9ca3af },
+        { name: 'Sao Kim', r: .11, dist: 1.0, speed: 1.2, color: 0xe0b07a },
+        { name: 'Trái Đất', r: .12, dist: 1.3, speed: 1.0, color: 0x3b82f6 },
+        { name: 'Sao Hỏa', r: .09, dist: 1.6, speed: .8, color: 0xc0392b },
+        { name: 'Sao Mộc', r: .26, dist: 2.1, speed: .45, color: 0xd9a066 },
+        { name: 'Sao Thổ', r: .2, dist: 2.6, speed: .32, color: 0xe5c07b },
+    ];
+    const planets = [];
+    defs.forEach((p, i) => {
+        const mesh = new THREE.Mesh(new THREE.SphereGeometry(p.r, 24, 24),
+            new THREE.MeshStandardMaterial({ color: p.color, roughness: .75 }));
+        scene.add(mesh);
+        const ring = new THREE.Mesh(new THREE.RingGeometry(p.dist - .004, p.dist + .004, 80),
+            new THREE.MeshBasicMaterial({ color: 0x475569, side: THREE.DoubleSide, transparent: true, opacity: .45 }));
+        ring.rotation.x = -Math.PI / 2; ring.position.set(0, cy, 0); scene.add(ring);
+        planets.push({ mesh, dist: p.dist, speed: p.speed, angle: i * 1.1 });
+    });
+    const saturnRing = new THREE.Mesh(new THREE.RingGeometry(.28, .42, 32),
+        new THREE.MeshBasicMaterial({ color: 0xcbb27a, side: THREE.DoubleSide, transparent: true, opacity: .75 }));
+    saturnRing.rotation.x = -Math.PI / 2.3; planets[5].mesh.add(saturnRing);
+
+    experimentData.sun = sun; experimentData.planets = planets; experimentData.solarCy = cy;
+    experimentData.type = 'solar';
+    experimentData.steps = [
+        { title: 'Hệ Mặt Trời', desc: 'Mặt Trời ở trung tâm, các hành tinh quay quanh theo quỹ đạo gần tròn.' },
+        { title: 'Lực hấp dẫn', desc: 'Lực hấp dẫn của Mặt Trời giữ các hành tinh trên quỹ đạo (định luật vạn vật hấp dẫn Newton).' },
+        { title: 'Định luật Kepler', desc: 'Hành tinh càng xa Mặt Trời thì quỹ đạo càng dài và chuyển động càng chậm.' },
+        { title: 'Trái Đất', desc: 'Trái Đất (xanh) cách Mặt Trời ~150 triệu km, quay một vòng quanh Mặt Trời hết 1 năm.' },
+        { title: 'Sao Thổ', desc: 'Sao Thổ nổi bật với vành đai gồm băng và đá quay quanh nó.' },
+    ];
+}
+
+// ─ MATH: Khối tròn xoay ──────────────────────────────────────────────────────
+function buildSolidsScene() {
+    const y = 2.05;
+    const mat = (col) => new THREE.MeshStandardMaterial({ color: col, roughness: .25, metalness: .35, transparent: true, opacity: .85 });
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(.4, .85, 48), mat(0x3b82f6));
+    cone.position.set(-1.05, y, 0); scene.add(cone);
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .85, 48), mat(0x22c55e));
+    cyl.position.set(0, y, 0); scene.add(cyl);
+    const sph = new THREE.Mesh(new THREE.SphereGeometry(.44, 48, 32), mat(0xf59e0b));
+    sph.position.set(1.05, y, 0); scene.add(sph);
+    [[cone, 0x93c5fd], [cyl, 0x86efac], [sph, 0xfcd34d]].forEach(([m, c]) => {
+        m.add(new THREE.Mesh(m.geometry, new THREE.MeshBasicMaterial({ color: c, wireframe: true, transparent: true, opacity: .3 })));
+    });
+
+    experimentData.solids3 = [cone, cyl, sph];
+    experimentData.type = 'solids';
+    experimentData.steps = [
+        { title: 'Khối tròn xoay', desc: 'Hình tạo ra khi quay một hình phẳng quanh một trục cố định. Nón, trụ, cầu là ví dụ tiêu biểu.' },
+        { title: 'Hình nón', desc: 'Quay tam giác vuông quanh một cạnh góc vuông. V = (1/3)·π·r²·h.' },
+        { title: 'Hình trụ', desc: 'Quay hình chữ nhật quanh một cạnh. V = π·r²·h; diện tích xung quanh = 2π·r·h.' },
+        { title: 'Hình cầu', desc: 'Quay nửa hình tròn quanh đường kính. V = (4/3)·π·r³; diện tích mặt cầu = 4π·r².' },
+        { title: 'Ứng dụng', desc: 'Lon nước (trụ), nón lá (nón), quả bóng (cầu) — khối tròn xoay quanh ta khắp nơi.' },
+    ];
+}
+
+// ─ CHEMISTRY: Núi lửa baking soda ────────────────────────────────────────────
+function buildVolcanoScene() {
+    const y = 1.7;
+    const cone = new THREE.Mesh(new THREE.CylinderGeometry(.2, .95, 1.05, 40, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0x6b4423, roughness: .96, side: THREE.DoubleSide }));
+    cone.position.set(0, y + .52, 0); scene.add(cone);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(.2, .05, 12, 28),
+        new THREE.MeshStandardMaterial({ color: 0x4b2e16, roughness: 1 }));
+    rim.rotation.x = Math.PI / 2; rim.position.set(0, y + 1.05, 0); scene.add(rim);
+    const bottle = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .5, 16),
+        new THREE.MeshStandardMaterial({ color: 0xcbd5e1, transparent: true, opacity: .45 }));
+    bottle.position.set(0, y + .78, 0); scene.add(bottle);
+
+    const foamMat = new THREE.MeshStandardMaterial({ color: 0xffe4e6, emissive: 0xfecdd3, emissiveIntensity: .35, roughness: .6 });
+    const foam = [];
+    for (let i = 0; i < 70; i++) {
+        const p = new THREE.Mesh(new THREE.SphereGeometry(.04 + Math.random() * .05, 8, 8), foamMat.clone());
+        p.visible = false; p.position.set(0, y + 1.05, 0); scene.add(p);
+        foam.push({ mesh: p, vx: 0, vy: 0, vz: 0, life: 0 });
+    }
+    experimentData.foam = foam; experimentData.craterY = y + 1.05; experimentData.spawnTimer = 0;
+    experimentData.type = 'volcano';
+    experimentData.steps = [
+        { title: 'Phản ứng baking soda + giấm', desc: 'NaHCO₃ + CH₃COOH → giải phóng khí CO₂ làm hỗn hợp sủi bọt trào ra như dung nham.' },
+        { title: 'Khí CO₂', desc: 'Bọt khí carbon dioxide đẩy hỗn hợp (thường pha xà phòng và màu) trào lên khỏi miệng núi lửa.' },
+        { title: 'Phản ứng axit – bazơ', desc: 'Giấm (axit yếu) phản ứng với baking soda (bazơ) tạo muối, nước và khí CO₂.' },
+        { title: 'Vui học an toàn', desc: 'Thí nghiệm trực quan, an toàn — minh họa rõ khí sinh ra trong phản ứng hóa học.' },
+    ];
+}
+
 // ── Build the scene ───────────────────────────────────────────────────────────
 if      (SCENE_TYPE === 'titration')      buildTitrationScene();
 else if (SCENE_TYPE === 'electrolysis')   buildElectrolysisScene();
@@ -1808,6 +1967,10 @@ else if (SCENE_TYPE === 'dna')            buildDnaScene();
 else if (SCENE_TYPE === 'photosynthesis') buildPhotosynthesisScene();
 else if (SCENE_TYPE === 'polyhedron')     buildPolyhedronScene();
 else if (SCENE_TYPE === 'vectors')        buildVectorsScene();
+else if (SCENE_TYPE === 'circuit')        buildCircuitScene();
+else if (SCENE_TYPE === 'solar')          buildSolarScene();
+else if (SCENE_TYPE === 'solids')         buildSolidsScene();
+else if (SCENE_TYPE === 'volcano')        buildVolcanoScene();
 else buildCellScene();
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2873,6 +3036,54 @@ function animate() {
         const O  = experimentData.vecO;
         dataPanelTimer += dt;
         if (dataPanelTimer > .3) { dataPanelTimer = 0; updateDataPanel(); }
+    }
+
+    // ── Circuit: bóng đèn nhấp nháy nhẹ ──────────────────────────────────────
+    if (SCENE_TYPE === 'circuit' && experimentData.bulb) {
+        const on = experimentData.bulbOn !== false;
+        experimentData.bulb.material.emissiveIntensity = on ? 1.25 + Math.sin(now * 4) * .25 : 0;
+        if (experimentData.bulbLight) experimentData.bulbLight.intensity = on ? 1.0 + Math.sin(now * 4) * .25 : 0;
+    }
+
+    // ── Solar: hành tinh quay quanh Mặt Trời ─────────────────────────────────
+    if (SCENE_TYPE === 'solar' && experimentData.planets) {
+        const cy = experimentData.solarCy || 2.5;
+        if (experimentData.sun) experimentData.sun.rotation.y += dt * .3;
+        experimentData.planets.forEach(p => {
+            p.angle += dt * p.speed * .5;
+            p.mesh.position.set(Math.cos(p.angle) * p.dist, cy, Math.sin(p.angle) * p.dist);
+            p.mesh.rotation.y += dt;
+        });
+    }
+
+    // ── Solids: khối tròn xoay tự quay ───────────────────────────────────────
+    if (SCENE_TYPE === 'solids' && experimentData.solids3) {
+        experimentData.solids3.forEach((m, i) => { m.rotation.y += dt * (.5 + i * .12); });
+    }
+
+    // ── Volcano: phun bọt CO₂ ────────────────────────────────────────────────
+    if (SCENE_TYPE === 'volcano' && experimentData.foam) {
+        const cY = experimentData.craterY || 2.8;
+        experimentData.spawnTimer = (experimentData.spawnTimer || 0) - dt;
+        if (experimentData.spawnTimer <= 0) {
+            experimentData.spawnTimer = .05;
+            let spawned = 0;
+            for (const f of experimentData.foam) {
+                if (f.life <= 0 && spawned < 3) {
+                    f.life = 1.4 + Math.random() * 1.0;
+                    const ang = Math.random() * Math.PI * 2, sp = .12 + Math.random() * .12;
+                    f.vx = Math.cos(ang) * sp; f.vz = Math.sin(ang) * sp; f.vy = .9 + Math.random() * .7;
+                    f.mesh.position.set(0, cY, 0); f.mesh.visible = true; spawned++;
+                }
+            }
+        }
+        for (const f of experimentData.foam) {
+            if (f.life > 0) {
+                f.life -= dt; f.vy -= 2.2 * dt;
+                f.mesh.position.x += f.vx * dt; f.mesh.position.y += f.vy * dt; f.mesh.position.z += f.vz * dt;
+                if (f.life <= 0 || f.mesh.position.y < cY - 1.2) { f.life = 0; f.mesh.visible = false; }
+            }
+        }
     }
 
     // Rim light pulse

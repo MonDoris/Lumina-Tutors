@@ -14,6 +14,9 @@
         displayNo[row.SchoolId] = row.SchoolId == ownSchoolId ? 0 : ++seq;
 
     string CycleVi(string s) => s switch { "Monthly"=>"Tháng","Quarterly"=>"Quý","Yearly"=>"Năm", _=>s };
+    string OrderTypeVi(string t) => t switch { "New"=>"Đăng ký mới","Upgrade"=>"Đổi/Nâng gói","AddOn"=>"Mua thêm","Renewal"=>"Gia hạn", _=>t };
+    string OrderTypeCls(string t) => t switch { "New"=>"t-new","Upgrade"=>"t-up","Renewal"=>"t-ren","AddOn"=>"t-add", _=>"t-new" };
+    DateTime Vn(DateTime utc) => utc.AddHours(7);   // UTC → giờ Việt Nam (UTC+7)
     string StatusVi(string s) => s switch {
         "Active"=>"Đang hoạt động","PendingPayment"=>"Chờ thanh toán","Expired"=>"Hết hạn",
         "Cancelled"=>"Đã hủy","NotSubscribed"=>"Chưa đăng ký", _=>s };
@@ -21,13 +24,11 @@
           v >= 1_000_000_000m ? (v/1_000_000_000m).ToString("0.#") + " tỷ"
         : v >= 1_000_000m     ? (v/1_000_000m).ToString("0.#") + " tr"
         : v.ToString("N0");
-    string Initials(string name)
-    {
-        var parts = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 0) return "?";
-        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpperInvariant();
-        return (parts[0].Substring(0,1) + parts[^1].Substring(0,1)).ToUpperInvariant();
-    }
+
+    var viNow = DateTime.UtcNow.AddHours(7);
+    var viCulture = new System.Globalization.CultureInfo("vi-VN");
+    var dateLine = viNow.ToString("dddd, dd/MM/yyyy", viCulture);
+    dateLine = char.ToUpper(dateLine[0]) + dateLine.Substring(1);
 
     // ── Hình học biểu đồ vùng (area chart) ──
     System.Func<double,string> C = v => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
@@ -57,107 +58,137 @@
         {
             double gy = PT + plotH*g/4.0;
             decimal val = (decimal)(plotMax*(4-g)/4.0);
-            gGrid.Append($"<line x1=\"{C(PL)}\" y1=\"{C(gy)}\" x2=\"{C(W-PR)}\" y2=\"{C(gy)}\" stroke=\"#eef2f8\" stroke-width=\"1\"/>");
-            gGrid.Append($"<text x=\"{C(PL-10)}\" y=\"{C(gy+3)}\" text-anchor=\"end\" font-size=\"9.5\" fill=\"#9aa7bd\" font-family=\"JetBrains Mono,monospace\">{Money(val)}</text>");
+            gGrid.Append($"<line x1=\"{C(PL)}\" y1=\"{C(gy)}\" x2=\"{C(W-PR)}\" y2=\"{C(gy)}\" stroke=\"#E7E1D2\" stroke-width=\"1\"/>");
+            gGrid.Append($"<text x=\"{C(PL-10)}\" y=\"{C(gy+3)}\" text-anchor=\"end\" font-size=\"9.5\" fill=\"#8A8271\" font-family=\"JetBrains Mono,monospace\">{Money(val)}</text>");
         }
         var area = new System.Text.StringBuilder();
         area.Append($"M {C(xy[0].x)} {C(baseY)}");
         foreach (var p in xy) area.Append($" L {C(p.x)} {C(p.y)}");
         area.Append($" L {C(xy[n-1].x)} {C(baseY)} Z");
-        gArea.Append($"<path d=\"{area}\" fill=\"url(#sxArea)\"/>");
+        gArea.Append($"<path d=\"{area}\" fill=\"url(#ledHatch)\"/>");
 
         var line = new System.Text.StringBuilder();
         for (int i=0;i<n;i++) line.Append((i==0?"M ":" L ") + C(xy[i].x) + " " + C(xy[i].y));
-        gLine.Append($"<path d=\"{line}\" fill=\"none\" stroke=\"url(#sxLine)\" stroke-width=\"2.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/>");
+        gLine.Append($"<path d=\"{line}\" fill=\"none\" stroke=\"#2B2620\" stroke-width=\"1.8\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/>");
 
         for (int i=0;i<n;i++)
         {
             bool last = i==n-1;
-            double r = last ? 5 : 3;
-            gDots.Append($"<circle cx=\"{C(xy[i].x)}\" cy=\"{C(xy[i].y)}\" r=\"{C(r)}\" fill=\"#fff\" stroke=\"#34e3c6\" stroke-width=\"2\"><title>{pts[i].Label}: {pts[i].Amount.ToString("N0")}đ</title></circle>");
-            gDots.Append($"<text x=\"{C(xy[i].x)}\" y=\"{C(baseY+18)}\" text-anchor=\"middle\" font-size=\"9\" fill=\"#9aa7bd\" font-family=\"JetBrains Mono,monospace\">{pts[i].Label}</text>");
+            double r = last ? 4.5 : 3;
+            string fill = last ? "#C08A36" : "#FBF9F3";
+            gDots.Append($"<circle cx=\"{C(xy[i].x)}\" cy=\"{C(xy[i].y)}\" r=\"{C(r)}\" fill=\"{fill}\" stroke=\"#2B2620\" stroke-width=\"1.5\"><title>{pts[i].Label}: {pts[i].Amount.ToString("N0")}đ</title></circle>");
+            gDots.Append($"<text x=\"{C(xy[i].x)}\" y=\"{C(baseY+18)}\" text-anchor=\"middle\" font-size=\"9\" fill=\"#8A8271\" font-family=\"JetBrains Mono,monospace\">{pts[i].Label}</text>");
             if (pts[i].Amount>0 && last)
-                gDots.Append($"<text x=\"{C(xy[i].x)}\" y=\"{C(xy[i].y-12)}\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\" fill=\"#14233a\" font-family=\"JetBrains Mono,monospace\">{Money(pts[i].Amount)}</text>");
+                gDots.Append($"<text x=\"{C(xy[i].x)}\" y=\"{C(xy[i].y-12)}\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\" fill=\"#2B2620\" font-family=\"JetBrains Mono,monospace\">{Money(pts[i].Amount)}</text>");
         }
     }
 }
 
 @section Styles {
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-    <link rel="stylesheet" href="~/css/esell.css" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,500..900;1,9..144,500..700&family=JetBrains+Mono:wght@500;700&display=swap">
+    <link rel="stylesheet" href="~/css/esell-ledger.css" asp-append-version="true" />
 }
 
-<div class="sx">
+<div class="led">
+    <div class="led-sheet">
 
-    <!-- ══ HERO ══ -->
-    <section class="sx-hero" data-rise>
-        <div class="sx-hero__inner">
-            <div class="sx-hero__top">
-                <div>
-                    <span class="sx-eyebrow"><span class="dot"></span> Lumina Command · Chuyển đổi số giáo dục</span>
-                    <h1>Bảng điều khiển <span class="accent">E-Selling</span></h1>
-                    <p>Theo dõi doanh thu nền tảng, vận hành gói dịch vụ và đưa các trường lên hành trình số hoá.</p>
-                </div>
-                <div style="display:flex;gap:10px;flex-wrap:wrap">
-                    <a asp-action="Schools" class="sx-btn sx-btn--gold"><i class="bi bi-buildings"></i> Quản lý trường</a>
-                    <a asp-action="Catalog" class="sx-btn sx-btn--ghost"><i class="bi bi-box-seam"></i> Quản lý gói</a>
-                </div>
+        <!-- ══ MASTHEAD ══ -->
+        <header class="led-mast">
+            <div>
+                <span class="led-kicker">Lumina Tutors · E-Selling · Hệ thống</span>
+                <h1>Sổ điều hành E-Selling</h1>
+                <p class="led-mast__meta">@dateLine &nbsp;·&nbsp; <b>@Model.Rows.Count</b> trường trên nền tảng &nbsp;·&nbsp; kỳ ghi sổ tháng @viNow.ToString("MM/yyyy")</p>
             </div>
+            <div class="led-actions">
+                <a asp-action="Schools" class="led-btn led-btn--solid">Quản lý trường</a>
+                <a asp-action="Catalog" class="led-btn">Quản lý gói</a>
+            </div>
+        </header>
+        <div class="led-rule2"></div>
 
-            <div class="sx-kpis">
-                <div class="sx-kpi sx-kpi--gold">
-                    <div class="sx-kpi__ic"><i class="bi bi-cash-stack"></i></div>
-                    <div class="sx-kpi__label">Tổng doanh thu</div>
-                    <div class="sx-kpi__val mono">@rev.TotalRevenue.ToString("N0")<small>đ</small></div>
-                </div>
-                <div class="sx-kpi sx-kpi--aqua">
-                    <div class="sx-kpi__ic"><i class="bi bi-graph-up-arrow"></i></div>
-                    <div class="sx-kpi__label">Doanh thu tháng này</div>
-                    <div class="sx-kpi__val mono">@rev.ThisMonthRevenue.ToString("N0")<small>đ</small></div>
-                </div>
-                <div class="sx-kpi sx-kpi--indigo">
-                    <div class="sx-kpi__ic"><i class="bi bi-receipt"></i></div>
-                    <div class="sx-kpi__label">Đơn đã thanh toán</div>
-                    <div class="sx-kpi__val mono">@rev.PaidOrders</div>
-                </div>
-                <div class="sx-kpi sx-kpi--sky">
-                    <div class="sx-kpi__ic"><i class="bi bi-mortarboard-fill"></i></div>
-                    <div class="sx-kpi__label">Trường đang hoạt động</div>
-                    <div class="sx-kpi__val mono">@rev.ActiveSubscriptions</div>
-                </div>
+        <!-- ══ DẢI KPI ══ -->
+        <div class="led-kpis">
+            <div class="led-kpi">
+                <div class="led-kpi__label">Tổng doanh thu</div>
+                <div class="led-kpi__val">@rev.TotalRevenue.ToString("N0")<small>₫</small></div>
+                <div class="led-kpi__note">lũy kế toàn nền tảng</div>
+            </div>
+            <div class="led-kpi">
+                <div class="led-kpi__label">Doanh thu tháng này</div>
+                <div class="led-kpi__val">@rev.ThisMonthRevenue.ToString("N0")<small>₫</small></div>
+                <div class="led-kpi__note">tháng @viNow.ToString("MM/yyyy")</div>
+            </div>
+            <div class="led-kpi led-kpi--click" id="paidKpi" onclick="togglePaid()" title="Bấm để xem chi tiết đơn đã thanh toán">
+                <div class="led-kpi__label">Đơn đã thanh toán <span class="led-caret" id="paidCaret">▾</span></div>
+                <div class="led-kpi__val">@Model.PaidOrderList.Count</div>
+                <div class="led-kpi__note">bấm để xem chi tiết</div>
+            </div>
+            <div class="led-kpi">
+                <div class="led-kpi__label">Trường đang hoạt động</div>
+                <div class="led-kpi__val">@rev.ActiveSubscriptions</div>
+                <div class="led-kpi__note">gói còn hiệu lực</div>
             </div>
         </div>
-    </section>
 
-    <!-- ══ REVENUE CHART ══ -->
-    <div class="sx-card" style="margin-bottom:24px" data-rise>
-        <div class="sx-card__b">
-            <div class="sx-sec-head" style="margin-top:0">
-                <div>
-                    <h2 class="sx-sec-title"><span class="bar"></span> Doanh thu 12 tháng</h2>
-                    <p class="sx-sec-sub">Tổng hợp đơn gói &amp; add-on đã thanh toán</p>
-                </div>
-                <div class="sx-legend"><span class="k"><span class="sw"></span> Doanh thu / tháng</span></div>
+        @* ── Chi tiết đơn đã thanh toán (xổ ra khi bấm KPI) ──────────────── *@
+        <div id="paidPanel" style="display:none">
+            <div class="led-tablewrap">
+                <table class="led-table">
+                    <thead>
+                        <tr>
+                            <th>Trường</th>
+                            <th>Gói</th>
+                            <th>Loại</th>
+                            <th>Chu kỳ</th>
+                            <th class="r">Số tiền</th>
+                            <th>Kỳ hạn</th>
+                            <th>Ngày thanh toán</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.PaidOrderList.Count == 0)
+                        {
+                            <tr><td colspan="7" class="led-empty">— Chưa có đơn nào đã thanh toán —</td></tr>
+                        }
+                        @foreach (var o in Model.PaidOrderList)
+                        {
+                            <tr>
+                                <td class="led-nm">@o.SchoolName</td>
+                                <td><span class="led-plan">@o.PlanName</span></td>
+                                <td>@OrderTypeVi(o.OrderType)</td>
+                                <td>@CycleVi(o.Cycle)</td>
+                                <td class="mono r" style="font-weight:700">@o.Amount.ToString("N0")₫</td>
+                                <td class="led-dim mono">@o.PeriodStart.ToString("dd/MM/yy") – @o.PeriodEnd.ToString("dd/MM/yy")</td>
+                                <td class="led-dim mono">@(o.PaidAt.HasValue ? Vn(o.PaidAt.Value).ToString("HH:mm dd/MM/yy") : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ══ № 01 · DOANH THU 12 THÁNG ══ -->
+        <section class="led-sec">
+            <div class="led-sec__head">
+                <span class="led-no">№ 01</span>
+                <h2>Doanh thu 12 tháng</h2>
+                <span class="led-sec__sub">đơn gói &amp; add-on đã thanh toán</span>
+                <span class="led-sec__right">
+                    <span style="display:inline-block;width:14px;height:9px;margin-right:6px;vertical-align:baseline;background:repeating-linear-gradient(45deg,transparent 0 2px,#C08A36 2px 3.2px)"></span>doanh thu / tháng
+                </span>
             </div>
             @if (!hasData)
             {
-                <div class="sx-chart-empty">
-                    <i class="bi bi-bar-chart-line"></i>
-                    <p style="margin:10px 0 0">Chưa có doanh thu. Số liệu sẽ hiện khi các trường thanh toán gói.</p>
-                </div>
+                <div class="led-empty">— Chưa có doanh thu · số liệu sẽ hiện khi các trường thanh toán gói —</div>
             }
             else
             {
-                <svg viewBox="0 0 880 300" class="sx-chart" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Biểu đồ doanh thu 12 tháng">
+                <svg viewBox="0 0 880 300" class="led-chart" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Biểu đồ doanh thu 12 tháng">
                     <defs>
-                        <linearGradient id="sxArea" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#8a9bff" stop-opacity="0.30" />
-                            <stop offset="100%" stop-color="#34e3c6" stop-opacity="0.02" />
-                        </linearGradient>
-                        <linearGradient id="sxLine" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stop-color="#8a9bff" />
-                            <stop offset="100%" stop-color="#34e3c6" />
-                        </linearGradient>
+                        <pattern id="ledHatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                            <line x1="0" y1="0" x2="0" y2="6" stroke="#C08A36" stroke-width="1.1" stroke-opacity="0.4" />
+                        </pattern>
                     </defs>
                     @Html.Raw(gGrid.ToString())
                     @Html.Raw(gArea.ToString())
@@ -165,84 +196,157 @@
                     @Html.Raw(gDots.ToString())
                 </svg>
             }
-        </div>
-    </div>
+        </section>
 
-    <!-- ══ SCHOOLS TABLE ══ -->
-    <div class="sx-card" data-rise>
-        <div class="sx-card__b">
-            <div class="sx-sec-head" style="margin-top:0">
-                <h2 class="sx-sec-title"><span class="bar"></span> Các trường trên nền tảng</h2>
-                <span class="sx-pill sx-pill--info">@Model.Rows.Count trường</span>
+        <!-- ══ № 02 · CÁC TRƯỜNG TRÊN NỀN TẢNG ══ -->
+        <section class="led-sec">
+            <div class="led-sec__head">
+                <span class="led-no">№ 02</span>
+                <h2>Các trường trên nền tảng</h2>
+                <span class="led-sec__right">@Model.Rows.Count trường</span>
             </div>
-        </div>
-        <div class="sx-table-wrap">
-            <table class="sx-table">
-                <thead>
-                    <tr>
-                        <th style="padding-left:22px">Trường</th>
-                        <th>Gói</th>
-                        <th>Chu kỳ</th>
-                        <th>Tính năng</th>
-                        <th>Hiệu lực đến</th>
-                        <th>Thanh toán</th>
-                        <th style="padding-right:22px">Trạng thái</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Rows.Count == 0)
-                    {
-                        <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px">Chưa có trường nào.</td></tr>
-                    }
-                    @foreach (var s in Model.Rows)
-                    {
+            <div class="led-tablewrap">
+                <table class="led-table">
+                    <thead>
                         <tr>
-                            <td style="padding-left:22px">
-                                <div class="sx-school">
-                                    <div class="sx-ava">@Initials(s.SchoolName)</div>
-                                    <div>
-                                        <div class="nm">@s.SchoolName</div>
-                                        <div class="sub mono">ID: @displayNo[s.SchoolId].ToString("D3")</div>
-                                    </div>
-                                </div>
-                            </td>
-                            @if (!s.HasSubscription)
-                            {
-                                <td colspan="5" style="color:var(--muted);font-style:italic">Chưa đăng ký gói dịch vụ</td>
-                                <td style="padding-right:22px"><span class="sx-pill sx-pill--off"><i class="bi bi-dash-circle"></i> Chưa đăng ký</span></td>
-                            }
-                            else
-                            {
-                                <td><span class="sx-pill sx-pill--gold">@s.PlanName</span></td>
-                                <td>@CycleVi(s.BillingCycle)</td>
-                                <td><span class="sub" style="font-size:.82rem;color:var(--muted)">@(string.IsNullOrEmpty(s.AddOns) ? "—" : s.AddOns)</span></td>
-                                <td class="mono">@s.CurrentPeriodEnd.ToString("dd/MM/yyyy")</td>
-                                <td>
-                                    @if (s.AutoRenew)
-                                    {
-                                        <span class="sx-pill sx-pill--info"><i class="bi bi-arrow-repeat"></i> Định kỳ</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="sx-pill sx-pill--off"><i class="bi bi-1-circle"></i> Một lần</span>
-                                    }
-                                </td>
-                                <td style="padding-right:22px">
-                                    @if (s.IsActive)
-                                    {
-                                        <span class="sx-pill sx-pill--ok"><i class="bi bi-check-circle-fill"></i> @StatusVi(s.Status)</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="sx-pill sx-pill--danger"><i class="bi bi-exclamation-circle"></i> @StatusVi(s.Status)</span>
-                                    }
-                                </td>
-                            }
+                            <th>Số</th>
+                            <th>Trường</th>
+                            <th>Gói</th>
+                            <th>Chu kỳ</th>
+                            <th>Tính năng</th>
+                            <th>Hiệu lực đến</th>
+                            <th>Gia hạn</th>
+                            <th>Trạng thái</th>
+                            <th class="r">Điều chỉnh</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
+                    </thead>
+                    <tbody>
+                        @if (Model.Rows.Count == 0)
+                        {
+                            <tr><td colspan="9" class="led-empty">— Chưa có trường nào —</td></tr>
+                        }
+                        @foreach (var s in Model.Rows.OrderBy(x => displayNo[x.SchoolId]))
+                        {
+                            <tr>
+                                <td class="mono led-dim">@displayNo[s.SchoolId].ToString("D3")</td>
+                                <td class="led-nm">@s.SchoolName</td>
+                                @if (!s.HasSubscription)
+                                {
+                                    <td colspan="5" class="led-ital">Chưa đăng ký gói dịch vụ</td>
+                                    <td><span class="led-status off">Chưa đăng ký</span></td>
+                                }
+                                else
+                                {
+                                    <td><span class="led-plan">@s.PlanName</span></td>
+                                    <td>@CycleVi(s.BillingCycle)</td>
+                                    <td class="led-dim">@(string.IsNullOrEmpty(s.AddOns) ? "—" : s.AddOns)</td>
+                                    <td class="mono">@s.CurrentPeriodEnd.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (s.AutoRenew)
+                                        {
+                                            <span class="led-status info">Định kỳ</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="led-status off">Một lần</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (s.IsActive)
+                                        {
+                                            <span class="led-status ok">@StatusVi(s.Status)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="led-status danger">@StatusVi(s.Status)</span>
+                                        }
+                                    </td>
+                                }
+                                <td class="r" style="white-space:nowrap">
+                                    <button type="button" class="led-btn led-btn--xs" onclick="toggleAdj(@s.SchoolId)">Điều chỉnh</button>
+                                </td>
+                            </tr>
+                            <tr id="adj-@s.SchoolId" style="display:none">
+                                <td colspan="9" class="led-adjcell">
+                                    <div class="led-adj">
+                                        <div class="led-adj__box">
+                                            <p class="led-adj__title">Điều chỉnh gói</p>
+                                            <form asp-action="AdminChangePlan" method="post"
+                                                  onsubmit="return confirm('Áp dụng gói mới cho trường @s.SchoolName ngay bây giờ?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="schoolId" value="@s.SchoolId" />
+                                                <div class="led-fields">
+                                                    <div class="led-field">
+                                                        <label>Gói</label>
+                                                        <select name="planId" class="lt-select">
+                                                            @foreach (var p in Model.Plans)
+                                                            {
+                                                                <option value="@p.PlanId" selected="@(s.CurrentPlanId == p.PlanId)">@p.Name</option>
+                                                            }
+                                                        </select>
+                                                    </div>
+                                                    <div class="led-field">
+                                                        <label>Chu kỳ</label>
+                                                        <select name="cycle" class="lt-select">
+                                                            <option value="Monthly" selected="@(s.BillingCycle == "Monthly")">Tháng</option>
+                                                            <option value="Quarterly" selected="@(s.BillingCycle == "Quarterly")">Quý</option>
+                                                            <option value="Yearly" selected="@(s.BillingCycle == "Yearly" || string.IsNullOrEmpty(s.BillingCycle))">Năm</option>
+                                                        </select>
+                                                    </div>
+                                                    <label class="led-renew"><input type="checkbox" name="autoRenew" value="true" @(!s.HasSubscription || s.AutoRenew ? "checked" : "") /> Tự gia hạn</label>
+                                                    <button type="submit" class="led-btn led-btn--bronze led-btn--xs">Áp dụng</button>
+                                                </div>
+                                                <p class="led-hint">Kích hoạt ngay, hiệu lực 1 kỳ tính từ hôm nay; được ghi vào lịch sử bên cạnh.</p>
+                                            </form>
+                                        </div>
+                                        <div class="led-adj__box">
+                                            <p class="led-adj__title">Lịch sử thay đổi gói</p>
+                                            @if (s.History.Count == 0)
+                                            {
+                                                <div class="led-noevt">Chưa có thay đổi nào.</div>
+                                            }
+                                            else
+                                            {
+                                                <div class="led-timeline">
+                                                    @foreach (var h in s.History)
+                                                    {
+                                                        <div class="led-evt">
+                                                            <span class="led-evt__type @OrderTypeCls(h.OrderType)">@OrderTypeVi(h.OrderType)</span>
+                                                            <span class="led-evt__main">@(h.PlanName != "—" ? $"{h.PlanName} · " : "")@CycleVi(h.Cycle)</span>
+                                                            <span class="led-evt__time">@Vn(h.At).ToString("HH:mm dd/MM/yy")</span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
+        <!-- ══ COLOPHON ══ -->
+        <footer class="led-colo">
+            <span>Lumina Tutors · Sổ điều hành hệ thống — SYSADMIN</span>
+            <span>In lúc @viNow.ToString("HH:mm") · @viNow.ToString("dd/MM/yyyy")</span>
+        </footer>
+
+    </div>
 </div>
+
+<script>
+    function toggleAdj(id) {
+        var r = document.getElementById('adj-' + id);
+        if (r) r.style.display = (r.style.display === 'table-row') ? 'none' : 'table-row';
+    }
+    function togglePaid() {
+        var p = document.getElementById('paidPanel'), c = document.getElementById('paidCaret');
+        if (!p) return;
+        var open = p.style.display === 'none';
+        p.style.display = open ? 'block' : 'none';
+        if (c) c.style.transform = open ? 'rotate(180deg)' : '';
+    }
+</script>

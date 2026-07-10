@@ -95,7 +95,7 @@ ASP.NET Core MVC. Contains:
 
 ## Configuration
 
-- Connection string name: `LuminaTutorsDb` (production) / LocalDB in `appsettings.Development.json`
+- Connection string name: `LuminaTutorsDb`. Development (`appsettings.Development.json`) points to local SQL Server Express: `Server=.\SQLEXPRESS;Database=LuminaTutorsDB_Dev`
 - JWT secret is a placeholder — must be replaced before production deployment
 - File uploads land in `wwwroot/uploads`, max 50 MB
 - QR attendance tokens expire in 10 minutes; invite links expire in 3 days

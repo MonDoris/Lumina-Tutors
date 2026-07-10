@@ -18,19 +18,22 @@ public sealed class AuthService : IAuthService
     private readonly IPasswordHasher<User>     _hasher;
     private readonly IConfiguration            _config;
     private readonly ILogger<AuthService>      _logger;
+    private readonly IQuotaService             _quota;
 
     public AuthService(
         IUnitOfWork uow,
         IMapper mapper,
         IPasswordHasher<User> hasher,
         IConfiguration config,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IQuotaService quota)
     {
         _uow    = uow;
         _mapper = mapper;
         _hasher = hasher;
         _config = config;
         _logger = logger;
+        _quota  = quota;
     }
 
     // ─── Login ───────────────────────────────────────────────────────────────
@@ -45,11 +48,11 @@ public sealed class AuthService : IAuthService
         var user = users.FirstOrDefault();
 
         if (user is null || !user.IsActive)
-            return Result<LoginResponse>.Failure("AUTH_INVALID", "Email hoặc mật khẩu không chính xác.");
+            return Result<LoginResponse>.Failure("Email hoặc mật khẩu không chính xác.", "AUTH_INVALID");
 
         var verifyResult = _hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (verifyResult == PasswordVerificationResult.Failed)
-            return Result<LoginResponse>.Failure("AUTH_INVALID", "Email hoặc mật khẩu không chính xác.");
+            return Result<LoginResponse>.Failure("Email hoặc mật khẩu không chính xác.", "AUTH_INVALID");
 
         // Update last login
         user.LastLoginAt = DateTime.UtcNow;
@@ -81,7 +84,7 @@ public sealed class AuthService : IAuthService
 
         var user = users.FirstOrDefault();
         if (user is null)
-            return Result<CurrentUserDto>.Failure("NOT_FOUND", "Người dùng không tồn tại.");
+            return Result<CurrentUserDto>.Failure("Người dùng không tồn tại.", "NOT_FOUND");
 
         var dto = new CurrentUserDto(
             UserId:    user.Id,
@@ -102,15 +105,15 @@ public sealed class AuthService : IAuthService
     public async Task<Result> ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken ct = default)
     {
         if (request.NewPassword != request.ConfirmNewPassword)
-            return Result.Failure("PASS_MISMATCH", "Mật khẩu xác nhận không khớp.");
+            return Result.Failure("Mật khẩu xác nhận không khớp.", "PASS_MISMATCH");
 
         var user = await _uow.Users.GetByIdAsync(userId, ct);
         if (user is null)
-            return Result.Failure("NOT_FOUND", "Người dùng không tồn tại.");
+            return Result.Failure("Người dùng không tồn tại.", "NOT_FOUND");
 
         var verify = _hasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword);
         if (verify == PasswordVerificationResult.Failed)
-            return Result.Failure("AUTH_INVALID", "Mật khẩu hiện tại không đúng.");
+            return Result.Failure("Mật khẩu hiện tại không đúng.", "AUTH_INVALID");
 
         user.PasswordHash = _hasher.HashPassword(user, request.NewPassword);
         await _uow.SaveChangesAsync(ct);
@@ -148,7 +151,7 @@ public sealed class AuthService : IAuthService
     {
         var role = await _uow.Roles.GetByIdAsync(request.TargetRoleId, ct);
         if (role is null)
-            return Result<InviteLinkDto>.Failure("NOT_FOUND", "Vai trò không hợp lệ.");
+            return Result<InviteLinkDto>.Failure("Vai trò không hợp lệ.", "NOT_FOUND");
 
         int expiryHours = request.ExpiryHours > 0 ? request.ExpiryHours : 72;
 
@@ -190,10 +193,10 @@ public sealed class AuthService : IAuthService
 
         var invite = invites.FirstOrDefault();
         if (invite is null)
-            return Result<InviteLinkDto>.Failure("NOT_FOUND", "Liên kết không tồn tại.");
+            return Result<InviteLinkDto>.Failure("Liên kết không tồn tại.", "NOT_FOUND");
 
         if (!invite.IsValid)
-            return Result<InviteLinkDto>.Failure("INVITE_INVALID", "Liên kết đã hết hạn hoặc đã được sử dụng.");
+            return Result<InviteLinkDto>.Failure("Liên kết đã hết hạn hoặc đã được sử dụng.", "INVITE_INVALID");
 
         return Result<InviteLinkDto>.Success(MapInviteLinkDto(invite));
     }
@@ -203,7 +206,7 @@ public sealed class AuthService : IAuthService
     public async Task<Result<LoginResponse>> ActivateInviteAsync(ActivateInviteRequest request, CancellationToken ct = default)
     {
         if (request.Password != request.ConfirmPassword)
-            return Result<LoginResponse>.Failure("PASS_MISMATCH", "Mật khẩu xác nhận không khớp.");
+            return Result<LoginResponse>.Failure("Mật khẩu xác nhận không khớp.", "PASS_MISMATCH");
 
         var invites = await _uow.InviteLinks.FindAsync(
             i => i.Token == request.Token,
@@ -213,7 +216,17 @@ public sealed class AuthService : IAuthService
 
         var invite = invites.FirstOrDefault();
         if (invite is null || !invite.IsValid)
-            return Result<LoginResponse>.Failure("INVITE_INVALID", "Liên kết không hợp lệ hoặc đã hết hạn.");
+            return Result<LoginResponse>.Failure("Liên kết không hợp lệ hoặc đã hết hạn.", "INVITE_INVALID");
+
+        // Kiểm tra giới hạn tài khoản theo gói trước khi kích hoạt lời mời (chặn vượt quota qua invite)
+        if (Enum.TryParse<Domain.Enums.RoleCode>(invite.TargetRole?.RoleCode, ignoreCase: true, out var inviteRole))
+        {
+            var quotaCheck = await _quota.CanAddUserAsync(invite.SchoolId, inviteRole, ct);
+            if (!quotaCheck.IsSuccess)
+                return Result<LoginResponse>.Failure(
+                    quotaCheck.Error ?? "Đã quá số lượng tài khoản cho phép của gói.",
+                    quotaCheck.ErrorCode ?? "QUOTA_EXCEEDED");
+        }
 
         // Email đăng nhập = phần tên + đuôi cố định theo vai trò trên domain gốc của trường
         var schoolAdmin = (await _uow.Users.FindAsync(
@@ -230,7 +243,7 @@ public sealed class AuthService : IAuthService
                 ct: ct);
 
             if (existing.Any())
-                return Result<LoginResponse>.Failure("EMAIL_EXISTS", "Email đã được sử dụng trong trường này.");
+                return Result<LoginResponse>.Failure("Email đã được sử dụng trong trường này.", "EMAIL_EXISTS");
         }
 
         await _uow.BeginTransactionAsync(ct);
@@ -279,7 +292,7 @@ public sealed class AuthService : IAuthService
         {
             await _uow.RollbackTransactionAsync(ct);
             _logger.LogError(ex, "ActivateInvite failed for token {Token}", request.Token);
-            return Result<LoginResponse>.Failure("INTERNAL_ERROR", "Có lỗi xảy ra. Vui lòng thử lại.");
+            return Result<LoginResponse>.Failure("Có lỗi xảy ra. Vui lòng thử lại.", "INTERNAL_ERROR");
         }
     }
 
@@ -308,10 +321,10 @@ public sealed class AuthService : IAuthService
     {
         var invite = await _uow.InviteLinks.GetByIdAsync(inviteId, ct);
         if (invite is null)
-            return Result.Failure("NOT_FOUND", "Liên kết không tồn tại.");
+            return Result.Failure("Liên kết không tồn tại.", "NOT_FOUND");
 
         if (invite.IsUsed)
-            return Result.Failure("INVITE_USED", "Liên kết đã được sử dụng, không thể thu hồi.");
+            return Result.Failure("Liên kết đã được sử dụng, không thể thu hồi.", "INVITE_USED");
 
         invite.IsRevoked = true;
         await _uow.SaveChangesAsync(ct);
@@ -326,7 +339,7 @@ public sealed class AuthService : IAuthService
     {
         var normalized = NormalizePhone(phoneNumber);
         if (normalized.Length < 9)
-            return Result<string>.Failure("INVALID_PHONE", "Số điện thoại không hợp lệ (tối thiểu 9 chữ số).");
+            return Result<string>.Failure("Số điện thoại không hợp lệ (tối thiểu 9 chữ số).", "INVALID_PHONE");
 
         var users = await _uow.Users.FindAsync(
             u => u.PhoneNumber == normalized && u.IsActive,
@@ -334,7 +347,7 @@ public sealed class AuthService : IAuthService
 
         var user = users.FirstOrDefault();
         if (user is null)
-            return Result<string>.Failure("NOT_FOUND", "Không tìm thấy tài khoản với số điện thoại này.");
+            return Result<string>.Failure("Không tìm thấy tài khoản với số điện thoại này.", "NOT_FOUND");
 
         return Result<string>.Success(MaskPhone(normalized));
     }
@@ -350,7 +363,7 @@ public sealed class AuthService : IAuthService
 
         var user = users.FirstOrDefault();
         if (user is null)
-            return Result.Failure("NOT_FOUND", "Tài khoản không tồn tại.");
+            return Result.Failure("Tài khoản không tồn tại.", "NOT_FOUND");
 
         user.PasswordHash = _hasher.HashPassword(user, newPassword);
         await _uow.SaveChangesAsync(ct);

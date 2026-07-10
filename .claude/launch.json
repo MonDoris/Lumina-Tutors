@@ -6,6 +6,18 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "src/LuminaTutors.Web", "--no-launch-profile", "--", "--urls=http://localhost:60481", "--environment=Development"],
       "port": 60481
+    },
+    {
+      "name": "lumina-sysadmin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "lumina-sysadmin", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "landing",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "landing", "-l", "3999"],
+      "port": 3999
     }
   ]
 }

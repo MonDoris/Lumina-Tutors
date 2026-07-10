@@ -119,6 +119,8 @@ public interface IUnitOfWork : IDisposable
     IRepository<SchoolSubscriptionAddOn> SchoolSubscriptionAddOns { get; }
     IRepository<SubscriptionOrder>       SubscriptionOrders       { get; }
     IRepository<SubscriptionOrderItem>   SubscriptionOrderItems   { get; }
+    IRepository<RoleQuotaAddOn>          RoleQuotaAddOns          { get; }
+    IRepository<SchoolRoleQuotaAddOn>    SchoolRoleQuotaAddOns    { get; }
 
     // ── Transaction ───────────────────────────────────────────────────────────
     Task<int> SaveChangesAsync(CancellationToken ct = default);
@@ -135,4 +137,10 @@ public interface IUnitOfWork : IDisposable
 
     // ── Stored Procedures ─────────────────────────────────────────────────────
     Task<int> ExecuteStoredProcedureAsync(string spName, object? parameters = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Thực thi câu lệnh SQL thô. CHỈ dùng nội bộ với SQL do hệ thống dựng (không nhận chuỗi
+    /// từ người dùng) — ví dụ xóa cascade toàn bộ dữ liệu một trường.
+    /// </summary>
+    Task<int> ExecuteRawSqlAsync(string sql, CancellationToken ct = default);
 }

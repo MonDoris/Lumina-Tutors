@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuminaEdu — Học tập văn hóa Việt Nam</title>
+<meta name="description" content="Hệ thống giáo dục trực tuyến hàng đầu, kết hợp công nghệ hiện đại với bản sắc truyền thống Việt Nam.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal-950:#082A2B;
+  --teal-900:#0E3E40;
+  --teal-800:#124B4D;
+  --teal-700:#17595C;
+  --teal-600:#1E6E72;
+  --teal-100:#D7EAE6;
+  --mint:#E9F4F1;
+  --mint-light:#F5FAF8;
+  --orange:#F18F2C;
+  --orange-dark:#D97917;
+  --bronze-900:#4E3E16;
+  --bronze-700:#6B531F;
+  --bronze-500:#97742E;
+  --bronze-300:#C7A45A;
+  --cream:#F7EFDD;
+  --ink:#1E2D2B;
+  --ink-soft:#4C605D;
+  --pink:#E489A6;
+  --pink-light:#F6C6D5;
+  --font-display:'Anton',sans-serif;
+  --font-body:'Be Vietnam Pro',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);color:var(--ink);background:var(--mint-light);line-height:1.65;overflow-x:hidden}
+img,svg{display:block}
+a{text-decoration:none;color:inherit}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+
+/* ============ HEADER ============ */
+.site-header{position:sticky;top:0;z-index:50;background:linear-gradient(90deg,var(--teal-950),var(--teal-800));transition:box-shadow .3s}
+.site-header.scrolled{box-shadow:0 6px 24px rgba(8,42,43,.35)}
+.nav-wrap{display:flex;align-items:center;gap:32px;height:76px}
+.brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.brand-name{color:#F3E9CF;font-weight:700;font-size:19px;letter-spacing:.5px}
+.brand-name small{display:block;font-weight:400;font-size:11px;color:#9CC3BC;letter-spacing:2.5px;text-transform:uppercase}
+.main-nav{display:flex;gap:6px;margin-left:auto}
+.main-nav a{color:#DCEDE8;font-size:14.5px;font-weight:600;letter-spacing:.8px;padding:10px 14px;border-radius:8px;transition:background .2s,color .2s;text-transform:uppercase}
+.main-nav a:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-body);font-weight:700;font-size:15px;letter-spacing:.6px;padding:14px 28px;border-radius:12px;border:0;cursor:pointer;transition:transform .2s,box-shadow .2s,background .2s;text-transform:uppercase}
+.btn-orange{background:var(--orange);color:#fff;box-shadow:0 8px 20px rgba(241,143,44,.35)}
+.btn-orange:hover{background:var(--orange-dark);transform:translateY(-2px);box-shadow:0 12px 26px rgba(241,143,44,.45)}
+.btn-ghost{background:transparent;color:var(--teal-800);border:2px solid var(--teal-600)}
+.btn-ghost:hover{background:var(--teal-600);color:#fff}
+.nav-cta{padding:11px 22px;font-size:13.5px;flex-shrink:0}
+.nav-toggle{display:none;background:none;border:0;color:#F3E9CF;font-size:26px;cursor:pointer}
+
+/* ============ HERO ============ */
+.hero{position:relative;background:linear-gradient(160deg,#EDF6F3 0%,#E3F0EC 45%,#D9EBE9 100%);overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 900px 500px at 72% 42%,rgba(255,255,255,.9),transparent 60%);pointer-events:none}
+.hero-grid{position:relative;display:grid;grid-template-columns:1.02fr 1fr;gap:24px;align-items:center;padding:64px 0 72px;min-height:640px}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--teal-600);margin-bottom:18px}
+.eyebrow::before{content:"";width:34px;height:2px;background:var(--orange)}
+.hero h1{font-family:var(--font-display);font-weight:400;font-size:clamp(46px,5.6vw,78px);line-height:1.04;letter-spacing:1px;color:var(--teal-900);text-transform:uppercase;margin-bottom:22px}
+.hero h1 .accent{color:var(--orange);position:relative;white-space:nowrap}
+.hero h1 .accent::after{content:"";position:absolute;left:0;right:0;bottom:6px;height:10px;background:rgba(241,143,44,.22);z-index:-1}
+.hero-sub{font-size:17.5px;color:var(--ink-soft);max-width:480px;margin-bottom:30px}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:44px}
+
+/* featured mini card */
+.featured{background:rgba(255,255,255,.75);backdrop-filter:blur(8px);border:1px solid rgba(23,89,92,.14);border-radius:18px;padding:20px 22px;max-width:470px;box-shadow:0 18px 40px rgba(14,62,64,.1)}
+.featured h3{font-size:13.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--teal-800);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.featured h3 svg{flex-shrink:0}
+.featured-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.mini-course{background:#fff;border:1px solid #E2ECE8;border-radius:12px;padding:10px;text-align:center;transition:transform .2s,box-shadow .2s;cursor:pointer}
+.mini-course:hover{transform:translateY(-4px);box-shadow:0 10px 22px rgba(14,62,64,.14)}
+.mini-thumb{height:58px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.mini-course span{font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--teal-900);text-transform:uppercase}
+
+/* ============ HERO ART ============ */
+.hero-art{position:relative;height:600px}
+.glow{position:absolute;top:50%;left:50%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(201,168,92,.28) 0%,rgba(201,168,92,.08) 45%,transparent 70%);border-radius:50%}
+.drum-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);width:min(420px,80%)}
+.drum-wrap svg{width:100%;height:auto}
+.orbit{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);width:540px;height:540px;pointer-events:none}
+.orbit ellipse{animation:dashmove 9s linear infinite}
+@keyframes dashmove{to{stroke-dashoffset:-700}}
+.chip{position:absolute;background:#fff;border:1px solid #E2ECE8;border-radius:16px;padding:12px;box-shadow:0 12px 28px rgba(14,62,64,.14);animation:floaty 5.5s ease-in-out infinite}
+.chip svg{width:52px;height:52px}
+.chip-label{position:absolute;left:50%;transform:translateX(-50%);bottom:-24px;background:var(--teal-900);color:#DCEDE8;font-size:10.5px;font-weight:600;letter-spacing:1px;padding:3px 10px;border-radius:20px;white-space:nowrap;opacity:0;transition:opacity .25s}
+.chip:hover .chip-label{opacity:1}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.chip.c1{top:5%;left:4%;animation-delay:0s}
+.chip.c2{top:0%;left:46%;animation-delay:.8s}
+.chip.c3{top:11%;right:2%;animation-delay:1.6s}
+.chip.c4{bottom:24%;right:0%;animation-delay:2.4s}
+.chip.c5{bottom:20%;left:1%;animation-delay:3.2s}
+.chip.c6{bottom:2%;right:26%;animation-delay:4s}
+
+/* ============ STATS ============ */
+.stats{background:linear-gradient(90deg,var(--teal-950),var(--teal-800));padding:44px 0}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center}
+.stat b{display:block;font-family:var(--font-display);font-weight:400;font-size:44px;letter-spacing:1px;color:var(--bronze-300)}
+.stat span{font-size:14px;color:#B7D4CD;font-weight:500}
+
+/* ============ SECTIONS ============ */
+.section{padding:88px 0}
+.section-head{text-align:center;max-width:640px;margin:0 auto 52px}
+.section-head .lotus-divider{margin:0 auto 14px;width:64px}
+.section-head h2{font-family:var(--font-display);font-weight:400;font-size:clamp(30px,3.4vw,44px);letter-spacing:1px;color:var(--teal-900);text-transform:uppercase;margin-bottom:12px}
+.section-head p{color:var(--ink-soft);font-size:16.5px}
+
+/* course cards */
+.course-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.course-card{background:#fff;border:1px solid #E2ECE8;border-radius:18px;overflow:hidden;transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column}
+.course-card:hover{transform:translateY(-8px);box-shadow:0 22px 44px rgba(14,62,64,.16)}
+.course-visual{height:150px;display:flex;align-items:center;justify-content:center;position:relative}
+.course-tag{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.92);color:var(--teal-800);font-size:11.5px;font-weight:700;letter-spacing:1px;padding:4px 12px;border-radius:20px;text-transform:uppercase}
+.course-body{padding:20px 22px 22px;display:flex;flex-direction:column;flex:1}
+.course-body h3{font-size:18.5px;font-weight:700;color:var(--teal-900);margin-bottom:8px}
+.course-body p{font-size:14px;color:var(--ink-soft);margin-bottom:16px;flex:1}
+.course-meta{display:flex;gap:16px;font-size:13px;color:var(--ink-soft);border-top:1px dashed #DCE8E4;padding-top:14px}
+.course-meta b{color:var(--orange);font-weight:700}
+
+/* teachers */
+.teachers{background:var(--mint)}
+.teacher-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.teacher-card{background:#fff;border:1px solid #E2ECE8;border-radius:18px;padding:28px 20px;text-align:center;transition:transform .25s,box-shadow .25s}
+.teacher-card:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(14,62,64,.14)}
+.avatar{width:78px;height:78px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:26px;color:#fff;letter-spacing:1px;border:3px double var(--bronze-300)}
+.teacher-card h3{font-size:16.5px;font-weight:700;color:var(--teal-900)}
+.teacher-card em{display:block;font-style:normal;font-size:13px;color:var(--orange);font-weight:600;margin:4px 0 10px}
+.teacher-card p{font-size:13px;color:var(--ink-soft)}
+
+/* events */
+.event-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.event-card{background:#fff;border:1px solid #E2ECE8;border-radius:18px;padding:24px;display:flex;gap:18px;align-items:flex-start;transition:transform .25s,box-shadow .25s}
+.event-card:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(14,62,64,.14)}
+.date-badge{flex-shrink:0;width:64px;border-radius:12px;background:var(--teal-900);color:#F3E9CF;text-align:center;padding:10px 6px}
+.date-badge b{display:block;font-family:var(--font-display);font-size:24px;font-weight:400}
+.date-badge span{font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.date-badge small{display:block;font-size:9.5px;color:#9CC3BC;margin-top:3px}
+.event-card h3{font-size:16px;font-weight:700;color:var(--teal-900);margin-bottom:6px}
+.event-card p{font-size:13.5px;color:var(--ink-soft)}
+
+/* CTA */
+.cta{position:relative;background:linear-gradient(120deg,var(--teal-950),var(--teal-700));overflow:hidden}
+.cta-rings{position:absolute;right:-120px;top:50%;transform:translateY(-50%);opacity:.14}
+.cta-rings2{position:absolute;left:-140px;bottom:-140px;opacity:.1}
+.cta-inner{position:relative;text-align:center;padding:88px 24px}
+.cta-inner h2{font-family:var(--font-display);font-weight:400;font-size:clamp(30px,3.6vw,46px);color:#F3E9CF;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.cta-inner p{color:#B7D4CD;font-size:16.5px;max-width:520px;margin:0 auto 30px}
+
+/* footer */
+.site-footer{background:var(--teal-950);color:#9CC3BC;padding:56px 0 28px}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:36px;margin-bottom:40px}
+.footer-grid h4{color:#F3E9CF;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+.footer-grid a{display:block;font-size:14px;padding:4px 0;transition:color .2s}
+.footer-grid a:hover{color:#fff}
+.footer-brand p{font-size:13.5px;margin-top:12px;max-width:280px}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.12);padding-top:22px;display:flex;justify-content:space-between;gap:12px;font-size:13px;flex-wrap:wrap}
+
+/* reveal on scroll */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+.hero .reveal{transition-delay:calc(var(--d,0)*90ms)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+@media (max-width:1024px){
+  .main-nav{display:none}
+  .nav-toggle{display:block;margin-left:auto}
+  .nav-cta{margin-left:0}
+  .hero-grid{grid-template-columns:1fr;padding-top:48px}
+  .hero-art{height:520px;order:-1;margin-top:8px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .course-grid,.event-grid{grid-template-columns:repeat(2,1fr)}
+  .teacher-grid{grid-template-columns:repeat(2,1fr)}
+  .footer-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:640px){
+  .course-grid,.event-grid,.teacher-grid,.featured-row{grid-template-columns:1fr}
+  .hero-art{height:430px}
+  .orbit{width:400px;height:400px}
+  .chip svg{width:40px;height:40px}
+  .hero h1{font-size:44px}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header" id="top">
+  <div class="container nav-wrap">
+    <a class="brand" href="#top" aria-label="LuminaEdu — trang chủ">
+      <svg width="46" height="46" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="hatG" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#E9CB84"/><stop offset="1" stop-color="#B98A3D"/>
+          </linearGradient>
+        </defs>
+        <path d="M32,6 L55,33 Q32,42 9,33 Z" fill="url(#hatG)"/>
+        <path d="M9,33 Q32,42 55,33 Q32,47 9,33 Z" fill="#8A6B2F"/>
+        <polygon points="32,16 33.8,20.4 38.5,20.6 34.9,23.5 36.1,28 32,25.4 27.9,28 29.1,23.5 25.5,20.6 30.2,20.4" fill="#C43C2E"/>
+        <path d="M8,46 Q20,40 32,46 Q44,40 56,46 L56,56 Q44,50 32,56 Q20,50 8,56 Z" fill="#F7EFDD" stroke="#B98A3D" stroke-width="1.6"/>
+        <line x1="32" y1="46" x2="32" y2="56" stroke="#B98A3D" stroke-width="1.6"/>
+      </svg>
+      <span class="brand-name">LuminaEdu<small>Văn hóa Việt Nam</small></span>
+    </a>
+    <nav class="main-nav" aria-label="Điều hướng chính">
+      <a href="#khoa-hoc">Khóa học</a>
+      <a href="#giang-vien">Giảng viên</a>
+      <a href="#tai-lieu">Tài liệu</a>
+      <a href="#su-kien">Sự kiện</a>
+      <a href="#tuyen-sinh">Tuyển sinh</a>
+    </nav>
+    <button class="nav-toggle" aria-label="Mở menu"><span aria-hidden="true">☰</span></button>
+    <a href="#tuyen-sinh" class="btn btn-orange nav-cta">Đăng nhập / Đăng ký</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <p class="eyebrow reveal" style="--d:0">Nền tảng học trực tuyến</p>
+      <h1 class="reveal" style="--d:1">Học tập văn hóa<br><span class="accent">Việt Nam</span></h1>
+      <p class="hero-sub reveal" style="--d:2">Hệ thống giáo dục trực tuyến hàng đầu, kết hợp công nghệ hiện đại với bản sắc truyền thống.</p>
+      <div class="hero-actions reveal" style="--d:3">
+        <a href="#tuyen-sinh" class="btn btn-orange">Bắt đầu ngay</a>
+        <a href="#khoa-hoc" class="btn btn-ghost">Xem khóa học</a>
+      </div>
+      <div class="featured reveal" style="--d:4">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F18F2C" stroke-width="2.4" aria-hidden="true"><polygon points="12,2 14.6,8.6 21.6,9 16.2,13.5 18,20.4 12,16.6 6,20.4 7.8,13.5 2.4,9 9.4,8.6" stroke-linejoin="round"/></svg>
+          Khóa học nổi bật
+        </h3>
+        <div class="featured-row">
+          <a class="mini-course" href="#khoa-hoc">
+            <div class="mini-thumb" style="background:linear-gradient(135deg,#0E3E40,#1E6E72)">
+              <svg width="34" height="34" viewBox="-30 -30 60 60" aria-hidden="true"><g fill="none" stroke="#C7A45A" stroke-width="1.6"><circle r="26"/><circle r="18" stroke-dasharray="3 3"/></g><polygon fill="#C7A45A" points="12,0 4.8,1.3 10.4,6 3.5,3.5 6,10.4 1.3,4.8 0,12 -1.3,4.8 -6,10.4 -3.5,3.5 -10.4,6 -4.8,1.3 -12,0 -4.8,-1.3 -10.4,-6 -3.5,-3.5 -6,-10.4 -1.3,-4.8 0,-12 1.3,-4.8 6,-10.4 3.5,-3.5 10.4,-6 4.8,-1.3"/></svg>
+            </div><span>Lịch sử VN</span>
+          </a>
+          <a class="mini-course" href="#khoa-hoc">
+            <div class="mini-thumb" style="background:linear-gradient(135deg,#B98A3D,#E9CB84)">
+              <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><path d="M4,10 Q12,6 20,10 Q28,6 36,10 L36,30 Q28,26 20,30 Q12,26 4,30 Z" fill="#F7EFDD" stroke="#6B531F" stroke-width="1.6"/><line x1="20" y1="10" x2="20" y2="30" stroke="#6B531F" stroke-width="1.6"/><path d="M8,15 Q13,13 17,15 M8,20 Q13,18 17,20 M23,15 Q28,13 32,15 M23,20 Q28,18 32,20" fill="none" stroke="#97742E" stroke-width="1.2"/></svg>
+            </div><span>Tiếng Việt</span>
+          </a>
+          <a class="mini-course" href="#khoa-hoc">
+            <div class="mini-thumb" style="background:linear-gradient(135deg,#7A2E3F,#C25E80)">
+              <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="#F6C6D5" stroke-width="1.8"><path d="M20,34 C16,24 18,14 20,9 C22,14 24,24 20,34 Z"/><path d="M20,34 C13,28 10,20 12,14 C16,18 19,26 20,34 Z"/><path d="M20,34 C27,28 30,20 28,14 C24,18 21,26 20,34 Z"/></g></svg>
+            </div><span>Nghệ thuật</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-art" aria-hidden="true">
+      <div class="glow"></div>
+      <svg class="orbit" viewBox="0 0 540 540">
+        <defs>
+          <linearGradient id="ringG" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#C7A45A" stop-opacity="0"/>
+            <stop offset=".5" stop-color="#C7A45A" stop-opacity=".9"/>
+            <stop offset="1" stop-color="#C7A45A" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="270" cy="330" rx="245" ry="66" fill="none" stroke="url(#ringG)" stroke-width="2.5" stroke-dasharray="46 26"/>
+        <ellipse cx="270" cy="330" rx="210" ry="52" fill="none" stroke="#C7A45A" stroke-width="1.2" stroke-dasharray="4 10" opacity=".5"/>
+      </svg>
+
+      <div class="drum-wrap">
+        <svg viewBox="0 0 400 430" role="img" aria-label="Trống đồng Đông Sơn">
+          <defs>
+            <linearGradient id="bodyG" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#4E3E16"/>
+              <stop offset=".28" stop-color="#97742E"/>
+              <stop offset=".5" stop-color="#C7A45A"/>
+              <stop offset=".72" stop-color="#8A6B2F"/>
+              <stop offset="1" stop-color="#3E3112"/>
+            </linearGradient>
+            <radialGradient id="topG" cx=".5" cy=".42" r=".75">
+              <stop offset="0" stop-color="#D9BC74"/>
+              <stop offset=".55" stop-color="#B08F42"/>
+              <stop offset="1" stop-color="#7A5E23"/>
+            </radialGradient>
+            <pattern id="triPat" width="14" height="22" patternUnits="userSpaceOnUse">
+              <path d="M0,22 L7,2 L14,22 Z" fill="none" stroke="#3E3112" stroke-width="1.4"/>
+            </pattern>
+            <pattern id="dotPat" width="14" height="16" patternUnits="userSpaceOnUse">
+              <circle cx="7" cy="8" r="2.6" fill="none" stroke="#3E3112" stroke-width="1.3"/>
+            </pattern>
+            <pattern id="hatchPat" width="9" height="18" patternUnits="userSpaceOnUse">
+              <line x1="1" y1="18" x2="8" y2="0" stroke="#3E3112" stroke-width="1.3"/>
+            </pattern>
+          </defs>
+
+          <ellipse cx="200" cy="404" rx="158" ry="16" fill="#0E3E40" opacity=".14"/>
+
+          <path d="M48,112 C44,152 36,170 30,198 C26,240 60,260 66,290 C70,320 46,336 38,374 L38,386 A162,26 0 0 0 362,386 L362,374 C354,336 330,320 334,290 C340,260 374,240 370,198 C364,170 356,152 352,112 A152,56 0 0 1 48,112 Z" fill="url(#bodyG)"/>
+
+          <path d="M31,196 Q200,242 369,196" fill="none" stroke="url(#triPat)" stroke-width="26"/>
+          <path d="M31,196 Q200,242 369,196" fill="none" stroke="#3E3112" stroke-width="1.4" opacity=".55" transform="translate(0,-14)"/>
+          <path d="M31,196 Q200,242 369,196" fill="none" stroke="#3E3112" stroke-width="1.4" opacity=".55" transform="translate(0,14)"/>
+
+          <path d="M67,292 Q200,326 333,292" fill="none" stroke="url(#dotPat)" stroke-width="18"/>
+          <path d="M40,372 Q200,406 360,372" fill="none" stroke="url(#hatchPat)" stroke-width="18"/>
+
+          <path d="M30,214 C8,224 8,252 34,262" fill="none" stroke="#4E3E16" stroke-width="9" stroke-linecap="round"/>
+          <path d="M370,214 C392,224 392,252 366,262" fill="none" stroke="#4E3E16" stroke-width="9" stroke-linecap="round"/>
+
+          <path d="M120,120 C110,220 130,320 150,392 L120,392 C95,310 90,210 100,122 Z" fill="#fff" opacity=".1"/>
+
+          <g transform="translate(200,112)">
+            <ellipse rx="152" ry="56" fill="url(#topG)" stroke="#5C4A1E" stroke-width="2.5"/>
+            <g transform="scale(1,0.368)" fill="none" stroke="#5C4A1E">
+              <circle r="140" stroke-width="2.2"/>
+              <circle r="126" stroke-width="1.6" stroke-dasharray="9 6"/>
+              <circle r="108" stroke-width="7" opacity=".3"/>
+              <circle r="90" stroke-width="1.8"/>
+              <circle r="74" stroke-width="1.4" stroke-dasharray="3 5"/>
+              <circle r="56" stroke-width="2.2"/>
+              <g fill="#5C4A1E" stroke="none">
+                <circle cx="93.7" cy="25.1" r="4"/><circle cx="68.6" cy="68.6" r="4"/><circle cx="25.1" cy="93.7" r="4"/>
+                <circle cx="-25.1" cy="93.7" r="4"/><circle cx="-68.6" cy="68.6" r="4"/><circle cx="-93.7" cy="25.1" r="4"/>
+                <circle cx="-93.7" cy="-25.1" r="4"/><circle cx="-68.6" cy="-68.6" r="4"/><circle cx="-25.1" cy="-93.7" r="4"/>
+                <circle cx="25.1" cy="-93.7" r="4"/><circle cx="68.6" cy="-68.6" r="4"/><circle cx="93.7" cy="-25.1" r="4"/>
+              </g>
+              <polygon fill="#5C4A1E" stroke="none" points="44,0 17.4,4.7 38.1,22 12.7,12.7 22,38.1 4.7,17.4 0,44 -4.7,17.4 -22,38.1 -12.7,12.7 -38.1,22 -17.4,4.7 -44,0 -17.4,-4.7 -38.1,-22 -12.7,-12.7 -22,-38.1 -4.7,-17.4 0,-44 4.7,-17.4 22,-38.1 12.7,-12.7 38.1,-22 17.4,-4.7"/>
+              <circle r="9" fill="#8A6B2F" stroke="none"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="chip c1">
+        <svg viewBox="0 0 56 56"><path d="M28,7 L50,33 Q28,41 6,33 Z" fill="url(#hatG)"/><path d="M6,33 Q28,41 50,33 Q28,46 6,33 Z" fill="#8A6B2F"/><polygon points="28,15 29.5,18.8 33.5,19 30.5,21.5 31.5,25.4 28,23.2 24.5,25.4 25.5,21.5 22.5,19 26.5,18.8" fill="#C43C2E"/><path d="M20,36 Q26,46 23,51" fill="none" stroke="#C43C2E" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <span class="chip-label">Nón lá</span>
+      </div>
+      <div class="chip c2">
+        <svg viewBox="0 0 56 56"><g stroke="#C25E80" stroke-width="1.6"><path d="M28,46 C24,32 26,18 28,12 C30,18 32,32 28,46 Z" fill="#F6C6D5"/><path d="M28,46 C19,39 15,29 17,21 C22,26 26,36 28,46 Z" fill="#EFA9C0"/><path d="M28,46 C37,39 41,29 39,21 C34,26 30,36 28,46 Z" fill="#EFA9C0"/><path d="M28,46 C15,43 8,36 7,29 C15,32 24,39 28,46 Z" fill="#E489A6"/><path d="M28,46 C41,43 48,36 49,29 C41,32 32,39 28,46 Z" fill="#E489A6"/></g><circle cx="28" cy="42" r="4" fill="#E9CB84"/></svg>
+        <span class="chip-label">Hoa sen</span>
+      </div>
+      <div class="chip c3">
+        <svg viewBox="0 0 56 56"><rect x="10" y="6" width="36" height="44" rx="5" fill="#F7EFDD" stroke="#C7A45A" stroke-width="1.8"/><path d="M20,15 Q30,12 26,20 Q22,28 32,24 M20,30 Q28,27 26,34 M20,40 L34,40" fill="none" stroke="#2E2A26" stroke-width="2" stroke-linecap="round"/><rect x="34" y="38" width="8" height="8" rx="1.5" fill="#C43C2E"/></svg>
+        <span class="chip-label">Thư pháp</span>
+      </div>
+      <div class="chip c4">
+        <svg viewBox="0 0 56 56"><g transform="rotate(-35 28 28)"><rect x="2" y="24" width="52" height="9" rx="4.5" fill="#C7A45A" stroke="#6B531F" stroke-width="1.4"/><line x1="14" y1="24" x2="14" y2="33" stroke="#6B531F" stroke-width="1.4"/><line x1="44" y1="24" x2="44" y2="33" stroke="#6B531F" stroke-width="1.4"/><circle cx="22" cy="28.5" r="1.8" fill="#3E3112"/><circle cx="28" cy="28.5" r="1.8" fill="#3E3112"/><circle cx="34" cy="28.5" r="1.8" fill="#3E3112"/><circle cx="40" cy="28.5" r="1.8" fill="#3E3112"/></g></svg>
+        <span class="chip-label">Sáo trúc</span>
+      </div>
+      <div class="chip c5">
+        <svg viewBox="0 0 56 56"><rect x="8" y="10" width="40" height="36" rx="5" fill="#0E3E40"/><rect x="13" y="16" width="14" height="3.5" rx="1.75" fill="#5DC6BE"/><rect x="13" y="23" width="22" height="3.5" rx="1.75" fill="#F18F2C"/><rect x="17" y="30" width="18" height="3.5" rx="1.75" fill="#E489A6"/><rect x="13" y="37" width="10" height="3.5" rx="1.75" fill="#5DC6BE"/></svg>
+        <span class="chip-label">Học liệu số</span>
+      </div>
+      <div class="chip c6">
+        <svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="20" fill="#D7EAE6" stroke="#17595C" stroke-width="1.8"/><ellipse cx="28" cy="28" rx="9" ry="20" fill="none" stroke="#17595C" stroke-width="1.4"/><line x1="8" y1="28" x2="48" y2="28" stroke="#17595C" stroke-width="1.4"/><path d="M28,10 Q40,18 46,14" fill="none" stroke="#17595C" stroke-width="1.4"/><circle cx="40" cy="16" r="5" fill="#F18F2C"/><polygon points="40,13.5 40.8,15.4 42.8,15.5 41.3,16.8 41.8,18.7 40,17.6 38.2,18.7 38.7,16.8 37.2,15.5 39.2,15.4" fill="#fff"/></svg>
+        <span class="chip-label">Hội nhập quốc tế</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="container stats-grid">
+    <div class="stat reveal"><b data-count="50000" data-suffix="+">0</b><span>Học viên đang theo học</span></div>
+    <div class="stat reveal"><b data-count="120" data-suffix="+">0</b><span>Khóa học văn hóa &amp; ngôn ngữ</span></div>
+    <div class="stat reveal"><b data-count="200" data-suffix="+">0</b><span>Giảng viên &amp; nghệ nhân</span></div>
+    <div class="stat reveal"><b data-count="63" data-suffix="">0</b><span>Tỉnh thành có học viên</span></div>
+  </div>
+</section>
+
+<section class="section" id="khoa-hoc">
+  <div class="container">
+    <div class="section-head reveal">
+      <svg class="lotus-divider" viewBox="0 0 64 32" aria-hidden="true"><g fill="none" stroke="#C7A45A" stroke-width="1.6"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z"/><path d="M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z"/><path d="M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/><path d="M32,30 C20,26 12,20 10,14 C18,16 27,22 32,30 Z"/><path d="M32,30 C44,26 52,20 54,14 C46,16 37,22 32,30 Z"/></g></svg>
+      <h2>Khóa học nổi bật</h2>
+      <p>Từ lịch sử ngàn năm đến nghệ thuật dân gian — học theo lộ trình, với giảng viên và nghệ nhân hàng đầu.</p>
+    </div>
+    <div class="course-grid">
+      <article class="course-card reveal">
+        <div class="course-visual" style="background:linear-gradient(135deg,#0E3E40,#1E6E72)">
+          <span class="course-tag">Phổ biến nhất</span>
+          <svg width="86" height="86" viewBox="-60 -60 120 120" aria-hidden="true"><g fill="none" stroke="#C7A45A" stroke-width="2"><circle r="54"/><circle r="42" stroke-dasharray="5 5"/><circle r="30"/></g><polygon fill="#C7A45A" points="22,0 8.7,2.4 19.1,11 6.4,6.4 11,19.1 2.4,8.7 0,22 -2.4,8.7 -11,19.1 -6.4,6.4 -19.1,11 -8.7,2.4 -22,0 -8.7,-2.4 -19.1,-11 -6.4,-6.4 -11,-19.1 -2.4,-8.7 0,-22 2.4,-8.7 11,-19.1 6.4,-6.4 19.1,-11 8.7,-2.4"/></svg>
+        </div>
+        <div class="course-body">
+          <h3>Lịch sử Việt Nam qua 4.000 năm</h3>
+          <p>Từ văn minh Đông Sơn đến hiện đại — kể bằng bản đồ tương tác, phim tư liệu và câu chuyện hiện vật.</p>
+          <div class="course-meta"><span>48 bài học</span><span>12.400 học viên</span><b>Miễn phí</b></div>
+        </div>
+      </article>
+      <article class="course-card reveal">
+        <div class="course-visual" style="background:linear-gradient(135deg,#B98A3D,#E9CB84)">
+          <span class="course-tag">Chứng chỉ</span>
+          <svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true"><path d="M8,22 Q24,14 40,22 Q56,14 72,22 L72,58 Q56,50 40,58 Q24,50 8,58 Z" fill="#F7EFDD" stroke="#6B531F" stroke-width="2.4"/><line x1="40" y1="22" x2="40" y2="58" stroke="#6B531F" stroke-width="2.4"/><path d="M16,32 Q26,28 34,32 M16,41 Q26,37 34,41 M46,32 Q56,28 64,32 M46,41 Q56,37 64,41" fill="none" stroke="#97742E" stroke-width="2"/></svg>
+        </div>
+        <div class="course-body">
+          <h3>Tiếng Việt &amp; Văn học dân gian</h3>
+          <p>Ca dao, tục ngữ, truyện cổ — dành cho người Việt trẻ ở nước ngoài và người nước ngoài yêu tiếng Việt.</p>
+          <div class="course-meta"><span>36 bài học</span><span>8.900 học viên</span><b>499.000đ</b></div>
+        </div>
+      </article>
+      <article class="course-card reveal">
+        <div class="course-visual" style="background:linear-gradient(135deg,#7A2E3F,#C25E80)">
+          <span class="course-tag">Nghệ nhân dạy</span>
+          <svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true"><g fill="none" stroke="#F6C6D5" stroke-width="2.6"><path d="M40,68 C32,48 36,28 40,18 C44,28 48,48 40,68 Z"/><path d="M40,68 C26,56 20,40 24,28 C32,36 38,52 40,68 Z"/><path d="M40,68 C54,56 60,40 56,28 C48,36 42,52 40,68 Z"/></g><circle cx="40" cy="60" r="5" fill="#E9CB84"/></svg>
+        </div>
+        <div class="course-body">
+          <h3>Nghệ thuật truyền thống</h3>
+          <p>Tranh Đông Hồ, gốm Bát Tràng, thư pháp — thực hành tại nhà với bộ dụng cụ gửi tận nơi.</p>
+          <div class="course-meta"><span>24 bài học</span><span>5.200 học viên</span><b>790.000đ</b></div>
+        </div>
+      </article>
+      <article class="course-card reveal">
+        <div class="course-visual" style="background:linear-gradient(135deg,#17595C,#5DC6BE)">
+          <span class="course-tag">Mới</span>
+          <svg width="84" height="84" viewBox="0 0 84 84" aria-hidden="true"><g transform="rotate(-30 42 42)"><rect x="6" y="36" width="72" height="12" rx="6" fill="#F7EFDD" stroke="#0E3E40" stroke-width="2.2"/><line x1="24" y1="36" x2="24" y2="48" stroke="#0E3E40" stroke-width="2"/><line x1="62" y1="36" x2="62" y2="48" stroke="#0E3E40" stroke-width="2"/><circle cx="34" cy="42" r="2.6" fill="#0E3E40"/><circle cx="42" cy="42" r="2.6" fill="#0E3E40"/><circle cx="50" cy="42" r="2.6" fill="#0E3E40"/><circle cx="58" cy="42" r="2.6" fill="#0E3E40"/></g></svg>
+        </div>
+        <div class="course-body">
+          <h3>Âm nhạc dân tộc</h3>
+          <p>Sáo trúc, đàn bầu, đàn tranh — video đa góc quay, chấm ngón tay bằng AI, giáo trình theo cấp độ.</p>
+          <div class="course-meta"><span>30 bài học</span><span>3.700 học viên</span><b>590.000đ</b></div>
+        </div>
+      </article>
+      <article class="course-card reveal">
+        <div class="course-visual" style="background:linear-gradient(135deg,#3E5C2E,#8FBC6F)">
+          <span class="course-tag">Gia đình</span>
+          <svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="34" r="20" fill="#F7EFDD" stroke="#3E5C2E" stroke-width="2.4"/><path d="M28,30 Q40,22 52,30 M26,38 Q40,30 54,38" fill="none" stroke="#3E5C2E" stroke-width="2"/><path d="M32,54 L34,66 M48,54 L46,66" stroke="#3E5C2E" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="40" cy="68" rx="16" ry="4" fill="none" stroke="#3E5C2E" stroke-width="2"/></svg>
+        </div>
+        <div class="course-body">
+          <h3>Ẩm thực Việt ba miền</h3>
+          <p>Phở, bánh xèo, bún bò Huế — nấu cùng đầu bếp, hiểu câu chuyện văn hóa sau mỗi món ăn.</p>
+          <div class="course-meta"><span>20 bài học</span><span>6.100 học viên</span><b>450.000đ</b></div>
+        </div>
+      </article>
+      <article class="course-card reveal">
+        <div class="course-visual" style="background:linear-gradient(135deg,#5B3A16,#B98A3D)">
+          <span class="course-tag">Trẻ em</span>
+          <svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true"><path d="M40,10 L66,40 Q40,50 14,40 Z" fill="#E9CB84" stroke="#6B531F" stroke-width="2"/><polygon points="40,22 41.8,26.4 46.5,26.6 42.9,29.5 44.1,34 40,31.4 35.9,34 37.1,29.5 33.5,26.6 38.2,26.4" fill="#C43C2E"/><path d="M30,46 Q40,60 36,68 M50,46 Q44,58 48,68" fill="none" stroke="#C43C2E" stroke-width="2.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="course-body">
+          <h3>Em yêu sử Việt (6–12 tuổi)</h3>
+          <p>Truyện tranh tương tác, trò chơi hóa lịch sử — mỗi tuần một nhân vật anh hùng dân tộc.</p>
+          <div class="course-meta"><span>40 bài học</span><span>9.800 học viên</span><b>Miễn phí</b></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section teachers" id="giang-vien">
+  <div class="container">
+    <div class="section-head reveal">
+      <svg class="lotus-divider" viewBox="0 0 64 32" aria-hidden="true"><g fill="none" stroke="#C7A45A" stroke-width="1.6"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z"/><path d="M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z"/><path d="M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/></g></svg>
+      <h2>Giảng viên &amp; nghệ nhân</h2>
+      <p>Đội ngũ kết hợp học giả, nhà giáo và nghệ nhân dân gian được nhà nước phong tặng.</p>
+    </div>
+    <div class="teacher-grid">
+      <div class="teacher-card reveal">
+        <div class="avatar" style="background:linear-gradient(135deg,#0E3E40,#1E6E72)">NH</div>
+        <h3>PGS.TS Nguyễn Văn Hùng</h3>
+        <em>Lịch sử Việt Nam</em>
+        <p>25 năm giảng dạy, tác giả 8 đầu sách về văn minh Đông Sơn.</p>
+      </div>
+      <div class="teacher-card reveal">
+        <div class="avatar" style="background:linear-gradient(135deg,#B98A3D,#8A6B2F)">TL</div>
+        <h3>TS. Trần Thị Lan</h3>
+        <em>Ngôn ngữ &amp; văn học</em>
+        <p>Chuyên gia giảng dạy tiếng Việt cho người nước ngoài, 12 năm tại châu Âu.</p>
+      </div>
+      <div class="teacher-card reveal">
+        <div class="avatar" style="background:linear-gradient(135deg,#7A2E3F,#C25E80)">MH</div>
+        <h3>NNƯT Phạm Minh Hòa</h3>
+        <em>Nghệ thuật dân gian</em>
+        <p>Nghệ nhân ưu tú làng tranh Đông Hồ, thế hệ thứ năm giữ nghề.</p>
+      </div>
+      <div class="teacher-card reveal">
+        <div class="avatar" style="background:linear-gradient(135deg,#17595C,#5DC6BE)">QA</div>
+        <h3>NSND Lê Quốc An</h3>
+        <em>Âm nhạc dân tộc</em>
+        <p>Nghệ sĩ đàn bầu, hơn 400 buổi biểu diễn tại 30 quốc gia.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="su-kien">
+  <div class="container">
+    <div class="section-head reveal">
+      <svg class="lotus-divider" viewBox="0 0 64 32" aria-hidden="true"><g fill="none" stroke="#C7A45A" stroke-width="1.6"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z"/><path d="M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z"/><path d="M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/></g></svg>
+      <h2>Sự kiện &amp; tài liệu</h2>
+      <p id="tai-lieu">Lớp học trực tiếp, lễ hội trực tuyến và kho tài liệu mở — cập nhật theo lịch âm dương.</p>
+    </div>
+    <div class="event-grid">
+      <article class="event-card reveal">
+        <div class="date-badge"><b>25</b><span>Th 9</span><small>Rằm tháng Tám</small></div>
+        <div>
+          <h3>Đêm hội Trăng Rằm trực tuyến</h3>
+          <p>Làm đèn ông sao cùng nghệ nhân, nghe kể chuyện chú Cuội — phát trực tiếp cho học viên toàn cầu.</p>
+        </div>
+      </article>
+      <article class="event-card reveal">
+        <div class="date-badge"><b>20</b><span>Th 11</span><small>Ngày Nhà giáo VN</small></div>
+        <div>
+          <h3>Tri ân người thầy — Tôn sư trọng đạo</h3>
+          <p>Cuộc thi viết thư pháp chữ "Ơn Thầy" và triển lãm tác phẩm học viên trên bảo tàng số.</p>
+        </div>
+      </article>
+      <article class="event-card reveal">
+        <div class="date-badge"><b>17</b><span>Th 2</span><small>Mồng 1 Tết</small></div>
+        <div>
+          <h3>Hội Xuân trực tuyến — Tết ba miền</h3>
+          <p>Gói bánh chưng qua video call, xin chữ ông đồ AI và du xuân ảo qua ba miền đất nước.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="cta" id="tuyen-sinh">
+  <svg class="cta-rings" width="480" height="480" viewBox="-240 -240 480 480" aria-hidden="true">
+    <g fill="none" stroke="#F3E9CF" stroke-width="1.6">
+      <circle r="230"/><circle r="188" stroke-dasharray="9 7"/><circle r="146"/><circle r="104" stroke-dasharray="4 6"/><circle r="64"/>
+    </g>
+    <polygon fill="#F3E9CF" points="34,0 13.5,3.6 29.4,17 9.8,9.8 17,29.4 3.6,13.5 0,34 -3.6,13.5 -17,29.4 -9.8,9.8 -29.4,17 -13.5,3.6 -34,0 -13.5,-3.6 -29.4,-17 -9.8,-9.8 -17,-29.4 -3.6,-13.5 0,-34 3.6,-13.5 17,-29.4 9.8,-9.8 29.4,-17 13.5,-3.6"/>
+  </svg>
+  <svg class="cta-rings2" width="380" height="380" viewBox="-190 -190 380 380" aria-hidden="true">
+    <g fill="none" stroke="#F3E9CF" stroke-width="1.4"><circle r="180"/><circle r="140" stroke-dasharray="8 6"/><circle r="100"/></g>
+  </svg>
+  <div class="cta-inner">
+    <h2 class="reveal">Gieo chữ hôm nay, gặt văn hiến mai sau</h2>
+    <p class="reveal">Tạo tài khoản miễn phí — học thử 7 ngày mọi khóa học, không cần thẻ thanh toán.</p>
+    <a href="#" class="btn btn-orange reveal">Đăng ký học thử miễn phí</a>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="brand" href="#top">
+          <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><path d="M32,6 L55,33 Q32,42 9,33 Z" fill="#C7A45A"/><path d="M9,33 Q32,42 55,33 Q32,47 9,33 Z" fill="#8A6B2F"/><path d="M8,46 Q20,40 32,46 Q44,40 56,46 L56,56 Q44,50 32,56 Q20,50 8,56 Z" fill="#F7EFDD" stroke="#B98A3D" stroke-width="1.6"/></svg>
+          <span class="brand-name">LuminaEdu<small>Văn hóa Việt Nam</small></span>
+        </a>
+        <p>Nền tảng học trực tuyến gìn giữ và lan tỏa văn hóa Việt Nam tới cộng đồng người Việt toàn cầu.</p>
+      </div>
+      <div>
+        <h4>Khám phá</h4>
+        <a href="#khoa-hoc">Khóa học</a>
+        <a href="#giang-vien">Giảng viên</a>
+        <a href="#su-kien">Sự kiện</a>
+        <a href="#tai-lieu">Tài liệu mở</a>
+      </div>
+      <div>
+        <h4>Hỗ trợ</h4>
+        <a href="#">Câu hỏi thường gặp</a>
+        <a href="#">Hướng dẫn học</a>
+        <a href="#">Chính sách bảo mật</a>
+        <a href="#">Điều khoản sử dụng</a>
+      </div>
+      <div>
+        <h4>Liên hệ</h4>
+        <a href="tel:19001234">Hotline: 1900 1234</a>
+        <a href="mailto:hoctap@luminaedu.vn">hoctap@luminaedu.vn</a>
+        <a href="#">Tầng 8, Tòa nhà Văn Miếu, Hà Nội</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 LuminaEdu. Giữ gìn bản sắc — Vươn tầm thế giới.</span>
+      <span>Tiếng Việt / English</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const header=document.querySelector('.site-header');
+addEventListener('scroll',()=>{header.classList.toggle('scrolled',scrollY>10)},{passive:true});
+
+const io=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+      const b=e.target.querySelector?.('[data-count]')||((e.target.matches&&e.target.matches('[data-count]'))?e.target:null);
+    }
+  });
+},{threshold:.18});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+const cio=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(!e.isIntersecting)return;
+    cio.unobserve(e.target);
+    const el=e.target,target=+el.dataset.count,suffix=el.dataset.suffix||'';
+    const dur=1600,start=performance.now();
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduced){el.textContent=target.toLocaleString('vi-VN')+suffix;return}
+    function tick(t){
+      const p=Math.min((t-start)/dur,1),eased=1-Math.pow(1-p,3);
+      el.textContent=Math.round(target*eased).toLocaleString('vi-VN')+suffix;
+      if(p<1)requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+},{threshold:.6});
+document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
+</script>
+</body>
+</html>

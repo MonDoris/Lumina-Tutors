@@ -25,6 +25,15 @@ public class SubscriptionPlan : AuditableEntity
     public bool IncludesVirtualLab { get; set; }
     public bool IsActive           { get; set; } = true;
 
+    // Quota tài khoản theo role (-1 = không giới hạn)
+    public int MaxTeachers    { get; set; } = -1;
+    public int MaxStudents    { get; set; } = -1;
+    public int MaxParents     { get; set; } = -1;
+    public int MaxAdmins      { get; set; } = -1;
+    public int MaxAccountants { get; set; } = -1;
+    public int MaxSupervisors { get; set; } = -1;
+    public int MaxClasses     { get; set; } = -1;   // Hướng 4: giới hạn số lớp học
+
     public ICollection<SchoolSubscription> Subscriptions { get; set; } = new List<SchoolSubscription>();
 
     /// <summary>Giá tương ứng chu kỳ.</summary>
@@ -81,8 +90,9 @@ public class SchoolSubscription : TenantEntity
     public DateTime?          CancelledAt      { get; set; }
 
     public SubscriptionPlan Plan { get; set; } = null!;
-    public ICollection<SchoolSubscriptionAddOn> AddOns { get; set; } = new List<SchoolSubscriptionAddOn>();
-    public ICollection<SubscriptionOrder>       Orders { get; set; } = new List<SubscriptionOrder>();
+    public ICollection<SchoolSubscriptionAddOn>  AddOns         { get; set; } = new List<SchoolSubscriptionAddOn>();
+    public ICollection<SchoolRoleQuotaAddOn>     RoleQuotaAddOns { get; set; } = new List<SchoolRoleQuotaAddOn>();
+    public ICollection<SubscriptionOrder>        Orders         { get; set; } = new List<SubscriptionOrder>();
 }
 
 // ─── SchoolSubscriptionAddOn (add-on đang gắn vào đăng ký của trường) ─────────────
@@ -134,4 +144,49 @@ public class SubscriptionOrderItem : BaseEntity
     public decimal              Amount      { get; set; }
 
     public SubscriptionOrder Order { get; set; } = null!;
+}
+
+// ─── RoleQuotaAddOn (catalog add-on mua thêm slot tài khoản / lớp học) ────────
+
+/// <summary>
+/// Add-on bán thêm quota cho một role cụ thể hoặc số lớp học.
+/// Ví dụ: "+10 Teacher Pack", "+50 Student Pack", "+5 Classes Pack".
+/// </summary>
+public class RoleQuotaAddOn : AuditableEntity
+{
+    public string   AddOnCode    { get; set; } = string.Empty;   // QUOTA_TEACHER_10, QUOTA_CLASS_5…
+    public string   Name         { get; set; } = string.Empty;
+    public string?  Description  { get; set; }
+    public RoleCode? TargetRole  { get; set; }   // null = add-on lớp học (không gắn role)
+    public int      ExtraQuota   { get; set; }   // số tài khoản thêm (0 nếu là add-on lớp)
+    public int      ExtraClasses { get; set; }   // số lớp thêm (0 nếu là add-on role)
+
+    public decimal MonthlyPrice   { get; set; }
+    public decimal QuarterlyPrice { get; set; }
+    public decimal YearlyPrice    { get; set; }
+    public bool    IsActive       { get; set; } = true;
+
+    public ICollection<SchoolRoleQuotaAddOn> SchoolAddOns { get; set; } = new List<SchoolRoleQuotaAddOn>();
+
+    public decimal PriceFor(SubscriptionCycle cycle) => cycle switch
+    {
+        SubscriptionCycle.Monthly   => MonthlyPrice,
+        SubscriptionCycle.Quarterly => QuarterlyPrice,
+        SubscriptionCycle.Yearly    => YearlyPrice,
+        _                           => MonthlyPrice
+    };
+}
+
+// ─── SchoolRoleQuotaAddOn (add-on quota đang gắn vào đăng ký của trường) ────────
+
+/// <summary>Trường X đang sở hữu add-on quota nào (mua thêm slot Teacher / Student / Class…).</summary>
+public class SchoolRoleQuotaAddOn : AuditableEntity
+{
+    public int      SubscriptionId { get; set; }
+    public int      AddOnId        { get; set; }
+    public bool     IsActive       { get; set; } = true;
+    public DateOnly ActiveUntil    { get; set; }
+
+    public SchoolSubscription Subscription { get; set; } = null!;
+    public RoleQuotaAddOn     AddOn        { get; set; } = null!;
 }

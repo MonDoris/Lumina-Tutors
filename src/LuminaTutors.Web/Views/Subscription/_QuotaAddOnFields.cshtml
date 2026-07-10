@@ -1,0 +1,73 @@
+@using LuminaTutors.Domain.Enums
+@model LuminaTutors.Application.DTOs.Subscription.QuotaAddOnEditRequest
+@{ var m = Model; }
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div>
+        <label class="lt-label">Mã gói mở rộng</label>
+        <input name="AddOnCode" class="lt-input" value="@m?.AddOnCode" placeholder="VD: QUOTA_TEACHER_10" required maxlength="30" />
+    </div>
+    <div>
+        <label class="lt-label">Loại slot</label>
+        <select name="TargetRole" class="lt-select">
+            <option value="" selected="@(m?.TargetRole == null)">Lớp học</option>
+            <option value="Teacher" selected="@(m?.TargetRole == RoleCode.Teacher)">Giáo viên</option>
+            <option value="Student" selected="@(m?.TargetRole == RoleCode.Student)">Học sinh</option>
+            <option value="Parent" selected="@(m?.TargetRole == RoleCode.Parent)">Phụ huynh</option>
+            <option value="Admin" selected="@(m?.TargetRole == RoleCode.Admin)">Quản trị trường</option>
+            <option value="Accountant" selected="@(m?.TargetRole == RoleCode.Accountant)">Kế toán</option>
+            <option value="Supervisor" selected="@(m?.TargetRole == RoleCode.Supervisor)">Giám thị</option>
+        </select>
+    </div>
+</div>
+
+<div style="margin-top:8px">
+    <label class="lt-label">Tên gói mở rộng</label>
+    <input name="Name" class="lt-input" value="@m?.Name" required maxlength="100" placeholder="VD: Gói +10 Giáo viên" />
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+    <div>
+        <label class="lt-label">Số slot tài khoản (+)</label>
+        <input name="ExtraQuota" type="number" min="0" class="lt-input" value="@(m?.ExtraQuota ?? 0)" />
+        <div style="font-size:.72rem;color:#94a3b8;margin-top:2px">Để 0 nếu là gói lớp học</div>
+    </div>
+    <div>
+        <label class="lt-label">Số lớp học (+)</label>
+        <input name="ExtraClasses" type="number" min="0" class="lt-input" value="@(m?.ExtraClasses ?? 0)" />
+        <div style="font-size:.72rem;color:#94a3b8;margin-top:2px">Để 0 nếu là gói tài khoản</div>
+    </div>
+</div>
+
+<div style="margin-top:8px">
+    <label class="lt-label">Mô tả</label>
+    <textarea name="Description" class="lt-input" rows="2" maxlength="500">@m?.Description</textarea>
+</div>
+
+<div class="price-linker" style="margin-top:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div>
+            <label class="lt-label">Giá/tháng</label>
+            <input name="MonthlyPrice" type="number" step="1000" min="0" class="lt-input price-m" value="@((m?.MonthlyPrice ?? 0m).ToString("0"))" />
+        </div>
+        <div>
+            <label class="lt-label">Giá/quý</label>
+            <input name="QuarterlyPrice" type="number" step="1000" min="0" class="lt-input price-q" value="@((m?.QuarterlyPrice ?? 0m).ToString("0"))" />
+        </div>
+        <div>
+            <label class="lt-label">Giá/năm</label>
+            <input name="YearlyPrice" type="number" step="1000" min="0" class="lt-input price-y" value="@((m?.YearlyPrice ?? 0m).ToString("0"))" />
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:6px;align-items:end">
+        <div style="font-size:.72rem;color:#94a3b8;padding-bottom:9px">Giá tháng là gốc — quý/năm tự tính theo % giảm</div>
+        <div>
+            <label class="lt-label" style="font-size:.74rem">% giảm quý</label>
+            <input type="number" step="0.5" min="0" max="100" class="lt-input disc-q" />
+        </div>
+        <div>
+            <label class="lt-label" style="font-size:.74rem">% giảm năm</label>
+            <input type="number" step="0.5" min="0" max="100" class="lt-input disc-y" />
+        </div>
+    </div>
+</div>

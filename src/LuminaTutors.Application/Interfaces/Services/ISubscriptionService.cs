@@ -21,6 +21,10 @@ public interface ISubscriptionService
     Task<Result<SubscriptionOrderDto>> BuyAddOnAsync(
         int schoolId, int userId, int addOnId, CancellationToken ct = default);
 
+    /// <summary>Mua thêm gói slot tài khoản/lớp học (quota add-on) trên nền gói đang hoạt động.</summary>
+    Task<Result<SubscriptionOrderDto>> BuyQuotaAddOnAsync(
+        int schoolId, int userId, int quotaAddOnId, CancellationToken ct = default);
+
     /// <summary>Tạo đơn gia hạn kỳ tiếp theo (thủ công) cho gói hiện tại.</summary>
     Task<Result<SubscriptionOrderDto>> CreateRenewalOrderAsync(
         int schoolId, int userId, CancellationToken ct = default);
@@ -47,6 +51,15 @@ public interface ISubscriptionService
     /// <summary>Chi tiết một trường (SYSADMIN): thành viên theo vai trò + thống kê + phân bố xếp loại học lực.</summary>
     Task<Result<SchoolDetailDto>> GetSchoolDetailAsync(int schoolId, CancellationToken ct = default);
 
+    /// <summary>SYSADMIN điều chỉnh gói trực tiếp cho một trường (kích hoạt ngay, ghi vào lịch sử).</summary>
+    Task<Result> AdminChangePlanAsync(int schoolId, int planId, SubscriptionCycle cycle, bool autoRenew, int byUserId, CancellationToken ct = default);
+
+    /// <summary>Danh sách các đơn đã thanh toán (cho dropdown chi tiết trên dashboard SYSADMIN).</summary>
+    Task<Result<IReadOnlyList<PaidOrderDto>>> GetPaidOrdersAsync(CancellationToken ct = default);
+
+    /// <summary>Đổi chu kỳ (tháng/quý/năm) của đơn mua gói chưa thanh toán — tính lại giá & kỳ hiệu lực.</summary>
+    Task<Result> ChangeOrderCycleAsync(int orderId, int schoolId, SubscriptionCycle cycle, CancellationToken ct = default);
+
     /// <summary>
     /// Xử lý các đăng ký đã quá hạn: đánh dấu hết hạn; nếu bật auto-renew thì tự sinh
     /// đơn gia hạn (chờ thanh toán). Dùng cho cron/job định kỳ. Trả số đơn gia hạn đã tạo.
@@ -61,6 +74,8 @@ public interface ISubscriptionService
     Task<Result> TogglePlanActiveAsync(int planId, CancellationToken ct = default);
     Task<Result> SaveAddOnAsync(AddOnEditRequest request, CancellationToken ct = default);
     Task<Result> ToggleAddOnActiveAsync(int addOnId, CancellationToken ct = default);
+    Task<Result> SaveQuotaAddOnAsync(QuotaAddOnEditRequest request, CancellationToken ct = default);
+    Task<Result> ToggleQuotaAddOnActiveAsync(int addOnId, CancellationToken ct = default);
     Task<Result<IReadOnlyList<SchoolSubscriptionRowDto>>> GetAllSubscriptionsAsync(CancellationToken ct = default);
 
     /// <summary>Báo cáo doanh thu E-Selling (đơn đã thanh toán) + chuỗi 12 tháng gần nhất.</summary>

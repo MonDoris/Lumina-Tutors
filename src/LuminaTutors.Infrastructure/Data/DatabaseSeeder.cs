@@ -31,7 +31,7 @@ public static class DatabaseSeeder
     private const string SchoolAdminEmail    = "nhatruong@lumina.edu.vn";  // → ADMIN (Nhà trường)
     private const string SchoolAdminPassword = "Truong@123";
 
-    private const string SchoolName = "Marie Curie High School";
+    private const string SchoolName = "Demo";
 
     public static async Task SeedAsync(IServiceProvider services)
     {
@@ -77,7 +77,7 @@ public static class DatabaseSeeder
                 string.Join(", ", demoUsers.Select(u => u.Email)));
         }
 
-        // ── 3. Ensure default School exists & tên là Marie Curie High School ────
+        // ── 3. Ensure default School exists (chỉ đặt tên khi TẠO MỚI) ───────────
         var school = await db.Schools.FirstOrDefaultAsync();
         if (school is null)
         {
@@ -92,13 +92,7 @@ public static class DatabaseSeeder
             await db.SaveChangesAsync();
             logger.LogInformation("🏫 Created default school '{Name}' (Id={Id})", school.SchoolName, school.Id);
         }
-        else if (school.SchoolName != SchoolName)
-        {
-            var oldName = school.SchoolName;
-            school.SchoolName = SchoolName;
-            await db.SaveChangesAsync();
-            logger.LogInformation("🏫 Renamed school '{Old}' → '{New}'", oldName, SchoolName);
-        }
+        // KHÔNG ghi đè tên trường đã tồn tại — tôn trọng tên do người dùng đặt (vd "Demo").
 
         // ── 4. Tài khoản quản trị ─────────────────────────────────────────────
         // • admin@lumina.edu.vn  → SYSADMIN (Quản trị hệ thống: toàn quyền + E-Selling)
@@ -252,14 +246,20 @@ public static class DatabaseSeeder
                     PlanCode = "BASIC", Name = "Gói Cơ Bản", Tier = 1,
                     Description = "Quản lý học vụ, điểm danh, sổ điểm, tài chính cơ bản. Không gồm AI & Phòng 3D.",
                     MonthlyPrice = 990_000M, QuarterlyPrice = 2_700_000M, YearlyPrice = 9_900_000M,
-                    IncludesAiTutor = false, IncludesVirtualLab = false, IsActive = true
+                    IncludesAiTutor = false, IncludesVirtualLab = false, IsActive = true,
+                    // Quota tài khoản theo role (-1 = không giới hạn)
+                    MaxTeachers = 20, MaxStudents = 500, MaxParents = 500,
+                    MaxAdmins = 3, MaxAccountants = 2, MaxSupervisors = 2, MaxClasses = 20
                 },
                 new SubscriptionPlan
                 {
                     PlanCode = "PREMIUM", Name = "Gói Cao Cấp", Tier = 2,
                     Description = "Toàn bộ tính năng Cơ Bản + Gia Sư AI + Phòng học 3D (Lab ảo & Lumina Nexus).",
                     MonthlyPrice = 2_490_000M, QuarterlyPrice = 6_900_000M, YearlyPrice = 24_900_000M,
-                    IncludesAiTutor = true, IncludesVirtualLab = true, IsActive = true
+                    IncludesAiTutor = true, IncludesVirtualLab = true, IsActive = true,
+                    // Gói cao cấp: không giới hạn tài khoản & lớp học
+                    MaxTeachers = -1, MaxStudents = -1, MaxParents = -1,
+                    MaxAdmins = -1, MaxAccountants = -1, MaxSupervisors = -1, MaxClasses = -1
                 });
             await db.SaveChangesAsync();
             logger.LogInformation("💎 Seeded subscription plans: BASIC, PREMIUM");
@@ -282,6 +282,42 @@ public static class DatabaseSeeder
                 });
             await db.SaveChangesAsync();
             logger.LogInformation("🧩 Seeded subscription add-ons: AI_TUTOR, VIRTUAL_LAB");
+        }
+
+        // Add-on mua thêm quota tài khoản / lớp học (mở rộng giới hạn của gói nền)
+        if (!await db.RoleQuotaAddOns.AnyAsync())
+        {
+            db.RoleQuotaAddOns.AddRange(
+                new RoleQuotaAddOn
+                {
+                    AddOnCode = "QUOTA_TEACHER_10", Name = "Gói +10 Giáo viên",
+                    Description = "Thêm 10 slot tài khoản giáo viên trên nền gói hiện tại.",
+                    TargetRole = RoleCode.Teacher, ExtraQuota = 10, ExtraClasses = 0,
+                    MonthlyPrice = 150_000M, QuarterlyPrice = 400_000M, YearlyPrice = 1_500_000M, IsActive = true
+                },
+                new RoleQuotaAddOn
+                {
+                    AddOnCode = "QUOTA_STUDENT_50", Name = "Gói +50 Học sinh",
+                    Description = "Thêm 50 slot tài khoản học sinh trên nền gói hiện tại.",
+                    TargetRole = RoleCode.Student, ExtraQuota = 50, ExtraClasses = 0,
+                    MonthlyPrice = 100_000M, QuarterlyPrice = 270_000M, YearlyPrice = 1_000_000M, IsActive = true
+                },
+                new RoleQuotaAddOn
+                {
+                    AddOnCode = "QUOTA_PARENT_50", Name = "Gói +50 Phụ huynh",
+                    Description = "Thêm 50 slot tài khoản phụ huynh trên nền gói hiện tại.",
+                    TargetRole = RoleCode.Parent, ExtraQuota = 50, ExtraClasses = 0,
+                    MonthlyPrice = 80_000M, QuarterlyPrice = 210_000M, YearlyPrice = 800_000M, IsActive = true
+                },
+                new RoleQuotaAddOn
+                {
+                    AddOnCode = "QUOTA_CLASS_5", Name = "Gói +5 Lớp học",
+                    Description = "Thêm 5 lớp học trên nền gói hiện tại.",
+                    TargetRole = null, ExtraQuota = 0, ExtraClasses = 5,
+                    MonthlyPrice = 80_000M, QuarterlyPrice = 210_000M, YearlyPrice = 800_000M, IsActive = true
+                });
+            await db.SaveChangesAsync();
+            logger.LogInformation("📦 Seeded role-quota add-ons: TEACHER_10, STUDENT_50, PARENT_50, CLASS_5");
         }
 
         // Trường mặc định khởi đầu ở gói Cơ Bản (KHÔNG gồm AI & Phòng 3D) để demo đúng

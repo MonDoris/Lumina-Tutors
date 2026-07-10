@@ -28,7 +28,9 @@ public sealed class VirtualLabService : IVirtualLabService
             // Biology
             "cell", "dna", "photosynthesis",
             // Math
-            "polyhedron", "vectors"
+            "polyhedron", "vectors",
+            // Math — bảng vẽ 3D cộng tác real-time (giáo viên tự do dựng hình)
+            "freedraw"
         };
 
     public VirtualLabService(IUnitOfWork uow, ILogger<VirtualLabService> logger)
@@ -158,6 +160,24 @@ public sealed class VirtualLabService : IVirtualLabService
 
         _logger.LogInformation("VirtualLab session {Id} closed by teacher {TeacherId}", sessionId, teacherId);
         return Result.Success();
+    }
+
+    // ─── Scene persistence (Bảng vẽ Toán 3D) ──────────────────────────────────
+
+    public async Task<string?> GetSceneJsonAsync(int sessionId, CancellationToken ct = default)
+    {
+        var session = await _uow.VirtualLabSessions.GetByIdAsync(sessionId, ct);
+        return session?.SceneJson;
+    }
+
+    public async Task SaveSceneJsonAsync(int sessionId, string sceneJson, CancellationToken ct = default)
+    {
+        var session = await _uow.VirtualLabSessions.GetByIdAsync(sessionId, ct);
+        if (session is null) return;
+
+        session.SceneJson = sceneJson;
+        _uow.VirtualLabSessions.Update(session);
+        await _uow.SaveChangesAsync(ct);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

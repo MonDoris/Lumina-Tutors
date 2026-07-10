@@ -48,6 +48,8 @@ public sealed class SubscriptionService : ISubscriptionService
                     .OrderBy(p => p.Tier).ToList();
         var addOns = (await _uow.SubscriptionAddOns.FindAsync(a => a.IsActive, ct))
                     .OrderBy(a => a.Name).ToList();
+        var quotaAddOns = (await _uow.RoleQuotaAddOns.FindAsync(a => a.IsActive, ct))
+                    .OrderBy(a => a.TargetRole).ThenBy(a => a.Name).ToList();
 
         var current = MapCurrent(sub);
 
@@ -74,7 +76,14 @@ public sealed class SubscriptionService : ISubscriptionService
             IncludesAiTutor    = p.IncludesAiTutor,
             IncludesVirtualLab = p.IncludesVirtualLab,
             IsCurrent          = current.IsActive && sub?.PlanId == p.Id,
-            IsUpgrade          = current.IsActive && p.Tier > currentTier
+            IsUpgrade          = current.IsActive && p.Tier > currentTier,
+            MaxTeachers        = p.MaxTeachers,
+            MaxStudents        = p.MaxStudents,
+            MaxParents         = p.MaxParents,
+            MaxAdmins          = p.MaxAdmins,
+            MaxAccountants     = p.MaxAccountants,
+            MaxSupervisors     = p.MaxSupervisors,
+            MaxClasses         = p.MaxClasses
         }).ToList();
 
         var addOnDtos = addOns.Select(a =>
@@ -98,11 +107,33 @@ public sealed class SubscriptionService : ISubscriptionService
             };
         }).ToList();
 
+        var quotaAddOnDtos = quotaAddOns.Select(a =>
+        {
+            var owned = sub?.RoleQuotaAddOns.FirstOrDefault(x => x.IsActive && x.AddOnId == a.Id && x.ActiveUntil >= Today);
+            return new RoleQuotaAddOnDto
+            {
+                AddOnId        = a.Id,
+                AddOnCode      = a.AddOnCode,
+                Name           = a.Name,
+                Description    = a.Description,
+                TargetRole     = a.TargetRole,
+                ExtraQuota     = a.ExtraQuota,
+                ExtraClasses   = a.ExtraClasses,
+                MonthlyPrice   = a.MonthlyPrice,
+                QuarterlyPrice = a.QuarterlyPrice,
+                YearlyPrice    = a.YearlyPrice,
+                IsActive       = a.IsActive,
+                IsOwned        = owned is not null,
+                ActiveUntil    = owned?.ActiveUntil
+            };
+        }).ToList();
+
         return Result<SubscriptionOverviewDto>.Success(new SubscriptionOverviewDto
         {
             Current      = current,
             Plans        = planDtos,
             AddOns       = addOnDtos,
+            QuotaAddOns  = quotaAddOnDtos,
             RecentOrders = orders
         });
     }
@@ -234,6 +265,50 @@ public sealed class SubscriptionService : ISubscriptionService
         return Result<SubscriptionOrderDto>.Success(dto);
     }
 
+    // ─── Buy quota add-on (slot tài khoản / lớp học) ──────────────────────────
+
+    public async Task<Result<SubscriptionOrderDto>> BuyQuotaAddOnAsync(
+        int schoolId, int userId, int quotaAddOnId, CancellationToken ct = default)
+    {
+        var addOn = await _uow.RoleQuotaAddOns.GetByIdAsync(quotaAddOnId, ct);
+        if (addOn is null || !addOn.IsActive)
+            return Result<SubscriptionOrderDto>.Failure("Gói mở rộng không tồn tại.", "QUOTA_ADDON_NOT_FOUND");
+
+        var sub = await LoadSubscriptionAsync(schoolId, ct);
+        if (sub is null || sub.Status != SubscriptionStatus.Active || sub.CurrentPeriodEnd < Today)
+            return Result<SubscriptionOrderDto>.Failure(
+                "Cần có gói đang hoạt động trước khi mua thêm slot.", "NO_ACTIVE_PLAN");
+
+        if (sub.RoleQuotaAddOns.Any(a => a.IsActive && a.AddOnId == addOn.Id && a.ActiveUntil >= Today))
+            return Result<SubscriptionOrderDto>.Failure("Trường đã sở hữu gói mở rộng này.", "ALREADY_OWNED");
+
+        var periodStart = Today;
+        var periodEnd   = sub.CurrentPeriodEnd;                 // canh hết hạn theo kỳ của gói
+        var amount      = addOn.PriceFor(sub.BillingCycle);
+
+        SubscriptionOrderDto dto = null!;
+        await _uow.ExecuteInTransactionAsync(async () =>
+        {
+            var order = await BuildOrderAsync(schoolId, userId, sub.Id, SubscriptionOrderType.AddOn, null,
+                sub.BillingCycle, amount, periodStart, periodEnd, ct);
+            order.Items.Add(new SubscriptionOrderItem
+            {
+                ItemType    = SubscriptionItemType.QuotaAddOn,
+                RefId       = addOn.Id,
+                Description = $"Gói mở rộng {addOn.Name}",
+                Amount      = amount
+            });
+
+            await _uow.SubscriptionOrders.AddAsync(order, ct);
+            await _uow.SaveChangesAsync(ct);
+            dto = MapOrder(order, null);
+        }, ct);
+
+        _logger.LogInformation("Quota add-on order {Code} ({AddOn}) created for school {School}",
+            dto.OrderCode, addOn.AddOnCode, schoolId);
+        return Result<SubscriptionOrderDto>.Success(dto);
+    }
+
     // ─── Renewal (manual) ─────────────────────────────────────────────────────
 
     public async Task<Result<SubscriptionOrderDto>> CreateRenewalOrderAsync(
@@ -303,6 +378,39 @@ public sealed class SubscriptionService : ISubscriptionService
         return Result<SubscriptionOrderDto>.Success(MapOrder(order));
     }
 
+    // ─── Đổi chu kỳ đơn ngay tại trang thanh toán ─────────────────────────────
+
+    public async Task<Result> ChangeOrderCycleAsync(
+        int orderId, int schoolId, SubscriptionCycle cycle, CancellationToken ct = default)
+    {
+        var order = await _uow.SubscriptionOrders.FindOneAsync(
+            o => o.Id == orderId && o.SchoolId == schoolId,
+            include: q => q.Include(o => o.Plan).Include(o => o.Items).Include(o => o.Subscription),
+            ct: ct);
+
+        if (order is null)                                return Result.Failure("Đơn không tồn tại.", "NOT_FOUND");
+        if (order.Status == SubscriptionOrderStatus.Paid) return Result.Failure("Đơn đã thanh toán, không đổi được chu kỳ.", "PAID");
+        if (order.PlanId is null || order.Plan is null)   return Result.Failure("Chỉ đổi chu kỳ cho đơn mua gói.", "NOT_PLAN");
+
+        var amount = order.Plan.PriceFor(cycle);
+        order.BillingCycle = cycle;
+        order.Amount       = amount;
+        order.PeriodEnd    = AddCycle(order.PeriodStart, cycle);
+
+        var planItem = order.Items.FirstOrDefault(i => i.ItemType == SubscriptionItemType.Plan);
+        if (planItem is not null)
+        {
+            planItem.Amount      = amount;
+            planItem.Description = $"Gói {order.Plan.Name} ({CycleLabel(cycle)})";
+        }
+
+        if (order.Subscription is not null)
+            order.Subscription.BillingCycle = cycle;
+
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     // ─── Confirm payment (idempotent) ─────────────────────────────────────────
 
     public async Task<SubscriptionConfirmResult> ConfirmOrderPaymentAsync(
@@ -313,7 +421,8 @@ public sealed class SubscriptionService : ISubscriptionService
             o => o.Id == orderId,
             include: q => q.Include(o => o.Items)
                            .Include(o => o.Subscription).ThenInclude(s => s.Plan)
-                           .Include(o => o.Subscription).ThenInclude(s => s.AddOns),
+                           .Include(o => o.Subscription).ThenInclude(s => s.AddOns)
+                           .Include(o => o.Subscription).ThenInclude(s => s.RoleQuotaAddOns),
             ct: ct);
 
         if (order is null)                                          return SubscriptionConfirmResult.NotFound;
@@ -344,8 +453,12 @@ public sealed class SubscriptionService : ISubscriptionService
                         sub.Status           = SubscriptionStatus.Active;
                         // Gia hạn: kéo dài các add-on đang hoạt động theo kỳ mới
                         if (order.OrderType == SubscriptionOrderType.Renewal)
+                        {
                             foreach (var a in sub.AddOns.Where(a => a.IsActive))
                                 a.ActiveUntil = order.PeriodEnd;
+                            foreach (var a in sub.RoleQuotaAddOns.Where(a => a.IsActive))
+                                a.ActiveUntil = order.PeriodEnd;
+                        }
                         break;
 
                     case SubscriptionOrderType.AddOn:
@@ -360,6 +473,26 @@ public sealed class SubscriptionService : ISubscriptionService
                             else
                             {
                                 await _uow.SchoolSubscriptionAddOns.AddAsync(new SchoolSubscriptionAddOn
+                                {
+                                    SubscriptionId = sub.Id,
+                                    AddOnId        = item.RefId,
+                                    IsActive       = true,
+                                    ActiveUntil    = order.PeriodEnd
+                                }, ct);
+                            }
+                        }
+                        // Kích hoạt các gói mở rộng quota mua trong cùng đơn
+                        foreach (var item in order.Items.Where(i => i.ItemType == SubscriptionItemType.QuotaAddOn))
+                        {
+                            var existing = sub.RoleQuotaAddOns.FirstOrDefault(a => a.AddOnId == item.RefId);
+                            if (existing is not null)
+                            {
+                                existing.IsActive    = true;
+                                existing.ActiveUntil = order.PeriodEnd;
+                            }
+                            else
+                            {
+                                await _uow.SchoolRoleQuotaAddOns.AddAsync(new SchoolRoleQuotaAddOn
                                 {
                                     SubscriptionId = sub.Id,
                                     AddOnId        = item.RefId,
@@ -493,6 +626,7 @@ public sealed class SubscriptionService : ISubscriptionService
             s => s.Status == SubscriptionStatus.Active && s.CurrentPeriodEnd < Today,
             include: q => q.Include(s => s.Plan)
                            .Include(s => s.AddOns).ThenInclude(a => a.AddOn)
+                           .Include(s => s.RoleQuotaAddOns).ThenInclude(a => a.AddOn)
                            .Include(s => s.Orders),
             ct: ct);
 
@@ -527,6 +661,8 @@ public sealed class SubscriptionService : ISubscriptionService
     {
         var plans  = (await _uow.SubscriptionPlans.GetAllAsync(ct)).OrderBy(p => p.Tier).ToList();
         var addOns = (await _uow.SubscriptionAddOns.GetAllAsync(ct)).OrderBy(a => a.Name).ToList();
+        var quotaAddOns = (await _uow.RoleQuotaAddOns.GetAllAsync(ct))
+                          .OrderBy(a => a.TargetRole).ThenBy(a => a.Name).ToList();
 
         return Result<CatalogDto>.Success(new CatalogDto
         {
@@ -542,7 +678,14 @@ public sealed class SubscriptionService : ISubscriptionService
                 YearlyPrice        = p.YearlyPrice,
                 IncludesAiTutor    = p.IncludesAiTutor,
                 IncludesVirtualLab = p.IncludesVirtualLab,
-                IsActive           = p.IsActive
+                IsActive           = p.IsActive,
+                MaxTeachers        = p.MaxTeachers,
+                MaxStudents        = p.MaxStudents,
+                MaxParents         = p.MaxParents,
+                MaxAdmins          = p.MaxAdmins,
+                MaxAccountants     = p.MaxAccountants,
+                MaxSupervisors     = p.MaxSupervisors,
+                MaxClasses         = p.MaxClasses
             }).ToList(),
             AddOns = addOns.Select(a => new SubscriptionAddOnDto
             {
@@ -551,6 +694,20 @@ public sealed class SubscriptionService : ISubscriptionService
                 Name           = a.Name,
                 Description    = a.Description,
                 Feature        = a.Feature.ToString(),
+                MonthlyPrice   = a.MonthlyPrice,
+                QuarterlyPrice = a.QuarterlyPrice,
+                YearlyPrice    = a.YearlyPrice,
+                IsActive       = a.IsActive
+            }).ToList(),
+            QuotaAddOns = quotaAddOns.Select(a => new RoleQuotaAddOnDto
+            {
+                AddOnId        = a.Id,
+                AddOnCode      = a.AddOnCode,
+                Name           = a.Name,
+                Description    = a.Description,
+                TargetRole     = a.TargetRole,
+                ExtraQuota     = a.ExtraQuota,
+                ExtraClasses   = a.ExtraClasses,
                 MonthlyPrice   = a.MonthlyPrice,
                 QuarterlyPrice = a.QuarterlyPrice,
                 YearlyPrice    = a.YearlyPrice,
@@ -625,6 +782,42 @@ public sealed class SubscriptionService : ISubscriptionService
         return Result.Success();
     }
 
+    public async Task<Result> SaveQuotaAddOnAsync(QuotaAddOnEditRequest r, CancellationToken ct = default)
+    {
+        var code = r.AddOnCode.Trim().ToUpperInvariant();
+        if (r.ExtraQuota <= 0 && r.ExtraClasses <= 0)
+            return Result.Failure("Phải nhập số slot tài khoản hoặc số lớp mở rộng (> 0).", "EMPTY_QUOTA");
+
+        if (r.AddOnId is null or 0)
+        {
+            if (await _uow.RoleQuotaAddOns.AnyAsync(a => a.AddOnCode == code, ct))
+                return Result.Failure("Mã gói mở rộng đã tồn tại.", "DUP_CODE");
+            var addOn = new RoleQuotaAddOn();
+            ApplyQuotaAddOn(addOn, r, code);
+            await _uow.RoleQuotaAddOns.AddAsync(addOn, ct);
+        }
+        else
+        {
+            var addOn = await _uow.RoleQuotaAddOns.GetByIdAsync(r.AddOnId.Value, ct);
+            if (addOn is null) return Result.Failure("Gói mở rộng không tồn tại.", "NOT_FOUND");
+            if (await _uow.RoleQuotaAddOns.AnyAsync(a => a.AddOnCode == code && a.Id != addOn.Id, ct))
+                return Result.Failure("Mã gói mở rộng đã tồn tại.", "DUP_CODE");
+            ApplyQuotaAddOn(addOn, r, code);
+        }
+        await _uow.SaveChangesAsync(ct);
+        _logger.LogInformation("Catalog: saved quota add-on {Code}", code);
+        return Result.Success();
+    }
+
+    public async Task<Result> ToggleQuotaAddOnActiveAsync(int addOnId, CancellationToken ct = default)
+    {
+        var addOn = await _uow.RoleQuotaAddOns.GetByIdAsync(addOnId, ct);
+        if (addOn is null) return Result.Failure("Gói mở rộng không tồn tại.", "NOT_FOUND");
+        addOn.IsActive = !addOn.IsActive;
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
     public async Task<Result<IReadOnlyList<SchoolSubscriptionRowDto>>> GetAllSubscriptionsAsync(CancellationToken ct = default)
     {
         var subs = await _uow.SchoolSubscriptions.FindAsync(
@@ -637,6 +830,19 @@ public sealed class SubscriptionService : ISubscriptionService
             .ToDictionary(g => g.Key, g => g.First());
 
         var schools = await _uow.Schools.GetAllAsync(ct);
+
+        // Lịch sử thay đổi gói (8 đơn gần nhất mỗi trường)
+        var orders = await _uow.SubscriptionOrders.FindAsync(
+            o => true, include: q => q.Include(o => o.Plan), ct: ct);
+        var historyBySchool = orders
+            .GroupBy(o => o.SchoolId)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<PlanHistoryItemDto>)g
+                .OrderByDescending(o => o.CreatedAt).Take(8)
+                .Select(o => new PlanHistoryItemDto(
+                    o.CreatedAt, o.OrderType.ToString(),
+                    o.Plan != null ? o.Plan.Name : "—",
+                    o.BillingCycle.ToString(), o.Status.ToString(), o.Amount))
+                .ToList());
 
         // Liệt kê MỌI trường — trường chưa mua gói hiển thị "Chưa đăng ký"
         var rows = schools.OrderBy(s => s.SchoolName).Select(school =>
@@ -657,7 +863,9 @@ public sealed class SubscriptionService : ISubscriptionService
                     IsActive         = s.Status == SubscriptionStatus.Active && s.CurrentPeriodEnd >= Today,
                     AddOns           = string.Join(", ", s.AddOns
                                            .Where(a => a.IsActive && a.ActiveUntil >= Today)
-                                           .Select(a => a.AddOn.Name))
+                                           .Select(a => a.AddOn.Name)),
+                    CurrentPlanId    = s.PlanId,
+                    History          = historyBySchool.GetValueOrDefault(school.Id, new List<PlanHistoryItemDto>())
                 };
             }
             return new SchoolSubscriptionRowDto
@@ -668,11 +876,86 @@ public sealed class SubscriptionService : ISubscriptionService
                 SchoolName      = school.SchoolName,
                 Status          = "NotSubscribed",
                 IsActive        = false,
-                AddOns          = ""
+                AddOns          = "",
+                History         = historyBySchool.GetValueOrDefault(school.Id, new List<PlanHistoryItemDto>())
             };
         }).ToList();
 
         return Result<IReadOnlyList<SchoolSubscriptionRowDto>>.Success(rows);
+    }
+
+    // ─── E-Selling admin: điều chỉnh gói trực tiếp cho một trường ──────────────
+
+    public async Task<Result> AdminChangePlanAsync(
+        int schoolId, int planId, SubscriptionCycle cycle, bool autoRenew, int byUserId, CancellationToken ct = default)
+    {
+        var school = await _uow.Schools.GetByIdAsync(schoolId, ct);
+        if (school is null) return Result.Failure("Trường không tồn tại.", "NOT_FOUND");
+        var plan = await _uow.SubscriptionPlans.GetByIdAsync(planId, ct);
+        if (plan is null || !plan.IsActive) return Result.Failure("Gói không hợp lệ.", "NO_PLAN");
+
+        var periodStart = Today;
+        var periodEnd   = AddCycle(Today, cycle);
+
+        try
+        {
+            await _uow.ExecuteInTransactionAsync(async () =>
+            {
+                var sub = await _uow.SchoolSubscriptions.FindOneAsync(s => s.SchoolId == schoolId, ct: ct);
+                var isNew = sub is null;
+                if (sub is null)
+                {
+                    sub = new SchoolSubscription { SchoolId = schoolId, StartDate = periodStart };
+                    await _uow.SchoolSubscriptions.AddAsync(sub, ct);
+                }
+                sub.PlanId           = planId;
+                sub.BillingCycle     = cycle;
+                sub.AutoRenew        = autoRenew;
+                sub.Status           = SubscriptionStatus.Active;
+                sub.CurrentPeriodEnd = periodEnd;
+                sub.CancelledAt      = null;
+                await _uow.SaveChangesAsync(ct);   // để có sub.Id
+
+                var order = await BuildOrderAsync(schoolId, byUserId, sub.Id,
+                    isNew ? SubscriptionOrderType.New : SubscriptionOrderType.Upgrade,
+                    planId, cycle, plan.PriceFor(cycle), periodStart, periodEnd, ct);
+                order.Status          = SubscriptionOrderStatus.Paid;
+                order.PaidAt          = DateTime.UtcNow;
+                order.PaymentMethod   = PaymentMethod.BankTransfer;
+                order.GatewayResponse = "Điều chỉnh trực tiếp bởi Quản trị hệ thống";
+                await _uow.SubscriptionOrders.AddAsync(order, ct);
+                await _uow.SaveChangesAsync(ct);
+            }, ct);
+
+            _logger.LogInformation("SYSADMIN {By} điều chỉnh gói trường {School} → plan {Plan} ({Cycle})",
+                byUserId, schoolId, planId, cycle);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AdminChangePlan failed for school {School}", schoolId);
+            return Result.Failure("Có lỗi khi điều chỉnh gói.", "ERROR");
+        }
+    }
+
+    public async Task<Result<IReadOnlyList<PaidOrderDto>>> GetPaidOrdersAsync(CancellationToken ct = default)
+    {
+        var schools = (await _uow.Schools.GetAllAsync(ct)).ToDictionary(s => s.Id, s => s.SchoolName);
+        var orders  = await _uow.SubscriptionOrders.FindAsync(
+            o => o.Status == SubscriptionOrderStatus.Paid,
+            include: q => q.Include(o => o.Plan), ct: ct);
+
+        var list = orders
+            .OrderByDescending(o => o.PaidAt ?? o.CreatedAt)
+            .Select(o => new PaidOrderDto(
+                o.Id, o.OrderCode,
+                schools.GetValueOrDefault(o.SchoolId, $"Trường #{o.SchoolId}"),
+                o.Plan != null ? o.Plan.Name : "—",
+                o.OrderType.ToString(), o.BillingCycle.ToString(),
+                o.Amount, o.PeriodStart, o.PeriodEnd, o.PaidAt))
+            .ToList();
+
+        return Result<IReadOnlyList<PaidOrderDto>>.Success(list);
     }
 
     // ─── Doanh thu ────────────────────────────────────────────────────────────
@@ -875,40 +1158,78 @@ public sealed class SubscriptionService : ISubscriptionService
         return Result.Success();
     }
 
+    /// <summary>
+    /// Xóa VĨNH VIỄN một trường và TOÀN BỘ dữ liệu liên quan (cascade thủ công).
+    /// Tạm tắt FK constraint, xóa mọi bảng có cột SchoolId, dọn các bản ghi con mồ côi,
+    /// rồi xóa bản ghi trường và bật lại constraint. Tất cả trong 1 transaction — lỗi sẽ rollback.
+    /// </summary>
     public async Task<Result> DeleteSchoolAsync(int schoolId, int currentSchoolId, CancellationToken ct = default)
     {
         if (schoolId == currentSchoolId) return Result.Failure("Không thể xóa trường của chính bạn.", "SELF");
         var school = await _uow.Schools.GetByIdAsync(schoolId, ct);
         if (school is null) return Result.Failure("Trường không tồn tại.", "NOT_FOUND");
 
-        var students = await _uow.StudentProfiles.CountAsync(p => p.SchoolId == schoolId, ct);
-        var classes  = await _uow.Classes.CountAsync(c => c.SchoolId == schoolId, ct);
-        if (students > 0 || classes > 0)
-            return Result.Failure("Trường đã có dữ liệu học vụ — hãy 'Tạm khóa' thay vì xóa.", "HAS_DATA");
+        // Script cascade tổng quát: đọc tên bảng/cột từ sys catalog (không hardcode), an toàn với mọi
+        // tên bảng. schoolId là int do hệ thống truyền — nhúng trực tiếp, không có rủi ro SQL injection.
+        var sql = $@"
+SET NOCOUNT ON;
+DECLARE @sid INT = {schoolId};
+
+-- 1) Tạm tắt toàn bộ FK constraint để thứ tự xóa không quan trọng
+DECLARE @off NVARCHAR(MAX) = N'', @on NVARCHAR(MAX) = N'';
+SELECT @off += 'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) + ' NOCHECK CONSTRAINT ALL;' + CHAR(10),
+       @on  += 'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) + ' WITH CHECK CHECK CONSTRAINT ALL;' + CHAR(10)
+FROM sys.tables WHERE is_ms_shipped = 0;
+EXEC sys.sp_executesql @off;
+
+-- 2) Xóa dữ liệu ở mọi bảng có cột [SchoolId]
+DECLARE @del NVARCHAR(MAX) = N'';
+SELECT @del += 'DELETE FROM ' + QUOTENAME(SCHEMA_NAME(t.schema_id)) + '.' + QUOTENAME(t.name) + ' WHERE [SchoolId] = @sid;' + CHAR(10)
+FROM sys.tables t
+WHERE t.is_ms_shipped = 0
+  AND EXISTS (SELECT 1 FROM sys.columns c WHERE c.object_id = t.object_id AND c.name = 'SchoolId');
+EXEC sys.sp_executesql @del, N'@sid INT', @sid = @sid;
+
+-- 3) Dọn các bản ghi con mồ côi (FK trỏ tới cha đã bị xóa) — lặp nhiều lượt cho các cấp lồng nhau
+DECLARE @pass INT = 0;
+WHILE @pass < 8
+BEGIN
+    DECLARE @orph NVARCHAR(MAX) = N'';
+    SELECT @orph += 'DELETE c FROM ' + QUOTENAME(SCHEMA_NAME(ct.schema_id)) + '.' + QUOTENAME(ct.name) + ' c WHERE c.'
+        + QUOTENAME(pc.name) + ' IS NOT NULL AND NOT EXISTS (SELECT 1 FROM '
+        + QUOTENAME(SCHEMA_NAME(rt.schema_id)) + '.' + QUOTENAME(rt.name) + ' p WHERE p.'
+        + QUOTENAME(rc.name) + ' = c.' + QUOTENAME(pc.name) + ');' + CHAR(10)
+    FROM sys.foreign_keys fk
+    JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+    JOIN sys.tables ct ON fk.parent_object_id = ct.object_id
+    JOIN sys.columns pc ON pc.object_id = ct.object_id AND pc.column_id = fkc.parent_column_id
+    JOIN sys.tables rt ON fk.referenced_object_id = rt.object_id
+    JOIN sys.columns rc ON rc.object_id = rt.object_id AND rc.column_id = fkc.referenced_column_id
+    WHERE fk.parent_object_id <> fk.referenced_object_id;
+    EXEC sys.sp_executesql @orph;
+    SET @pass += 1;
+END
+
+-- 4) Xóa bản ghi trường (PK của bảng Schools là cột [SchoolId]). Bước 2 thường đã xóa,
+--    nhưng giữ lại cho chắc — nếu đã xóa thì câu này tác động 0 dòng.
+DELETE FROM [Schools] WHERE [SchoolId] = @sid;
+
+-- 5) Bật lại toàn bộ FK constraint (validate dữ liệu còn lại)
+EXEC sys.sp_executesql @on;";
 
         try
         {
             await _uow.ExecuteInTransactionAsync(async () =>
             {
-                var orders = await _uow.SubscriptionOrders.FindAsync(o => o.SchoolId == schoolId, ct);
-                _uow.SubscriptionOrders.RemoveRange(orders);          // order items cascade
-
-                var schoolSubs = await _uow.SchoolSubscriptions.FindAsync(s => s.SchoolId == schoolId, ct);
-                _uow.SchoolSubscriptions.RemoveRange(schoolSubs);     // add-ons cascade
-
-                var users = await _uow.Users.FindAsync(u => u.SchoolId == schoolId, ct);
-                _uow.Users.RemoveRange(users);                        // refresh tokens cascade
-
-                _uow.Schools.Remove(school);
-                await _uow.SaveChangesAsync(ct);
+                await _uow.ExecuteRawSqlAsync(sql, ct);
             }, ct);
-            _logger.LogInformation("Deleted school {Id} ({Name})", schoolId, school.SchoolName);
+            _logger.LogWarning("Force-deleted school {Id} ({Name}) and all related data", schoolId, school.SchoolName);
             return Result.Success();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Delete school {Id} failed", schoolId);
-            return Result.Failure("Không xóa được do còn dữ liệu liên quan. Hãy dùng 'Tạm khóa'.", "FK");
+            _logger.LogError(ex, "Force-delete school {Id} failed", schoolId);
+            return Result.Failure("Không xóa được trường (đã hoàn tác). Vui lòng thử lại hoặc dùng 'Tạm khóa'.", "DELETE_FAILED");
         }
     }
 
@@ -924,6 +1245,13 @@ public sealed class SubscriptionService : ISubscriptionService
         p.IncludesAiTutor    = r.IncludesAiTutor;
         p.IncludesVirtualLab = r.IncludesVirtualLab;
         p.IsActive           = r.IsActive;
+        p.MaxTeachers        = r.MaxTeachers;
+        p.MaxStudents        = r.MaxStudents;
+        p.MaxParents         = r.MaxParents;
+        p.MaxAdmins          = r.MaxAdmins;
+        p.MaxAccountants     = r.MaxAccountants;
+        p.MaxSupervisors     = r.MaxSupervisors;
+        p.MaxClasses         = r.MaxClasses;
     }
 
     private static void ApplyAddOn(SubscriptionAddOn a, AddOnEditRequest r, string code)
@@ -938,6 +1266,20 @@ public sealed class SubscriptionService : ISubscriptionService
         a.IsActive       = r.IsActive;
     }
 
+    private static void ApplyQuotaAddOn(RoleQuotaAddOn a, QuotaAddOnEditRequest r, string code)
+    {
+        a.AddOnCode      = code;
+        a.Name           = r.Name.Trim();
+        a.Description     = r.Description?.Trim();
+        a.TargetRole     = r.TargetRole;
+        a.ExtraQuota     = r.ExtraQuota;
+        a.ExtraClasses   = r.ExtraClasses;
+        a.MonthlyPrice   = r.MonthlyPrice;
+        a.QuarterlyPrice = r.QuarterlyPrice;
+        a.YearlyPrice    = r.YearlyPrice;
+        a.IsActive       = r.IsActive;
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private async Task<SchoolSubscription?> LoadSubscriptionAsync(int schoolId, CancellationToken ct) =>
@@ -945,6 +1287,7 @@ public sealed class SubscriptionService : ISubscriptionService
             s => s.SchoolId == schoolId,
             include: q => q.Include(s => s.Plan)
                            .Include(s => s.AddOns).ThenInclude(a => a.AddOn)
+                           .Include(s => s.RoleQuotaAddOns).ThenInclude(a => a.AddOn)
                            .Include(s => s.Orders),
             ct: ct);
 
@@ -998,6 +1341,19 @@ public sealed class SubscriptionService : ISubscriptionService
                 ItemType    = SubscriptionItemType.AddOn,
                 RefId       = a.AddOnId,
                 Description = $"Gia hạn tính năng {a.AddOn.Name}",
+                Amount      = addOnPrice
+            });
+        }
+
+        foreach (var a in sub.RoleQuotaAddOns.Where(a => a.IsActive))
+        {
+            var addOnPrice = a.AddOn.PriceFor(cycle);
+            total += addOnPrice;
+            order.Items.Add(new SubscriptionOrderItem
+            {
+                ItemType    = SubscriptionItemType.QuotaAddOn,
+                RefId       = a.AddOnId,
+                Description = $"Gia hạn gói mở rộng {a.AddOn.Name}",
                 Amount      = addOnPrice
             });
         }

@@ -18,17 +18,20 @@ public sealed class HRService : IHRService
     private readonly IUnitOfWork           _uow;
     private readonly IMapper               _mapper;
     private readonly IPasswordHasher<User> _hasher;
+    private readonly IQuotaService         _quota;
     private readonly ILogger<HRService>    _logger;
 
     public HRService(
         IUnitOfWork uow,
         IMapper mapper,
         IPasswordHasher<User> hasher,
+        IQuotaService quota,
         ILogger<HRService> logger)
     {
         _uow    = uow;
         _mapper = mapper;
         _hasher = hasher;
+        _quota  = quota;
         _logger = logger;
     }
 
@@ -75,6 +78,12 @@ public sealed class HRService : IHRService
     public async Task<Result<TeacherDetailDto>> CreateTeacherAsync(
         int schoolId, CreateTeacherRequest request, CancellationToken ct = default)
     {
+        // Kiểm tra giới hạn số giáo viên theo gói trước khi tạo
+        var quotaCheck = await _quota.CanAddUserAsync(schoolId, RoleCode.Teacher, ct);
+        if (!quotaCheck.IsSuccess)
+            return Result<TeacherDetailDto>.Failure(
+                quotaCheck.Error ?? "Đã đạt giới hạn giáo viên của gói.", quotaCheck.ErrorCode);
+
         var schoolAdmin = (await _uow.Users.FindAsync(
             u => u.SchoolId == schoolId && u.Role.RoleCode == "ADMIN", ct: ct)).FirstOrDefault();
         var baseDomain = LuminaTutors.Application.Common.RoleEmail.BaseDomain(schoolAdmin?.Email);

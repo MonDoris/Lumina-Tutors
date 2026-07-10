@@ -1,0 +1,189 @@
+@using LuminaTutors.Application.DTOs.Lab
+@model LabSessionDto
+@{
+    Layout = null; // Toàn màn hình 3D
+    var isHost = ViewBag.IsHost as bool? ?? false;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>@Model.SessionName — Bảng vẽ Toán 3D · Lumina Tutors</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@@1.11.3/font/bootstrap-icons.css">
+
+    <!-- importmap PHẢI đứng trước mọi modulepreload để bare specifier "three" phân giải được -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three":         "/js/three/three.module.js",
+        "three/addons/": "/js/three/"
+      }
+    }
+    </script>
+    <link rel="modulepreload" href="/js/three/three.module.js">
+    <link rel="modulepreload" href="/js/three/controls/OrbitControls.js">
+    <link rel="modulepreload" href="/js/three/renderers/CSS2DRenderer.js">
+
+    <style>
+        *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+        html,body { width:100%; height:100%; overflow:hidden; background:#0a0f1e;
+            font-family:'Segoe UI',system-ui,sans-serif; color:#e2e8f0; }
+        #ml-canvas { display:block; width:100%; height:100%; touch-action:none; }
+
+        /* Nhãn & số đo neo trong không gian 3D (CSS2D) */
+        .ml-label3d { font-size:12px; font-weight:600; white-space:nowrap;
+            background:rgba(8,14,26,.82); border:1px solid rgba(56,189,248,.3);
+            padding:2px 7px; border-radius:6px; transform:translate(-50%,-130%); }
+
+        .ml-overlay { position:fixed; inset:0; pointer-events:none; z-index:10; }
+        .ml-overlay > * { pointer-events:auto; }
+
+        /* Header */
+        .ml-header { position:absolute; top:0; left:0; right:0; height:50px; display:flex; align-items:center;
+            gap:12px; padding:0 14px; background:rgba(8,14,26,.94); border-bottom:1px solid rgba(56,189,248,.16); }
+        .ml-back { display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:8px;
+            border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); color:#94a3b8;
+            text-decoration:none; font-size:.82rem; }
+        .ml-back:hover { color:#e2e8f0; background:rgba(255,255,255,.08); }
+        .ml-title { font-weight:600; font-size:.9rem; color:#f1f5f9; }
+        .ml-sub { font-size:.72rem; color:#5a87a0; }
+        .ml-code { margin-left:auto; background:rgba(201,169,110,.1); border:1px solid rgba(56,189,248,.2);
+            border-radius:7px; padding:4px 12px; font-weight:700; letter-spacing:.14em; color:#e8c98a;
+            font-family:monospace; font-size:.82rem; }
+        .ml-chip { font-size:.74rem; color:#7dd3fc; background:rgba(56,189,248,.08); padding:4px 9px; border-radius:7px; }
+
+        /* Toolbar trái */
+        .ml-toolbar { position:absolute; top:62px; left:12px; display:flex; flex-direction:column; gap:5px;
+            padding:7px; background:rgba(8,14,26,.92); border:1px solid rgba(56,189,248,.14); border-radius:13px; }
+        .ml-tool, .ml-act { width:42px; height:42px; border-radius:9px; border:1px solid transparent;
+            background:transparent; color:#5fa8c2; font-size:1.1rem; cursor:pointer; display:flex;
+            align-items:center; justify-content:center; transition:.13s; }
+        .ml-tool:hover, .ml-act:hover { background:rgba(56,189,248,.08); color:#a8d8e8; }
+        .ml-tool.active { background:rgba(56,189,248,.16); color:#38bdf8; border-color:rgba(56,189,248,.35); }
+        .ml-tool.disabled { opacity:.3; pointer-events:none; }
+        .ml-tsep { height:1px; background:rgba(56,189,248,.12); margin:3px 4px; }
+
+        /* Bảng màu + cao độ (dưới trái) */
+        .ml-palette { position:absolute; bottom:16px; left:12px; display:flex; flex-direction:column; gap:8px;
+            padding:9px; background:rgba(8,14,26,.92); border:1px solid rgba(56,189,248,.14); border-radius:12px; }
+        .ml-colors { display:flex; gap:5px; }
+        .ml-color { width:22px; height:22px; border-radius:6px; border:2px solid transparent; cursor:pointer; }
+        .ml-color.active { border-color:#fff; }
+        .ml-lvl { display:flex; align-items:center; gap:6px; }
+        .ml-lvl button { width:26px; height:26px; border-radius:6px; border:1px solid rgba(56,189,248,.2);
+            background:transparent; color:#7dd3fc; cursor:pointer; }
+        .ml-lvl span { font-size:.75rem; color:#94a3b8; font-family:monospace; min-width:46px; text-align:center; }
+
+        /* Bảng điều khiển host (dưới phải) */
+        .ml-host { position:absolute; bottom:16px; right:12px; display:flex; gap:5px;
+            padding:7px; background:rgba(8,14,26,.92); border:1px solid rgba(56,189,248,.14); border-radius:12px; }
+        .ml-hbtn { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:9px;
+            border:1px solid rgba(255,255,255,.07); background:transparent; color:#5fa8c2; font-size:.78rem;
+            cursor:pointer; transition:.13s; white-space:nowrap; }
+        .ml-hbtn:hover { background:rgba(56,189,248,.08); color:#a8d8e8; }
+        .ml-hbtn.active { background:rgba(34,197,94,.12); color:#4ade80; border-color:rgba(34,197,94,.3); }
+        .ml-hbtn.danger { color:#f87171; }
+        .ml-hbtn.danger:hover { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.35); }
+
+        /* Trạng thái (giữa dưới) */
+        .ml-status { position:absolute; bottom:74px; left:50%; transform:translateX(-50%); max-width:80vw;
+            font-size:.78rem; color:#cbd5e1; background:rgba(8,14,26,.9); border:1px solid rgba(56,189,248,.14);
+            padding:7px 16px; border-radius:20px; text-align:center; }
+
+        @@media (max-width:640px){
+            .ml-host { left:12px; right:12px; bottom:74px; justify-content:center; flex-wrap:wrap; }
+            .ml-palette { bottom:130px; }
+            .ml-status { bottom:180px; }
+        }
+    </style>
+</head>
+<body>
+<canvas id="ml-canvas"></canvas>
+
+<div class="ml-overlay">
+    <div class="ml-header">
+        <a href="/VirtualLab" class="ml-back"><i class="bi bi-arrow-left"></i> Ra khỏi</a>
+        <div>
+            <div class="ml-title">@Model.SessionName</div>
+            <div class="ml-sub">Bảng vẽ Toán 3D · GV @Model.TeacherName</div>
+        </div>
+        <span class="ml-chip"><i class="bi bi-people-fill"></i> <span id="ml-peers">1 người</span></span>
+        <span class="ml-chip"><i class="bi bi-box"></i> <span id="ml-count">0 đối tượng</span></span>
+        <span class="ml-code">@Model.SessionCode</span>
+    </div>
+
+    <!-- Công cụ -->
+    <div class="ml-toolbar">
+        <button class="ml-tool active" data-tool="orbit"    title="Xoay / di chuyển camera"><i class="bi bi-arrows-move"></i></button>
+        <div class="ml-tsep"></div>
+        <button class="ml-tool" data-tool="point"    title="Điểm"><i class="bi bi-record-circle"></i></button>
+        <button class="ml-tool" data-tool="segment"  title="Đoạn thẳng (2 điểm)"><i class="bi bi-slash-lg"></i></button>
+        <button class="ml-tool" data-tool="vector"   title="Vector (2 điểm)"><i class="bi bi-arrow-up-right"></i></button>
+        <button class="ml-tool" data-tool="sphere"   title="Khối cầu"><i class="bi bi-circle"></i></button>
+        <button class="ml-tool" data-tool="box"      title="Khối hộp"><i class="bi bi-box"></i></button>
+        <button class="ml-tool" data-tool="plane"    title="Mặt phẳng"><i class="bi bi-square"></i></button>
+        <button class="ml-tool" data-tool="freehand" title="Vẽ tay"><i class="bi bi-pencil"></i></button>
+        <button class="ml-tool" data-tool="label"    title="Nhãn / ghi chú"><i class="bi bi-tag"></i></button>
+        <button class="ml-tool" data-tool="measure"  title="Đo khoảng cách (2 điểm)"><i class="bi bi-rulers"></i></button>
+        <div class="ml-tsep"></div>
+        <button class="ml-tool" data-tool="delete"   title="Xóa đối tượng"><i class="bi bi-eraser"></i></button>
+        @if (isHost)
+        {
+            <button class="ml-tool" data-tool="laser" title="Con trỏ laser"><i class="bi bi-broadcast-pin"></i></button>
+        }
+    </div>
+
+    <!-- Màu + cao độ -->
+    <div class="ml-palette">
+        <div class="ml-colors">
+            <button class="ml-color active" data-color="#38bdf8" style="background:#38bdf8"></button>
+            <button class="ml-color" data-color="#f87171" style="background:#f87171"></button>
+            <button class="ml-color" data-color="#4ade80" style="background:#4ade80"></button>
+            <button class="ml-color" data-color="#facc15" style="background:#facc15"></button>
+            <button class="ml-color" data-color="#c084fc" style="background:#c084fc"></button>
+            <button class="ml-color" data-color="#f1f5f9" style="background:#f1f5f9"></button>
+        </div>
+        <div class="ml-lvl">
+            <button data-action="level-down" title="Hạ mặt phẳng vẽ">−</button>
+            <span id="ml-level">z = 0.0</span>
+            <button data-action="level-up" title="Nâng mặt phẳng vẽ">+</button>
+            <button data-action="fit" title="Về góc nhìn mặc định"><i class="bi bi-fullscreen"></i></button>
+        </div>
+    </div>
+
+    <!-- Trạng thái -->
+    <div class="ml-status" id="ml-status">Đang kết nối phòng…</div>
+
+    <!-- Điều khiển của giáo viên -->
+    @if (isHost)
+    {
+        <div class="ml-host">
+            <button class="ml-hbtn" id="btn-follow" data-action="toggle-follow">
+                <i class="bi bi-eye-fill"></i> <span>Dẫn góc nhìn</span>
+            </button>
+            <button class="ml-hbtn" id="btn-studentdraw" data-action="toggle-studentdraw">
+                <i class="bi bi-pencil-square"></i> <span>Cho HS vẽ</span>
+            </button>
+            <button class="ml-hbtn" data-action="clear">
+                <i class="bi bi-trash"></i> Xóa hết
+            </button>
+            <button class="ml-hbtn danger" data-action="end">
+                <i class="bi bi-stop-circle-fill"></i> Kết thúc
+            </button>
+        </div>
+    }
+</div>
+
+<!-- SignalR client (CDN, khớp server .NET 8) -->
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@@8.0.0/dist/browser/signalr.min.js"></script>
+
+<script type="module">
+    import { initMathLab } from '/js/lab/math-lab.js';
+    initMathLab({
+        sessionId: @Model.Id,
+        isHost:    @(isHost ? "true" : "false")
+    });
+</script>
+</body>
+</html>

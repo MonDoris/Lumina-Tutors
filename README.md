@@ -70,7 +70,7 @@ Chỉnh connection string trong `src/LuminaTutors.Web/appsettings.Development.js
 ```json
 {
   "ConnectionStrings": {
-    "LuminaTutorsDb": "Server=(localdb)\\mssqllocaldb;Database=LuminaTutorsDB_Dev;..."
+    "LuminaTutorsDb": "Server=.\\SQLEXPRESS;Database=LuminaTutorsDB_Dev;Trusted_Connection=True;TrustServerCertificate=True;"
   }
 }
 ```

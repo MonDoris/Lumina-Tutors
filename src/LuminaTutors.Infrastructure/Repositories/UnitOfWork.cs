@@ -115,6 +115,8 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<SchoolSubscriptionAddOn>? _schoolSubscriptionAddOns;
     private IRepository<SubscriptionOrder>?       _subscriptionOrders;
     private IRepository<SubscriptionOrderItem>?   _subscriptionOrderItems;
+    private IRepository<RoleQuotaAddOn>?          _roleQuotaAddOns;
+    private IRepository<SchoolRoleQuotaAddOn>?    _schoolRoleQuotaAddOns;
 
     public UnitOfWork(LuminaTutorsDbContext context) => _context = context;
 
@@ -210,6 +212,8 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<SchoolSubscriptionAddOn> SchoolSubscriptionAddOns => Get(ref _schoolSubscriptionAddOns);
     public IRepository<SubscriptionOrder>       SubscriptionOrders       => Get(ref _subscriptionOrders);
     public IRepository<SubscriptionOrderItem>   SubscriptionOrderItems   => Get(ref _subscriptionOrderItems);
+    public IRepository<RoleQuotaAddOn>          RoleQuotaAddOns          => Get(ref _roleQuotaAddOns);
+    public IRepository<SchoolRoleQuotaAddOn>    SchoolRoleQuotaAddOns    => Get(ref _schoolRoleQuotaAddOns);
 
     // ── Transaction Management ────────────────────────────────────────────────
 
@@ -278,6 +282,9 @@ public class UnitOfWork : IUnitOfWork
 
         return await _context.Database.ExecuteSqlRawAsync(sql, ct);
     }
+
+    public async Task<int> ExecuteRawSqlAsync(string sql, CancellationToken ct = default)
+        => await _context.Database.ExecuteSqlRawAsync(sql, ct);
 
     public void Dispose()
     {

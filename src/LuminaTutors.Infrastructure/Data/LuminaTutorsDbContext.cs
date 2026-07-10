@@ -126,6 +126,8 @@ public class LuminaTutorsDbContext : DbContext
     public DbSet<SchoolSubscriptionAddOn> SchoolSubscriptionAddOns => Set<SchoolSubscriptionAddOn>();
     public DbSet<SubscriptionOrder>       SubscriptionOrders       => Set<SubscriptionOrder>();
     public DbSet<SubscriptionOrderItem>   SubscriptionOrderItems   => Set<SubscriptionOrderItem>();
+    public DbSet<RoleQuotaAddOn>          RoleQuotaAddOns          => Set<RoleQuotaAddOn>();
+    public DbSet<SchoolRoleQuotaAddOn>    SchoolRoleQuotaAddOns    => Set<SchoolRoleQuotaAddOn>();
 
     // ── System ────────────────────────────────────────────────────────────────
     public DbSet<SystemConfig> SystemConfigs => Set<SystemConfig>();

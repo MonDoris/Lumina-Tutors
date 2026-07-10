@@ -99,6 +99,21 @@
             <i class="bi bi-calendar3"></i>
             Hiệu lực <b>@Model.PeriodStart.ToString("dd/MM/yyyy")</b> → <b>@Model.PeriodEnd.ToString("dd/MM/yyyy")</b>
         </div>
+
+        @if (!isPaid && Model.OrderType != "AddOn")
+        {
+            <form asp-action="ChangeCycle" method="post" id="cycleForm" style="margin-top:16px">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.OrderId" />
+                <label style="display:block;font-size:.8rem;font-weight:600;color:#64748b;margin-bottom:6px">Chu kỳ thanh toán</label>
+                <select name="cycle" onchange="document.getElementById('cycleForm').submit()"
+                        style="width:100%;padding:11px 12px;border:1px solid #d8dee8;border-radius:10px;font:inherit;background:#fff;cursor:pointer">
+                    <option value="Monthly"   selected="@(Model.BillingCycle == "Monthly")">Theo tháng</option>
+                    <option value="Quarterly" selected="@(Model.BillingCycle == "Quarterly")">Theo quý</option>
+                    <option value="Yearly"    selected="@(Model.BillingCycle == "Yearly")">Theo năm</option>
+                </select>
+            </form>
+        }
     </div>
 
     @if (isPaid)

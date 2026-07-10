@@ -19,13 +19,15 @@ namespace LuminaTutors.Web.Controllers;
 public sealed class SubscriptionController : Controller
 {
     private readonly ISubscriptionService _service;
+    private readonly IQuotaService        _quota;
     private readonly IConfiguration       _config;
     private readonly ILogger<SubscriptionController> _logger;
 
     public SubscriptionController(
-        ISubscriptionService service, IConfiguration config, ILogger<SubscriptionController> logger)
+        ISubscriptionService service, IQuotaService quota, IConfiguration config, ILogger<SubscriptionController> logger)
     {
         _service = service;
+        _quota   = quota;   
         _config  = config;
         _logger  = logger;
     }
@@ -46,6 +48,10 @@ public sealed class SubscriptionController : Controller
             return View(new SubscriptionOverviewDto());
         }
         result.Data!.VnPayEnabled = VnPayEnabled;
+
+        var quota = await _quota.GetQuotaStatusAsync(SchoolId);
+        ViewBag.Quota = quota.IsSuccess ? quota.Data : null;
+
         return View(result.Data);
     }
 
@@ -70,6 +76,20 @@ public sealed class SubscriptionController : Controller
     public async Task<IActionResult> BuyAddOn(int addOnId)
     {
         var result = await _service.BuyAddOnAsync(SchoolId, UserId, addOnId);
+        if (!result.IsSuccess)
+        {
+            TempData["Error"] = result.Error;
+            return RedirectToAction(nameof(Index));
+        }
+        return RedirectToAction(nameof(Pay), new { id = result.Data!.OrderId });
+    }
+
+    // ── POST /Subscription/BuyQuotaAddOn ──────────────────────────────────────
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
+    public async Task<IActionResult> BuyQuotaAddOn(int quotaAddOnId)
+    {
+        var result = await _service.BuyQuotaAddOnAsync(SchoolId, UserId, quotaAddOnId);
         if (!result.IsSuccess)
         {
             TempData["Error"] = result.Error;
@@ -136,6 +156,15 @@ public sealed class SubscriptionController : Controller
 
         ViewBag.VnPayEnabled = VnPayEnabled;
         return View(result.Data);
+    }
+
+    // ── POST /Subscription/ChangeCycle/5 — đổi chu kỳ đơn ngay tại trang thanh toán ─
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
+    public async Task<IActionResult> ChangeCycle(int id, SubscriptionCycle cycle)
+    {
+        var result = await _service.ChangeOrderCycleAsync(id, SchoolId, cycle);
+        if (!result.IsSuccess) TempData["Error"] = result.Error;
+        return RedirectToAction(nameof(Pay), new { id });
     }
 
     // ── POST /Subscription/MarkPaid/5 — xác nhận thanh toán thủ công (offline) ─
@@ -369,18 +398,56 @@ public sealed class SubscriptionController : Controller
         return RedirectToAction(nameof(Catalog));
     }
 
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> SaveQuotaAddOn(QuotaAddOnEditRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Dữ liệu gói mở rộng không hợp lệ.";
+            return RedirectToAction(nameof(Catalog));
+        }
+        var result = await _service.SaveQuotaAddOnAsync(request);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess ? "Đã lưu gói mở rộng quota." : result.Error;
+        return RedirectToAction(nameof(Catalog));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> ToggleQuotaAddOn(int id)
+    {
+        var result = await _service.ToggleQuotaAddOnActiveAsync(id);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess ? "Đã cập nhật trạng thái gói mở rộng." : result.Error;
+        return RedirectToAction(nameof(Catalog));
+    }
+
     // ── GET /Subscription/Subscriptions — doanh thu + đăng ký của tất cả trường ─
     [Authorize(Policy = "SystemAdmin")]
     public async Task<IActionResult> Subscriptions()
     {
         var subs    = await _service.GetAllSubscriptionsAsync();
         var revenue = await _service.GetRevenueReportAsync();
+        var catalog = await _service.GetCatalogAsync();
+        var paid    = await _service.GetPaidOrdersAsync();
         ViewBag.OwnSchoolId = SchoolId;            // để view đánh số ID hiển thị (trường hệ thống = 0)
         return View(new AllSubscriptionsVm
         {
             Revenue = revenue.IsSuccess ? revenue.Data! : new RevenueReportDto(),
-            Rows    = subs.IsSuccess ? subs.Data!.ToList() : new List<SchoolSubscriptionRowDto>()
+            Rows    = subs.IsSuccess ? subs.Data!.ToList() : new List<SchoolSubscriptionRowDto>(),
+            Plans   = catalog.IsSuccess
+                ? catalog.Data!.Plans.Where(p => p.IsActive).Select(p => new PlanOptionDto(p.PlanId, p.Name)).ToList()
+                : new List<PlanOptionDto>(),
+            PaidOrderList = paid.IsSuccess ? paid.Data!.ToList() : new List<PaidOrderDto>()
         });
+    }
+
+    // ── POST /Subscription/AdminChangePlan — SYSADMIN điều chỉnh gói cho 1 trường ─
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SystemAdmin")]
+    public async Task<IActionResult> AdminChangePlan(int schoolId, int planId, SubscriptionCycle cycle, bool autoRenew)
+    {
+        var r = await _service.AdminChangePlanAsync(schoolId, planId, cycle, autoRenew, UserId);
+        TempData[r.IsSuccess ? "Success" : "Error"] = r.IsSuccess
+            ? "Đã điều chỉnh gói dịch vụ cho trường."
+            : r.Error;
+        return RedirectToAction(nameof(Subscriptions));
     }
 
     // ── POST /Subscription/OnboardSchool — tạo trường + tài khoản Nhà trường ──

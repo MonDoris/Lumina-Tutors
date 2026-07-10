@@ -3463,6 +3463,9 @@ namespace LuminaTutors.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(40);
 
+                    b.Property<string>("SceneJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SceneType")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -3785,6 +3788,106 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.ToTable("TeacherProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Subscription.RoleQuotaAddOn", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddOnCode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("ExtraClasses")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ExtraQuota")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("MonthlyPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("QuarterlyPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TargetRole")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("YearlyPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddOnCode")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_RoleQuotaAddOns_Code");
+
+                    b.ToTable("RoleQuotaAddOns", (string)null);
+                });
+
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Subscription.SchoolRoleQuotaAddOn", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ActiveUntil")
+                        .HasColumnType("date");
+
+                    b.Property<int>("AddOnId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("SubscriptionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddOnId");
+
+                    b.HasIndex("SubscriptionId", "AddOnId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_SchoolRoleQuotaAddOns_Sub_AddOn");
+
+                    b.ToTable("SchoolRoleQuotaAddOns", (string)null);
+                });
+
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Subscription.SchoolSubscription", b =>
                 {
                     b.Property<int>("Id")
@@ -4083,6 +4186,27 @@ namespace LuminaTutors.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
+
+                    b.Property<int>("MaxAccountants")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxAdmins")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxClasses")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxParents")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxStudents")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxSupervisors")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxTeachers")
+                        .HasColumnType("int");
 
                     b.Property<decimal>("MonthlyPrice")
                         .HasColumnType("decimal(18,2)");
@@ -5733,6 +5857,25 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Subscription.SchoolRoleQuotaAddOn", b =>
+                {
+                    b.HasOne("LuminaTutors.Domain.Entities.Subscription.RoleQuotaAddOn", "AddOn")
+                        .WithMany("SchoolAddOns")
+                        .HasForeignKey("AddOnId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LuminaTutors.Domain.Entities.Subscription.SchoolSubscription", "Subscription")
+                        .WithMany("RoleQuotaAddOns")
+                        .HasForeignKey("SubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AddOn");
+
+                    b.Navigation("Subscription");
+                });
+
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Subscription.SchoolSubscription", b =>
                 {
                     b.HasOne("LuminaTutors.Domain.Entities.Subscription.SubscriptionPlan", "Plan")
@@ -6001,11 +6144,18 @@ namespace LuminaTutors.Infrastructure.Migrations
                     b.Navigation("Answers");
                 });
 
+            modelBuilder.Entity("LuminaTutors.Domain.Entities.Subscription.RoleQuotaAddOn", b =>
+                {
+                    b.Navigation("SchoolAddOns");
+                });
+
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Subscription.SchoolSubscription", b =>
                 {
                     b.Navigation("AddOns");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("RoleQuotaAddOns");
                 });
 
             modelBuilder.Entity("LuminaTutors.Domain.Entities.Subscription.SubscriptionOrder", b =>

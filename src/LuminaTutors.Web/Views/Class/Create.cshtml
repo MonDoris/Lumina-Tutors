@@ -41,6 +41,11 @@
                 <form asp-action="Create" method="post">
                     @Html.AntiForgeryToken()
 
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    }
+
                     <!-- Tên lớp -->
                     <div class="lt-form-group">
                         <label class="lt-label" asp-for="ClassName">

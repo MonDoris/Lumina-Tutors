@@ -1,0 +1,214 @@
+/* ════════════════════════════════════════════════════════════════════════
+   Lumina — E-Selling (SYSADMIN) · phong cách "Sổ cái nhũ đồng"
+   Thẩm mỹ ấn loát / sổ sách tài chính: một tờ giấy duy nhất, đường kẻ
+   hairline, số serif Fraunces, nhãn mono chữ hoa, góc vuông.
+   Không thẻ nổi, không đổ bóng, không icon chip, không gradient.
+   Mọi style nằm dưới .led để không ảnh hưởng trang khác.
+   ════════════════════════════════════════════════════════════════════════ */
+
+.led{
+  --paper:#FBF9F3; --paper-deep:#F3EFE5;
+  --ink:#2B2620; --ink-soft:#57503F; --muted:#8A8271;
+  --hair:#E4DECE; --rule:#B9B09B;
+  --bronze:#A66A1F; --bronze-bright:#C08A36;
+  --jade:#17715B; --brick:#A63A2E; --slate:#2F5D8A;
+
+  font-family:'Be Vietnam Pro',system-ui,sans-serif;
+  color:var(--ink); -webkit-font-smoothing:antialiased;
+}
+.led *{ box-sizing:border-box; }
+.led .mono{ font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+
+@keyframes ledIn{ from{opacity:0} to{opacity:1} }
+
+/* ── TỜ SỔ CÁI ─────────────────────────────────────────────────────────── */
+.led-sheet{
+  position:relative; background:var(--paper);
+  border:1px solid var(--rule); border-radius:2px;
+  padding:36px 42px 26px; animation:ledIn .4s ease both;
+}
+/* đường lề đỏ mờ — dấu tích của sổ kế toán giấy */
+.led-sheet::before{
+  content:""; position:absolute; left:26px; top:0; bottom:0; width:1px;
+  background:rgba(166,58,46,.16); pointer-events:none;
+}
+
+/* ── MASTHEAD ──────────────────────────────────────────────────────────── */
+.led-mast{ display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap; }
+.led-kicker{
+  font-family:'JetBrains Mono',monospace; font-size:.64rem; font-weight:700;
+  letter-spacing:.3em; text-transform:uppercase; color:var(--bronze);
+}
+.led-mast h1{
+  font-family:'Fraunces',serif; font-optical-sizing:auto; font-weight:600;
+  font-size:clamp(1.9rem,2.6vw,2.6rem); line-height:1.06; letter-spacing:-.015em;
+  color:var(--ink); margin:.45rem 0 .4rem;
+}
+.led-mast__meta{ font-family:'JetBrains Mono',monospace; font-size:.72rem; color:var(--muted); margin:0; }
+.led-mast__meta b{ color:var(--ink-soft); font-weight:700; }
+.led-actions{ display:flex; gap:10px; padding-bottom:4px; }
+
+/* nút kiểu con dấu ấn loát: vuông, viền mực, đảo màu khi hover */
+.led-btn{
+  display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+  font-family:'JetBrains Mono',monospace; font-size:.7rem; font-weight:700;
+  letter-spacing:.12em; text-transform:uppercase; line-height:1;
+  padding:11px 16px; border:1px solid var(--ink); border-radius:2px;
+  background:transparent; color:var(--ink); text-decoration:none;
+  transition:background .16s, color .16s, border-color .16s;
+}
+.led-btn:hover{ background:var(--ink); color:var(--paper); text-decoration:none; }
+.led-btn--solid{ background:var(--ink); color:#F6F1E7; }
+.led-btn--solid:hover{ background:#453D2E; border-color:#453D2E; color:#F6F1E7; }
+.led-btn--bronze{ background:var(--bronze); border-color:var(--bronze); color:#FBF6EA; }
+.led-btn--bronze:hover{ background:#8C5717; border-color:#8C5717; color:#FBF6EA; }
+.led-btn--xs{ padding:7px 11px; font-size:.62rem; }
+
+/* kẻ đôi cổ điển: nét đậm trên nét mảnh */
+.led-rule2{ margin:20px 0 0; height:6px; border-top:2.5px solid var(--ink); border-bottom:1px solid var(--ink); }
+
+/* ── DẢI KPI (một băng, chia cột bằng kẻ dọc) ──────────────────────────── */
+.led-kpis{ display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--rule); }
+.led-kpi{ padding:22px 22px 18px; border-left:1px solid var(--hair); }
+.led-kpi:first-child{ border-left:none; padding-left:2px; }
+.led-kpi__label{
+  font-family:'JetBrains Mono',monospace; font-size:.63rem; font-weight:700;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+}
+.led-kpi__val{
+  font-family:'Fraunces',serif; font-optical-sizing:auto; font-weight:600;
+  font-size:2.35rem; line-height:1.05; color:var(--ink); margin-top:8px; letter-spacing:-.02em;
+}
+.led-kpi__val small{
+  font-family:'JetBrains Mono',monospace; font-size:.78rem; font-weight:500;
+  color:var(--muted); margin-left:4px; letter-spacing:0;
+}
+.led-kpi__note{ font-size:.7rem; color:var(--muted); margin-top:6px; font-family:'JetBrains Mono',monospace; }
+.led-kpi--click{ cursor:pointer; transition:background .16s; }
+.led-kpi--click:hover{ background:var(--paper-deep); }
+.led-kpi--click:hover .led-kpi__val{ color:var(--bronze); }
+.led-caret{ display:inline-block; font-size:.85em; transition:transform .15s; color:var(--muted); }
+
+/* ── SECTION ───────────────────────────────────────────────────────────── */
+.led-sec{ margin-top:34px; }
+.led-sec__head{
+  display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+  border-bottom:1px solid var(--rule); padding-bottom:10px;
+}
+.led-no{
+  font-family:'JetBrains Mono',monospace; font-size:.68rem; font-weight:700;
+  letter-spacing:.14em; color:var(--bronze);
+}
+.led-sec__head h2{
+  font-family:'Fraunces',serif; font-optical-sizing:auto; font-weight:600;
+  font-size:1.35rem; color:var(--ink); margin:0; letter-spacing:-.01em;
+}
+.led-sec__sub{ font-family:'JetBrains Mono',monospace; font-size:.68rem; color:var(--muted); }
+.led-sec__right{ margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:.68rem; color:var(--muted); }
+
+/* ── BIỂU ĐỒ ───────────────────────────────────────────────────────────── */
+.led-chart{ width:100%; height:auto; display:block; margin-top:16px; }
+.led-empty{
+  text-align:center; font-family:'JetBrains Mono',monospace; font-size:.78rem;
+  color:var(--muted); padding:44px 0 38px; letter-spacing:.06em;
+}
+
+/* ── BẢNG SỔ ───────────────────────────────────────────────────────────── */
+.led-tablewrap{ overflow-x:auto; }
+.led-table{ width:100%; border-collapse:collapse; }
+.led-table th{
+  text-align:left; font-family:'JetBrains Mono',monospace; font-size:.63rem;
+  font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
+  padding:13px 8px 9px; border-bottom:1px solid var(--rule); white-space:nowrap;
+}
+.led-table td{ padding:12px 8px; border-bottom:1px solid var(--hair); font-size:.86rem; vertical-align:middle; }
+.led-table tbody tr{ transition:background .12s; }
+.led-table tbody tr:hover td{ background:var(--paper-deep); }
+.led-table .r{ text-align:right; }
+.led-nm{ font-weight:600; color:var(--ink); }
+.led-dim{ color:var(--muted); font-size:.8rem; }
+.led-ital{ color:var(--muted); font-style:italic; }
+
+/* tên gói: ô vuông nhũ đồng nhỏ như ký hiệu chú giải bản in */
+.led-plan{ font-weight:600; color:var(--ink); white-space:nowrap; }
+.led-plan::before{
+  content:""; display:inline-block; width:8px; height:8px; margin-right:8px;
+  background:var(--bronze-bright); vertical-align:baseline;
+}
+
+/* trạng thái: chấm vuông + chữ thường — không viên thuốc màu */
+.led-status{ white-space:nowrap; font-size:.84rem; color:var(--ink-soft); }
+.led-status::before{
+  content:""; display:inline-block; width:7px; height:7px; margin-right:8px;
+}
+.led-status.ok::before{ background:var(--jade); }
+.led-status.ok{ color:var(--jade); font-weight:600; }
+.led-status.danger::before{ background:var(--brick); }
+.led-status.danger{ color:var(--brick); font-weight:600; }
+.led-status.off::before{ background:transparent; border:1px solid var(--muted); }
+.led-status.off{ color:var(--muted); }
+.led-status.info::before{ background:var(--slate); }
+
+/* ── PANEL ĐIỀU CHỈNH (xổ dưới dòng) ───────────────────────────────────── */
+.led-adjcell{ background:var(--paper-deep) !important; padding:0 !important; border-bottom:1px solid var(--rule) !important; }
+.led-adj{ display:grid; grid-template-columns:1.05fr 1fr; }
+.led-adj__box{ padding:20px 26px; }
+.led-adj__box + .led-adj__box{ border-left:1px solid var(--hair); }
+.led-adj__title{
+  font-family:'JetBrains Mono',monospace; font-size:.66rem; font-weight:700;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--ink); margin:0 0 14px;
+}
+.led-fields{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+.led-field label{
+  display:block; font-family:'JetBrains Mono',monospace; font-size:.62rem;
+  font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:6px;
+}
+.led .lt-select{
+  width:auto; min-width:130px; padding:9px 12px; border:1px solid var(--rule);
+  border-radius:2px; background:var(--paper); font-family:inherit; font-size:.86rem;
+  color:var(--ink); transition:border-color .15s, box-shadow .15s;
+}
+.led .lt-select:focus{ outline:none; border-color:var(--bronze); box-shadow:0 0 0 3px rgba(166,106,31,.14); }
+.led-renew{ display:flex; align-items:center; gap:7px; font-size:.82rem; color:var(--ink-soft); padding-bottom:10px; cursor:pointer; }
+.led-renew input{ accent-color:var(--bronze); }
+.led-hint{ font-size:.72rem; color:var(--muted); margin:12px 0 0; }
+.led-noevt{ color:var(--muted); font-size:.82rem; font-style:italic; }
+
+/* lịch sử: dòng bút toán */
+.led-timeline{ display:flex; flex-direction:column; max-height:230px; overflow:auto; padding-right:4px; }
+.led-evt{ display:flex; align-items:baseline; gap:11px; padding:8px 0; border-bottom:1px solid var(--hair); }
+.led-evt:last-child{ border-bottom:none; }
+.led-evt__type{
+  font-family:'JetBrains Mono',monospace; font-size:.62rem; font-weight:700;
+  letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; flex:none; width:96px;
+}
+.led-evt__type.t-new{ color:var(--slate); }
+.led-evt__type.t-up{ color:var(--bronze); }
+.led-evt__type.t-ren{ color:var(--jade); }
+.led-evt__type.t-add{ color:var(--brick); }
+.led-evt__main{ flex:1; min-width:0; font-size:.83rem; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.led-evt__time{ font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--muted); white-space:nowrap; }
+
+/* ── CHÂN TRANG (colophon) ─────────────────────────────────────────────── */
+.led-colo{
+  margin-top:34px; padding-top:12px; border-top:1px solid var(--rule);
+  display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  font-family:'JetBrains Mono',monospace; font-size:.65rem; letter-spacing:.08em;
+  color:var(--muted); text-transform:uppercase;
+}
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media (max-width:1000px){
+  .led-kpis{ grid-template-columns:1fr 1fr; }
+  .led-kpi:nth-child(3){ border-left:none; padding-left:2px; }
+  .led-kpi:nth-child(1),.led-kpi:nth-child(2){ border-bottom:1px solid var(--hair); }
+  .led-adj{ grid-template-columns:1fr; }
+  .led-adj__box + .led-adj__box{ border-left:none; border-top:1px solid var(--hair); }
+}
+@media (max-width:640px){
+  .led-sheet{ padding:24px 18px 18px; }
+  .led-sheet::before{ display:none; }
+  .led-kpis{ grid-template-columns:1fr; }
+  .led-kpi{ border-left:none; padding-left:2px; border-bottom:1px solid var(--hair); }
+}

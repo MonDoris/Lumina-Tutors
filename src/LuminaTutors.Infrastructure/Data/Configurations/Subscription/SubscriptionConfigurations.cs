@@ -125,3 +125,43 @@ public class SubscriptionOrderItemConfiguration : IEntityTypeConfiguration<Subsc
         b.Property(x => x.Amount).HasColumnType("decimal(18,2)");
     }
 }
+
+public class RoleQuotaAddOnConfiguration : IEntityTypeConfiguration<RoleQuotaAddOn>
+{
+    public void Configure(EntityTypeBuilder<RoleQuotaAddOn> b)
+    {
+        b.ToTable("RoleQuotaAddOns");
+        b.HasKey(x => x.Id);
+
+        b.Property(x => x.AddOnCode).IsRequired().HasMaxLength(30);
+        b.Property(x => x.Name).IsRequired().HasMaxLength(100);
+        b.Property(x => x.Description).HasMaxLength(500);
+        b.Property(x => x.TargetRole).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.MonthlyPrice).HasColumnType("decimal(18,2)");
+        b.Property(x => x.QuarterlyPrice).HasColumnType("decimal(18,2)");
+        b.Property(x => x.YearlyPrice).HasColumnType("decimal(18,2)");
+        b.Property(x => x.IsActive).HasDefaultValue(true);
+
+        b.HasIndex(x => x.AddOnCode).IsUnique().HasDatabaseName("UQ_RoleQuotaAddOns_Code");
+    }
+}
+
+public class SchoolRoleQuotaAddOnConfiguration : IEntityTypeConfiguration<SchoolRoleQuotaAddOn>
+{
+    public void Configure(EntityTypeBuilder<SchoolRoleQuotaAddOn> b)
+    {
+        b.ToTable("SchoolRoleQuotaAddOns");
+        b.HasKey(x => x.Id);
+
+        b.Property(x => x.IsActive).HasDefaultValue(true);
+
+        b.HasOne(x => x.Subscription).WithMany(s => s.RoleQuotaAddOns)
+            .HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.Cascade);
+
+        b.HasOne(x => x.AddOn).WithMany(a => a.SchoolAddOns)
+            .HasForeignKey(x => x.AddOnId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasIndex(x => new { x.SubscriptionId, x.AddOnId })
+            .IsUnique().HasDatabaseName("UQ_SchoolRoleQuotaAddOns_Sub_AddOn");
+    }
+}

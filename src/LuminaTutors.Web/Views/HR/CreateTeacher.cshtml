@@ -1,6 +1,9 @@
 @model LuminaTutors.Application.DTOs.HR.CreateTeacherRequest
 @{
     ViewData["Title"] = "Thêm giáo viên mới";
+    var schoolDomain  = LuminaTutors.Application.Common.RoleEmail.BaseDomain(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "");
+    var teacherPrefix = LuminaTutors.Application.Common.RoleEmail.PrefixFor("TEACHER") ?? "tea";
+    var emailSuffix   = $"@{teacherPrefix}.{schoolDomain}";
 }
 
 <div class="lt-page-header">
@@ -31,8 +34,14 @@
                     <span asp-validation-for="TeacherCode" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="Email" class="form-label">Email <span class="text-danger">*</span></label>
-                    <input asp-for="Email" class="form-control" type="email" placeholder="giaovien@truong.edu.vn" />
+                    <label class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="text" id="emailLocal" class="form-control" placeholder="vd: covan" autocomplete="off" spellcheck="false" required
+                               value="@(Model?.Email != null && Model.Email.Contains('@') ? Model.Email.Split('@')[0] : Model?.Email)"
+                               oninput="syncEmail()"/>
+                        <span class="input-group-text text-muted">@emailSuffix</span>
+                    </div>
+                    <input type="hidden" asp-for="Email" id="emailFull"/>
                     <span asp-validation-for="Email" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
@@ -99,4 +108,12 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+    const EMAIL_SUFFIX = '@emailSuffix';
+    function syncEmail() {
+        const local = (document.getElementById('emailLocal').value || '').trim().toLowerCase().replace(/\s+/g, '');
+        document.getElementById('emailFull').value = local ? (local + EMAIL_SUFFIX) : '';
+    }
+    document.addEventListener('DOMContentLoaded', syncEmail);
+    </script>
 }

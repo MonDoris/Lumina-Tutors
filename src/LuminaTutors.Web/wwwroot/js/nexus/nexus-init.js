@@ -36,6 +36,59 @@ const els = {
   nxRecBadge: $('nxRecBadge'), nxRecTime: $('nxRecTime'),
 };
 
+// ── Hộp thoại xác nhận đẹp (tông tối) — thay cho confirm() mặc định ───────────
+function nexusConfirm(opts) {
+  opts = opts || {};
+  const isDanger = !!opts.danger;
+  return new Promise(resolve => {
+    if (!document.getElementById('nx-confirm-style')) {
+      const st = document.createElement('style');
+      st.id = 'nx-confirm-style';
+      st.textContent =
+        '#nx-confirm{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;' +
+        'background:rgba(5,10,22,.64);backdrop-filter:blur(5px);opacity:0;pointer-events:none;transition:opacity .18s}' +
+        '#nx-confirm.show{opacity:1;pointer-events:auto}' +
+        '.nxc-card{width:min(92vw,380px);background:linear-gradient(160deg,#0e1830,#0a1322);' +
+        'border:1px solid rgba(99,160,255,.22);border-radius:18px;padding:26px 24px 20px;text-align:center;color:#dbe7fb;' +
+        'box-shadow:0 30px 70px rgba(0,0,0,.55);transform:scale(.9) translateY(10px);transition:transform .2s cubic-bezier(.34,1.3,.64,1)}' +
+        '#nx-confirm.show .nxc-card{transform:none}' +
+        '.nxc-ic{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;margin:0 auto 16px;font-size:1.5rem}' +
+        '.nxc-ic.danger{background:rgba(239,68,68,.16)}.nxc-ic.info{background:rgba(59,130,246,.16)}' +
+        '.nxc-title{font-size:1.1rem;font-weight:800;color:#fff;margin:0 0 6px}' +
+        '.nxc-msg{font-size:.88rem;color:#9fb3cf;line-height:1.55;margin:0 0 22px}' +
+        '.nxc-actions{display:flex;gap:10px}' +
+        '.nxc-btn{flex:1;padding:11px 16px;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer;border:1px solid transparent;transition:.15s}' +
+        '.nxc-cancel{background:rgba(255,255,255,.07);color:#cdd9ea;border-color:rgba(255,255,255,.16)}' +
+        '.nxc-cancel:hover{background:rgba(255,255,255,.14)}' +
+        '.nxc-ok{background:#dc2626;color:#fff}.nxc-ok:hover{background:#b91c1c}' +
+        '.nxc-ok.info{background:#2563eb}.nxc-ok.info:hover{background:#1d4ed8}';
+      document.head.appendChild(st);
+    }
+    const ov = document.createElement('div');
+    ov.id = 'nx-confirm';
+    ov.innerHTML =
+      '<div class="nxc-card" role="dialog" aria-modal="true">' +
+        '<div class="nxc-ic ' + (isDanger ? 'danger' : 'info') + '">' + (isDanger ? '⚠️' : 'ℹ️') + '</div>' +
+        '<div class="nxc-title">' + (opts.title || 'Xác nhận') + '</div>' +
+        '<div class="nxc-msg">' + (opts.message || '') + '</div>' +
+        '<div class="nxc-actions">' +
+          '<button class="nxc-btn nxc-cancel" type="button">' + (opts.cancelText || 'Hủy') + '</button>' +
+          '<button class="nxc-btn nxc-ok ' + (isDanger ? '' : 'info') + '" type="button">' + (opts.okText || 'Đồng ý') + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('show'));
+    const close = (val) => { ov.classList.remove('show'); setTimeout(() => ov.remove(), 180); resolve(val); };
+    ov.querySelector('.nxc-cancel').addEventListener('click', () => close(false));
+    ov.querySelector('.nxc-ok').addEventListener('click', () => close(true));
+    ov.addEventListener('click', e => { if (e.target === ov) close(false); });
+    document.addEventListener('keydown', function esc(e) {
+      if (e.key === 'Escape') { close(false); document.removeEventListener('keydown', esc); }
+    });
+    requestAnimationFrame(() => ov.querySelector('.nxc-ok').focus());
+  });
+}
+
 // ── Mobile chrome: thu gọn bảng điều khiển để vùng 3D thoáng, dễ nhìn thí nghiệm.
 // Trên màn hình hẹp (≤760px) mặc định gập; chạm chevron để mở/đóng.
 (function initMobileChrome() {
@@ -218,9 +271,17 @@ async function main() {
     const me = roster.get(selfPeerId); if (me) { me.hand = handUp; renderRoster(); }
   });
   els.nxRec?.addEventListener('click', () => toggleNexusRecord(streams, () => lastRemoteAudio));
-  els.nxLeave?.addEventListener('click', () => {
+  els.nxLeave?.addEventListener('click', async () => {
     const teacher = CFG.isTeacher;
-    if (!confirm(teacher ? 'Kết thúc phòng học cho mọi người?' : 'Rời khỏi phòng học?')) return;
+    const ok = await nexusConfirm({
+      danger:  teacher,
+      title:   teacher ? 'Kết thúc phòng học?' : 'Rời khỏi phòng?',
+      message: teacher
+        ? 'Phòng sẽ đóng cho tất cả mọi người đang tham gia.'
+        : 'Bạn sẽ rời khỏi phòng học này.',
+      okText:  teacher ? 'Kết thúc phòng' : 'Rời phòng'
+    });
+    if (!ok) return;
     if (teacher) hub.invoke('EndRoom').catch(() => {});
     leaveNexus(hub);
   });

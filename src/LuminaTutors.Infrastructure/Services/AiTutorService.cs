@@ -106,14 +106,14 @@ public class AiTutorService : IAiTutorService
             ct);
 
         if (session is null)
-            return Result<AiTutorSessionDto>.Failure("NOT_FOUND", "Phiên học không tồn tại.");
+            return Result<AiTutorSessionDto>.Failure("Phiên học không tồn tại.", "NOT_FOUND");
 
         var user = await _uow.Users.FindOneAsync(
             u => u.Id == requestingUserId,
             q => q.Include(u => u.Role), ct);
 
         if (user?.Role?.RoleCode != "ADMIN" && session.StudentId != requestingUserId)
-            return Result<AiTutorSessionDto>.Failure("FORBIDDEN", "Bạn không có quyền xem phiên này.");
+            return Result<AiTutorSessionDto>.Failure("Bạn không có quyền xem phiên này.", "FORBIDDEN");
 
         return Result<AiTutorSessionDto>.Success(
             ToDto(session, session.Student.FullName, session.Messages.Count));
@@ -140,10 +140,10 @@ public class AiTutorService : IAiTutorService
             s => s.Id == sessionId && s.SchoolId == schoolId && s.StudentId == studentId, ct);
 
         if (session is null)
-            return Result<AiTutorMessageDto>.Failure("NOT_FOUND", "Phiên học không tồn tại.");
+            return Result<AiTutorMessageDto>.Failure("Phiên học không tồn tại.", "NOT_FOUND");
 
         if (string.IsNullOrWhiteSpace(content) || content.Length > 2000)
-            return Result<AiTutorMessageDto>.Failure("INVALID", "Nội dung không hợp lệ (tối đa 2000 ký tự).");
+            return Result<AiTutorMessageDto>.Failure("Nội dung không hợp lệ (tối đa 2000 ký tự).", "INVALID");
 
         // Lưu tin nhắn học sinh
         var userMsg = new AiTutorMessage
@@ -164,7 +164,7 @@ public class AiTutorService : IAiTutorService
             new("system", SystemPrompt)
         };
         chatMessages.AddRange(
-            history.OrderBy(m => m.CreatedAt).TakeLast(20)
+            history.OrderBy(m => m.CreatedAt).TakeLast(8)   // giảm lịch sử gửi mỗi lượt → nhẹ prompt, nhanh hơn
                 .Select(m => new OllamaMessage(
                     m.Role == AiMessageRole.User ? "user" : "assistant",
                     m.Content)));
@@ -175,7 +175,9 @@ public class AiTutorService : IAiTutorService
         try
         {
             using var ollamaCts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-            var requestBody = new OllamaChatRequest(_model, chatMessages, false);
+            var requestBody = new OllamaChatRequest(_model, chatMessages, false,
+                KeepAlive: "30m",                               // giữ model warm 30 phút → tránh cold-load ở lượt sau
+                Options:   new OllamaOptions(NumPredict: 400));  // giới hạn ~400 token để không phải chờ quá lâu
             var response = await _http.PostAsJsonAsync(
                 $"{_ollamaUrl}/api/chat", requestBody, JsonOpts, ollamaCts.Token);
 
@@ -195,8 +197,8 @@ public class AiTutorService : IAiTutorService
             _logger.LogError(ex, "Lỗi Ollama API cho session {SessionId}", sessionId);
             _uow.AiTutorMessages.Remove(userMsg);
             await _uow.SaveChangesAsync(ct);
-            return Result<AiTutorMessageDto>.Failure("AI_ERROR",
-                "Gia Sư AI tạm thời không khả dụng. Vui lòng kiểm tra Ollama đang chạy.");
+            return Result<AiTutorMessageDto>.Failure(
+                "Gia Sư AI tạm thời không khả dụng. Vui lòng kiểm tra Ollama đang chạy.", "AI_ERROR");
         }
 
         // Lưu phản hồi AI
@@ -223,7 +225,7 @@ public class AiTutorService : IAiTutorService
             s => s.Id == sessionId && s.SchoolId == schoolId && s.StudentId == studentId, ct);
 
         if (session is null)
-            return Result.Failure("NOT_FOUND", "Phiên học không tồn tại.");
+            return Result.Failure("Phiên học không tồn tại.", "NOT_FOUND");
 
         var messages = await _uow.AiTutorMessages.FindAsync(m => m.SessionId == sessionId, ct: ct);
         foreach (var m in messages) _uow.AiTutorMessages.Remove(m);
@@ -255,7 +257,7 @@ public class AiTutorService : IAiTutorService
         int sessionId, string? note, bool isFlagged, CancellationToken ct = default)
     {
         var session = await _uow.AiTutorSessions.FindOneAsync(s => s.Id == sessionId, ct);
-        if (session is null) return Result.Failure("NOT_FOUND", "Phiên học không tồn tại.");
+        if (session is null) return Result.Failure("Phiên học không tồn tại.", "NOT_FOUND");
         session.AdminNote  = note?.Trim();
         session.IsFlagged  = isFlagged;
         session.IsReviewed = true;
@@ -267,7 +269,7 @@ public class AiTutorService : IAiTutorService
         int messageId, bool isFlagged, CancellationToken ct = default)
     {
         var msg = await _uow.AiTutorMessages.FindOneAsync(m => m.Id == messageId, ct);
-        if (msg is null) return Result.Failure("NOT_FOUND", "Tin nhắn không tồn tại.");
+        if (msg is null) return Result.Failure("Tin nhắn không tồn tại.", "NOT_FOUND");
         msg.IsFlagged = isFlagged;
         await _uow.SaveChangesAsync(ct);
         return Result.Success();
@@ -277,7 +279,7 @@ public class AiTutorService : IAiTutorService
         int sessionId, CancellationToken ct = default)
     {
         var session = await _uow.AiTutorSessions.FindOneAsync(s => s.Id == sessionId, ct);
-        if (session is null) return Result.Failure("NOT_FOUND", "Phiên học không tồn tại.");
+        if (session is null) return Result.Failure("Phiên học không tồn tại.", "NOT_FOUND");
         session.IsReviewed = true;
         await _uow.SaveChangesAsync(ct);
         return Result.Success();
@@ -301,7 +303,11 @@ internal record OllamaMessage(string Role, string Content);
 internal record OllamaChatRequest(
     string Model,
     List<OllamaMessage> Messages,
-    bool Stream);
+    bool Stream,
+    string? KeepAlive = null,          // giữ model trong RAM (→ "keep_alive")
+    OllamaOptions? Options = null);    // tham số sinh (→ "options")
+
+internal record OllamaOptions(int NumPredict);   // giới hạn độ dài câu trả lời (→ "num_predict")
 
 internal record OllamaChatResponse(
     string Model,

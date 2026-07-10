@@ -3,6 +3,9 @@
 @model CreateStudentRequest
 @{
     ViewData["Title"] = "Thêm học sinh mới";
+    var schoolDomain  = LuminaTutors.Application.Common.RoleEmail.BaseDomain(User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value ?? "");
+    var studentPrefix = LuminaTutors.Application.Common.RoleEmail.PrefixFor("STUDENT") ?? "stu";
+    var emailSuffix   = $"@{studentPrefix}.{schoolDomain}";
 }
 
 <div class="lt-page-header">
@@ -33,6 +36,11 @@
 
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            }
 
             <!-- Thông tin cơ bản -->
             <div class="lt-card lt-mb-4">
@@ -69,12 +77,17 @@
                         </div>
                         <div class="col-md-8">
                             <div class="lt-form-group">
-                                <label class="lt-label" asp-for="Email">
-                                    Email <span class="lt-text-danger">*</span>
+                                <label class="lt-label">
+                                    Tên đăng nhập <span class="lt-text-danger">*</span>
                                 </label>
-                                <input asp-for="Email" type="email" class="lt-input"
-                                       placeholder="VD: an.nguyen@school.edu.vn" required
-                                       data-testid="input-email"/>
+                                <div class="lt-input" style="display:flex;align-items:center;gap:2px;padding-top:0;padding-bottom:0">
+                                    <input type="text" id="emailLocal" placeholder="vd: an.nguyen" autocomplete="off" spellcheck="false" required
+                                           value="@(Model?.Email != null && Model.Email.Contains('@') ? Model.Email.Split('@')[0] : Model?.Email)"
+                                           style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:inherit;padding:10px 0"
+                                           oninput="syncEmail()" data-testid="input-email"/>
+                                    <span style="color:#64748b;white-space:nowrap;font-size:.92rem">@emailSuffix</span>
+                                </div>
+                                <input type="hidden" asp-for="Email" id="emailFull"/>
                                 <span asp-validation-for="Email" class="lt-form-error"></span>
                                 <p class="lt-form-hint">Dùng để đăng nhập và nhận thông báo</p>
                             </div>
@@ -171,4 +184,12 @@
 
 @section Scripts {
 <partial name="_ValidationScriptsPartial" />
+<script>
+const EMAIL_SUFFIX = '@emailSuffix';
+function syncEmail() {
+    const local = (document.getElementById('emailLocal').value || '').trim().toLowerCase().replace(/\s+/g, '');
+    document.getElementById('emailFull').value = local ? (local + EMAIL_SUFFIX) : '';
+}
+document.addEventListener('DOMContentLoaded', syncEmail);
+</script>
 }

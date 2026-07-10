@@ -261,8 +261,9 @@ public enum SubscriptionOrderStatus
 
 public enum SubscriptionItemType
 {
-    Plan  = 1,
-    AddOn = 2
+    Plan       = 1,
+    AddOn      = 2,
+    QuotaAddOn = 3   // gói mua thêm slot tài khoản / lớp học (RoleQuotaAddOn)
 }
 
 /// <summary>Kết quả xác nhận thanh toán đơn đăng ký (idempotent, dùng cho IPN VNPay).</summary>

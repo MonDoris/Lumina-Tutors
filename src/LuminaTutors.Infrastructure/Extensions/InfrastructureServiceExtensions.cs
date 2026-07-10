@@ -56,6 +56,9 @@ public static class InfrastructureServiceExtensions
         });
         services.AddScoped<IAiTutorService, AiTutorService>();
 
+        // Nạp sẵn model Ollama lúc khởi động (chạy nền, không chặn startup)
+        services.AddHostedService<OllamaWarmupService>();
+
         return services;
     }
 }

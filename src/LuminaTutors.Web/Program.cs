@@ -128,6 +128,9 @@ try
     // ── SignalR (Online Classroom real-time) ──────────────────────────────────
     builder.Services.AddSignalR();
 
+    // ── Bảng vẽ Toán 3D: kho trạng thái phòng in-memory (đồng bộ real-time) ────
+    builder.Services.AddSingleton<LuminaTutors.Web.Hubs.LabRoomStore>();
+
     // ── Lumina Holographic Nexus: SFU thuần C# (SIPSorcery) ───────────────────
     builder.Services.AddSingleton<LuminaTutors.Web.Hubs.ILuminaSfuService,
                                   LuminaTutors.Web.Hubs.LuminaSfuService>();
@@ -151,6 +154,23 @@ try
             Log.Warning(seedEx,
                 "Bỏ qua seeding do lỗi cơ sở dữ liệu lúc khởi động — ứng dụng vẫn chạy. " +
                 "Kiểm tra LocalDB (sqllocaldb start mssqllocaldb) rồi tải lại trang/khởi động lại.");
+        }
+    }
+
+    // ── Demo Quota Seeder (tùy chọn — bật bằng cờ Seed:FillBasicQuota) ──────────
+    // Lấp đầy tài khoản MỌI vai trò tới hạn mức Gói Cơ Bản cho trường Demo
+    // (GV 20 · HS 500 · PH 500 · Quản trị 3 · Kế toán 2 · Giám thị 2).
+    // Idempotent: chỉ tạo phần còn thiếu, đã đủ thì không tạo thêm. Mật khẩu chung: Demo@123.
+    if (app.Environment.IsDevelopment()
+        && app.Configuration.GetValue<bool>("Seed:FillBasicQuota"))
+    {
+        try
+        {
+            await LuminaTutors.Infrastructure.Data.DemoQuotaSeeder.SeedToBasicLimitAsync(app.Services);
+        }
+        catch (Exception seedEx)
+        {
+            Log.Warning(seedEx, "Bỏ qua DemoQuotaSeeder do lỗi cơ sở dữ liệu — ứng dụng vẫn chạy.");
         }
     }
 
@@ -266,6 +286,7 @@ try
     // ── SignalR Hub Route ─────────────────────────────────────────────────────
     app.MapHub<OnlineClassHub>("/hubs/online-class");
     app.MapHub<LuminaTutors.Web.Hubs.LuminaRtcHub>("/hubs/lumina-rtc");
+    app.MapHub<LuminaTutors.Web.Hubs.LabHub>("/hubs/lab");
 
     Log.Information("🌟 Lumina Tutors starting on {Environment}", app.Environment.EnvironmentName);
     app.Run();

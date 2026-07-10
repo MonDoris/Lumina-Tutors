@@ -146,6 +146,12 @@ public sealed class VirtualLabController : Controller
         }
 
         ViewBag.IsHost = result.Data.TeacherId == GetCurrentUserId();
+
+        // Bảng vẽ Toán 3D cộng tác dùng view + engine đồng bộ real-time riêng,
+        // không phải scene thí nghiệm dựng sẵn của Lab.cshtml.
+        if (string.Equals(result.Data.SceneType, "freedraw", StringComparison.OrdinalIgnoreCase))
+            return View("MathLab", result.Data);
+
         return View(result.Data);
     }
 

@@ -8,6 +8,7 @@
         new { Code = "TEACHER",    Label = "Giáo viên", Icon = "bi-person-video3",     Color = "#059669" },
         new { Code = "SUPERVISOR", Label = "Giám thị",  Icon = "bi-shield-fill",       Color = "#c2410c" },
         new { Code = "PARENT",     Label = "Phụ huynh", Icon = "bi-house-heart-fill",  Color = "#7c3aed" },
+        new { Code = "ADMIN",      Label = "Quản trị trường", Icon = "bi-person-badge-fill", Color = "#b45309" },
     };
     var currentRole = Model.Filter.RoleCode ?? "";
 }
@@ -78,6 +79,7 @@
             <a asp-action="Create" asp-route-role="TEACHER"    class="dcard__action" style="background:#ecfdf5;color:#059669">+ Giáo viên</a>
             <a asp-action="Create" asp-route-role="SUPERVISOR" class="dcard__action" style="background:#fff7ed;color:#c2410c">+ Giám thị</a>
             <a asp-action="Create" asp-route-role="PARENT"     class="dcard__action" style="background:#f5f3ff;color:#7c3aed">+ Phụ huynh</a>
+            <a asp-action="Create" asp-route-role="ADMIN"      class="dcard__action" style="background:#fffbeb;color:#b45309">+ Quản trị trường</a>
         </div>
     </div>
     <div class="dcard__body" style="padding:0">
@@ -110,6 +112,7 @@
                                 "TEACHER"    => ("#ecfdf5", "#059669"),
                                 "SUPERVISOR" => ("#fff7ed", "#c2410c"),
                                 "PARENT"     => ("#f5f3ff", "#7c3aed"),
+                                "ADMIN"      => ("#fffbeb", "#b45309"),
                                 _ => ("#f8fafc", "#64748b")
                             };
                             var initials = acc.FullName.Length > 0

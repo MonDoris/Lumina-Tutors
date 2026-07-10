@@ -1,8 +1,12 @@
 @using LuminaTutors.Application.DTOs.Subscription
+@using LuminaTutors.Application.Interfaces.Services
+@using LuminaTutors.Domain.Enums
 @model SubscriptionOverviewDto
 @{
     ViewData["Title"] = "Gói dịch vụ";
     var c = Model.Current;
+    // Hạn mức tài khoản: -1 = không giới hạn (∞)
+    string QLim(int v) => v < 0 ? "∞" : v.ToString("N0");
     string CycleVi(string code) => code switch
     {
         "Monthly"   => "Tháng",
@@ -26,12 +30,149 @@
         "Renewal" => "Gia hạn",
         _         => t
     };
+
+    var cycleTotal = c.BillingCycle switch { "Monthly" => 30, "Quarterly" => 90, _ => 365 };
+    var progPct    = c.IsActive ? Math.Clamp((int)Math.Round(100.0 * c.DaysRemaining / cycleTotal), 3, 100) : 0;
 }
 
+@section Styles {
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500..900;1,9..144,500..700&family=JetBrains+Mono:wght@500;700&display=swap">
+    <style>
+        /* ══ Aurora × Atlas — trang Gói dịch vụ (Nhà trường) ══
+           Nền sáng sạch · thẻ trắng · nhũ đồng + serif Fraunces. */
+        .sub-page{
+            --ink:#161b26; --ink-soft:#3a4456; --muted:#8a92a3;
+            --paper:#f6f7fb; --card:#ffffff; --line:#ecedf2; --line-soft:#f4f5f9;
+            --brass:#c08a36; --brass-bright:#e0b25a; --brass-pale:#f7edd6; --brass-ink:#5b4216;
+            --viridian:#0f9d6b; --viridian-pale:#e7f6ef; --oxblood:#d2475a;
+            --grad-brass:linear-gradient(135deg,#e7c987 0%,#c08a36 100%);
+            --grad-ink:linear-gradient(155deg,#1c2331 0%,#232d42 58%,#161d2b 100%);
+            --ease:cubic-bezier(.4,0,.2,1);
+            font-family:'Be Vietnam Pro',system-ui,sans-serif; color:var(--ink);
+        }
+        .sub-page .mono{ font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums; }
+        .sub-page .lt-page-title{ font-family:'Fraunces','Be Vietnam Pro',serif; font-weight:600; letter-spacing:-.015em; color:var(--ink); }
+        .sub-page .lt-page-subtitle{ color:var(--muted); }
+
+        @@keyframes subUp{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+        @@keyframes subGlow{ 0%,100%{opacity:.45;transform:scale(1)} 50%{opacity:.8;transform:scale(1.08)} }
+        .sub-rise{ opacity:0; animation:subUp .55s var(--ease) forwards; }
+
+        /* section heading học thuật */
+        .sub-h { font-family:'Fraunces','Be Vietnam Pro',serif; font-size:1.4rem;font-weight:600;color:var(--ink);
+                 margin:34px 0 16px;display:flex;align-items:center;gap:12px;letter-spacing:-.01em }
+        .sub-h .bar { width:10px;height:24px;border-radius:2px;background:var(--grad-brass);box-shadow:0 0 0 1px rgba(178,132,58,.25) inset }
+
+        /* ── Gói hiện tại: thẻ "thẻ thành viên" ───────────────────────── */
+        .sub-now { position:relative; overflow:hidden; background:var(--grad-ink);
+                   border-radius:24px;padding:32px 36px;color:#eef1f7;
+                   display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;
+                   box-shadow:0 28px 56px -30px rgba(20,24,38,.55) }
+        .sub-now::after{ content:""; position:absolute; top:-50%; right:-5%; width:340px;height:340px;border-radius:50%;
+                   background:radial-gradient(circle,rgba(224,178,90,.3),transparent 60%);filter:blur(2px);animation:subGlow 7s ease-in-out infinite;pointer-events:none }
+        .sub-now > *{ position:relative; z-index:1 }
+        .sub-now__cap { font-family:'JetBrains Mono',monospace; font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:var(--brass-bright);font-weight:600 }
+        .sub-now__head { display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 2px }
+        .sub-now__name { font-family:'Fraunces',serif; font-size:1.9rem;font-weight:600;color:#fdfaf2;line-height:1.05;letter-spacing:-.01em }
+        .sub-pill { font-size:.73rem;font-weight:600;padding:4px 12px;border-radius:99px }
+        .sub-pill--ok   { background:rgba(120,200,170,.18);color:#a7e8cf }
+        .sub-pill--bad  { background:rgba(200,110,120,.2);color:#f3b6bd }
+        .sub-pill--info { background:rgba(216,178,94,.16);color:#ecd6a0 }
+        .sub-now__valid { font-size:.9rem;color:#bcc6d6;margin-top:12px }
+        .sub-now__valid b { color:#fdfaf2 }
+        .sub-prog { height:6px;border-radius:99px;background:rgba(255,255,255,.12);margin-top:10px;max-width:440px;overflow:hidden }
+        .sub-prog__fill { height:100%;border-radius:99px;background:var(--grad-brass) }
+        .sub-feats-row { display:flex;gap:8px;flex-wrap:wrap;margin-top:16px }
+        .sub-feat { display:inline-flex;align-items:center;gap:6px;font-size:.8rem;padding:5px 12px;border-radius:99px;background:rgba(255,255,255,.06);color:#a9b4c6;border:1px solid rgba(255,255,255,.08) }
+        .sub-feat.on { background:rgba(120,200,170,.14);color:#a7e8cf;border-color:rgba(120,200,170,.3) }
+
+        .sub-acts { display:flex;flex-direction:column;gap:9px;min-width:180px }
+        .sub-act { display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 16px;border-radius:11px;
+                   font-size:.86rem;font-weight:600;cursor:pointer;border:1px solid transparent;text-decoration:none;transition:.18s var(--ease);width:100% }
+        .sub-act--primary { background:var(--grad-brass);color:var(--brass-ink);box-shadow:0 10px 22px -10px rgba(178,132,58,.7) }
+        .sub-act--primary:hover { transform:translateY(-1px);filter:brightness(1.04) }
+        .sub-act--ghost { background:rgba(255,255,255,.06);color:#e6ddcb;border-color:rgba(216,178,94,.28) }
+        .sub-act--ghost:hover { background:rgba(216,178,94,.16);color:#fff }
+        .sub-act--danger { background:transparent;color:#f0b3ba;border-color:rgba(200,110,120,.38) }
+        .sub-act--danger:hover { background:rgba(155,59,71,.4);color:#ffe0e3 }
+
+        /* ── Empty state ──────────────────────────────────────────────── */
+        .sub-empty { background:var(--card);border:1px dashed var(--line);border-radius:18px;padding:40px;text-align:center;color:var(--muted) }
+        .sub-empty i { font-size:2.2rem;color:var(--brass) }
+
+        /* ── Chọn gói (như tấm bằng/huân chương) ─────────────────────── */
+        .sub-plans { display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px }
+        .sub-plan { background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;flex-direction:column;position:relative;
+                    box-shadow:0 1px 2px rgba(27,36,52,.05);transition:transform .25s var(--ease),box-shadow .25s,border-color .25s }
+        .sub-plan:hover { transform:translateY(-3px);box-shadow:0 22px 44px -26px rgba(27,36,52,.35);border-color:var(--brass) }
+        .sub-plan::after{ content:""; position:absolute; top:14px;right:14px;width:16px;height:16px;opacity:.5;
+                    border-top:1.5px solid var(--brass);border-right:1.5px solid var(--brass);border-radius:0 4px 0 0;pointer-events:none }
+        .sub-plan.is-current { border-color:var(--brass);box-shadow:0 0 0 1.5px var(--brass) inset }
+        .sub-plan.is-rec { border-color:var(--brass) }
+        .sub-plan__tag { position:absolute;top:-12px;left:24px;background:var(--grad-brass);color:var(--brass-ink);
+                    font-family:'JetBrains Mono',monospace;font-size:.66rem;letter-spacing:.08em;font-weight:700;padding:4px 13px;border-radius:99px;
+                    box-shadow:0 8px 16px -8px rgba(178,132,58,.7) }
+        .sub-plan__name { font-family:'Fraunces',serif; font-size:1.4rem;font-weight:600;color:var(--ink);margin:0;letter-spacing:-.01em }
+        .sub-plan__desc { color:var(--muted);font-size:.85rem;margin:8px 0 16px;min-height:38px;line-height:1.55 }
+        .sub-plan__price { font-family:'Fraunces',serif; font-size:2rem;font-weight:600;color:var(--ink);line-height:1;letter-spacing:-.02em }
+        .sub-plan__price small { font-family:'Be Vietnam Pro',sans-serif; font-size:.85rem;font-weight:500;color:var(--muted) }
+        .sub-plan__alt { font-family:'JetBrains Mono',monospace; color:var(--muted);font-size:.76rem;margin-top:5px }
+        /* Hạn mức tài khoản theo vai trò trên mỗi thẻ gói */
+        .sub-plan__lim { margin-top:14px;border-top:1px dashed var(--line);padding-top:14px }
+        .sub-plan__lim-cap { font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
+                    color:var(--brass);font-weight:700;margin-bottom:10px }
+        .sub-plan__lim-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px 16px }
+        .sub-plan__lim-grid span { display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.82rem;color:var(--ink-soft) }
+        .sub-plan__lim-grid b { font-family:'JetBrains Mono',monospace;color:var(--ink);font-weight:700 }
+        .sub-flist { list-style:none;padding:0;margin:16px 0 18px;font-size:.88rem;color:var(--ink-soft);display:flex;flex-direction:column;gap:8px }
+        .sub-flist i { width:18px }
+        .sub-flist .text-success{ color:var(--viridian) !important }
+        .sub-plan__foot { margin-top:auto }
+        .sub-cyc { display:flex;gap:8px;align-items:center;margin-bottom:10px }
+        .sub-renew { display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--ink-soft);white-space:nowrap }
+
+        /* ── Add-on ───────────────────────────────────────────────────── */
+        .sub-addons { display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px }
+        .sub-addon { background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px 19px;display:flex;align-items:center;gap:14px;
+                     transition:transform .2s var(--ease),box-shadow .2s,border-color .2s }
+        .sub-addon:hover { transform:translateY(-2px);box-shadow:0 16px 32px -22px rgba(27,36,52,.3);border-color:var(--brass) }
+        .sub-addon__ic { width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;font-size:1.3rem }
+        .sub-addon__ic--ai { background:var(--viridian-pale);color:var(--viridian) }
+        .sub-addon__ic--lab { background:var(--brass-pale);color:var(--brass-ink) }
+        .sub-addon__body { flex:1;min-width:0 }
+        .sub-addon__name { font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap }
+        .sub-addon__desc { color:var(--muted);font-size:.78rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis }
+        .sub-addon__price { font-family:'Fraunces',serif; font-weight:600;font-size:1.15rem;color:var(--ink);white-space:nowrap }
+        .sub-addon__price small { font-family:'Be Vietnam Pro',sans-serif; font-size:.72rem;font-weight:500;color:var(--muted) }
+
+        /* ── Quota tài khoản / lớp học ────────────────────────────────── */
+        .quota-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px }
+        .quota-card { background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;border-left:4px solid var(--viridian) }
+        .quota-card--warn { border-left-color:var(--brass) }
+        .quota-card--full { border-left-color:var(--oxblood) }
+        .quota-card__top { display:flex;align-items:center;justify-content:space-between;gap:8px }
+        .quota-card__label { font-size:.86rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px }
+        .quota-card__label i { color:var(--muted) }
+        .quota-card__count { font-family:'JetBrains Mono',monospace; font-size:1.08rem;font-weight:700;color:var(--ink);white-space:nowrap }
+        .quota-card__count small { font-size:.78rem;font-weight:500;color:var(--muted) }
+        .quota-bar { height:6px;border-radius:99px;background:var(--line-soft);margin-top:12px;overflow:hidden }
+        .quota-bar__fill { height:100%;border-radius:99px;background:var(--viridian);transition:width .4s var(--ease) }
+        .quota-card--warn .quota-bar__fill { background:var(--brass) }
+        .quota-card--full .quota-bar__fill { background:var(--oxblood) }
+        .quota-card__msg { font-size:.74rem;font-weight:600;margin-top:9px;color:var(--brass-ink) }
+        .quota-card--full .quota-card__msg { color:var(--oxblood) }
+        .quota-card__inf { font-size:.82rem;font-weight:600;color:var(--viridian);margin-top:12px;display:flex;align-items:center;gap:6px }
+
+        @@media (max-width:720px){ .sub-now{grid-template-columns:1fr} .sub-acts{flex-direction:row;flex-wrap:wrap} .sub-act{width:auto;flex:1} }
+    </style>
+}
+
+<div class="sub-page">
 <div class="lt-page-header">
     <div>
         <h1 class="lt-page-title">Gói dịch vụ &amp; Đăng ký</h1>
-        <p class="lt-page-subtitle">Nâng cấp gói, mua thêm tính năng (Gia Sư AI, Phòng 3D) và quản lý đăng ký định kỳ</p>
+        <p class="lt-page-subtitle">Quản lý gói của trường, nâng cấp, mua thêm tính năng và gia hạn định kỳ</p>
     </div>
     <div class="lt-page-header__actions">
         <form asp-action="RunRenewals" method="post" class="d-inline"
@@ -44,121 +185,151 @@
     </div>
 </div>
 
-<!-- ── Đăng ký hiện tại ───────────────────────────────────────────── -->
-<div class="lt-card lt-mb-4">
-    <div class="lt-card__body">
-        @if (!c.HasSubscription)
-        {
-            <div style="text-align:center;padding:24px 0">
-                <i class="bi bi-box-seam" style="font-size:2rem;color:#94a3b8"></i>
-                <p style="margin:10px 0 0;color:#64748b">Trường chưa đăng ký gói nào. Chọn một gói bên dưới để bắt đầu.</p>
+@* ── Gói hiện tại ─────────────────────────────────────────────────── *@
+@if (!c.HasSubscription)
+{
+    <div class="sub-empty">
+        <i class="bi bi-box-seam"></i>
+        <p style="margin:10px 0 0;font-weight:600;color:#475569">Trường chưa đăng ký gói nào</p>
+        <p style="margin:4px 0 0;font-size:.88rem">Chọn một gói bên dưới để bắt đầu sử dụng hệ thống.</p>
+    </div>
+}
+else
+{
+    <div class="sub-now">
+        <div>
+            <div class="sub-now__cap">Gói hiện tại</div>
+            <div class="sub-now__head">
+                <span class="sub-now__name">@c.PlanName</span>
+                <span class="sub-pill @(c.IsActive ? "sub-pill--ok" : "sub-pill--bad")">@StatusVi(c.Status)</span>
+                <span class="sub-pill sub-pill--info">@(c.AutoRenew ? $"Định kỳ ({CycleVi(c.BillingCycle)})" : "Mua một lần")</span>
             </div>
-        }
-        else
-        {
-            <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
-                <div>
-                    <div style="display:flex;align-items:center;gap:12px">
-                        <span style="font-size:1.4rem;font-weight:800;color:var(--lt-navy)">@c.PlanName</span>
-                        @if (c.IsActive)
-                        {
-                            <span class="lt-badge lt-badge--success">@StatusVi(c.Status)</span>
-                        }
-                        else
-                        {
-                            <span class="lt-badge lt-badge--danger">@StatusVi(c.Status)</span>
-                        }
-                        @if (!c.AutoRenew)
-                        {
-                            <span class="lt-badge lt-badge--warning">Mua một lần</span>
-                        }
-                        else
-                        {
-                            <span class="lt-badge lt-badge--info">Định kỳ (@CycleVi(c.BillingCycle))</span>
-                        }
-                    </div>
-                    <div style="margin-top:8px;color:#64748b;font-size:.9rem">
-                        Hiệu lực đến <b>@c.CurrentPeriodEnd.ToString("dd/MM/yyyy")</b>
-                        @if (c.IsActive) { <text>— còn <b>@c.DaysRemaining</b> ngày</text> }
-                    </div>
-                    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-                        <span class="lt-badge @(c.HasAiTutor ? "lt-badge--success" : "lt-badge--gray")">
-                            <i class="bi @(c.HasAiTutor ? "bi-check-circle" : "bi-x-circle")"></i> Gia Sư AI
-                        </span>
-                        <span class="lt-badge @(c.HasVirtualLab ? "lt-badge--success" : "lt-badge--gray")">
-                            <i class="bi @(c.HasVirtualLab ? "bi-check-circle" : "bi-x-circle")"></i> Phòng 3D
-                        </span>
-                    </div>
-                </div>
+            <div class="sub-now__valid">
+                Hiệu lực đến <b>@c.CurrentPeriodEnd.ToString("dd/MM/yyyy")</b>@if (c.IsActive) { <text> — còn <b>@c.DaysRemaining</b> ngày</text>}
+            </div>
+            @if (c.IsActive)
+            {
+                <div class="sub-prog"><div class="sub-prog__fill" style="width:@progPct%"></div></div>
+            }
+            <div class="sub-feats-row">
+                <span class="sub-feat @(c.HasAiTutor ? "on" : "")"><i class="bi @(c.HasAiTutor ? "bi-check-circle-fill" : "bi-dash-circle")"></i> Gia Sư AI</span>
+                <span class="sub-feat @(c.HasVirtualLab ? "on" : "")"><i class="bi @(c.HasVirtualLab ? "bi-check-circle-fill" : "bi-dash-circle")"></i> Phòng học 3D</span>
+            </div>
+        </div>
 
-                <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <form asp-action="Renew" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="lt-btn lt-btn--primary">
-                            <i class="bi bi-arrow-clockwise"></i> Gia hạn ngay
-                        </button>
-                    </form>
-                    @if (c.AutoRenew)
-                    {
-                        <form asp-action="SetAutoRenew" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="enabled" value="false" />
-                            <button type="submit" class="lt-btn lt-btn--outline" title="Chuyển sang mua một lần">
-                                <i class="bi bi-pause-circle"></i> Tắt tự gia hạn
-                            </button>
-                        </form>
-                    }
-                    else
-                    {
-                        <form asp-action="SetAutoRenew" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="enabled" value="true" />
-                            <button type="submit" class="lt-btn lt-btn--outline" title="Tự động gia hạn mỗi kỳ">
-                                <i class="bi bi-play-circle"></i> Bật tự gia hạn
-                            </button>
-                        </form>
-                    }
-                    <form asp-action="Cancel" method="post" class="d-inline"
-                          onsubmit="return confirm('Hủy gia hạn? Trường vẫn dùng đến hết kỳ đã trả.');">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="lt-btn lt-btn--outline" style="color:var(--lt-danger)">
-                            <i class="bi bi-x-circle"></i> Hủy
-                        </button>
-                    </form>
+        <div class="sub-acts">
+            <form asp-action="Renew" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="sub-act sub-act--primary"><i class="bi bi-arrow-clockwise"></i> Gia hạn ngay</button>
+            </form>
+            <form asp-action="SetAutoRenew" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="enabled" value="@(c.AutoRenew ? "false" : "true")" />
+                <button type="submit" class="sub-act sub-act--ghost">
+                    <i class="bi @(c.AutoRenew ? "bi-pause-circle" : "bi-play-circle")"></i> @(c.AutoRenew ? "Tắt tự gia hạn" : "Bật tự gia hạn")
+                </button>
+            </form>
+            <form asp-action="Cancel" method="post" onsubmit="return confirm('Hủy gia hạn? Trường vẫn dùng đến hết kỳ đã trả.');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="sub-act sub-act--danger"><i class="bi bi-x-circle"></i> Hủy gia hạn</button>
+            </form>
+        </div>
+    </div>
+}
+
+@* ── Giới hạn tài khoản & lớp học ─────────────────────────────────── *@
+@{
+    var quota = ViewBag.Quota as QuotaStatusDto;
+}
+@if (quota != null && quota.HasActiveSubscription)
+{
+    var slots = new List<(string Icon, string Label, QuotaSlotDto Slot)>();
+    slots.Add(("bi-mortarboard",   "Giáo viên",       quota.Teachers));
+    slots.Add(("bi-people",        "Học sinh",        quota.Students));
+    slots.Add(("bi-person-heart",  "Phụ huynh",       quota.Parents));
+    slots.Add(("bi-person-badge",  "Quản trị trường", quota.Admins));
+    slots.Add(("bi-calculator",    "Kế toán",         quota.Accountants));
+    slots.Add(("bi-eye",           "Giám thị",        quota.Supervisors));
+    slots.Add(("bi-easel",         "Lớp học",         quota.Classes));
+
+    <h2 class="sub-h"><span class="bar"></span> Giới hạn tài khoản &amp; lớp học</h2>
+    <div class="quota-grid">
+        @foreach (var s in slots)
+        {
+            var slot  = s.Slot;
+            var pct   = slot.Unlimited || slot.Max <= 0 ? 0 : Math.Clamp((int)Math.Round(100.0 * slot.Used / slot.Max), 2, 100);
+            var state = slot.Unlimited ? "ok" : (slot.IsFull ? "full" : (slot.IsNearLimit ? "warn" : "ok"));
+            <div class="quota-card quota-card--@state">
+                <div class="quota-card__top">
+                    <span class="quota-card__label"><i class="bi @s.Icon"></i> @s.Label</span>
+                    <span class="quota-card__count">
+                        @if (slot.Unlimited)
+                        {
+                            <text>@slot.Used <small>/ ∞</small></text>
+                        }
+                        else
+                        {
+                            <text>@slot.Used <small>/ @slot.Max</small></text>
+                        }
+                    </span>
                 </div>
+                @if (slot.Unlimited)
+                {
+                    <div class="quota-card__inf"><i class="bi bi-infinity"></i> Không giới hạn</div>
+                }
+                else
+                {
+                    <div class="quota-bar"><div class="quota-bar__fill" style="width:@pct%"></div></div>
+                    @if (slot.IsFull)
+                    {
+                        <div class="quota-card__msg">Đã đầy — hãy nâng cấp gói hoặc mua thêm</div>
+                    }
+                    else if (slot.IsNearLimit)
+                    {
+                        <div class="quota-card__msg">Sắp đạt giới hạn (còn @slot.Remaining)</div>
+                    }
+                }
             </div>
         }
     </div>
-</div>
+}
 
-<!-- ── Bảng giá / Nâng cấp gói ────────────────────────────────────── -->
-<h2 style="font-size:1.1rem;font-weight:800;color:var(--lt-navy);margin:0 0 14px">Chọn gói</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:28px">
+@* ── Chọn gói ─────────────────────────────────────────────────────── *@
+<h2 class="sub-h"><span class="bar"></span> Chọn gói</h2>
+<div class="sub-plans">
     @foreach (var p in Model.Plans)
     {
-        <div class="lt-card" style="@(p.IsCurrent ? "border:2px solid var(--lt-gold)" : "")">
-            <div class="lt-card__body">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                    <h3 style="font-size:1.15rem;font-weight:800;color:var(--lt-navy);margin:0">@p.Name</h3>
-                    @if (p.IsCurrent)
-                    {
-                        <span class="lt-badge lt-badge--gold">Đang dùng</span>
-                    }
-                </div>
-                <p style="color:#64748b;font-size:.85rem;min-height:38px;margin:8px 0">@p.Description</p>
+        var rec = p.IsUpgrade && !p.IsCurrent;
+        <div class="sub-plan @(p.IsCurrent ? "is-current" : "") @(rec ? "is-rec" : "")">
+            @if (rec) { <span class="sub-plan__tag">Nên nâng cấp</span> }
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <h3 class="sub-plan__name">@p.Name</h3>
+                @if (p.IsCurrent) { <span class="lt-badge lt-badge--gold">Đang dùng</span> }
+            </div>
+            <p class="sub-plan__desc">@p.Description</p>
 
-                <div style="font-size:1.5rem;font-weight:800;color:var(--lt-navy)">
-                    @p.MonthlyPrice.ToString("N0")<span style="font-size:.85rem;font-weight:600;color:#94a3b8">đ/tháng</span>
-                </div>
-                <div style="color:#94a3b8;font-size:.8rem;margin-bottom:12px">
-                    @p.QuarterlyPrice.ToString("N0")đ/quý · @p.YearlyPrice.ToString("N0")đ/năm
-                </div>
+            <div class="sub-plan__price">@p.MonthlyPrice.ToString("N0")<small>đ/tháng</small></div>
+            <div class="sub-plan__alt">@p.QuarterlyPrice.ToString("N0")đ/quý · @p.YearlyPrice.ToString("N0")đ/năm</div>
 
-                <ul style="list-style:none;padding:0;margin:0 0 14px;font-size:.85rem;color:#475569">
-                    <li style="margin-bottom:4px"><i class="bi @(p.IncludesAiTutor ? "bi-check-lg text-success" : "bi-dash text-muted")"></i> Gia Sư AI</li>
-                    <li><i class="bi @(p.IncludesVirtualLab ? "bi-check-lg text-success" : "bi-dash text-muted")"></i> Phòng học 3D</li>
-                </ul>
+            <ul class="sub-flist">
+                <li><i class="bi @(p.IncludesAiTutor ? "bi-check-lg text-success" : "bi-dash text-muted")"></i> Gia Sư AI</li>
+                <li><i class="bi @(p.IncludesVirtualLab ? "bi-check-lg text-success" : "bi-dash text-muted")"></i> Phòng học 3D</li>
+            </ul>
 
+            <div class="sub-plan__lim">
+                <div class="sub-plan__lim-cap">Số tài khoản tối đa / trường</div>
+                <div class="sub-plan__lim-grid">
+                    <span>👨‍🏫 Giáo viên <b>@QLim(p.MaxTeachers)</b></span>
+                    <span>🎓 Học sinh <b>@QLim(p.MaxStudents)</b></span>
+                    <span>👪 Phụ huynh <b>@QLim(p.MaxParents)</b></span>
+                    <span>🛡️ Nhà trường <b>@QLim(p.MaxAdmins)</b></span>
+                    <span>💼 Kế toán <b>@QLim(p.MaxAccountants)</b></span>
+                    <span>🔎 Giám thị <b>@QLim(p.MaxSupervisors)</b></span>
+                    <span>🏫 Lớp học <b>@QLim(p.MaxClasses)</b></span>
+                </div>
+            </div>
+
+            <div class="sub-plan__foot">
                 @if (p.IsCurrent)
                 {
                     <button class="lt-btn lt-btn--outline" style="width:100%" disabled>Gói hiện tại</button>
@@ -168,15 +339,13 @@
                     <form asp-action="ChangePlan" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="PlanId" value="@p.PlanId" />
-                        <div style="display:flex;gap:8px;margin-bottom:8px">
+                        <div class="sub-cyc">
                             <select name="Cycle" class="lt-select" style="flex:1">
                                 <option value="Monthly">Theo tháng</option>
                                 <option value="Quarterly">Theo quý</option>
                                 <option value="Yearly" selected>Theo năm</option>
                             </select>
-                            <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;color:#475569;white-space:nowrap">
-                                <input type="checkbox" name="AutoRenew" value="true" checked /> Tự gia hạn
-                            </label>
+                            <label class="sub-renew"><input type="checkbox" name="AutoRenew" value="true" checked /> Tự gia hạn</label>
                         </div>
                         <button type="submit" class="lt-btn lt-btn--primary" style="width:100%">
                             @(p.IsUpgrade ? "Nâng cấp lên gói này" : (c.IsActive ? "Chuyển gói này" : "Đăng ký"))
@@ -188,56 +357,114 @@
     }
 </div>
 
-<!-- ── Tính năng mua thêm (add-on) ────────────────────────────────── -->
-<h2 style="font-size:1.1rem;font-weight:800;color:var(--lt-navy);margin:0 0 14px">Mua thêm tính năng</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:28px">
+@* ── Mua thêm tính năng ───────────────────────────────────────────── *@
+<h2 class="sub-h"><span class="bar"></span> Mua thêm tính năng</h2>
+<div class="sub-addons">
     @foreach (var a in Model.AddOns)
     {
-        <div class="lt-card">
-            <div class="lt-card__body">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                    <h3 style="font-size:1.05rem;font-weight:800;color:var(--lt-navy);margin:0">
-                        <i class="bi @(a.Feature == "AiTutor" ? "bi-robot" : "bi-badge-vr-fill")"></i> @a.Name
-                    </h3>
-                    @if (a.InCurrentPlan)
-                    {
-                        <span class="lt-badge lt-badge--success">Đã có trong gói</span>
-                    }
-                    else if (a.IsOwned)
-                    {
-                        <span class="lt-badge lt-badge--info">Đã mua</span>
-                    }
+        var isAi = a.Feature == "AiTutor";
+        <div class="sub-addon">
+            <div class="sub-addon__ic @(isAi ? "sub-addon__ic--ai" : "sub-addon__ic--lab")">
+                <i class="bi @(isAi ? "bi-robot" : "bi-badge-vr-fill")"></i>
+            </div>
+            <div class="sub-addon__body">
+                <div class="sub-addon__name">
+                    @a.Name
+                    @if (a.InCurrentPlan) { <span class="lt-badge lt-badge--success">Đã có trong gói</span> }
+                    else if (a.IsOwned)   { <span class="lt-badge lt-badge--info">Đã mua</span> }
                 </div>
-                <p style="color:#64748b;font-size:.85rem;min-height:38px;margin:8px 0">@a.Description</p>
-                <div style="font-size:1.25rem;font-weight:800;color:var(--lt-navy);margin-bottom:4px">
-                    @a.MonthlyPrice.ToString("N0")<span style="font-size:.8rem;font-weight:600;color:#94a3b8">đ/tháng</span>
-                </div>
+                <div class="sub-addon__desc">@a.Description</div>
                 @if (a.ActiveUntil.HasValue)
                 {
-                    <div style="color:#94a3b8;font-size:.8rem;margin-bottom:10px">Hiệu lực đến @a.ActiveUntil.Value.ToString("dd/MM/yyyy")</div>
+                    <div class="sub-addon__desc">Hiệu lực đến @a.ActiveUntil.Value.ToString("dd/MM/yyyy")</div>
                 }
-
-                @if (a.IsOwned)
-                {
-                    <button class="lt-btn lt-btn--outline" style="width:100%" disabled>Đã sở hữu</button>
-                }
-                else
-                {
-                    <form asp-action="BuyAddOn" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="addOnId" value="@a.AddOnId" />
-                        <button type="submit" class="lt-btn lt-btn--gold" style="width:100%">
-                            <i class="bi bi-cart-plus"></i> Mua thêm
-                        </button>
-                    </form>
-                }
+            </div>
+            <div style="text-align:right">
+                <div class="sub-addon__price">@a.MonthlyPrice.ToString("N0")<small>đ/tháng</small></div>
+                <div style="margin-top:8px">
+                    @if (a.IsOwned || a.InCurrentPlan)
+                    {
+                        <button class="lt-btn lt-btn--outline lt-btn--sm" disabled>@(a.InCurrentPlan ? "Trong gói" : "Đã sở hữu")</button>
+                    }
+                    else
+                    {
+                        <form asp-action="BuyAddOn" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="addOnId" value="@a.AddOnId" />
+                            <button type="submit" class="lt-btn lt-btn--gold lt-btn--sm"><i class="bi bi-cart-plus"></i> Mua thêm</button>
+                        </form>
+                    }
+                </div>
             </div>
         </div>
     }
 </div>
 
-<!-- ── Lịch sử đơn ────────────────────────────────────────────────── -->
-<h2 style="font-size:1.1rem;font-weight:800;color:var(--lt-navy);margin:0 0 14px">Đơn gần đây</h2>
+@* ── Mua thêm gói tài khoản / lớp học ─────────────────────────────── *@
+@{
+    string RoleLabelVi(RoleCode? r) => r switch
+    {
+        RoleCode.Teacher    => "Giáo viên",
+        RoleCode.Student    => "Học sinh",
+        RoleCode.Parent     => "Phụ huynh",
+        RoleCode.Admin      => "Quản trị trường",
+        RoleCode.Accountant => "Kế toán",
+        RoleCode.Supervisor => "Giám thị",
+        _                   => "Lớp học"
+    };
+}
+@if (Model.QuotaAddOns.Any())
+{
+    <h2 class="sub-h"><span class="bar"></span> Mua thêm gói tài khoản / lớp học</h2>
+    <div class="sub-addons">
+        @foreach (var q in Model.QuotaAddOns)
+        {
+            var isClass = q.TargetRole is null;
+            var qty     = isClass ? $"+{q.ExtraClasses} lớp học" : $"+{q.ExtraQuota} {RoleLabelVi(q.TargetRole)}";
+            <div class="sub-addon">
+                <div class="sub-addon__ic @(isClass ? "sub-addon__ic--lab" : "sub-addon__ic--ai")">
+                    <i class="bi @(isClass ? "bi-easel" : "bi-person-plus-fill")"></i>
+                </div>
+                <div class="sub-addon__body">
+                    <div class="sub-addon__name">
+                        @q.Name
+                        <span class="lt-badge lt-badge--gold">@qty</span>
+                        @if (q.IsOwned) { <span class="lt-badge lt-badge--info">Đã mua</span> }
+                    </div>
+                    <div class="sub-addon__desc">@q.Description</div>
+                    @if (q.ActiveUntil.HasValue)
+                    {
+                        <div class="sub-addon__desc">Hiệu lực đến @q.ActiveUntil.Value.ToString("dd/MM/yyyy")</div>
+                    }
+                </div>
+                <div style="text-align:right">
+                    <div class="sub-addon__price">@q.MonthlyPrice.ToString("N0")<small>đ/tháng</small></div>
+                    <div style="margin-top:8px">
+                        @if (q.IsOwned)
+                        {
+                            <button class="lt-btn lt-btn--outline lt-btn--sm" disabled>Đã sở hữu</button>
+                        }
+                        else if (!c.IsActive)
+                        {
+                            <button class="lt-btn lt-btn--outline lt-btn--sm" disabled title="Cần có gói đang hoạt động">Cần gói active</button>
+                        }
+                        else
+                        {
+                            <form asp-action="BuyQuotaAddOn" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="quotaAddOnId" value="@q.AddOnId" />
+                                <button type="submit" class="lt-btn lt-btn--gold lt-btn--sm"><i class="bi bi-cart-plus"></i> Mua thêm</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* ── Đơn gần đây ──────────────────────────────────────────────────── *@
+<h2 class="sub-h"><span class="bar"></span> Đơn gần đây</h2>
 <div class="lt-card">
     <div class="lt-card__body" style="padding:0">
         <table class="lt-table">
@@ -266,18 +493,9 @@
                         <td class="lt-th--right">@o.Amount.ToString("N0")đ</td>
                         <td style="font-size:.82rem;color:#64748b">@o.PeriodStart.ToString("dd/MM/yy") – @o.PeriodEnd.ToString("dd/MM/yy")</td>
                         <td>
-                            @if (o.Status == "Paid")
-                            {
-                                <span class="lt-badge lt-badge--success">Đã thanh toán</span>
-                            }
-                            else if (o.Status == "Pending")
-                            {
-                                <span class="lt-badge lt-badge--warning">Chờ thanh toán</span>
-                            }
-                            else
-                            {
-                                <span class="lt-badge lt-badge--gray">@o.Status</span>
-                            }
+                            @if (o.Status == "Paid")      { <span class="lt-badge lt-badge--success">Đã thanh toán</span> }
+                            else if (o.Status == "Pending"){ <span class="lt-badge lt-badge--warning">Chờ thanh toán</span> }
+                            else                           { <span class="lt-badge lt-badge--gray">@o.Status</span> }
                         </td>
                         <td class="lt-th--right">
                             @if (o.Status == "Pending")
@@ -292,4 +510,5 @@
             </tbody>
         </table>
     </div>
+</div>
 </div>

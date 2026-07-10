@@ -1,0 +1,88 @@
+@using LuminaTutors.Application.DTOs.Support
+@model IReadOnlyList<SupportThreadListItemDto>
+@{
+    ViewData["Title"] = "Hộp thư hỗ trợ";
+    var total  = Model.Count;
+    var unread = Model.Sum(x => x.Unread);
+    string[] avaColors = { "#0f2440", "#0e7490", "#7c3aed", "#b45309", "#15803d", "#9d174d" };
+}
+
+@section Styles {
+    <style>
+        .si-stats { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px }
+        .si-stat { background:#fff;border:1px solid #e9ecf2;border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:12px;min-width:150px }
+        .si-stat__ic { width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:1.1rem;flex:none }
+        .si-stat__n { font-size:1.4rem;font-weight:800;color:var(--lt-navy);line-height:1 }
+        .si-stat__l { font-size:.78rem;color:#94a3b8;margin-top:2px }
+
+        .si-card { background:#fff;border:1px solid #e9ecf2;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.05) }
+        .si-row { display:flex;align-items:center;gap:14px;padding:15px 20px;border-bottom:1px solid #f1f4f8;text-decoration:none;transition:background .12s }
+        .si-row:last-child { border-bottom:none }
+        .si-row:hover { background:#f7f9fc }
+        .si-row.hot { background:#fffdf6 }
+        .si-ava { width:46px;height:46px;border-radius:13px;color:#fff;display:grid;place-items:center;font-weight:800;flex:none;font-size:1.05rem }
+        .si-name { font-weight:700;color:var(--lt-navy) }
+        .si-last { font-size:.85rem;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:560px }
+        .si-last.bold { color:#334155;font-weight:600 }
+        .si-time { font-size:.76rem;color:#94a3b8;white-space:nowrap }
+        .si-unread { background:var(--lt-danger,#dc2626);color:#fff;font-size:.74rem;font-weight:800;min-width:22px;height:22px;padding:0 7px;border-radius:99px;display:grid;place-items:center;flex:none }
+        .si-go { color:#cbd5e1;font-size:1.1rem;flex:none }
+
+        .si-empty { text-align:center;padding:48px 24px;color:#64748b }
+        .si-empty__ic { width:76px;height:76px;border-radius:50%;background:#eef2ff;color:#4338ca;display:grid;place-items:center;font-size:2rem;margin:0 auto 16px }
+        .si-empty__t { font-weight:800;color:var(--lt-navy);font-size:1.1rem }
+    </style>
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">Hộp thư hỗ trợ</h1>
+        <p class="lt-page-subtitle">Tin nhắn từ Nhà trường gửi lên Quản trị hệ thống</p>
+    </div>
+</div>
+
+<div class="si-stats">
+    <div class="si-stat">
+        <div class="si-stat__ic" style="background:#eef2ff;color:#4338ca"><i class="bi bi-chat-left-text-fill"></i></div>
+        <div><div class="si-stat__n">@total</div><div class="si-stat__l">Cuộc trò chuyện</div></div>
+    </div>
+    <div class="si-stat">
+        <div class="si-stat__ic" style="background:@(unread > 0 ? "#fef2f2" : "#f0fdf4");color:@(unread > 0 ? "#dc2626" : "#16a34a")">
+            <i class="bi @(unread > 0 ? "bi-envelope-exclamation-fill" : "bi-check2-all")"></i>
+        </div>
+        <div><div class="si-stat__n">@unread</div><div class="si-stat__l">Tin chưa đọc</div></div>
+    </div>
+</div>
+
+@if (total == 0)
+{
+    <div class="si-card">
+        <div class="si-empty">
+            <div class="si-empty__ic"><i class="bi bi-inbox"></i></div>
+            <div class="si-empty__t">Hộp thư trống</div>
+            <p style="margin:6px 0 0;font-size:.9rem">Chưa có trường nào gửi tin nhắn. Khi Nhà trường liên hệ, cuộc trò chuyện sẽ xuất hiện ở đây.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="si-card">
+        @{ var idx = 0; }
+        @foreach (var t in Model)
+        {
+            var color = avaColors[idx++ % avaColors.Length];
+            <a class="si-row @(t.Unread > 0 ? "hot" : "")" asp-action="Thread" asp-route-schoolId="@t.SchoolId">
+                <div class="si-ava" style="background:@color">@(string.IsNullOrEmpty(t.SchoolName) ? "?" : t.SchoolName.Substring(0, 1).ToUpper())</div>
+                <div style="flex:1;min-width:0">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                        <span class="si-name">@t.SchoolName</span>
+                        @if (t.LastAt != null) { <span class="si-time">@t.LastAt.Value.ToString("HH:mm dd/MM")</span> }
+                    </div>
+                    <div class="si-last @(t.Unread > 0 ? "bold" : "")">@(string.IsNullOrWhiteSpace(t.LastMessage) ? "(chưa có nội dung)" : t.LastMessage)</div>
+                </div>
+                @if (t.Unread > 0) { <span class="si-unread">@t.Unread</span> }
+                else { <i class="bi bi-chevron-right si-go"></i> }
+            </a>
+        }
+    </div>
+}

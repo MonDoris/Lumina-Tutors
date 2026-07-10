@@ -22,4 +22,10 @@ public interface IVirtualLabService
 
     /// <summary>Host teacher closes their session; marks it inactive.</summary>
     Task<Result> CloseSessionAsync(int schoolId, int sessionId, int teacherId, CancellationToken ct = default);
+
+    /// <summary>Đọc scene đã lưu của phòng (JSON) — dùng để hydrate lại sau khi server khởi động lại.</summary>
+    Task<string?> GetSceneJsonAsync(int sessionId, CancellationToken ct = default);
+
+    /// <summary>Lưu scene của phòng (JSON map objectId→spec) để mở lại nguyên trạng sau này.</summary>
+    Task SaveSceneJsonAsync(int sessionId, string sceneJson, CancellationToken ct = default);
 }
