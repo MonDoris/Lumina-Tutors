@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumina Tutors — Kiến trúc của Tri thức</title>
+<meta name="description" content="Kiến trúc của tri thức. Nền tảng quản lý giáo dục vận hành bằng dữ liệu cho trường học Việt Nam.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FCFBF8;--bg-2:#F5F2EA;--card:#FFFFFF;
+  --ink:#1B1915;--ink-soft:#5C564C;--ink-faint:#948C7E;
+  --line:#EAE4D7;--line-2:#DCD4C4;
+  --accent:#1C5D4C;--accent-2:#164A3C;--accent-tint:#E9F1ED;--accent-line:#C9DCD3;
+  --gold:#B0893C;--gold-2:#8F6E2C;--gold-tint:#F4EEDF;
+  --blue:#3A5A7A;--blue-tint:#E9EEF4;
+  --up:#1C7A55;
+  --fd:'Playfair Display',Georgia,serif;
+  --fb:'Be Vietnam Pro',system-ui,-apple-system,sans-serif;
+  --fm:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  --ease:cubic-bezier(.2,.6,.2,1);
+  --shadow:0 1px 3px rgba(27,25,21,.05);
+  --shadow-md:0 12px 34px rgba(27,25,21,.08);
+  --shadow-lg:0 28px 64px rgba(27,25,21,.11);
+  --r:14px;--r-lg:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:86px}
+body{font-family:var(--fb);color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+svg{display:block}a{text-decoration:none;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+.mono{font-family:var(--fm);font-weight:500}
+.kicker{display:inline-flex;align-items:center;gap:10px;font-family:var(--fm);font-size:12px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
+.kicker::before{content:"";width:20px;height:1.5px;background:var(--gold)}
+h1,h2,h3{font-weight:700;letter-spacing:-.01em;line-height:1.14}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--fb);font-weight:600;font-size:15px;padding:12px 22px;border:1px solid transparent;border-radius:11px;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s,background .2s,border-color .2s,color .2s}
+.btn svg{width:17px;height:17px}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:var(--shadow)}
+.btn-primary:hover{background:var(--accent-2);transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.btn-ghost{background:var(--card);color:var(--ink);border-color:var(--line-2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:9px 16px;font-size:13.5px}
+
+/* side rails */
+.rail{position:fixed;top:0;bottom:0;width:34px;display:flex;align-items:center;justify-content:center;z-index:20;pointer-events:none}
+.rail.l{left:0}.rail.r{right:0}
+.rail span{writing-mode:vertical-rl;font-family:var(--fm);font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-faint);opacity:.6}
+.rail.l span{transform:rotate(180deg)}
+
+/* header */
+.hdr{position:fixed;top:0;left:0;right:0;z-index:60;background:rgba(252,251,248,.82);backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .3s,box-shadow .3s}
+.hdr.scrolled{border-color:var(--line);box-shadow:0 1px 22px rgba(27,25,21,.04)}
+.hdr-in{display:flex;align-items:center;gap:26px;height:70px}
+.brand{display:flex;align-items:center;gap:11px;flex-shrink:0}
+.brand b{font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.brand .ver{font-family:var(--fm);font-size:11px;color:var(--ink-faint);margin-left:2px}
+.nav{display:flex;gap:2px;margin-left:22px}
+.nav a{font-family:var(--fm);font-size:13px;font-weight:500;color:var(--ink-soft);padding:8px 12px;border-radius:8px;transition:color .2s,background .2s}
+.nav a:hover{color:var(--accent);background:var(--accent-tint)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.sysonline{display:inline-flex;align-items:center;gap:7px;font-family:var(--fm);font-size:11px;letter-spacing:.5px;color:var(--ink-soft)}
+.sysonline .dot{width:7px;height:7px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(28,122,85,.5);animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(28,122,85,.45)}70%{box-shadow:0 0 0 7px rgba(28,122,85,0)}100%{box-shadow:0 0 0 0 rgba(28,122,85,0)}}
+.hdr-cta{display:flex;gap:9px}
+.nav-toggle{display:none;background:none;border:0;color:var(--ink);cursor:pointer}
+
+/* loader */
+.loader{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;animation:loaderOut .6s ease 1.8s forwards}
+@keyframes loaderOut{to{opacity:0;visibility:hidden}}
+.loader .seal{width:60px;height:60px;opacity:0;animation:sealIn .7s var(--ease) forwards}
+@keyframes sealIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.loader .txt{font-family:var(--fm);font-size:11.5px;letter-spacing:1px;color:var(--ink-faint);max-width:420px;text-align:center;overflow:hidden;white-space:nowrap;border-right:2px solid var(--gold);width:0;animation:type 1.6s steps(60) .2s forwards,caret .5s step-end 5}
+@keyframes type{to{width:100%}}
+@keyframes caret{50%{border-color:transparent}}
+
+/* hero */
+.hero{position:relative;padding:132px 0 60px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;background:
+  radial-gradient(720px 460px at 84% 8%,rgba(28,93,76,.06),transparent 60%),
+  radial-gradient(520px 380px at 4% 34%,rgba(176,137,60,.055),transparent 60%)}
+.hero-grid{display:grid;grid-template-columns:1.02fr .98fr;gap:48px;align-items:center}
+.hero-eye{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+.hero-eye .coord{font-family:var(--fm);font-size:11.5px;color:var(--ink-faint)}
+.hero h1{font-family:var(--fd);font-size:clamp(46px,6.4vw,84px);font-weight:700;letter-spacing:-.02em;margin-bottom:22px}
+.hero h1 .hl{color:var(--accent);position:relative}
+.hero h1 .hl::after{content:"";position:absolute;left:0;right:0;bottom:.07em;height:.12em;background:var(--gold-tint);z-index:-1;border-radius:3px}
+.hero-sub{font-size:17.5px;color:var(--ink-soft);max-width:500px;margin-bottom:30px}
+.hero-sub b{color:var(--ink);font-weight:600}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:38px}
+.hero-stats{display:flex;gap:34px;flex-wrap:wrap}
+.hstat b{display:block;font-family:var(--fd);font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.hstat span{font-size:12.5px;color:var(--ink-faint);letter-spacing:.2px}
+
+/* hero art: trống đồng + graph */
+.hero-art{display:flex;flex-direction:column;gap:22px;align-items:center;position:relative}
+.drum-stage{position:relative;width:100%;display:flex;align-items:center;justify-content:center;padding:4px 0}
+.drum-glow{position:absolute;width:400px;height:400px;max-width:96%;border-radius:50%;background:radial-gradient(circle,rgba(176,137,60,.17),rgba(28,93,76,.05) 45%,transparent 68%);z-index:0}
+.drum-tympanum{position:relative;z-index:1;width:min(380px,84%);height:auto;filter:drop-shadow(0 16px 32px rgba(143,110,44,.24))}
+.drum-spin{transform-origin:200px 200px;animation:drumspin 150s linear infinite}
+@keyframes drumspin{to{transform:rotate(360deg)}}
+
+/* knowledge graph card */
+.graph-card{width:100%;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);overflow:hidden}
+.graph-top{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line);font-family:var(--fm);font-size:11px;letter-spacing:.5px;color:var(--ink-soft)}
+.graph-top .corner{color:var(--gold)}
+.graph-wrap{position:relative;height:150px;background:
+  linear-gradient(var(--line) 1px,transparent 1px) 0 0/100% 33px,
+  linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/33px 100%;background-color:#FDFCFA}
+.graph-wrap::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,transparent 55%,rgba(252,251,248,.6))}
+.graph-wrap svg{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.node{transition:r .3s}
+.node-c{fill:var(--accent)}.node-s{fill:var(--gold)}.node-m{fill:var(--blue)}
+.edge{stroke:var(--line-2);stroke-width:1}
+.graph-foot{display:flex;align-items:center;gap:20px;padding:13px 18px;border-top:1px solid var(--line);font-family:var(--fm);font-size:11px;color:var(--ink-faint);flex-wrap:wrap}
+.graph-foot b{color:var(--ink);font-weight:600}
+.glegend{margin-left:auto;display:flex;gap:14px}
+.glegend span{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft)}
+.glegend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* metric strip */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:44px}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px}
+.metric-top{display:flex;align-items:center;justify-content:space-between;font-family:var(--fm);font-size:10.5px;letter-spacing:.5px;color:var(--ink-faint);margin-bottom:14px}
+.metric b{display:block;font-family:var(--fd);font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1;margin-bottom:5px;color:var(--up)}
+.metric b.stable{color:var(--gold-2);font-size:22px}
+.metric span{font-size:12.5px;color:var(--ink-soft)}
+
+/* sections */
+.sec{padding:100px 0}
+.sec.alt{background:var(--bg-2)}
+.sec-head{max-width:660px;margin:0 auto 54px;text-align:center}
+.sec-head .kicker{justify-content:center;display:inline-flex}
+.sec-head h2{font-family:var(--fd);font-size:clamp(28px,3.6vw,42px);margin:14px 0 12px}
+.sec-head p{font-size:16.5px;color:var(--ink-soft)}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(16px);transition:opacity .6s var(--ease),transform .6s var(--ease);transition-delay:calc(var(--d,0)*70ms)}
+.rv.in{opacity:1;transform:none}
+
+/* modules */
+.mods{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.mod{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;transition:transform .28s var(--ease),box-shadow .28s,border-color .28s}
+.mod:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--accent-line)}
+.mod-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.mod-code{font-family:var(--fm);font-size:12px;font-weight:600;color:var(--gold-2)}
+.mod-ic{width:40px;height:40px;border-radius:11px;background:var(--accent-tint);display:flex;align-items:center;justify-content:center}
+.mod-ic svg{width:21px;height:21px;color:var(--accent)}
+.mod h3{font-size:18px;font-weight:600;letter-spacing:-.01em;margin-bottom:9px}
+.mod p{font-size:14px;color:var(--ink-soft);margin-bottom:16px}
+.mod-tags{display:flex;gap:7px;flex-wrap:wrap}
+.tag{font-family:var(--fm);font-size:10.5px;font-weight:500;letter-spacing:.3px;color:var(--ink-soft);background:var(--bg-2);border:1px solid var(--line);padding:3px 9px;border-radius:6px}
+
+/* console */
+.console{max-width:1000px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-md);overflow:hidden}
+.console-bar{display:flex;align-items:center;gap:8px;padding:13px 18px;border-bottom:1px solid var(--line);background:#FCFBF9}
+.console-bar .dots{display:flex;gap:6px}.console-bar .dots i{width:9px;height:9px;border-radius:50%;background:var(--line-2)}
+.console-bar .path{font-family:var(--fm);font-size:12px;color:var(--ink-soft);margin-left:6px}
+.console-bar .stream{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:10.5px;letter-spacing:.5px;color:var(--up)}
+.console-bar .stream i{width:6px;height:6px;border-radius:50%;background:var(--up);animation:pulse 2s infinite}
+.console-body{display:grid;grid-template-columns:1.3fr 1fr;gap:1px;background:var(--line)}
+.panel{background:var(--card);padding:22px}
+.panel-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+.panel-h b{font-size:14px;font-weight:600}
+.panel-h span{font-family:var(--fm);font-size:10.5px;color:var(--ink-faint);letter-spacing:.5px}
+/* grouped bars */
+.gbars{display:flex;align-items:flex-end;justify-content:space-around;height:150px;gap:20px;padding-top:10px}
+.gbar{display:flex;flex-direction:column;align-items:center;gap:9px;flex:1}
+.gbar .pair{display:flex;align-items:flex-end;gap:6px;height:120px}
+.gbar .b{width:20px;border-radius:5px 5px 0 0;height:var(--h)}
+.gbar .b.a{background:var(--line-2)}.gbar .b.b2{background:var(--accent)}
+.gbar .lbl{font-family:var(--fm);font-size:11px;color:var(--ink-soft)}
+.legend2{display:flex;gap:16px;margin-top:14px;font-size:11.5px;color:var(--ink-soft)}
+.legend2 i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+/* attendance sparkline */
+.spark{height:64px}
+.spark svg{width:100%;height:100%}
+/* subject bars */
+.subj{display:flex;flex-direction:column;gap:13px}
+.subj-row{display:grid;grid-template-columns:70px 1fr 42px;align-items:center;gap:12px;font-size:13px}
+.subj-row .track{height:8px;border-radius:5px;background:var(--bg-2);overflow:hidden}
+.subj-row .fill{height:100%;border-radius:5px;background:var(--accent);width:var(--w)}
+.subj-row .pct{font-family:var(--fm);font-size:12px;color:var(--ink);text-align:right}
+/* trend line full width */
+.trend{grid-column:1/-1;background:var(--card);padding:22px}
+.trend svg{width:100%;height:90px}
+
+/* pipeline */
+.pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;position:relative}
+.stage{position:relative}
+.stage-code{font-family:var(--fm);font-size:11.5px;font-weight:600;color:var(--gold-2);margin-bottom:14px}
+.stage-node{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--accent-line);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;z-index:2}
+.stage-node svg{width:22px;height:22px}
+.pipe .stage:not(:last-child)::after{content:"";position:absolute;top:calc(14px + 11px + 22px);left:52px;right:-10px;height:1.5px;background:repeating-linear-gradient(90deg,var(--accent-line) 0 5px,transparent 5px 11px);z-index:1}
+.stage h3{font-size:17px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
+.stage p{font-size:14px;color:var(--ink-soft)}
+
+/* CTA */
+.cta-wrap{padding:0 28px}
+.cta{max-width:1180px;margin:0 auto;position:relative;background:var(--accent);color:#fff;border-radius:26px;padding:74px 40px;text-align:center;overflow:hidden}
+.cta::before{content:"";position:absolute;inset:0;background:radial-gradient(620px 320px at 82% 118%,rgba(176,137,60,.32),transparent 60%)}
+.cta::after{content:"";position:absolute;inset:0;background:linear-gradient(var(--accent-2) 1px,transparent 1px) 0 0/100% 40px,linear-gradient(90deg,var(--accent-2) 1px,transparent 1px) 0 0/40px 100%;opacity:.25}
+.cta .in{position:relative;z-index:1}
+.cta .kicker{color:var(--gold-tint);justify-content:center;display:inline-flex}
+.cta .kicker::before{background:var(--gold-tint)}
+.cta h2{font-family:var(--fd);font-size:clamp(28px,3.6vw,44px);margin:14px 0 14px;color:#fff}
+.cta h2 .hl{color:var(--gold-tint)}
+.cta p{font-size:16.5px;color:rgba(255,255,255,.85);max-width:520px;margin:0 auto 30px}
+.cta-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.cta .btn-primary{background:#fff;color:var(--accent)}.cta .btn-primary:hover{background:var(--gold-tint)}
+.cta .btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}.cta .btn-ghost:hover{background:rgba(255,255,255,.12);color:#fff;border-color:#fff}
+.cta-note{margin-top:22px;font-family:var(--fm);font-size:12px;color:rgba(255,255,255,.7)}
+
+/* footer */
+.ft{background:var(--ink);color:#A29A8C;padding:64px 0 30px;margin-top:100px}
+.ft-grid{display:grid;grid-template-columns:1.7fr 1fr 1fr 1fr;gap:34px;margin-bottom:40px}
+.ft .brand b{color:#F4F1EA}.ft .brand .ver{color:#7E7669}
+.ft-brand p{font-size:13.5px;margin-top:14px;max-width:300px;line-height:1.7}
+.ft h4{color:#F4F1EA;font-family:var(--fm);font-size:11.5px;font-weight:500;letter-spacing:1px;text-transform:uppercase;margin-bottom:15px}
+.ft a{display:block;font-size:14px;padding:5px 0;color:#A29A8C;transition:color .2s}
+.ft a:hover{color:var(--gold)}
+.ft-bot{border-top:1px solid rgba(255,255,255,.1);padding-top:22px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center;font-family:var(--fm);font-size:11.5px;color:#7E7669;letter-spacing:.5px}
+.ft-bot .st{display:flex;gap:18px}
+.ft-bot .st span{display:inline-flex;align-items:center;gap:6px}
+.ft-bot .st i{width:6px;height:6px;border-radius:50%;background:var(--up)}
+
+@media(max-width:1024px){
+  .nav,.rail{display:none}.nav-toggle{display:block}
+  .hdr.menu-open .nav{display:flex;position:absolute;top:100%;left:0;right:0;flex-direction:column;gap:2px;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 26px;margin:0}
+  .hero-grid{grid-template-columns:1fr;gap:40px}.hero-art{order:-1}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .mods{grid-template-columns:repeat(2,1fr)}
+  .console-body{grid-template-columns:1fr}
+  .pipe{grid-template-columns:repeat(2,1fr);gap:34px 20px}.pipe .stage::after{display:none}
+  .ft-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .hdr-right .sysonline,.hdr-cta .btn-ghost{display:none}
+  .metrics,.mods,.pipe,.ft-grid{grid-template-columns:1fr}
+  .hero-stats{gap:24px}
+  .cta{padding:56px 24px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  html{scroll-behavior:auto}.rv{opacity:1;transform:none}.loader{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+  <svg class="seal" viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="2" width="36" height="36" rx="10" fill="#1C5D4C"/><circle cx="20" cy="20" r="3" fill="#E4CE93"/><g stroke="#B0893C" stroke-width="1.4" fill="none"><path d="M20 8v9M20 23v9M8 20h9M23 20h9"/><circle cx="20" cy="8" r="2.2" fill="#E4CE93"/><circle cx="32" cy="20" r="2.2" fill="#E4CE93"/><circle cx="20" cy="32" r="2.2" fill="#E4CE93"/><circle cx="8" cy="20" r="2.2" fill="#E4CE93"/></g></svg>
+  <div class="txt">INITIALIZING KNOWLEDGE GRAPH · MOUNTING DATA MODULES [6/6] · ESTABLISHING SECURE LINK</div>
+</div>
+
+<div class="rail l" aria-hidden="true"><span>Lumina · Knowledge Architecture</span></div>
+<div class="rail r" aria-hidden="true"><span>SYS.EDU // BUILD 2.6.0</span></div>
+
+<!-- HEADER -->
+<header class="hdr" id="hdr">
+  <div class="wrap hdr-in">
+    <a class="brand" href="/" aria-label="Lumina Tutors">
+      <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="2" width="36" height="36" rx="10" fill="#1C5D4C"/><g stroke="#E4CE93" stroke-width="1.5" fill="none"><path d="M13 13l14 14M27 13L13 27"/></g><circle cx="20" cy="20" r="3.4" fill="#B0893C"/><circle cx="13" cy="13" r="2.2" fill="#E4CE93"/><circle cx="27" cy="27" r="2.2" fill="#E4CE93"/><circle cx="27" cy="13" r="2.2" fill="#E4CE93"/><circle cx="13" cy="27" r="2.2" fill="#E4CE93"/></svg>
+      <span><b>Lumina Tutors</b> <span class="ver">v2.6</span></span>
+    </a>
+    <nav class="nav" aria-label="Điều hướng chính">
+      <a href="#modules">/modules</a>
+      <a href="#console">/console</a>
+      <a href="#pipeline">/pipeline</a>
+    </nav>
+    <div class="hdr-right">
+      <span class="sysonline"><span class="dot"></span>SYSTEM ONLINE</span>
+      <div class="hdr-cta">
+        <a href="/Auth/Login" class="btn btn-ghost btn-sm">Đăng nhập</a>
+        <a href="/Auth/SelectRole" class="btn btn-primary btn-sm">Khởi tạo
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+    <button class="nav-toggle" aria-label="Mở menu"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="hero-eye rv"><span class="kicker">The Architecture of Knowledge</span><span class="coord">[ 10.762 N · 106.660 E ]</span></div>
+        <h1 class="rv" style="--d:1">Kiến trúc của <span class="hl">tri thức</span>.</h1>
+        <p class="hero-sub rv" style="--d:2">Nền tảng giáo dục vận hành bằng <b>dữ liệu</b>. Mỗi điểm số, mỗi buổi học, mỗi tương tác trở thành một nút trong mạng lưới tri thức được kết nối liền mạch giữa nhà trường, giáo viên, học sinh và phụ huynh.</p>
+        <div class="hero-actions rv" style="--d:3">
+          <a href="/Auth/SelectRole" class="btn btn-primary">Truy cập hệ thống
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a href="#console" class="btn btn-ghost">Xem bảng điều khiển</a>
+        </div>
+        <div class="hero-stats rv" style="--d:4">
+          <div class="hstat"><b data-count="500" data-suffix="+">0</b><span>Trường tích hợp</span></div>
+          <div class="hstat"><b data-count="120" data-suffix="K">0</b><span>Học sinh hoạt động</span></div>
+          <div class="hstat"><b data-count="99.99" data-suffix="%" data-dec="2">0</b><span>Độ chính xác dữ liệu</span></div>
+        </div>
+      </div>
+
+      <div class="hero-art rv" style="--d:2">
+        <div class="drum-stage">
+          <div class="drum-glow"></div>
+          <svg class="drum-tympanum" id="drum" viewBox="0 0 400 400" role="img" aria-label="Trống đồng Đông Sơn">
+            <defs>
+              <radialGradient id="drumFill" cx="0.5" cy="0.44" r="0.62">
+                <stop offset="0" stop-color="#FCF6E7"/>
+                <stop offset="0.66" stop-color="#F1E4C4"/>
+                <stop offset="1" stop-color="#E7D3A4"/>
+              </radialGradient>
+              <g id="lacbird">
+                <ellipse cx="0" cy="0" rx="14" ry="5.6"/>
+                <path d="M11,-2 L31,-6 L16,3 Z"/>
+                <path d="M0,-4 L7,-16 L13,-3 Z"/>
+                <path d="M-12,-1 L-29,-6 L-25,1 L-31,5 Z"/>
+                <path d="M2,5 L0,13 M9,4 L9,12" fill="none" stroke="#8F6E2C" stroke-width="1.4"/>
+              </g>
+            </defs>
+            <circle cx="200" cy="200" r="196" fill="url(#drumFill)" stroke="#B0893C" stroke-width="1.6"/>
+            <g class="drum-spin" fill="none" stroke="#8F6E2C">
+              <circle cx="200" cy="200" r="189" stroke-width="1"/>
+              <circle cx="200" cy="200" r="170" stroke-width="1.4"/>
+              <g id="drum-saw" stroke-width="1.1"></g>
+              <circle cx="200" cy="200" r="151" stroke-width="1"/>
+              <g id="drum-birds" fill="#B0893C" stroke="none"></g>
+              <circle cx="200" cy="200" r="119" stroke-width="1.4"/>
+              <g id="drum-dots" fill="#8F6E2C" stroke="none"></g>
+              <circle cx="200" cy="200" r="96" stroke-width="1"/>
+              <circle cx="200" cy="200" r="80" stroke-width="1.2" stroke-dasharray="3 5"/>
+            </g>
+            <g transform="translate(200,200) scale(1.5)">
+              <polygon fill="#B0893C" points="42,0 16.6,4.5 36.4,21 12.1,12.1 21,36.4 4.5,16.6 0,42 -4.5,16.6 -21,36.4 -12.1,12.1 -36.4,21 -16.6,4.5 -42,0 -16.6,-4.5 -36.4,-21 -12.1,-12.1 -21,-36.4 -4.5,-16.6 0,-42 4.5,-16.6 21,-36.4 12.1,-12.1 36.4,-21 16.6,-4.5"/>
+              <circle r="8" fill="#8F6E2C"/>
+              <circle r="3.4" fill="#FCF6E7"/>
+            </g>
+          </svg>
+        </div>
+        <div class="graph-card">
+          <div class="graph-top"><span class="corner">┌</span><span>FIG.01 — KNOWLEDGE GRAPH · LIVE</span><span class="corner">┐</span></div>
+          <div class="graph-wrap">
+            <svg id="graph" viewBox="0 0 460 150" preserveAspectRatio="xMidYMid slice" aria-label="Knowledge graph"></svg>
+          </div>
+          <div class="graph-foot">
+            <span>nodes <b>027</b></span><span>edges <b>080</b></span><span>coherence <b>0.820</b></span>
+            <span class="glegend">
+              <span><i style="background:var(--accent)"></i>concept</span>
+              <span><i style="background:var(--gold)"></i>skill</span>
+              <span><i style="background:var(--blue)"></i>mastery</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric rv"><div class="metric-top"><span>M.01 / EXAM</span></div><b class="up">▲ <span data-count="2.4" data-dec="1">0</span>%</b><span>Tỷ lệ đỗ tốt nghiệp</span></div>
+      <div class="metric rv" style="--d:1"><div class="metric-top"><span>M.02 / TIME</span></div><b class="up">▲ <span data-count="8.1" data-dec="1">0</span>%</b><span>Giờ học được ghi nhận</span></div>
+      <div class="metric rv" style="--d:2"><div class="metric-top"><span>M.03 / DATA</span></div><b class="up">▲ <span data-count="12">0</span>%</b><span>Bản ghi điểm đã xử lý</span></div>
+      <div class="metric rv" style="--d:3"><div class="metric-top"><span>M.04 / SLA</span></div><b class="stable">STABLE</b><span>Thời gian hoạt động</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULES -->
+<section class="sec alt" id="modules">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="kicker">System Modules</span>
+      <h2>Các phân hệ vận hành</h2>
+      <p>Sáu phân hệ độc lập, chia sẻ một lõi dữ liệu duy nhất. Mỗi phân hệ là một lớp trong kiến trúc sạch (clean architecture) của hệ thống.</p>
+    </div>
+    <div class="mods">
+      <article class="mod rv">
+        <div class="mod-top"><span class="mod-code">MOD_01</span><div class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></svg></div></div>
+        <h3>Phân tích &amp; Báo cáo</h3>
+        <p>Dashboard thời gian thực, tự động tính ĐTBm theo Thông tư 22/2021 và xuất học bạ PDF chuẩn Bộ GD&amp;ĐT.</p>
+        <div class="mod-tags"><span class="tag">TT22</span><span class="tag">PDF</span><span class="tag">REALTIME</span></div>
+      </article>
+      <article class="mod rv" style="--d:1">
+        <div class="mod-top"><span class="mod-code">MOD_02</span><div class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 17v.01"/></svg></div></div>
+        <h3>Điểm danh QR &amp; Face ID</h3>
+        <p>Ghi nhận chuyên cần bằng mã QR động (hết hạn 10 phút) hoặc nhận diện khuôn mặt, đồng bộ tức thì tới phụ huynh.</p>
+        <div class="mod-tags"><span class="tag">QR</span><span class="tag">FACE_ID</span><span class="tag">SYNC</span></div>
+      </article>
+      <article class="mod rv" style="--d:2">
+        <div class="mod-top"><span class="mod-code">MOD_03</span><div class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M14.5 9c-.6-.8-1.6-1.2-2.5-1.2-1.7 0-2.5 1-2.5 2s.8 1.8 2.5 2 2.5 1 2.5 2-1 2-2.5 2c-1 0-2-.4-2.5-1.2M12 6.5v11"/></svg></div></div>
+        <h3>Quản lý Tài chính</h3>
+        <p>Tạo hóa đơn tự động, ghi nhận thanh toán qua MoMo/VNPay, đối soát công nợ và nhắc hạn đúng thời điểm.</p>
+        <div class="mod-tags"><span class="tag">MOMO</span><span class="tag">VNPAY</span><span class="tag">AUTO</span></div>
+      </article>
+      <article class="mod rv">
+        <div class="mod-top"><span class="mod-code">MOD_04</span><div class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 3z"/><path d="M8 9h8M8 12h5"/></svg></div></div>
+        <h3>Nhắn tin &amp; Thông báo</h3>
+        <p>Kênh liên lạc bảo mật giữa nhà trường và gia đình, push notification tức thì cho mọi sự kiện quan trọng.</p>
+        <div class="mod-tags"><span class="tag">IN_APP</span><span class="tag">PUSH</span></div>
+      </article>
+      <article class="mod rv" style="--d:1">
+        <div class="mod-top"><span class="mod-code">MOD_05</span><div class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg></div></div>
+        <h3>Bảo mật đa lớp</h3>
+        <p>Sáu vai trò phân quyền chi tiết, multi-tenant cách ly dữ liệu theo trường, mã hóa AES-256 và audit log toàn bộ.</p>
+        <div class="mod-tags"><span class="tag">RBAC</span><span class="tag">AES_256</span><span class="tag">AUDIT</span></div>
+      </article>
+      <article class="mod rv" style="--d:2">
+        <div class="mod-top"><span class="mod-code">MOD_06</span><div class="mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><path d="M16 4.5a3 3 0 010 6M18.5 20c0-2.6-1.2-4.6-3-5.4"/></svg></div></div>
+        <h3>Nhân sự &amp; Kỷ luật</h3>
+        <p>Quản lý hợp đồng, lương, nghỉ phép cho giáo viên; theo dõi nề nếp, khen thưởng và kỷ luật học sinh trong một hồ sơ.</p>
+        <div class="mod-tags"><span class="tag">HR</span><span class="tag">PAYROLL</span><span class="tag">DISCIPLINE</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- CONSOLE -->
+<section class="sec" id="console">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="kicker">Live Data Console</span>
+      <h2>Trực quan hóa dữ liệu</h2>
+      <p>Một lát cắt từ bảng điều khiển vận hành thực tế. Dữ liệu được tổng hợp và xử lý theo thời gian thực.</p>
+    </div>
+    <div class="console rv">
+      <div class="console-bar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <span class="path">lumina:///analytics/overview</span>
+        <span class="stream"><i></i>STREAMING</span>
+      </div>
+      <div class="console-body">
+        <div class="panel">
+          <div class="panel-h"><b>Hiệu suất theo khối lớp</b><span>ĐTB · HK2</span></div>
+          <div class="gbars">
+            <div class="gbar"><div class="pair"><span class="b a" style="--h:64px"></span><span class="b b2" style="--h:82px"></span></div><span class="lbl">K10</span></div>
+            <div class="gbar"><div class="pair"><span class="b a" style="--h:78px"></span><span class="b b2" style="--h:96px"></span></div><span class="lbl">K11</span></div>
+            <div class="gbar"><div class="pair"><span class="b a" style="--h:88px"></span><span class="b b2" style="--h:112px"></span></div><span class="lbl">K12</span></div>
+          </div>
+          <div class="legend2"><span><i style="background:var(--line-2)"></i>Học kỳ trước</span><span><i style="background:var(--accent)"></i>Học kỳ này</span></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><b>Chuyên cần</b><span>7 ngày</span></div>
+          <div class="spark">
+            <svg viewBox="0 0 300 64" preserveAspectRatio="none" aria-hidden="true">
+              <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1C5D4C" stop-opacity=".18"/><stop offset="1" stop-color="#1C5D4C" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0,40 L50,32 L100,36 L150,20 L200,26 L250,14 L300,18 L300,64 L0,64 Z" fill="url(#sg)"/>
+              <path class="spark-line" d="M0,40 L50,32 L100,36 L150,20 L200,26 L250,14 L300,18" fill="none" stroke="#1C5D4C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="panel-h" style="margin:16px 0 0"><span class="mono" style="font-size:10.5px;letter-spacing:.5px;color:var(--ink-faint)">TỶ LỆ HIỆN DIỆN</span></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><b>Theo môn học</b><span>% đạt</span></div>
+          <div class="subj">
+            <div class="subj-row"><span>Toán</span><span class="track"><span class="fill" style="--w:94%"></span></span><span class="pct">94%</span></div>
+            <div class="subj-row"><span>Ngữ văn</span><span class="track"><span class="fill" style="--w:88%"></span></span><span class="pct">88%</span></div>
+            <div class="subj-row"><span>Tiếng Anh</span><span class="track"><span class="fill" style="--w:91%"></span></span><span class="pct">91%</span></div>
+            <div class="subj-row"><span>Vật lý</span><span class="track"><span class="fill" style="--w:82%"></span></span><span class="pct">82%</span></div>
+          </div>
+        </div>
+        <div class="trend">
+          <div class="panel-h"><b>Xu hướng điểm trung bình toàn hệ thống</b><span>12 tháng · ▲ 6.8%</span></div>
+          <svg viewBox="0 0 900 90" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="tg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B0893C" stop-opacity=".16"/><stop offset="1" stop-color="#B0893C" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,64 C80,60 120,56 190,54 C260,52 300,46 380,44 C460,42 500,36 570,32 C640,28 690,24 760,20 C820,17 860,14 900,12 L900,90 L0,90 Z" fill="url(#tg2)"/>
+            <path class="trend-line" d="M0,64 C80,60 120,56 190,54 C260,52 300,46 380,44 C460,42 500,36 570,32 C640,28 690,24 760,20 C820,17 860,14 900,12" fill="none" stroke="#B0893C" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section class="sec alt" id="pipeline">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="kicker">Data Pipeline</span>
+      <h2>Từ dữ liệu thô đến quyết định</h2>
+      <p>Bốn giai đoạn biến mỗi tương tác học tập thành thông tin có giá trị cho người dạy và người học.</p>
+    </div>
+    <div class="pipe">
+      <div class="stage rv">
+        <div class="stage-code">STAGE_01</div>
+        <div class="stage-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13M7 11l5 5 5-5M5 21h14"/></svg></div>
+        <h3>Thu thập</h3>
+        <p>Điểm danh, điểm số, học phí và tương tác được ghi nhận tại nguồn theo thời gian thực.</p>
+      </div>
+      <div class="stage rv" style="--d:1">
+        <div class="stage-code">STAGE_02</div>
+        <div class="stage-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 4-6"/></svg></div>
+        <h3>Phân tích</h3>
+        <p>Hệ thống chuẩn hóa, tính toán ĐTBm và tổng hợp chỉ số theo lớp, môn, học kỳ.</p>
+      </div>
+      <div class="stage rv" style="--d:2">
+        <div class="stage-code">STAGE_03</div>
+        <div class="stage-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M11 8v3l2 2M20 20l-3.5-3.5"/></svg></div>
+        <h3>Dự báo</h3>
+        <p>Phát hiện sớm xu hướng tụt dốc, cảnh báo nguy cơ và đề xuất can thiệp kịp thời.</p>
+      </div>
+      <div class="stage rv" style="--d:3">
+        <div class="stage-code">STAGE_04</div>
+        <div class="stage-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg></div>
+        <h3>Hành động</h3>
+        <p>Thông báo đến đúng người, đúng lúc — giáo viên, phụ huynh và ban giám hiệu.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-wrap">
+  <div class="cta rv">
+    <div class="in">
+      <span class="kicker">Initialize System</span>
+      <h2>Bắt đầu kiến tạo <span class="hl">kiến trúc tri thức</span> của bạn.</h2>
+      <p>Tham gia cùng hơn 500 cơ sở giáo dục đang vận hành toàn bộ quy trình trên một nền tảng dữ liệu thống nhất.</p>
+      <div class="cta-actions">
+        <a href="/Auth/SelectRole" class="btn btn-primary">Truy cập hệ thống
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a href="/Auth/Login" class="btn btn-ghost">Đã có tài khoản</a>
+      </div>
+      <div class="cta-note">// 30 ngày dùng thử · không cần thẻ tín dụng · hỗ trợ 24/7</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="ft">
+  <div class="wrap">
+    <div class="ft-grid">
+      <div class="ft-brand">
+        <a class="brand" href="/">
+          <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="2" width="36" height="36" rx="10" fill="#1C5D4C"/><g stroke="#E4CE93" stroke-width="1.5" fill="none"><path d="M13 13l14 14M27 13L13 27"/></g><circle cx="20" cy="20" r="3.4" fill="#B0893C"/><circle cx="13" cy="13" r="2.2" fill="#E4CE93"/><circle cx="27" cy="27" r="2.2" fill="#E4CE93"/><circle cx="27" cy="13" r="2.2" fill="#E4CE93"/><circle cx="13" cy="27" r="2.2" fill="#E4CE93"/></svg>
+          <span><b>Lumina Tutors</b></span>
+        </a>
+        <p>Kiến trúc của tri thức. Nền tảng quản lý giáo dục vận hành bằng dữ liệu cho trường học Việt Nam.</p>
+      </div>
+      <div class="ft-col"><h4>Hệ thống</h4><a href="#modules">Phân hệ</a><a href="#console">Bảng điều khiển</a><a href="#pipeline">Pipeline</a></div>
+      <div class="ft-col"><h4>Công ty</h4><a href="#">Giới thiệu</a><a href="#">Tài liệu kỹ thuật</a><a href="#">Tuyển dụng</a></div>
+      <div class="ft-col"><h4>Hỗ trợ</h4><a href="#">Trung tâm trợ giúp</a><a href="#">Liên hệ</a><a href="#">Chính sách bảo mật</a></div>
+    </div>
+    <div class="ft-bot">
+      <span>© 2026 LUMINA_TUTORS // ALL RIGHTS RESERVED</span>
+      <span class="st"><span><i></i>OPERATIONAL</span><span>BUILD 2.6.0</span><span>HCMC · VN</span></span>
+    </div>
+  </div>
+</footer>
+
+<script id="fx">
+(function(){
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $=function(s,c){return (c||document).querySelector(s)};
+  var $$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
+
+  setTimeout(function(){ $$('.rv').forEach(function(e){e.classList.add('in')}); },2400);
+
+  var hdr=$('#hdr');
+  function onScroll(){ hdr.classList.toggle('scrolled', window.scrollY>8); }
+  window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+
+  var tog=$('.nav-toggle');
+  if(tog){ tog.addEventListener('click',function(){ hdr.classList.toggle('menu-open'); });
+    $$('.nav a').forEach(function(a){ a.addEventListener('click',function(){ hdr.classList.remove('menu-open'); }); }); }
+
+  try{
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); },{threshold:.13,rootMargin:'0px 0px -30px 0px'});
+    $$('.rv').forEach(function(e){ io.observe(e); });
+  }catch(err){ $$('.rv').forEach(function(e){ e.classList.add('in'); }); }
+
+  function count(el){
+    var target=parseFloat(el.dataset.count), dec=parseInt(el.dataset.dec||'0',10), suf=el.dataset.suffix||'', pre=el.dataset.prefix||'';
+    if(reduce){ el.textContent=pre+target.toFixed(dec)+suf; return; }
+    var dur=1500, st=null;
+    function tick(t){ if(!st)st=t; var p=Math.min((t-st)/dur,1), e=1-Math.pow(1-p,3); el.textContent=pre+(target*e).toFixed(dec)+suf; if(p<1)requestAnimationFrame(tick); }
+    requestAnimationFrame(tick);
+  }
+  try{
+    var cio=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ cio.unobserve(e.target); count(e.target); } }); },{threshold:.6});
+    $$('[data-count]').forEach(function(e){ cio.observe(e); });
+  }catch(err){ $$('[data-count]').forEach(function(e){ count(e); }); }
+
+  var svg=$('#graph');
+  if(svg){
+    var W=460,H=150,N=18,ns='http://www.w3.org/2000/svg';
+    var seed=7, rnd=function(){ seed=(seed*9301+49297)%233280; return seed/233280; };
+    var nodes=[];
+    for(var i=0;i<N;i++){ nodes.push({x:26+rnd()*(W-52),y:18+rnd()*(H-36),cat:i%3,r:(i%6===0?4.4:2.7)}); }
+    var seen={};
+    for(var i=0;i<N;i++){
+      var d=[];
+      for(var j=0;j<N;j++){ if(i!==j){ var dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y; d.push({j:j,dist:dx*dx+dy*dy}); } }
+      d.sort(function(a,b){return a.dist-b.dist});
+      for(var k=0;k<2;k++){ var a=Math.min(i,d[k].j),b=Math.max(i,d[k].j),key=a+'-'+b; if(!seen[key]){ seen[key]=1;
+        var l=document.createElementNS(ns,'line'); l.setAttribute('x1',nodes[a].x.toFixed(1)); l.setAttribute('y1',nodes[a].y.toFixed(1)); l.setAttribute('x2',nodes[b].x.toFixed(1)); l.setAttribute('y2',nodes[b].y.toFixed(1)); l.setAttribute('class','edge'); svg.appendChild(l);
+      } }
+    }
+    var cls=['node-c','node-s','node-m'];
+    nodes.forEach(function(n,i){
+      var c=document.createElementNS(ns,'circle');
+      c.setAttribute('cx',n.x.toFixed(1)); c.setAttribute('cy',n.y.toFixed(1)); c.setAttribute('r',n.r); c.setAttribute('class','node '+cls[n.cat]);
+      if(!reduce && i%3===0){ var an=document.createElementNS(ns,'animate'); an.setAttribute('attributeName','r'); an.setAttribute('values',n.r+';'+(n.r+2.2)+';'+n.r); an.setAttribute('dur',(3+rnd()*3).toFixed(1)+'s'); an.setAttribute('repeatCount','indefinite'); c.appendChild(an); }
+      svg.appendChild(c);
+    });
+  }
+
+  var drum=$('#drum');
+  if(drum){
+    var dns='http://www.w3.org/2000/svg', mk=function(t){return document.createElementNS(dns,t)};
+    var saw=$('#drum-saw',drum);
+    if(saw){ for(var s=0;s<60;s++){ var a=s/60*6.2832; var l=mk('line'); l.setAttribute('x1',(200+Math.cos(a)*171).toFixed(1)); l.setAttribute('y1',(200+Math.sin(a)*171).toFixed(1)); l.setAttribute('x2',(200+Math.cos(a)*188).toFixed(1)); l.setAttribute('y2',(200+Math.sin(a)*188).toFixed(1)); saw.appendChild(l); } }
+    var ddots=$('#drum-dots',drum);
+    if(ddots){ for(var s=0;s<20;s++){ var a2=(s+0.5)/20*6.2832; var c2=mk('circle'); c2.setAttribute('cx',(200+Math.cos(a2)*108).toFixed(1)); c2.setAttribute('cy',(200+Math.sin(a2)*108).toFixed(1)); c2.setAttribute('r','3'); ddots.appendChild(c2); } }
+    var birds=$('#drum-birds',drum);
+    if(birds){ for(var s=0;s<12;s++){ var u=mk('use'); u.setAttribute('href','#lacbird'); u.setAttributeNS('http://www.w3.org/1999/xlink','href','#lacbird'); u.setAttribute('transform','rotate('+(s*30)+' 200 200) translate(200 63) scale(0.92)'); birds.appendChild(u); } }
+  }
+})();
+</script>
+</body>
+</html>

@@ -18,6 +18,9 @@ public interface IFinanceService
     Task<Result<int>>                                GenerateInvoicesAsync(int schoolId, int createdByUserId, GenerateInvoicesRequest request, CancellationToken ct = default);
     Task<Result<IReadOnlyList<StudentDebtDto>>>      GetOutstandingDebtsAsync(int schoolId, CancellationToken ct = default);
 
+    /// <summary>Hóa đơn của các con (dùng cho cổng Phụ huynh) — chưa thanh toán xếp trước.</summary>
+    Task<Result<IReadOnlyList<InvoiceDto>>>          GetInvoicesForStudentsAsync(int schoolId, IReadOnlyCollection<int> studentIds, CancellationToken ct = default);
+
     // Payments
     Task<Result<PaymentSummaryDto>>                  RecordPaymentAsync(int schoolId, int processedByUserId, RecordPaymentRequest request, CancellationToken ct = default);
 

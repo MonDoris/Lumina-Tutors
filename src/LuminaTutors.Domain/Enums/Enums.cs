@@ -453,3 +453,53 @@ public enum ImportJobStatus
     Failed     = 4
 }
 
+// ─── E-Learning: Course & Progress ────────────────────────────────────────────
+
+public enum CourseStatus
+{
+    Draft     = 1,
+    Published = 2,
+    Archived  = 3
+}
+
+/// <summary>Loại nội dung của một bài học trong khóa (khác LessonType của giáo án lớp live).</summary>
+public enum CourseLessonType
+{
+    Article = 1,   // bài đọc HTML
+    Video   = 2,   // video bài giảng
+    Quiz    = 3    // trắc nghiệm (liên kết QuizExam)
+}
+
+/// <summary>Nguồn ghi danh vào khóa học.</summary>
+public enum CourseEnrollmentSource
+{
+    ClassAssigned = 1,   // tự động khi khóa được gán cho lớp
+    Manual        = 2,   // GV/Admin ghi danh tay
+    SelfEnrolled  = 3    // học sinh tự ghi danh (B2C sau này)
+}
+
+public enum CourseEnrollmentStatus
+{
+    Active    = 1,
+    Completed = 2,
+    Dropped   = 3
+}
+
+/// <summary>Trạng thái tiến độ 1 bài học (không có row = NotStarted).</summary>
+public enum ProgressStatus
+{
+    InProgress = 1,
+    Completed  = 2
+}
+
+/// <summary>
+/// Mức độ tư duy theo ma trận GDPT 2018: Nhận biết → Thông hiểu → Vận dụng → Vận dụng cao.
+/// </summary>
+public enum CognitiveLevel
+{
+    Recognition         = 1,   // Nhận biết
+    Comprehension       = 2,   // Thông hiểu
+    Application         = 3,   // Vận dụng
+    AdvancedApplication = 4    // Vận dụng cao
+}
+

@@ -463,6 +463,34 @@ else
     </div>
 }
 
+@* ── Email nhận hóa đơn ───────────────────────────────────────────── *@
+<h2 class="sub-h"><span class="bar"></span> Email nhận hóa đơn</h2>
+<div class="lt-card" style="margin-bottom:1.5rem">
+    <div class="lt-card__body">
+        <p style="margin:0 0 .8rem;color:#64748b;font-size:.88rem">
+            Sau mỗi lần thanh toán thành công, hệ thống tự động gửi hóa đơn về địa chỉ này.
+            Để trống thì hóa đơn gửi về email tài khoản Nhà trường.
+        </p>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+            <form asp-action="BillingEmail" method="post" style="display:flex;gap:.6rem;flex:1;min-width:280px">
+                @Html.AntiForgeryToken()
+                <input type="email" name="billingEmail" value="@Model.BillingEmail" maxlength="150"
+                       class="lt-input" style="flex:1" placeholder="vd: ketoan@truong.edu.vn" />
+                <button type="submit" class="lt-btn lt-btn--primary lt-btn--sm">
+                    <i class="bi bi-save"></i> Lưu
+                </button>
+            </form>
+            <form asp-action="TestEmail" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="lt-btn lt-btn--outline lt-btn--sm"
+                        title="Gửi một email thử tới địa chỉ nhận hóa đơn">
+                    <i class="bi bi-send-check"></i> Gửi email thử
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
 @* ── Đơn gần đây ──────────────────────────────────────────────────── *@
 <h2 class="sub-h"><span class="bar"></span> Đơn gần đây</h2>
 <div class="lt-card">
@@ -503,6 +531,16 @@ else
                                 <a asp-action="Pay" asp-route-id="@o.OrderId" class="lt-btn lt-btn--primary lt-btn--sm">
                                     <i class="bi bi-credit-card"></i> Thanh toán
                                 </a>
+                            }
+                            else if (o.Status == "Paid")
+                            {
+                                <form asp-action="ResendReceipt" asp-route-id="@o.OrderId" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="lt-btn lt-btn--ghost lt-btn--sm"
+                                            title="Gửi lại hóa đơn về email nhà trường">
+                                        <i class="bi bi-envelope-arrow-up"></i> Gửi lại hóa đơn
+                                    </button>
+                                </form>
                             }
                         </td>
                     </tr>

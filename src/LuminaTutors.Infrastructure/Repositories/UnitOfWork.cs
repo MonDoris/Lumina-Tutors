@@ -78,6 +78,14 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<StudentQuizAnswer>?    _studentQuizAnswers;
     private IRepository<QuestionImportJob>?    _questionImportJobs;
 
+    private IRepository<Course>?                _courses;
+    private IRepository<CourseModule>?          _courseModules;
+    private IRepository<CourseLesson>?          _courseLessons;
+    private IRepository<CourseLessonMaterial>?  _courseLessonMaterials;
+    private IRepository<ClassCourseAssignment>? _classCourseAssignments;
+    private IRepository<CourseEnrollment>?      _courseEnrollments;
+    private IRepository<LessonProgress>?        _lessonProgresses;
+
     private IRepository<GradeCategory>?           _gradeCategories;
     private IRepository<SubjectGradeRequirement>? _subjectGradeRequirements;
     private IRepository<ScoreEntry>?              _scoreEntries;
@@ -170,6 +178,14 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<OnlineSlide>          OnlineSlides          => Get(ref _onlineSlides);
     public IRepository<SessionRecording>     SessionRecordings     => Get(ref _sessionRecordings);
     public IRepository<QuestionImportJob>    QuestionImportJobs    => Get(ref _questionImportJobs);
+
+    public IRepository<Course>                Courses                => Get(ref _courses);
+    public IRepository<CourseModule>          CourseModules          => Get(ref _courseModules);
+    public IRepository<CourseLesson>          CourseLessons          => Get(ref _courseLessons);
+    public IRepository<CourseLessonMaterial>  CourseLessonMaterials  => Get(ref _courseLessonMaterials);
+    public IRepository<ClassCourseAssignment> ClassCourseAssignments => Get(ref _classCourseAssignments);
+    public IRepository<CourseEnrollment>      CourseEnrollments      => Get(ref _courseEnrollments);
+    public IRepository<LessonProgress>        LessonProgresses       => Get(ref _lessonProgresses);
     public IRepository<QuizExam>             QuizExams             => Get(ref _quizExams);
     public IRepository<QuizExamQuestion>     QuizExamQuestions     => Get(ref _quizExamQuestions);
     public IRepository<StudentQuizAttempt>   StudentQuizAttempts   => Get(ref _studentQuizAttempts);

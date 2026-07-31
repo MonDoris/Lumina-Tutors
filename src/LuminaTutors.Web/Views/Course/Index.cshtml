@@ -1,0 +1,137 @@
+@using LuminaTutors.Application.DTOs.Course
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Khóa học E-Learning";
+    var courses = ViewBag.Courses as IReadOnlyList<CourseListItemDto> ?? new List<CourseListItemDto>();
+    // Chỉ giáo viên mới được soạn nội dung; nhà trường xem ở trang Quản lý (Manage).
+    var canAuthor = User.IsInRole("TEACHER");
+
+    string StatusBadge(CourseStatus s) => s switch
+    {
+        CourseStatus.Published => "lt-badge lt-badge--success",
+        CourseStatus.Archived  => "lt-badge lt-badge--gray",
+        _                      => "lt-badge lt-badge--warning"
+    };
+    string StatusLabel(CourseStatus s) => s switch
+    {
+        CourseStatus.Published => "Đã phát hành",
+        CourseStatus.Archived  => "Lưu trữ",
+        _                      => "Nháp"
+    };
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-mortarboard-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Khóa học E-Learning
+        </h1>
+        <p class="lt-page-subtitle">Kho khóa học của trường — gán cho lớp hoặc ghi danh học sinh tự học</p>
+    </div>
+    @if (canAuthor)
+    {
+        <button class="lt-btn lt-btn--primary" data-bs-toggle="modal" data-bs-target="#createCourseModal">
+            <i class="bi bi-plus-lg"></i> Tạo khóa học
+        </button>
+    }
+</div>
+
+@if (!courses.Any())
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-mortarboard"></i></div>
+                <div class="lt-empty__title">Chưa có khóa học nào</div>
+                <div class="lt-empty__text">Tạo khóa học đầu tiên, thêm chương &amp; bài học, rồi gán cho lớp.</div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var c in courses)
+        {
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="lt-card lt-card--hover" style="height:100%">
+                    <div class="lt-card__body" style="display:flex;flex-direction:column;gap:.5rem">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+                            <a href="@Url.Action("Detail", new { id = c.Id })"
+                               style="font-weight:700;font-size:1.05rem;color:var(--lt-navy);text-decoration:none">
+                                @c.Title
+                            </a>
+                            <span class="@StatusBadge(c.Status)">@StatusLabel(c.Status)</span>
+                        </div>
+                        <div style="color:var(--lt-text-muted);font-size:.85rem">
+                            @if (c.SubjectName != null) { <span><i class="bi bi-book"></i> @c.SubjectName</span> }
+                            @if (c.GradeLevelName != null) { <span style="margin-left:.6rem"><i class="bi bi-bar-chart-steps"></i> @c.GradeLevelName</span> }
+                            @if (c.IsSequential) { <span style="margin-left:.6rem" title="Học tuần tự"><i class="bi bi-list-ol"></i> Tuần tự</span> }
+                        </div>
+                        <div style="display:flex;gap:1rem;font-size:.85rem;color:var(--lt-text-muted);margin-top:auto">
+                            <span><i class="bi bi-collection"></i> @c.ModuleCount chương</span>
+                            <span><i class="bi bi-journal-text"></i> @c.LessonCount bài</span>
+                            <span><i class="bi bi-people"></i> @c.EnrolledCount học sinh</span>
+                        </div>
+                        @if (c.EnrolledCount > 0)
+                        {
+                            var avgPct = c.AvgProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                            <div style="display:flex;align-items:center;gap:.5rem">
+                                <div class="lt-progress" style="flex:1" title="Mức độ hoàn thành trung bình của học sinh">
+                                    <div class="lt-progress__bar @(c.AvgProgressPercent >= 100 ? "lt-progress__bar--success" : "")"
+                                         style="width:@(avgPct)%"></div>
+                                </div>
+                                <span style="font-size:.8rem;font-weight:700">@c.AvgProgressPercent.ToString("0.#")%</span>
+                            </div>
+                            <div style="font-size:.75rem;color:var(--lt-text-muted)">Hoàn thành trung bình của học sinh</div>
+                        }
+                        <div style="display:flex;gap:.5rem;margin-top:.35rem">
+                            <a href="@Url.Action("Detail", new { id = c.Id })" class="lt-btn lt-btn--outline lt-btn--sm">
+                                <i class="bi bi-pencil-square"></i> Soạn nội dung
+                            </a>
+                            <a href="@Url.Action("Report", new { id = c.Id })" class="lt-btn lt-btn--ghost lt-btn--sm">
+                                <i class="bi bi-graph-up"></i> Tiến độ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- ══ Modal: tạo khóa học ══ -->
+<div class="modal fade" id="createCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form class="modal-content" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-mortarboard-fill" style="color:var(--lt-gold)"></i> Tạo khóa học mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="display:flex;flex-direction:column;gap:.9rem">
+                <div class="lt-form-group">
+                    <label class="lt-label">Tên khóa học *</label>
+                    <input name="Title" class="lt-input" required maxlength="300" placeholder="VD: Toán 9 — Luyện thi vào 10"/>
+                </div>
+                <div class="lt-form-group">
+                    <label class="lt-label">Mô tả</label>
+                    <textarea name="Description" class="lt-input" rows="3" maxlength="2000"
+                              placeholder="Khóa học dành cho ai, học xong đạt được gì..."></textarea>
+                </div>
+                <div class="lt-form-group">
+                    <label class="lt-label">Ảnh bìa (URL)</label>
+                    <input name="ThumbnailUrl" class="lt-input" maxlength="500" placeholder="https://..."/>
+                </div>
+                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                    <input type="checkbox" name="IsSequential" value="true"/>
+                    <span>Học tuần tự — phải hoàn thành bài trước mới mở bài sau</span>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="lt-btn lt-btn--ghost" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="lt-btn lt-btn--primary"><i class="bi bi-plus-lg"></i> Tạo khóa học</button>
+            </div>
+        </form>
+    </div>
+</div>

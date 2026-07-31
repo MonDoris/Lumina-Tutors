@@ -1,0 +1,661 @@
+@using System.Text.Json
+@using LuminaTutors.Application.DTOs.Course
+@using LuminaTutors.Application.DTOs.Class
+@using LuminaTutors.Domain.Enums
+@{
+    var course  = (CourseDetailDto)ViewBag.Course;
+    var classes = ViewBag.Classes as IReadOnlyList<ClassOptionDto> ?? new List<ClassOptionDto>();
+    var quizzes = ViewBag.Quizzes as IReadOnlyList<QuizExamOptionDto> ?? new List<QuizExamOptionDto>();
+    var assigns = ViewBag.Assignments as IReadOnlyList<ClassAssignmentDto> ?? new List<ClassAssignmentDto>();
+    var subjects = ViewBag.Subjects as IReadOnlyList<SubjectSelectDto> ?? new List<SubjectSelectDto>();
+    var grades   = ViewBag.GradeLevels as IReadOnlyList<GradeLevelSelectDto> ?? new List<GradeLevelSelectDto>();
+    var stats    = ViewBag.Stats as CourseStatsDto;
+
+    ViewData["Title"] = course.Title;
+
+    string CogLabel(CognitiveLevel? cl) => cl switch
+    {
+        CognitiveLevel.Recognition         => "Nhận biết",
+        CognitiveLevel.Comprehension       => "Thông hiểu",
+        CognitiveLevel.Application         => "Vận dụng",
+        CognitiveLevel.AdvancedApplication => "Vận dụng cao",
+        _                                  => ""
+    };
+    string CogBadge(CognitiveLevel? cl) => cl switch
+    {
+        CognitiveLevel.Recognition         => "lt-badge lt-badge--info",
+        CognitiveLevel.Comprehension       => "lt-badge lt-badge--navy",
+        CognitiveLevel.Application         => "lt-badge lt-badge--warning",
+        CognitiveLevel.AdvancedApplication => "lt-badge lt-badge--danger",
+        _                                  => "lt-badge lt-badge--gray"
+    };
+    string Inv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    string TypeIcon(CourseLessonType t) => t switch
+    {
+        CourseLessonType.Video => "bi-play-circle-fill",
+        CourseLessonType.Quiz  => "bi-patch-question-fill",
+        _                      => "bi-file-text-fill"
+    };
+    string TypeLabel(CourseLessonType t) => t switch
+    {
+        CourseLessonType.Video => "Video",
+        CourseLessonType.Quiz  => "Trắc nghiệm",
+        _                      => "Bài đọc"
+    };
+
+    // Dữ liệu cho JS (System.Text.Json mặc định escape < > & — an toàn trong <script>)
+    var modulesJson = JsonSerializer.Serialize(course.Modules.Select(m => new
+    {
+        id = m.Id, title = m.Title, description = m.Description,
+        unlockAfterDays = m.UnlockAfterDays, availableFrom = m.AvailableFrom?.ToString("yyyy-MM-ddTHH:mm"),
+        semesterNo = m.SemesterNo, startWeek = m.StartWeek,
+        lessons = m.Lessons.Select(l => new
+        {
+            id = l.Id, title = l.Title, contentType = (int)l.ContentType, contentHtml = l.ContentHtml,
+            videoUrl = l.VideoUrl, videoDurationSec = l.VideoDurationSec, quizExamId = l.QuizExamId,
+            minWatchPercent = (int)l.MinWatchPercent, isPreviewable = l.IsPreviewable, isPublished = l.IsPublished,
+            objectives = l.Objectives, cognitiveLevel = (int?)l.CognitiveLevel, periodCount = (int)l.PeriodCount
+        })
+    }));
+}
+
+<div class="lt-page-header">
+    <div>
+        <div style="margin-bottom:.35rem">
+            <a href="@Url.Action("Index")" style="color:var(--lt-text-muted);text-decoration:none;font-size:.85rem">
+                <i class="bi bi-arrow-left"></i> Khóa học
+            </a>
+        </div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-mortarboard-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            @course.Title
+            @if (course.Status == CourseStatus.Published)
+            { <span class="lt-badge lt-badge--success" style="vertical-align:middle">Đã phát hành</span> }
+            else if (course.Status == CourseStatus.Archived)
+            { <span class="lt-badge lt-badge--gray" style="vertical-align:middle">Lưu trữ</span> }
+            else
+            { <span class="lt-badge lt-badge--warning" style="vertical-align:middle">Nháp</span> }
+        </h1>
+        <p class="lt-page-subtitle">Soạn giáo trình: chương → bài học (Video / Bài đọc / Trắc nghiệm)</p>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <a href="@Url.Action("Report", new { id = course.Id })" class="lt-btn lt-btn--ghost">
+            <i class="bi bi-graph-up"></i> Tiến độ học sinh
+        </a>
+        @if (course.Status != CourseStatus.Published)
+        {
+            <button class="lt-btn lt-btn--gold" onclick="changeStatus(@((int)CourseStatus.Published))">
+                <i class="bi bi-rocket-takeoff"></i> Phát hành
+            </button>
+        }
+        else
+        {
+            <button class="lt-btn lt-btn--outline" onclick="changeStatus(@((int)CourseStatus.Archived))">
+                <i class="bi bi-archive"></i> Lưu trữ
+            </button>
+        }
+        @if (course.Status == CourseStatus.Draft)
+        {
+            <form asp-action="Delete" asp-route-id="@course.Id" method="post" style="display:inline"
+                  onsubmit="return confirm('Xóa khóa học nháp này? Toàn bộ chương/bài học sẽ mất.')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="lt-btn lt-btn--danger"><i class="bi bi-trash"></i></button>
+            </form>
+        }
+    </div>
+</div>
+
+@* ── Panel thống kê mức độ hoàn thành của học sinh ─────────────────────────── *@
+@if (stats is not null && stats.TotalActiveStudents > 0)
+{
+    <div class="lt-card" style="margin-bottom:1rem">
+        <div class="lt-card__body">
+            <div class="row g-3 align-items-center">
+                <div class="col-12 col-md-5">
+                    <div style="font-size:.8rem;color:var(--lt-text-muted);margin-bottom:.3rem">
+                        <i class="bi bi-speedometer2"></i> Mức độ hoàn thành trung bình — @stats.TotalActiveStudents học sinh
+                    </div>
+                    <div style="display:flex;align-items:center;gap:.6rem">
+                        <div class="lt-progress" style="flex:1;height:12px">
+                            <div class="lt-progress__bar @(stats.AvgProgressPercent >= 100 ? "lt-progress__bar--success" : "")"
+                                 style="width:@(Inv(stats.AvgProgressPercent))%"></div>
+                        </div>
+                        <strong style="font-size:1.15rem;color:var(--lt-navy)">@stats.AvgProgressPercent.ToString("0.#")%</strong>
+                    </div>
+                    <div style="font-size:.78rem;color:var(--lt-text-muted);margin-top:.25rem">
+                        <i class="bi bi-patch-check-fill" style="color:#16a34a"></i> @stats.CompletedStudents học sinh đã hoàn thành khóa
+                    </div>
+                </div>
+                <div class="col-12 col-md-7">
+                    <div style="font-size:.8rem;color:var(--lt-text-muted);margin-bottom:.3rem">
+                        <i class="bi bi-bar-chart-fill"></i> Phân bố tiến độ
+                    </div>
+                    <div class="row g-2 text-center">
+                        @foreach (var (label, count, color) in new[] {
+                            ("0–25%",   stats.Bucket0To25,   "#dc2626"),
+                            ("25–50%",  stats.Bucket25To50,  "#d97706"),
+                            ("50–75%",  stats.Bucket50To75,  "#2563eb"),
+                            ("75–100%", stats.Bucket75To100, "#16a34a") })
+                        {
+                            var share = stats.TotalActiveStudents == 0 ? 0 : count * 100 / stats.TotalActiveStudents;
+                            <div class="col-3">
+                                <div style="font-weight:800;font-size:1.05rem;color:@color">@count</div>
+                                <div class="lt-progress" style="height:6px;margin:.2rem 0">
+                                    <div style="height:100%;border-radius:99px;background:@color;width:@(share)%"></div>
+                                </div>
+                                <div style="font-size:.72rem;color:var(--lt-text-muted)">@label</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row g-3">
+    <!-- ══ Cột trái: giáo trình ══ -->
+    <div class="col-12 col-lg-8">
+        <div class="lt-card">
+            <div class="lt-card__header">
+                <div class="lt-card__title"><i class="bi bi-collection"></i> Giáo trình</div>
+                <div class="lt-card__header-actions">
+                    <button class="lt-btn lt-btn--primary lt-btn--sm" onclick="openModuleModal(null)">
+                        <i class="bi bi-plus-lg"></i> Thêm chương
+                    </button>
+                </div>
+            </div>
+            <div class="lt-card__body" id="curriculum">
+                @if (!course.Modules.Any())
+                {
+                    <div class="lt-empty lt-empty--sm">
+                        <div class="lt-empty__icon"><i class="bi bi-collection"></i></div>
+                        <div class="lt-empty__text">Chưa có chương nào — bấm "Thêm chương" để bắt đầu.</div>
+                    </div>
+                }
+                @foreach (var m in course.Modules)
+                {
+                    <div class="lt-card" style="margin-bottom:.85rem" data-module-id="@m.Id">
+                        <div class="lt-card__body" style="padding:.9rem 1rem">
+                            <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+                                <strong style="font-size:1rem;color:var(--lt-navy)">
+                                    <i class="bi bi-folder-fill" style="color:var(--lt-gold)"></i> @m.Title
+                                </strong>
+                                @if (m.SemesterNo is > 0)
+                                { <span class="lt-badge lt-badge--gold">HK@(m.SemesterNo)</span> }
+                                @if (m.StartWeek is > 0)
+                                { <span class="lt-badge lt-badge--navy" title="Tuần PPCT">Tuần @m.StartWeek</span> }
+                                @if (m.UnlockAfterDays is > 0)
+                                { <span class="lt-badge lt-badge--info" title="Mở sau @m.UnlockAfterDays ngày kể từ khi ghi danh"><i class="bi bi-hourglass-split"></i> +@m.UnlockAfterDays ngày</span> }
+                                @if (m.AvailableFrom.HasValue)
+                                { <span class="lt-badge lt-badge--info"><i class="bi bi-calendar-event"></i> @m.AvailableFrom.Value.ToString("dd/MM/yyyy")</span> }
+                                <span style="margin-left:auto;display:flex;gap:.25rem">
+                                    <button class="lt-btn lt-btn--icon lt-btn--sm" title="Lên" onclick="moveModule(@m.Id,-1)"><i class="bi bi-arrow-up"></i></button>
+                                    <button class="lt-btn lt-btn--icon lt-btn--sm" title="Xuống" onclick="moveModule(@m.Id,1)"><i class="bi bi-arrow-down"></i></button>
+                                    <button class="lt-btn lt-btn--icon lt-btn--sm" title="Sửa chương" onclick="openModuleModal(@m.Id)"><i class="bi bi-pencil"></i></button>
+                                    <button class="lt-btn lt-btn--icon lt-btn--sm" title="Xóa chương" onclick="deleteModule(@m.Id)"><i class="bi bi-trash" style="color:var(--lt-danger)"></i></button>
+                                </span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(m.Description))
+                            { <div style="color:var(--lt-text-muted);font-size:.85rem;margin-top:.25rem">@m.Description</div> }
+
+                            <div style="margin-top:.6rem;display:flex;flex-direction:column;gap:.35rem">
+                                @foreach (var l in m.Lessons)
+                                {
+                                    <div data-lesson-id="@l.Id"
+                                         style="display:flex;align-items:center;gap:.55rem;padding:.5rem .65rem;border:1px solid var(--lt-border,#e2e8f0);border-radius:8px;background:#fff">
+                                        <i class="bi @TypeIcon(l.ContentType)" style="color:var(--lt-navy)"></i>
+                                        <span style="font-weight:600">@l.Title</span>
+                                        <span class="lt-badge lt-badge--gray">@TypeLabel(l.ContentType)</span>
+                                        @if (l.CognitiveLevel.HasValue)
+                                        { <span class="@CogBadge(l.CognitiveLevel)">@CogLabel(l.CognitiveLevel)</span> }
+                                        @if (l.PeriodCount > 1)
+                                        { <span style="font-size:.78rem;color:var(--lt-text-muted)">@l.PeriodCount tiết</span> }
+                                        @if (l.ContentType == CourseLessonType.Video && l.VideoDurationSec is > 0)
+                                        { <span style="font-size:.78rem;color:var(--lt-text-muted)"><i class="bi bi-clock"></i> @(TimeSpan.FromSeconds(l.VideoDurationSec.Value).ToString("mm\\:ss"))</span> }
+                                        @if (!l.IsPublished)
+                                        { <span class="lt-badge lt-badge--warning">Ẩn</span> }
+                                        @if (l.IsPreviewable)
+                                        { <span class="lt-badge lt-badge--info" title="Xem thử không cần ghi danh"><i class="bi bi-eye"></i></span> }
+                                        <span style="margin-left:auto;display:flex;gap:.2rem">
+                                            <button class="lt-btn lt-btn--icon lt-btn--sm" title="Lên" onclick="moveLesson(@m.Id,@l.Id,-1)"><i class="bi bi-arrow-up"></i></button>
+                                            <button class="lt-btn lt-btn--icon lt-btn--sm" title="Xuống" onclick="moveLesson(@m.Id,@l.Id,1)"><i class="bi bi-arrow-down"></i></button>
+                                            <button class="lt-btn lt-btn--icon lt-btn--sm" title="Sửa bài" onclick="openLessonModal(@m.Id,@l.Id)"><i class="bi bi-pencil"></i></button>
+                                            <button class="lt-btn lt-btn--icon lt-btn--sm" title="Xóa bài" onclick="deleteLesson(@l.Id)"><i class="bi bi-trash" style="color:var(--lt-danger)"></i></button>
+                                        </span>
+                                    </div>
+                                }
+                                <button class="lt-btn lt-btn--ghost lt-btn--sm" style="align-self:flex-start" onclick="openLessonModal(@m.Id,null)">
+                                    <i class="bi bi-plus-lg"></i> Thêm bài học
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ Cột phải: thông tin + gán lớp ══ -->
+    <div class="col-12 col-lg-4">
+        <div class="lt-card" style="margin-bottom:1rem">
+            <div class="lt-card__header"><div class="lt-card__title"><i class="bi bi-info-circle"></i> Thông tin khóa học</div></div>
+            <div class="lt-card__body" style="display:flex;flex-direction:column;gap:.8rem">
+                <div class="lt-form-group">
+                    <label class="lt-label">Tên khóa học</label>
+                    <input id="metaTitle" class="lt-input" value="@course.Title" maxlength="300"/>
+                </div>
+                <div class="lt-form-group">
+                    <label class="lt-label">Mô tả</label>
+                    <textarea id="metaDesc" class="lt-input" rows="3" maxlength="2000">@course.Description</textarea>
+                </div>
+                <div class="lt-form-group">
+                    <label class="lt-label">Ảnh bìa (URL)</label>
+                    <input id="metaThumb" class="lt-input" value="@course.ThumbnailUrl" maxlength="500"/>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="lt-label">Môn học</label>
+                        <select id="metaSubject" class="lt-select">
+                            <option value="">— Không —</option>
+                            @foreach (var s in subjects)
+                            { <option value="@s.SubjectId" selected="@(course.SubjectId == s.SubjectId)">@s.SubjectName</option> }
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="lt-label">Khối</label>
+                        <select id="metaGrade" class="lt-select">
+                            <option value="">— Không —</option>
+                            @foreach (var g in grades)
+                            { <option value="@g.GradeLevelId" selected="@(course.GradeLevelId == g.GradeLevelId)">@g.GradeName</option> }
+                        </select>
+                    </div>
+                </div>
+                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                    <input type="checkbox" id="metaSequential" checked="@course.IsSequential"/>
+                    <span>Học tuần tự</span>
+                </label>
+                <button class="lt-btn lt-btn--primary" onclick="updateMeta()"><i class="bi bi-check-lg"></i> Lưu thông tin</button>
+            </div>
+        </div>
+
+        <div class="lt-card">
+            <div class="lt-card__header"><div class="lt-card__title"><i class="bi bi-people-fill"></i> Gán cho lớp</div></div>
+            <div class="lt-card__body" style="display:flex;flex-direction:column;gap:.7rem">
+                @if (course.Status != CourseStatus.Published)
+                {
+                    <div class="lt-alert lt-alert--info" style="font-size:.85rem">
+                        <i class="bi bi-info-circle"></i> Phát hành khóa học trước khi gán cho lớp.
+                    </div>
+                }
+                else
+                {
+                    <div style="display:flex;gap:.5rem">
+                        <select id="assignClassSelect" class="lt-select" style="flex:1">
+                            <option value="">— Chọn lớp —</option>
+                            @foreach (var c in classes)
+                            { <option value="@c.Id">@c.ClassName (@c.YearName)@(c.YearActive ? "" : " — năm cũ")</option> }
+                        </select>
+                        <button class="lt-btn lt-btn--primary" onclick="assignClass()"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                }
+                @if (assigns.Any())
+                {
+                    <div style="display:flex;flex-direction:column;gap:.4rem">
+                        @foreach (var a in assigns)
+                        {
+                            <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border:1px solid #e2e8f0;border-radius:8px;@(a.IsActive ? "" : "opacity:.55")">
+                                <i class="bi bi-easel2-fill" style="color:var(--lt-navy)"></i>
+                                <div style="min-width:0;flex:1">
+                                    <div style="font-weight:600;font-size:.9rem">@a.ClassName</div>
+                                    <div style="font-size:.75rem;color:var(--lt-text-muted)">@a.EnrolledCount HS · @a.AssignedAt.ToString("dd/MM/yyyy")</div>
+                                    @if (a.EnrolledCount > 0)
+                                    {
+                                        <div style="display:flex;align-items:center;gap:.4rem;margin-top:.2rem">
+                                            <div class="lt-progress" style="flex:1;height:5px" title="Hoàn thành trung bình của lớp">
+                                                <div class="lt-progress__bar @(a.AvgProgressPercent >= 100 ? "lt-progress__bar--success" : "")"
+                                                     style="width:@(Inv(a.AvgProgressPercent))%"></div>
+                                            </div>
+                                            <span style="font-size:.72rem;font-weight:700">@a.AvgProgressPercent.ToString("0.#")%</span>
+                                        </div>
+                                    }
+                                </div>
+                                <span style="display:flex;gap:.2rem">
+                                    @if (a.IsActive)
+                                    {
+                                        <button class="lt-btn lt-btn--icon lt-btn--sm" title="Ghi danh HS mới vào lớp" onclick="syncAssignment(@a.Id)"><i class="bi bi-arrow-repeat"></i></button>
+                                        <button class="lt-btn lt-btn--icon lt-btn--sm" title="Ngừng ghi danh mới" onclick="deactivateAssignment(@a.Id)"><i class="bi bi-pause-circle" style="color:var(--lt-danger)"></i></button>
+                                    }
+                                    else
+                                    { <span class="lt-badge lt-badge--gray">Đã ngừng</span> }
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                { <div style="color:var(--lt-text-muted);font-size:.85rem">Chưa gán lớp nào.</div> }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ Modal: chương ══ -->
+<div class="modal fade" id="moduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moduleModalTitle">Thêm chương</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="display:flex;flex-direction:column;gap:.8rem">
+                <input type="hidden" id="mId"/>
+                <div class="lt-form-group">
+                    <label class="lt-label">Tên chương *</label>
+                    <input id="mTitle" class="lt-input" maxlength="300" placeholder="VD: Chương 1 — Hàm số bậc nhất"/>
+                </div>
+                <div class="lt-form-group">
+                    <label class="lt-label">Mô tả</label>
+                    <textarea id="mDesc" class="lt-input" rows="2" maxlength="1000"></textarea>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="lt-label">Học kỳ (PPCT)</label>
+                        <select id="mSemester" class="lt-select">
+                            <option value="">— Không gắn —</option>
+                            <option value="1">Học kỳ 1</option>
+                            <option value="2">Học kỳ 2</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="lt-label">Tuần PPCT bắt đầu</label>
+                        <input id="mStartWeek" type="number" min="1" max="53" class="lt-input" placeholder="VD: 5"/>
+                    </div>
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="lt-label">Mở sau (ngày)</label>
+                        <input id="mUnlockDays" type="number" min="0" class="lt-input" placeholder="0 = mở ngay"/>
+                        <div class="lt-form-hint">Tính từ ngày học sinh ghi danh</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="lt-label">Chỉ mở từ</label>
+                        <input id="mAvailableFrom" type="datetime-local" class="lt-input"/>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="lt-btn lt-btn--ghost" data-bs-dismiss="modal">Hủy</button>
+                <button class="lt-btn lt-btn--primary" onclick="saveModule()"><i class="bi bi-check-lg"></i> Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ Modal: bài học ══ -->
+<div class="modal fade" id="lessonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="lessonModalTitle">Thêm bài học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="display:flex;flex-direction:column;gap:.8rem">
+                <input type="hidden" id="lId"/>
+                <input type="hidden" id="lModuleId"/>
+                <div class="row g-2">
+                    <div class="col-8">
+                        <label class="lt-label">Tên bài học *</label>
+                        <input id="lTitle" class="lt-input" maxlength="300"/>
+                    </div>
+                    <div class="col-4">
+                        <label class="lt-label">Loại nội dung</label>
+                        <select id="lType" class="lt-select" onchange="onLessonTypeChange()">
+                            <option value="1">Bài đọc</option>
+                            <option value="2">Video</option>
+                            <option value="3">Trắc nghiệm</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="lt-label">Yêu cầu cần đạt <span style="font-weight:400;color:var(--lt-text-muted)">(chuẩn GDPT 2018)</span></label>
+                    <textarea id="lObjectives" class="lt-input" rows="3" maxlength="2000"
+                              placeholder="VD:&#10;– Nhận biết được hàm số bậc nhất y = ax + b.&#10;– Vẽ được đồ thị và xác định hệ số góc."></textarea>
+                    <div class="lt-form-hint">Hiển thị cho học sinh ngay đầu bài học.</div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-8">
+                        <label class="lt-label">Mức độ tư duy</label>
+                        <select id="lCognitive" class="lt-select">
+                            <option value="">— Không phân loại —</option>
+                            <option value="1">Nhận biết</option>
+                            <option value="2">Thông hiểu</option>
+                            <option value="3">Vận dụng</option>
+                            <option value="4">Vận dụng cao</option>
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <label class="lt-label">Số tiết PPCT</label>
+                        <input id="lPeriods" type="number" min="1" max="20" value="1" class="lt-input"/>
+                    </div>
+                </div>
+
+                <div id="grpVideo" style="display:none">
+                    <div class="row g-2">
+                        <div class="col-7">
+                            <label class="lt-label">Video URL *</label>
+                            <input id="lVideoUrl" class="lt-input" maxlength="500" placeholder="File .mp4/.m3u8 hoặc link YouTube"/>
+                        </div>
+                        <div class="col-3">
+                            <label class="lt-label">Thời lượng (giây)</label>
+                            <input id="lDuration" type="number" min="0" class="lt-input" placeholder="VD: 600"/>
+                        </div>
+                        <div class="col-2">
+                            <label class="lt-label">Xem tối thiểu %</label>
+                            <input id="lMinWatch" type="number" min="10" max="100" value="90" class="lt-input"/>
+                        </div>
+                    </div>
+                    <div class="lt-form-hint">Không nhập thời lượng → học sinh tự bấm "Hoàn thành".</div>
+                </div>
+
+                <div id="grpQuiz" style="display:none">
+                    <label class="lt-label">Đề trắc nghiệm liên kết *</label>
+                    <select id="lQuizId" class="lt-select">
+                        <option value="">— Chọn đề —</option>
+                        @foreach (var q in quizzes)
+                        { <option value="@q.Id">@q.Title (@q.SubjectName)</option> }
+                    </select>
+                </div>
+
+                <div id="grpContent">
+                    <label class="lt-label">Nội dung (HTML)</label>
+                    <textarea id="lContent" class="lt-input" rows="6" placeholder="Nội dung bài đọc, hoặc mô tả kèm video..."></textarea>
+                </div>
+
+                <div style="display:flex;gap:1.5rem">
+                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
+                        <input type="checkbox" id="lPublished"/> <span>Publish (học sinh thấy được)</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
+                        <input type="checkbox" id="lPreviewable"/> <span>Cho xem thử</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="lt-btn lt-btn--ghost" data-bs-dismiss="modal">Hủy</button>
+                <button class="lt-btn lt-btn--primary" onclick="saveLesson()"><i class="bi bi-check-lg"></i> Lưu bài học</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+const COURSE_ID = @course.Id;
+const MODULES   = @Html.Raw(modulesJson);
+const TOKEN     = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+async function api(url, body) {
+    const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': TOKEN },
+        body: body === undefined ? null : JSON.stringify(body)
+    });
+    if (!resp.ok) { alert('Lỗi máy chủ (' + resp.status + ')'); return null; }
+    const json = await resp.json();
+    if (!json.ok) { alert(json.error || 'Có lỗi xảy ra.'); return null; }
+    return json;
+}
+const reload = () => location.reload();
+const findModule = id => MODULES.find(m => m.id === id);
+
+// ── Course meta ──────────────────────────────────────────────────────────────
+async function updateMeta() {
+    const body = {
+        title:        document.getElementById('metaTitle').value.trim(),
+        description:  document.getElementById('metaDesc').value || null,
+        thumbnailUrl: document.getElementById('metaThumb').value || null,
+        subjectId:    document.getElementById('metaSubject').value ? +document.getElementById('metaSubject').value : null,
+        gradeLevelId: document.getElementById('metaGrade').value ? +document.getElementById('metaGrade').value : null,
+        isSequential: document.getElementById('metaSequential').checked
+    };
+    if (await api('@Url.Action("Update", new { id = course.Id })', body)) reload();
+}
+
+async function changeStatus(status) {
+    const labels = {2:'Phát hành khóa học cho học sinh?', 3:'Lưu trữ khóa học? Học sinh sẽ không truy cập được nữa.'};
+    if (!confirm(labels[status] || 'Đổi trạng thái?')) return;
+    if (await api('@Url.Action("ChangeStatus", new { id = course.Id })', { status })) reload();
+}
+
+// ── Module ───────────────────────────────────────────────────────────────────
+function openModuleModal(id) {
+    const m = id ? findModule(id) : null;
+    document.getElementById('moduleModalTitle').textContent = m ? 'Sửa chương' : 'Thêm chương';
+    document.getElementById('mId').value            = m?.id ?? '';
+    document.getElementById('mTitle').value         = m?.title ?? '';
+    document.getElementById('mDesc').value          = m?.description ?? '';
+    document.getElementById('mSemester').value      = m?.semesterNo ?? '';
+    document.getElementById('mStartWeek').value     = m?.startWeek ?? '';
+    document.getElementById('mUnlockDays').value    = m?.unlockAfterDays ?? '';
+    document.getElementById('mAvailableFrom').value = m?.availableFrom ?? '';
+    new bootstrap.Modal('#moduleModal').show();
+}
+
+async function saveModule() {
+    const idVal = document.getElementById('mId').value;
+    let avail = document.getElementById('mAvailableFrom').value || null;
+    if (avail && avail.length === 16) avail += ':00';   // datetime-local thiếu giây → chuẩn ISO 8601
+    const body = {
+        id:              idVal ? +idVal : null,
+        courseId:        COURSE_ID,
+        title:           document.getElementById('mTitle').value.trim(),
+        description:     document.getElementById('mDesc').value || null,
+        unlockAfterDays: document.getElementById('mUnlockDays').value ? +document.getElementById('mUnlockDays').value : null,
+        availableFrom:   avail,
+        semesterNo:      document.getElementById('mSemester').value ? +document.getElementById('mSemester').value : null,
+        startWeek:       document.getElementById('mStartWeek').value ? +document.getElementById('mStartWeek').value : null
+    };
+    if (await api('@Url.Action("SaveModule")', body)) reload();
+}
+
+async function deleteModule(id) {
+    if (!confirm('Xóa chương này cùng toàn bộ bài học bên trong?')) return;
+    if (await api('@Url.Action("DeleteModule")/' + id)) reload();
+}
+
+async function moveModule(id, dir) {
+    const order = MODULES.map(m => m.id);
+    const i = order.indexOf(id), j = i + dir;
+    if (j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    if (await api('@Url.Action("ReorderModules")', { parentId: COURSE_ID, orderedIds: order })) reload();
+}
+
+// ── Lesson ───────────────────────────────────────────────────────────────────
+function onLessonTypeChange() {
+    const t = +document.getElementById('lType').value;
+    document.getElementById('grpVideo').style.display   = t === 2 ? '' : 'none';
+    document.getElementById('grpQuiz').style.display    = t === 3 ? '' : 'none';
+    document.getElementById('grpContent').style.display = t === 3 ? 'none' : '';
+}
+
+function openLessonModal(moduleId, lessonId) {
+    const l = lessonId ? findModule(moduleId)?.lessons.find(x => x.id === lessonId) : null;
+    document.getElementById('lessonModalTitle').textContent = l ? 'Sửa bài học' : 'Thêm bài học';
+    document.getElementById('lId').value          = l?.id ?? '';
+    document.getElementById('lModuleId').value    = moduleId;
+    document.getElementById('lTitle').value       = l?.title ?? '';
+    document.getElementById('lType').value        = l?.contentType ?? 1;
+    document.getElementById('lVideoUrl').value    = l?.videoUrl ?? '';
+    document.getElementById('lDuration').value    = l?.videoDurationSec ?? '';
+    document.getElementById('lMinWatch').value    = l?.minWatchPercent ?? 90;
+    document.getElementById('lQuizId').value      = l?.quizExamId ?? '';
+    document.getElementById('lContent').value     = l?.contentHtml ?? '';
+    document.getElementById('lObjectives').value  = l?.objectives ?? '';
+    document.getElementById('lCognitive').value   = l?.cognitiveLevel ?? '';
+    document.getElementById('lPeriods').value     = l?.periodCount ?? 1;
+    document.getElementById('lPublished').checked   = l?.isPublished ?? false;
+    document.getElementById('lPreviewable').checked = l?.isPreviewable ?? false;
+    onLessonTypeChange();
+    new bootstrap.Modal('#lessonModal').show();
+}
+
+async function saveLesson() {
+    const idVal = document.getElementById('lId').value;
+    const body = {
+        id:               idVal ? +idVal : null,
+        moduleId:         +document.getElementById('lModuleId').value,
+        title:            document.getElementById('lTitle').value.trim(),
+        contentType:      +document.getElementById('lType').value,
+        contentHtml:      document.getElementById('lContent').value || null,
+        videoUrl:         document.getElementById('lVideoUrl').value || null,
+        videoDurationSec: document.getElementById('lDuration').value ? +document.getElementById('lDuration').value : null,
+        quizExamId:       document.getElementById('lQuizId').value ? +document.getElementById('lQuizId').value : null,
+        minWatchPercent:  +document.getElementById('lMinWatch').value || 90,
+        isPreviewable:    document.getElementById('lPreviewable').checked,
+        isPublished:      document.getElementById('lPublished').checked,
+        objectives:       document.getElementById('lObjectives').value || null,
+        cognitiveLevel:   document.getElementById('lCognitive').value ? +document.getElementById('lCognitive').value : null,
+        periodCount:      +document.getElementById('lPeriods').value || 1
+    };
+    if (await api('@Url.Action("SaveLesson")', body)) reload();
+}
+
+async function deleteLesson(id) {
+    if (!confirm('Xóa bài học này?')) return;
+    if (await api('@Url.Action("DeleteLesson")/' + id)) reload();
+}
+
+async function moveLesson(moduleId, lessonId, dir) {
+    const order = findModule(moduleId).lessons.map(l => l.id);
+    const i = order.indexOf(lessonId), j = i + dir;
+    if (j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    if (await api('@Url.Action("ReorderLessons")', { parentId: moduleId, orderedIds: order })) reload();
+}
+
+// ── Gán lớp ──────────────────────────────────────────────────────────────────
+async function assignClass() {
+    const classId = +document.getElementById('assignClassSelect').value;
+    if (!classId) { alert('Chọn lớp trước đã.'); return; }
+    const res = await api('@Url.Action("AssignClass")', { courseId: COURSE_ID, classId });
+    if (res) { alert('Đã ghi danh ' + res.data + ' học sinh.'); reload(); }
+}
+
+async function syncAssignment(id) {
+    const res = await api('@Url.Action("SyncAssignment")/' + id);
+    if (res) { alert('Đã ghi danh thêm ' + res.data + ' học sinh mới.'); reload(); }
+}
+
+async function deactivateAssignment(id) {
+    if (!confirm('Ngừng ghi danh mới cho lớp này? Học sinh đã ghi danh vẫn học bình thường.')) return;
+    if (await api('@Url.Action("DeactivateAssignment")/' + id)) reload();
+}
+</script>
+}

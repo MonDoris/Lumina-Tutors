@@ -127,6 +127,9 @@ public class SubscriptionOverviewDto
     public List<RoleQuotaAddOnDto>   QuotaAddOns  { get; init; } = new();
     public List<SubscriptionOrderDto> RecentOrders { get; init; } = new();
     public bool VnPayEnabled { get; set; }
+
+    /// <summary>Email nhận hóa đơn của trường (School.Email); null = dùng email tài khoản Nhà trường.</summary>
+    public string? BillingEmail { get; init; }
 }
 
 // ─── Requests ───────────────────────────────────────────────────────────────────

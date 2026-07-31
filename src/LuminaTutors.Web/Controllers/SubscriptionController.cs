@@ -191,6 +191,48 @@ public sealed class SubscriptionController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // ── POST /Subscription/BillingEmail — đặt email nhận hóa đơn của trường ───
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
+    public async Task<IActionResult> BillingEmail(string? billingEmail)
+    {
+        var result = await _service.UpdateBillingEmailAsync(SchoolId, billingEmail);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess
+            ? (string.IsNullOrWhiteSpace(billingEmail)
+                ? "Đã xóa email nhận hóa đơn — hóa đơn sẽ gửi về email tài khoản Nhà trường."
+                : $"Đã lưu email nhận hóa đơn: {billingEmail.Trim()}")
+            : result.Error;
+        return RedirectToAction(nameof(Index));
+    }
+
+    // ── POST /Subscription/TestEmail — gửi thử để kiểm tra cấu hình SMTP ──────
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
+    public async Task<IActionResult> TestEmail([FromServices] IBillingEmailService billingMail)
+    {
+        var result = await billingMail.SendTestEmailAsync(SchoolId);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess
+            ? $"Đã gửi email thử tới {result.Data}. Kiểm tra hộp thư (kể cả mục Spam)."
+            : result.Error;
+        return RedirectToAction(nameof(Index));
+    }
+
+    // ── POST /Subscription/ResendReceipt/5 — gửi lại hóa đơn qua email ────────
+
+    [HttpPost, ValidateAntiForgeryToken, Authorize(Policy = "SchoolAdminOnly")]
+    public async Task<IActionResult> ResendReceipt(int id, [FromServices] IBillingEmailService billingMail)
+    {
+        // Chặn xem/gửi hóa đơn của trường khác: đơn phải thuộc trường đang đăng nhập.
+        var order = await _service.GetOrderAsync(id, SchoolId);
+        if (!order.IsSuccess) return NotFound();
+
+        var result = await billingMail.SendSubscriptionReceiptAsync(id);
+        TempData[result.IsSuccess ? "Success" : "Error"] = result.IsSuccess
+            ? $"Đã gửi hóa đơn {order.Data!.OrderCode} về email nhà trường."
+            : result.Error;
+        return RedirectToAction(nameof(Index));
+    }
+
     // ── GET /Subscription/PayVnPay/5 — tạo URL VNPay & chuyển hướng ───────────
 
     [Authorize(Policy = "SchoolAdminOnly")]

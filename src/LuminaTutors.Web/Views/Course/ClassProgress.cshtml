@@ -1,0 +1,258 @@
+@using LuminaTutors.Application.DTOs.Course
+@using LuminaTutors.Domain.Enums
+@{
+    var p = (ClassCourseProgressDto)ViewBag.Progress;
+    ViewData["Title"] = $"{p.CourseTitle} — {p.ClassName}";
+
+    string Inv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    string LessonTypeLabel(CourseLessonType t) => t switch
+    {
+        CourseLessonType.Video => "Video",
+        CourseLessonType.Quiz  => "Bài tập trắc nghiệm",
+        _                      => "Bài đọc"
+    };
+    string LessonTypeBadge(CourseLessonType t) => t == CourseLessonType.Quiz
+        ? "lt-badge lt-badge--warning" : "lt-badge lt-badge--gray";
+
+    string HomeworkTypeLabel(AssignmentType t) => t switch
+    {
+        AssignmentType.Quiz    => "Kiểm tra nhanh",
+        AssignmentType.Midterm => "Giữa kỳ",
+        AssignmentType.Final   => "Cuối kỳ",
+        AssignmentType.Project => "Dự án",
+        _                      => "Bài tập về nhà"
+    };
+    string EnrollBadge(CourseEnrollmentStatus s) => s switch
+    {
+        CourseEnrollmentStatus.Completed => "lt-badge lt-badge--success",
+        CourseEnrollmentStatus.Dropped   => "lt-badge lt-badge--gray",
+        _                                => "lt-badge lt-badge--info"
+    };
+    string EnrollLabel(CourseEnrollmentStatus s) => s switch
+    {
+        CourseEnrollmentStatus.Completed => "Hoàn thành",
+        CourseEnrollmentStatus.Dropped   => "Đã rời",
+        _                                => "Đang học"
+    };
+
+    var stats = p.Stats;
+}
+
+<div class="lt-page-header">
+    <div>
+        <div style="margin-bottom:.35rem">
+            <a href="@Url.Action("Manage")" style="color:var(--lt-text-muted);text-decoration:none;font-size:.85rem">
+                <i class="bi bi-arrow-left"></i> Quản lý khóa học
+            </a>
+        </div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-list-check" style="color:var(--lt-gold);margin-right:8px"></i>
+            @p.CourseTitle — Lớp @p.ClassName
+        </h1>
+        <p class="lt-page-subtitle">
+            <i class="bi bi-person-video3"></i> @p.TeacherName
+            @if (p.SubjectName != null) { <span>· <i class="bi bi-book"></i> @p.SubjectName</span> }
+            · @p.TotalPublishedLessons bài học · @stats.TotalActiveStudents/@p.ClassSize học sinh của lớp đang học
+        </p>
+    </div>
+</div>
+
+@* ── Tổng quan lớp ──────────────────────────────────────────────────────── *@
+<div class="lt-card" style="margin-bottom:1rem">
+    <div class="lt-card__body">
+        <div class="row g-3 align-items-center">
+            <div class="col-12 col-md-5">
+                <div style="font-size:.8rem;color:var(--lt-text-muted);margin-bottom:.3rem">
+                    <i class="bi bi-speedometer2"></i> Hoàn thành trung bình của lớp
+                </div>
+                <div style="display:flex;align-items:center;gap:.6rem">
+                    <div class="lt-progress" style="flex:1;height:12px">
+                        <div class="lt-progress__bar @(stats.AvgProgressPercent >= 100 ? "lt-progress__bar--success" : "")"
+                             style="width:@(Inv(stats.AvgProgressPercent))%"></div>
+                    </div>
+                    <strong style="font-size:1.15rem;color:var(--lt-navy)">@stats.AvgProgressPercent.ToString("0.#")%</strong>
+                </div>
+                <div style="font-size:.78rem;color:var(--lt-text-muted);margin-top:.35rem">
+                    @stats.CompletedStudents/@stats.TotalActiveStudents học sinh đã hoàn thành toàn khóa
+                </div>
+            </div>
+            <div class="col-12 col-md-7">
+                <div class="row g-2 text-center">
+                    @foreach (var (label, count, color) in new[] {
+                        ("0–25%",   stats.Bucket0To25,   "#dc2626"),
+                        ("25–50%",  stats.Bucket25To50,  "#d97706"),
+                        ("50–75%",  stats.Bucket50To75,  "#2563eb"),
+                        ("75–100%", stats.Bucket75To100, "#16a34a") })
+                    {
+                        var share = stats.TotalActiveStudents == 0 ? 0 : count * 100 / stats.TotalActiveStudents;
+                        <div class="col-3">
+                            <div style="font-weight:800;font-size:1.05rem;color:@color">@count</div>
+                            <div class="lt-progress" style="height:6px;margin:.2rem 0">
+                                <div style="height:100%;border-radius:99px;background:@color;width:@(share)%"></div>
+                            </div>
+                            <div style="font-size:.72rem;color:var(--lt-text-muted)">@label</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Bài học & bài tập trong khóa ───────────────────────────────────────── *@
+<div class="lt-card" style="margin-bottom:1rem">
+    <div class="lt-card__header">
+        <div class="lt-card__title"><i class="bi bi-journal-text"></i> Bài học &amp; bài tập trong khóa</div>
+    </div>
+    <div class="lt-card__body" style="display:flex;flex-direction:column;gap:.35rem">
+        @if (!p.Lessons.Any())
+        {
+            <div class="lt-empty lt-empty--sm">
+                <div class="lt-empty__icon"><i class="bi bi-journal-x"></i></div>
+                <div class="lt-empty__text">Khóa học chưa có bài học nào được phát hành.</div>
+            </div>
+        }
+        else
+        {
+            string? lastModule = null;
+            foreach (var ls in p.Lessons)
+            {
+                if (ls.ModuleTitle != lastModule)
+                {
+                    lastModule = ls.ModuleTitle;
+                    <div style="font-weight:700;color:var(--lt-navy);margin-top:.5rem">
+                        <i class="bi bi-folder-fill" style="color:var(--lt-gold)"></i> @ls.ModuleTitle
+                    </div>
+                }
+                <div style="display:flex;align-items:center;gap:.7rem;padding:.3rem 0 .3rem 1.4rem">
+                    <span style="flex:0 0 30%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.9rem"
+                          title="@ls.LessonTitle">@ls.LessonTitle</span>
+                    <span class="@LessonTypeBadge(ls.ContentType)" style="flex:0 0 auto">@LessonTypeLabel(ls.ContentType)</span>
+                    <div class="lt-progress" style="flex:1" title="@ls.CompletedCount/@stats.TotalActiveStudents học sinh của lớp đã hoàn thành">
+                        <div class="lt-progress__bar @(ls.CompletionRate >= 100 ? "lt-progress__bar--success" : ls.CompletionRate < 30 ? "lt-progress__bar--danger" : "")"
+                             style="width:@(Inv(ls.CompletionRate))%"></div>
+                    </div>
+                    <span style="flex:0 0 52px;text-align:right;font-size:.82rem;font-weight:700">@ls.CompletionRate.ToString("0.#")%</span>
+                    <span style="flex:0 0 115px;font-size:.75rem;color:var(--lt-text-muted)">
+                        @ls.CompletedCount xong · @ls.InProgressCount đang học
+                    </span>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@* ── Bài tập trên lớp (cùng môn) ────────────────────────────────────────── *@
+<div class="lt-card" style="margin-bottom:1rem">
+    <div class="lt-card__header">
+        <div class="lt-card__title">
+            <i class="bi bi-journal-bookmark-fill"></i> Bài tập trên lớp
+            @if (p.SubjectName != null) { <span style="font-weight:400;color:var(--lt-text-muted)">— môn @p.SubjectName</span> }
+        </div>
+    </div>
+    <div class="lt-card__body" style="overflow-x:auto">
+        @if (!p.Homework.Any())
+        {
+            <div class="lt-empty lt-empty--sm">
+                <div class="lt-empty__icon"><i class="bi bi-journal"></i></div>
+                <div class="lt-empty__text">Lớp này chưa có bài tập nào@(p.SubjectName != null ? $" cho môn {p.SubjectName}" : "").</div>
+            </div>
+        }
+        else
+        {
+            <table class="lt-table" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Bài tập</th>
+                        <th style="width:130px">Loại</th>
+                        <th style="width:110px">Hạn nộp</th>
+                        <th style="min-width:180px">Đã nộp</th>
+                        <th style="width:100px">Đã chấm</th>
+                        <th style="width:110px">Điểm TB</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var h in p.Homework)
+                {
+                    <tr>
+                        <td>
+                            <div style="font-weight:600">@h.Title</div>
+                            <div style="font-size:.75rem;color:var(--lt-text-muted)">
+                                @h.TeacherName
+                                @if (!h.IsPublished) { <span class="lt-badge lt-badge--gray" style="margin-left:.35rem">Chưa giao</span> }
+                            </div>
+                        </td>
+                        <td><span class="lt-badge lt-badge--gray">@HomeworkTypeLabel(h.Type)</span></td>
+                        <td style="font-size:.85rem;color:var(--lt-text-muted)">@(h.DueDate?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:.5rem">
+                                <div class="lt-progress" style="flex:1" title="@h.SubmittedCount/@h.ClassSize học sinh đã nộp">
+                                    <div class="lt-progress__bar @(h.SubmittedPercent >= 100 ? "lt-progress__bar--success" : h.SubmittedPercent < 30 ? "lt-progress__bar--danger" : "")"
+                                         style="width:@(Inv(h.SubmittedPercent))%"></div>
+                                </div>
+                                <span style="font-size:.82rem;font-weight:700;min-width:44px;text-align:right">@h.SubmittedPercent.ToString("0.#")%</span>
+                            </div>
+                            <div style="font-size:.72rem;color:var(--lt-text-muted)">@h.SubmittedCount/@h.ClassSize học sinh</div>
+                        </td>
+                        <td>@h.GradedCount/@h.SubmittedCount</td>
+                        <td>@(h.AvgScore.HasValue ? $"{h.AvgScore.Value:0.##}/{h.MaxScore:0.##}" : "—")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@* ── Tiến độ từng học sinh ──────────────────────────────────────────────── *@
+<div class="lt-card">
+    <div class="lt-card__header">
+        <div class="lt-card__title"><i class="bi bi-people-fill"></i> Tiến độ từng học sinh</div>
+    </div>
+    <div class="lt-card__body" style="overflow-x:auto">
+        @if (!p.Students.Any())
+        {
+            <div class="lt-empty lt-empty--sm">
+                <div class="lt-empty__icon"><i class="bi bi-people"></i></div>
+                <div class="lt-empty__text">Chưa có học sinh nào của lớp được ghi danh vào khóa học này.</div>
+            </div>
+        }
+        else
+        {
+            <table class="lt-table" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Học sinh</th>
+                        <th style="min-width:180px">Tiến độ</th>
+                        <th style="width:100px">Bài xong</th>
+                        <th style="width:110px">Trạng thái</th>
+                        <th style="width:110px">Bắt đầu</th>
+                        <th style="width:120px">Truy cập cuối</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var s in p.Students)
+                {
+                    <tr>
+                        <td style="font-weight:600">@s.FullName</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:.5rem">
+                                <div class="lt-progress" style="flex:1">
+                                    <div class="lt-progress__bar @(s.ProgressPercent >= 100 ? "lt-progress__bar--success" : "")"
+                                         style="width:@(Inv(s.ProgressPercent))%"></div>
+                                </div>
+                                <span style="font-size:.82rem;font-weight:700;min-width:44px;text-align:right">@s.ProgressPercent.ToString("0.#")%</span>
+                            </div>
+                        </td>
+                        <td>@s.CompletedLessons/@p.TotalPublishedLessons</td>
+                        <td><span class="@EnrollBadge(s.Status)">@EnrollLabel(s.Status)</span></td>
+                        <td style="font-size:.85rem;color:var(--lt-text-muted)">@(s.StartedAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td style="font-size:.85rem;color:var(--lt-text-muted)">@(s.LastAccessedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "—")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

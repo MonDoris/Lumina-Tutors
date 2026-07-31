@@ -1,0 +1,164 @@
+@using LuminaTutors.Web.Controllers
+@model IReadOnlyList<LuminaTutors.Application.DTOs.Finance.InvoiceDto>
+@{
+    ViewData["Title"] = "Học phí";
+    var children     = ViewBag.Children as List<ParentController.ChildItem> ?? new List<ParentController.ChildItem>();
+    var vnPayEnabled = ViewBag.VnPayEnabled as bool? ?? false;
+    var invoices     = Model ?? new List<LuminaTutors.Application.DTOs.Finance.InvoiceDto>();
+
+    decimal Paid(LuminaTutors.Application.DTOs.Finance.InvoiceDto i) =>
+        i.Payments.Where(p => p.PaymentStatus == "Success").Sum(p => p.AmountPaid);
+    decimal Remaining(LuminaTutors.Application.DTOs.Finance.InvoiceDto i) => i.FinalAmount - Paid(i);
+
+    var unpaid   = invoices.Where(i => i.Status != "Paid" && i.Status != "Cancelled").ToList();
+    var totalDue = unpaid.Sum(Remaining);
+
+    (string cls, string label) StatusBadge(string s, bool overdue) => s switch
+    {
+        "Paid"      => ("badge-paid", "Đã thanh toán"),
+        "Partial"   => ("badge-partial", "Đã đóng một phần"),
+        "Cancelled" => ("badge-cancel", "Đã hủy"),
+        _ when overdue => ("badge-overdue", "Quá hạn"),
+        _           => ("badge-pending", "Chưa thanh toán")
+    };
+}
+
+@section Styles {<style>
+.tf-body{background:#e8edf5;min-height:calc(100vh - 56px);padding:28px 32px}
+.tf-title{font-size:1.35rem;font-weight:700;color:#0f172a}
+.tf-sub{font-size:.8rem;color:#6b7280;margin-top:2px}
+.tf-summary{display:flex;gap:14px;flex-wrap:wrap;margin:20px 0 24px}
+.tf-stat{background:#fff;border-radius:16px;padding:18px 22px;box-shadow:0 2px 12px rgba(0,0,0,.06);flex:1;min-width:200px}
+.tf-stat-lbl{font-size:.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.tf-stat-val{font-size:1.5rem;font-weight:800;color:#0f172a;margin-top:4px}
+.tf-alert{padding:12px 16px;border-radius:12px;margin-bottom:18px;font-size:.86rem;display:flex;align-items:center;gap:8px}
+.tf-alert-ok{background:#d1fae5;color:#065f46}
+.tf-alert-err{background:#fee2e2;color:#991b1b}
+.tf-card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden;margin-bottom:20px}
+.tf-card-header{padding:16px 20px;border-bottom:1px solid #f0f4f8;font-size:.95rem;font-weight:700;color:#0f172a}
+.tf-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.tf-table th{padding:11px 16px;text-align:left;font-size:.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #f0f4f8;background:#fafbfc}
+.tf-table td{padding:13px 16px;border-bottom:1px solid #f7f8fa;color:#374151;vertical-align:middle}
+.tf-table tr:last-child td{border-bottom:none}
+.tf-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+.badge-paid{background:#d1fae5;color:#065f46}
+.badge-partial{background:#dbeafe;color:#1e40af}
+.badge-pending{background:#fef3c7;color:#92400e}
+.badge-overdue{background:#fee2e2;color:#991b1b}
+.badge-cancel{background:#e5e7eb;color:#6b7280}
+.tf-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.btn-pay{background:linear-gradient(135deg,#1a73e8,#4285f4);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:.8rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn-pay:hover{opacity:.92;color:#fff}
+.btn-cash{background:#fff;border:1px solid #d1d5db;color:#374151;border-radius:10px;padding:8px 14px;font-size:.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-cash:hover{background:#f9fafb}
+.empty-state{text-align:center;padding:48px 20px;color:#9ca3af}
+.empty-icon{font-size:2.5rem;margin-bottom:12px;display:block}
+.tf-note{font-size:.75rem;color:#9ca3af;margin-top:2px}
+</style>}
+
+<div class="tf-body">
+    <div class="tf-title"><i class="bi bi-cash-coin" style="color:#1a73e8;margin-right:6px"></i>Học phí của con</div>
+    <div class="tf-sub">Xem và thanh toán học phí — trực tuyến (VNPay) hoặc đăng ký nộp tiền mặt tại trường</div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="tf-alert tf-alert-ok" style="margin-top:18px"><i class="bi bi-check-circle-fill"></i> @TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="tf-alert tf-alert-err" style="margin-top:18px"><i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]</div>
+    }
+
+    <div class="tf-summary">
+        <div class="tf-stat">
+            <div class="tf-stat-lbl">Cần thanh toán</div>
+            <div class="tf-stat-val" style="color:@(totalDue > 0 ? "#dc2626" : "#059669")">@totalDue.ToString("N0")đ</div>
+        </div>
+        <div class="tf-stat">
+            <div class="tf-stat-lbl">Hóa đơn chưa trả</div>
+            <div class="tf-stat-val">@unpaid.Count</div>
+        </div>
+        <div class="tf-stat">
+            <div class="tf-stat-lbl">Số con</div>
+            <div class="tf-stat-val">@children.Count</div>
+        </div>
+    </div>
+
+    <div class="tf-card">
+        <div class="tf-card-header"><i class="bi bi-receipt"></i> Danh sách hóa đơn</div>
+        @if (!invoices.Any())
+        {
+            <div class="empty-state">
+                <span class="empty-icon"><i class="bi bi-inbox"></i></span>
+                Chưa có hóa đơn học phí nào.
+            </div>
+        }
+        else
+        {
+            <div style="overflow-x:auto">
+                <table class="tf-table">
+                    <thead>
+                        <tr>
+                            <th>Mã HĐ</th>
+                            <th>Học sinh</th>
+                            <th>Loại phí</th>
+                            <th>Kỳ thu</th>
+                            <th class="num">Số tiền</th>
+                            <th class="num">Còn lại</th>
+                            <th>Hạn</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var i in invoices)
+                    {
+                        var remaining = Remaining(i);
+                        var (badgeCls, badgeLabel) = StatusBadge(i.Status, i.IsOverdue);
+                        var payable = i.Status != "Paid" && i.Status != "Cancelled" && remaining > 0;
+                        <tr>
+                            <td style="font-family:monospace;font-size:.78rem;color:#6b7280">@i.InvoiceCode</td>
+                            <td style="font-weight:600;color:#0f172a">@i.StudentName</td>
+                            <td>@i.FeeType</td>
+                            <td>@i.BillingPeriod</td>
+                            <td class="num">@i.FinalAmount.ToString("N0")đ</td>
+                            <td class="num" style="font-weight:700;color:@(remaining > 0 ? "#dc2626" : "#059669")">@remaining.ToString("N0")đ</td>
+                            <td style="font-size:.8rem;color:#6b7280">@i.DueDate.ToString("dd/MM/yyyy")</td>
+                            <td><span class="badge @badgeCls">@badgeLabel</span></td>
+                            <td>
+                                @if (payable)
+                                {
+                                    <div class="tf-actions">
+                                        @if (vnPayEnabled)
+                                        {
+                                            <a href="/Payment/Create/@i.InvoiceId" class="btn-pay">
+                                                <i class="bi bi-credit-card-2-front"></i> Thanh toán VNPay
+                                            </a>
+                                        }
+                                        <form asp-controller="Parent" asp-action="RequestCashPayment" method="post" style="display:inline"
+                                              onsubmit="return confirm('Bạn sẽ đến văn phòng nhà trường để đóng @remaining.ToString("N0")đ tiền mặt? Nhân viên sẽ xác nhận khi thu.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="invoiceId" value="@i.InvoiceId" />
+                                            <button type="submit" class="btn-cash"><i class="bi bi-cash"></i> Nộp tiền mặt</button>
+                                        </form>
+                                    </div>
+                                }
+                                else if (i.Status == "Paid")
+                                {
+                                    <span style="color:#059669;font-size:.8rem"><i class="bi bi-check-circle-fill"></i> Đã xong</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="tf-note">
+        <i class="bi bi-info-circle"></i> Thanh toán VNPay được xác nhận tự động. Với tiền mặt, vui lòng đến văn phòng nhà trường —
+        nhân viên sẽ thu và xác nhận vào hệ thống.
+    </div>
+</div>

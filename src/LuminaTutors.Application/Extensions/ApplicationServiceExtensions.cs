@@ -44,6 +44,8 @@ public static class ApplicationServiceExtensions
         services.AddScoped<ISubscriptionService,     SubscriptionService>();
         services.AddScoped<IQuotaService,            QuotaService>();
         services.AddScoped<ISupportChatService,      SupportChatService>();
+        services.AddScoped<ICourseService,           CourseService>();
+        services.AddScoped<IBillingEmailService,     BillingEmailService>();
 
         return services;
     }

@@ -2,10 +2,12 @@ using System.Security.Claims;
 using LuminaTutors.Application.DTOs.Attendance;
 using LuminaTutors.Application.DTOs.Communication;
 using LuminaTutors.Application.Interfaces.Services;
+using LuminaTutors.Domain.Enums;
 using LuminaTutors.Domain.Interfaces.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LuminaTutors.Web.Controllers;
 
@@ -17,6 +19,8 @@ public sealed class ParentController : Controller
     private readonly IAttendanceService   _attendanceService;
     private readonly IClassService        _classService;
     private readonly IMessageService      _messageService;
+    private readonly IFinanceService      _financeService;
+    private readonly INotificationService _notificationService;
     private readonly IUnitOfWork          _uow;
     private readonly ILogger<ParentController> _logger;
 
@@ -26,6 +30,8 @@ public sealed class ParentController : Controller
         IAttendanceService   attendanceService,
         IClassService        classService,
         IMessageService      messageService,
+        IFinanceService      financeService,
+        INotificationService notificationService,
         IUnitOfWork          uow,
         ILogger<ParentController> logger)
     {
@@ -34,6 +40,8 @@ public sealed class ParentController : Controller
         _attendanceService   = attendanceService;
         _classService        = classService;
         _messageService      = messageService;
+        _financeService      = financeService;
+        _notificationService = notificationService;
         _uow                 = uow;
         _logger              = logger;
     }
@@ -217,6 +225,83 @@ public sealed class ParentController : Controller
             result.IsSuccess ? "Đã gửi đơn xin nghỉ thành công." : result.Error;
 
         return RedirectToAction(nameof(LeaveRequests));
+    }
+
+    // ─── GET /Parent/Tuition ──────────────────────────────────────────────────
+    // Hóa đơn học phí của các con: thanh toán online (VNPay) hoặc báo nộp tiền mặt.
+
+    public async Task<IActionResult> Tuition()
+    {
+        var children   = await GetChildrenAsync();
+        var studentIds = children.Select(c => c.Id).ToList();
+
+        var result = await _financeService.GetInvoicesForStudentsAsync(GetCurrentSchoolId(), studentIds);
+
+        ViewBag.Children     = children;
+        ViewBag.VnPayEnabled = HttpContext.RequestServices
+            .GetService<IConfiguration>()?.GetValue("VnPay:Enabled", false) ?? false;
+
+        return View(result.IsSuccess
+            ? result.Data
+            : new List<LuminaTutors.Application.DTOs.Finance.InvoiceDto>());
+    }
+
+    // ─── POST /Parent/RequestCashPayment ──────────────────────────────────────
+    // Phụ huynh KHÔNG tự xác nhận tiền mặt — chỉ báo nhà trường để nhân viên thu & xác nhận.
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RequestCashPayment(int invoiceId)
+    {
+        var schoolId   = GetCurrentSchoolId();
+        var childIds   = (await GetChildrenAsync()).Select(c => c.Id).ToHashSet();
+
+        var invoice = await _uow.TuitionInvoices.FindOneAsync(
+            i => i.Id == invoiceId && i.SchoolId == schoolId,
+            include: q => q.Include(i => i.Student).Include(i => i.Payments));
+
+        // Chỉ cho phép với hóa đơn của con mình.
+        if (invoice is null || !childIds.Contains(invoice.StudentId))
+        {
+            TempData["Error"] = "Không tìm thấy hóa đơn hợp lệ.";
+            return RedirectToAction(nameof(Tuition));
+        }
+        if (invoice.Status == InvoiceStatus.Paid)
+        {
+            TempData["Error"] = "Hóa đơn đã được thanh toán.";
+            return RedirectToAction(nameof(Tuition));
+        }
+
+        // Gửi thông báo tới Kế toán + Nhà trường của trường để thu tiền mặt & xác nhận.
+        var staffIds = (await _uow.Users.FindAsync(
+                u => u.SchoolId == schoolId && u.IsActive
+                     && (u.Role.RoleCode == "ACCOUNTANT" || u.Role.RoleCode == "ADMIN"),
+                include: q => q.Include(u => u.Role)))
+            .Select(u => u.Id).ToList();
+
+        var parentName = User.FindFirstValue(ClaimTypes.Name) ?? "Phụ huynh";
+        var remaining  = invoice.FinalAmount - invoice.Payments
+            .Where(p => p.PaymentStatus == PaymentStatus.Success).Sum(p => p.AmountPaid);
+
+        if (staffIds.Count > 0)
+        {
+            await _notificationService.SendAsync(schoolId, GetCurrentUserId(), new SendNotificationRequest(
+                Title: $"Phụ huynh xin nộp tiền mặt — HĐ {invoice.InvoiceCode}",
+                Body: $"{parentName} muốn nộp tiền mặt {remaining:N0}đ cho học phí của {invoice.Student.FullName} " +
+                      $"(hóa đơn {invoice.InvoiceCode}). Vui lòng thu tiền và xác nhận trong mục Hóa đơn học phí.",
+                NotificationType: NotificationType.Tuition,
+                Channel: NotificationChannel.InApp,
+                TargetAudience: NotificationAudience.Specific,
+                TargetUserIds: staffIds));
+        }
+
+        _logger.LogInformation("Parent {ParentId} requested cash payment for invoice {InvoiceId}",
+            GetCurrentUserId(), invoiceId);
+
+        TempData["Success"] = staffIds.Count > 0
+            ? "Đã gửi yêu cầu nộp tiền mặt. Vui lòng đến văn phòng nhà trường để đóng — nhân viên sẽ xác nhận."
+            : "Vui lòng đến văn phòng nhà trường để đóng tiền mặt.";
+        return RedirectToAction(nameof(Tuition));
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────

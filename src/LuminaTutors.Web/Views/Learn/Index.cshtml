@@ -1,0 +1,75 @@
+@using LuminaTutors.Application.DTOs.Course
+@using LuminaTutors.Domain.Enums
+@{
+    ViewData["Title"] = "Khóa học của tôi";
+    var courses = ViewBag.Courses as IReadOnlyList<MyCourseDto> ?? new List<MyCourseDto>();
+}
+
+<div class="lt-page-header">
+    <div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-mortarboard-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            Khóa học của tôi
+        </h1>
+        <p class="lt-page-subtitle">Học theo lộ trình — tiến độ được lưu tự động</p>
+    </div>
+</div>
+
+@if (!courses.Any())
+{
+    <div class="lt-card">
+        <div class="lt-card__body">
+            <div class="lt-empty">
+                <div class="lt-empty__icon"><i class="bi bi-mortarboard"></i></div>
+                <div class="lt-empty__title">Chưa có khóa học nào</div>
+                <div class="lt-empty__text">Khi giáo viên gán khóa học cho lớp của bạn, khóa học sẽ xuất hiện ở đây.</div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var c in courses)
+        {
+            var pct = c.ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            <div class="col-12 col-md-6 col-xl-4">
+                <a href="@Url.Action("Course", new { id = c.CourseId })" style="text-decoration:none;color:inherit">
+                    <div class="lt-card lt-card--hover" style="height:100%">
+                        @if (!string.IsNullOrEmpty(c.ThumbnailUrl))
+                        {
+                            <div style="height:130px;background:url('@c.ThumbnailUrl') center/cover;border-radius:12px 12px 0 0"></div>
+                        }
+                        else
+                        {
+                            <div style="height:130px;display:flex;align-items:center;justify-content:center;
+                                        background:linear-gradient(135deg,var(--lt-navy,#1e293b),#334155);border-radius:12px 12px 0 0">
+                                <i class="bi bi-mortarboard" style="font-size:2.4rem;color:var(--lt-gold,#eab308)"></i>
+                            </div>
+                        }
+                        <div class="lt-card__body" style="display:flex;flex-direction:column;gap:.5rem">
+                            <div style="display:flex;justify-content:space-between;gap:.5rem;align-items:flex-start">
+                                <strong style="color:var(--lt-navy);font-size:1rem">@c.Title</strong>
+                                @if (c.Status == CourseEnrollmentStatus.Completed)
+                                { <span class="lt-badge lt-badge--success"><i class="bi bi-check-lg"></i> Xong</span> }
+                            </div>
+                            @if (c.SubjectName != null)
+                            { <div style="font-size:.83rem;color:var(--lt-text-muted)"><i class="bi bi-book"></i> @c.SubjectName</div> }
+                            <div style="display:flex;align-items:center;gap:.5rem;margin-top:auto">
+                                <div class="lt-progress" style="flex:1">
+                                    <div class="lt-progress__bar @(c.ProgressPercent >= 100 ? "lt-progress__bar--success" : "")" style="width:@(pct)%"></div>
+                                </div>
+                                <span style="font-size:.8rem;font-weight:700">@c.ProgressPercent.ToString("0.#")%</span>
+                            </div>
+                            <div style="font-size:.8rem;color:var(--lt-text-muted)">
+                                @c.CompletedLessons/@c.TotalLessons bài học
+                                @if (c.LastLessonId.HasValue && c.Status != CourseEnrollmentStatus.Completed)
+                                { <span style="color:var(--lt-gold);font-weight:600;margin-left:.4rem"><i class="bi bi-play-fill"></i> Học tiếp</span> }
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}

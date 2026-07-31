@@ -126,7 +126,7 @@ public sealed class PaymentController : Controller
     // ── GET /Payment/Return — người dùng quay về từ VNPay ─────────────────────
     [AllowAnonymous]
     [HttpGet]
-    public IActionResult Return()
+    public async Task<IActionResult> Return()
     {
         var hashSecret = _config["VnPay:HashSecret"] ?? "";
         var vnp = new VnPayLibrary();
@@ -141,14 +141,35 @@ public sealed class PaymentController : Controller
               && vnp.GetResponseData("vnp_TransactionStatus") == "00";
         var amount = long.TryParse(vnp.GetResponseData("vnp_Amount"), out var a) ? (a / 100m) : 0m;
 
-        return ResultPage(ok, ok
-            ? $"Thanh toán thành công {amount:N0}đ. Cảm ơn bạn! Hệ thống sẽ cập nhật hóa đơn trong giây lát."
-            : "Thanh toán không thành công hoặc đã bị hủy.");
+        if (!ok)
+            return ResultPage(false, "Thanh toán không thành công hoặc đã bị hủy.");
+
+        // Xác nhận & cập nhật hóa đơn NGAY khi người dùng quay về, không chờ IPN
+        // (quan trọng khi chạy localhost/chưa khai báo IPN URL công khai).
+        // ConfirmVnPayPaymentAsync idempotent: nếu IPN đã xác nhận trước đó → AlreadyConfirmed.
+        var txnRef = vnp.GetResponseData("vnp_TxnRef") ?? "";
+        if (int.TryParse(txnRef.Split('_')[0], out var invoiceId))
+        {
+            var confirm = await _finance.ConfirmVnPayPaymentAsync(
+                invoiceId, amount, vnp.GetResponseData("vnp_TransactionNo"), Request.QueryString.Value);
+
+            if (confirm is VnPayConfirmResult.Ok or VnPayConfirmResult.AlreadyConfirmed)
+                return ResultPage(true, $"Thanh toán thành công {amount:N0}đ. Hóa đơn đã được cập nhật. Cảm ơn bạn!");
+            if (confirm == VnPayConfirmResult.InvalidAmount)
+                return ResultPage(false, "Thanh toán thành công nhưng số tiền không khớp hóa đơn. Vui lòng liên hệ nhà trường.");
+        }
+
+        return ResultPage(true, $"Thanh toán thành công {amount:N0}đ. Cảm ơn bạn! Hệ thống sẽ cập nhật hóa đơn trong giây lát.");
     }
 
     // ── Trang kết quả đơn giản (đứng riêng, không cần layout/đăng nhập) ───────
     private ContentResult ResultPage(bool ok, string message)
     {
+        // Phụ huynh không có quyền vào /Finance — cho họ quay về trang học phí của mình.
+        var (backUrl, backLabel) = User.IsInRole("PARENT")
+            ? ("/Parent/Tuition", "Về học phí của tôi")
+            : ("/Finance/Invoices", "Về danh sách hóa đơn");
+
         var color = ok ? "#34a853" : "#ea4335";
         var icon  = ok ? "✅" : "⚠️";
         var html =
@@ -162,8 +183,8 @@ public sealed class PaymentController : Controller
             $"<div style='font-size:3rem'>{icon}</div>" +
             $"<h2 style='color:{color};margin:12px 0 8px;font-size:1.2rem'>{(ok ? "Thành công" : "Thông báo")}</h2>" +
             $"<p style='color:#475569;line-height:1.6;font-size:.95rem'>{message}</p>" +
-            "<a href='/Finance/Invoices' style='display:inline-block;margin-top:18px;background:#1a73e8;" +
-            "color:#fff;text-decoration:none;padding:11px 22px;border-radius:10px;font-weight:600'>Về danh sách hóa đơn</a>" +
+            $"<a href='{backUrl}' style='display:inline-block;margin-top:18px;background:#1a73e8;" +
+            $"color:#fff;text-decoration:none;padding:11px 22px;border-radius:10px;font-weight:600'>{backLabel}</a>" +
             "</div></body></html>";
         return Content(html, "text/html");
     }

@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumina Tutors — Quản trị nhà trường trên nền đạo học</title>
+<meta name="description" content="Nền tảng quản lý trường học toàn diện cho ban giám hiệu Việt: điểm danh, học phí, sổ điểm TT22, nhân sự — hợp nhất, bảo mật đa trường.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --son:#8A2724;--son-2:#6E1D28;--son-deep:#48120F;--son-ink:#320B09;
+  --gold:#C29A45;--gold-lt:#E4CE93;--gold-deep:#9A7A2E;--gold-glow:rgba(194,154,69,.45);
+  --cham:#20304C;--cham-deep:#16233A;
+  --giay:#F5EDDF;--giay-2:#FBF7EE;--giay-3:#EDE1CC;
+  --muc:#2B211C;--muc-soft:#6E5F55;--muc-faint:#9A8C7E;
+  --luc:#3E7A55;
+  --fd:'Playfair Display',Georgia,serif;
+  --fb:'Be Vietnam Pro',system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --shadow-card:0 18px 44px rgba(43,33,28,.10);
+  --shadow-lift:0 28px 60px rgba(43,33,28,.18);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:88px}
+body{font-family:var(--fb);color:var(--muc);background:var(--giay);line-height:1.65;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img,svg{display:block}a{text-decoration:none;color:inherit}
+.wrap{max-width:1200px;margin:0 auto;padding:0 26px}
+.eyebrow{display:inline-flex;align-items:center;gap:11px;font-size:12.5px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--gold-deep)}
+.eyebrow::before{content:"";width:30px;height:1.5px;background:var(--gold);display:inline-block}
+.eyebrow.light{color:var(--gold-lt)}.eyebrow.light::before{background:var(--gold-lt)}
+
+/* ---------- BUTTONS ---------- */
+.btn{position:relative;display:inline-flex;align-items:center;gap:9px;font-family:var(--fb);font-weight:600;font-size:15px;letter-spacing:.3px;padding:14px 26px;border:0;border-radius:11px;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s;overflow:hidden}
+.btn svg{width:18px;height:18px}
+.btn-gold{background:linear-gradient(180deg,var(--gold-lt),var(--gold));color:var(--son-ink);box-shadow:0 10px 26px var(--gold-glow)}
+.btn-gold:hover{transform:translateY(-3px);box-shadow:0 16px 34px var(--gold-glow)}
+.btn-gold::after{content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.65),transparent);transform:skewX(-18deg);transition:left .7s var(--ease)}
+.btn-gold:hover::after{left:130%}
+.btn-son{background:var(--son);color:#F6E9D8;box-shadow:0 10px 26px rgba(74,20,15,.3)}
+.btn-son:hover{transform:translateY(-3px);background:var(--son-2);box-shadow:0 16px 34px rgba(74,20,15,.4)}
+.btn-ghost{background:transparent;color:var(--son);border:1.6px solid rgba(138,39,36,.4)}
+.btn-ghost:hover{background:var(--son);color:#F6E9D8;border-color:var(--son)}
+.btn-ghost-light{background:transparent;color:var(--giay);border:1.6px solid rgba(228,201,147,.5)}
+.btn-ghost-light:hover{background:rgba(228,201,147,.14);border-color:var(--gold-lt)}
+
+/* ---------- HEADER ---------- */
+.hdr{position:fixed;top:0;left:0;right:0;z-index:60;transition:background .4s var(--ease),box-shadow .4s,padding .3s}
+.hdr-in{display:flex;align-items:center;gap:30px;height:76px}
+.brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.seal{width:44px;height:44px;flex-shrink:0}
+.brand b{color:#F3E6CE;font-family:var(--fd);font-weight:700;font-size:20px;letter-spacing:.4px;line-height:1}
+.brand small{display:block;font-family:var(--fb);font-weight:400;font-size:10px;color:var(--gold-lt);letter-spacing:2.5px;text-transform:uppercase;margin-top:3px}
+.hdr.scrolled{background:linear-gradient(90deg,var(--son-ink),var(--son-deep));box-shadow:0 8px 30px rgba(50,11,9,.4)}
+.hdr.scrolled .hdr-in{height:66px}
+.nav{display:flex;gap:4px;margin-left:auto}
+.nav a{position:relative;color:#EAD9C0;font-size:14.5px;font-weight:500;padding:9px 15px;border-radius:8px;transition:color .2s}
+.nav a::after{content:"";position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .3s var(--ease)}
+.nav a:hover{color:#fff}.nav a:hover::after{transform:scaleX(1)}
+.hdr-cta{display:flex;gap:10px;flex-shrink:0}
+.hdr-cta .btn{padding:10px 18px;font-size:13.5px}
+.nav-toggle{display:none;background:none;border:0;color:#F3E6CE;cursor:pointer;margin-left:auto}
+
+/* ---------- INTRO OVERLAY ---------- */
+.intro{position:fixed;inset:0;z-index:200;background:var(--son-ink);display:flex;align-items:center;justify-content:center;transition:opacity .8s var(--ease),visibility .8s;animation:introAuto .7s ease 2.6s forwards}
+.intro.done{opacity:0;visibility:hidden}
+.intro-seal{width:120px;height:120px;opacity:0;transform:scale(.7);animation:sealIn 1.1s var(--ease) forwards}
+.intro-curtain{position:absolute;left:0;right:0;height:50%;background:linear-gradient(180deg,var(--son-deep),var(--son-ink));transition:transform 1s var(--ease)}
+.intro-curtain.top{top:0}.intro-curtain.bot{bottom:0}
+.intro.lift .intro-curtain.top{transform:translateY(-100%)}
+.intro.lift .intro-curtain.bot{transform:translateY(100%)}
+@keyframes sealIn{to{opacity:1;transform:scale(1)}}
+@keyframes introAuto{to{opacity:0;visibility:hidden;pointer-events:none}}
+
+/* ---------- HERO ---------- */
+.hero{position:relative;background:radial-gradient(1100px 620px at 74% 34%,var(--son-2),var(--son-deep) 58%,var(--son-ink));color:#F6E9D8;overflow:hidden;isolation:isolate}
+.hero-tex{position:absolute;inset:0;z-index:-2;opacity:.10;background-image:radial-gradient(circle at 74% 40%, #E4CE93 0, transparent 42%)}
+.hero-embers{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:30px;align-items:center;padding:150px 0 96px;min-height:100vh}
+.hero-eyebrow{margin-bottom:22px;opacity:0;transform:translateY(14px);animation:fadeUp .8s .2s var(--ease) forwards}
+.hero-title{font-family:var(--fd);font-weight:700;font-size:clamp(40px,5.4vw,74px);line-height:1.06;letter-spacing:.2px;margin-bottom:24px}
+.tl{display:block;overflow:hidden;padding-bottom:.06em}
+.tw{display:inline-block;transform:translateY(115%);transition:transform .9s var(--ease)}
+.tw.gold{color:var(--gold-lt);position:relative}
+.ready .tw{transform:translateY(0)}
+.hero-sub{font-size:18px;color:#E7D2B8;max-width:500px;margin-bottom:34px;opacity:0;transform:translateY(14px);animation:fadeUp .8s 1s var(--ease) forwards}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:30px;opacity:0;transform:translateY(14px);animation:fadeUp .8s 1.15s var(--ease) forwards}
+.hero-trust{display:flex;gap:22px;flex-wrap:wrap;opacity:0;animation:fadeUp .8s 1.3s var(--ease) forwards}
+.hero-trust span{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:#D9C3A6}
+.hero-trust svg{width:16px;height:16px;color:var(--gold-lt)}
+@keyframes fadeUp{to{opacity:1;transform:none}}
+
+/* hero art */
+.hero-art{position:relative;height:560px}
+.halo{position:absolute;top:48%;left:50%;width:560px;height:560px;transform:translate(-50%,-50%);background:radial-gradient(circle,var(--gold-glow) 0,rgba(194,154,69,.06) 46%,transparent 68%);border-radius:50%;animation:breathe 7s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.9}50%{transform:translate(-50%,-50%) scale(1.08);opacity:1}}
+.orbit{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);width:520px;height:520px}
+.orbit ellipse{animation:dash 14s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-900}}
+.drum{position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);width:min(400px,74%);will-change:transform}
+.drum .rings{animation:spin 60s linear infinite;transform-origin:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+.drum .sheen{mix-blend-mode:screen;animation:sheenSweep 6s ease-in-out infinite}
+@keyframes sheenSweep{0%,100%{opacity:0;transform:translateX(-40px)}50%{opacity:.7;transform:translateX(40px)}}
+.pcard{position:absolute;bottom:8%;left:-6%;width:250px;background:var(--giay-2);border-radius:16px;box-shadow:var(--shadow-lift);padding:14px;transform:translateY(0);animation:floaty 6s ease-in-out infinite;will-change:transform}
+.pcard.two{top:6%;right:-4%;left:auto;width:210px;animation-delay:1.4s}
+.pcard-h{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.pcard-dot{width:9px;height:9px;border-radius:50%}
+.pcard-t{font-size:12px;font-weight:600;color:var(--muc);margin-left:2px}
+.pcard-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid var(--giay-3);font-size:11.5px;color:var(--muc-soft)}
+.pcard-badge{font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:20px}
+.chip{position:absolute;background:var(--giay-2);border-radius:14px;padding:11px;box-shadow:var(--shadow-card);animation:floaty 5.5s ease-in-out infinite;will-change:transform}
+.chip svg{width:42px;height:42px}
+.chip.a{top:2%;left:40%;animation-delay:.3s}
+.chip.b{top:30%;right:-2%;animation-delay:1.1s}
+.chip.c{bottom:2%;right:30%;animation-delay:2s}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-13px)}}
+
+/* ---------- STATS ---------- */
+.stats{position:relative;background:linear-gradient(90deg,var(--son-ink),var(--son-deep));color:#F6E9D8;overflow:hidden}
+.stats::before,.stats::after{content:"";position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.5}
+.stats::before{top:0}.stats::after{bottom:0}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:52px 0;text-align:center}
+.stat b{display:block;font-family:var(--fd);font-weight:700;font-size:clamp(34px,3.6vw,50px);color:var(--gold-lt);line-height:1}
+.stat span{display:block;font-size:13.5px;color:#CBB393;margin-top:9px}
+
+/* ---------- SECTIONS ---------- */
+.sec{padding:100px 0;position:relative}
+.sec-head{text-align:center;max-width:660px;margin:0 auto 60px}
+.lotus{width:56px;margin:0 auto 16px}
+.lotus path{stroke:var(--gold);stroke-width:1.4;fill:none}
+.sec-head h2{font-family:var(--fd);font-weight:700;font-size:clamp(29px,3.4vw,44px);color:var(--son-deep);line-height:1.16;margin-bottom:14px}
+.sec-head p{font-size:16.5px;color:var(--muc-soft)}
+.sec.tint{background:linear-gradient(180deg,var(--giay-2),var(--giay))}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(30px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:calc(var(--d,0)*90ms)}
+.rv.in{opacity:1;transform:none}
+
+/* problem/solution */
+.ps{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:960px;margin:0 auto}
+.ps-card{background:var(--giay-2);border:1px solid var(--giay-3);border-radius:18px;padding:30px 28px}
+.ps-card.bad{background:#F3E7DA}
+.ps-tag{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:18px}
+.ps-card.bad .ps-tag{color:var(--son)}.ps-card.good .ps-tag{color:var(--luc)}
+.ps li{display:flex;gap:12px;align-items:flex-start;padding:9px 0;font-size:15px;color:var(--muc-soft);list-style:none}
+.ps li svg{width:18px;height:18px;flex-shrink:0;margin-top:3px}
+.ps-card.bad li{text-decoration:line-through;opacity:.75}
+
+/* features */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.feat{position:relative;background:var(--giay-2);border:1px solid var(--giay-3);border-radius:18px;padding:30px 26px;transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .35s;overflow:hidden}
+.feat::before{content:"";position:absolute;inset:0;border-radius:18px;padding:1px;background:linear-gradient(140deg,var(--gold),transparent 40%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity .35s}
+.feat:hover{transform:translateY(-8px);box-shadow:var(--shadow-lift)}
+.feat:hover::before{opacity:1}
+.feat-ic{width:56px;height:56px;border-radius:14px;background:radial-gradient(circle at 32% 28%,var(--gold-lt),var(--gold));display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 8px 20px var(--gold-glow)}
+.feat-ic svg{width:28px;height:28px;color:var(--son-ink)}
+.feat h3{font-family:var(--fd);font-weight:600;font-size:20px;color:var(--son-deep);margin-bottom:9px}
+.feat p{font-size:14.5px;color:var(--muc-soft)}
+.feat .more{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:13.5px;font-weight:600;color:var(--son)}
+.feat .more svg{width:15px;height:15px;transition:transform .3s}
+.feat:hover .more svg{transform:translateX(4px)}
+
+/* roles */
+.roles{max-width:1020px;margin:0 auto}
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:34px}
+.tab{font-family:var(--fb);font-size:14.5px;font-weight:500;padding:11px 20px;border-radius:11px;border:1px solid var(--giay-3);background:var(--giay-2);color:var(--muc-soft);cursor:pointer;transition:all .3s var(--ease)}
+.tab.on{background:var(--son);color:#F6E9D8;border-color:var(--son);box-shadow:0 10px 24px rgba(74,20,15,.24)}
+.role-panel{display:none;grid-template-columns:1fr 1fr;gap:36px;align-items:center;animation:panelIn .5s var(--ease)}
+.role-panel.on{display:grid}
+@keyframes panelIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.role-panel h3{font-family:var(--fd);font-weight:700;font-size:27px;color:var(--son-deep);margin-bottom:8px}
+.role-role{font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-deep);margin-bottom:16px}
+.role-panel p{font-size:15.5px;color:var(--muc-soft);margin-bottom:18px}
+.role-list li{display:flex;gap:11px;align-items:flex-start;padding:7px 0;font-size:15px;list-style:none}
+.role-list svg{width:19px;height:19px;flex-shrink:0;margin-top:3px;color:var(--luc)}
+.role-shot{background:var(--giay-2);border:1px solid var(--giay-3);border-radius:18px;box-shadow:var(--shadow-card);overflow:hidden}
+.shot-bar{display:flex;align-items:center;gap:6px;padding:12px 16px;background:var(--son-deep)}
+.shot-bar i{width:9px;height:9px;border-radius:50%;background:rgba(246,233,216,.4)}
+.shot-bar b{margin-left:8px;font-size:12px;font-weight:500;color:var(--gold-lt)}
+.shot-body{padding:20px}
+.shot-line{height:12px;border-radius:6px;background:var(--giay-3);margin-bottom:11px}
+.shot-block{height:70px;border-radius:10px;background:linear-gradient(120deg,var(--giay-3),#E3D6C0);margin-bottom:12px}
+.shot-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.shot-mini div{height:46px;border-radius:9px;background:var(--giay-3)}
+
+/* how */
+.how{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;counter-reset:step}
+.step{position:relative;text-align:center;padding:0 6px}
+.step-num{width:60px;height:60px;margin:0 auto 18px;border-radius:50%;border:1.6px solid var(--gold);color:var(--gold-deep);font-family:var(--fd);font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--giay-2);position:relative;z-index:2}
+.how .step:not(:last-child)::after{content:"";position:absolute;top:30px;left:60%;width:80%;height:1.5px;background:repeating-linear-gradient(90deg,var(--gold) 0 6px,transparent 6px 12px);z-index:1}
+.step h3{font-family:var(--fd);font-weight:600;font-size:19px;color:var(--son-deep);margin-bottom:8px}
+.step p{font-size:14px;color:var(--muc-soft)}
+
+/* security */
+.sec-dark{background:linear-gradient(140deg,var(--cham),var(--cham-deep));color:#E7ECF3;position:relative;overflow:hidden}
+.sec-dark .sheen-sweep{position:absolute;top:0;bottom:0;width:44%;background:linear-gradient(100deg,transparent,rgba(228,201,147,.08),transparent);animation:lacquer 8s ease-in-out infinite;pointer-events:none}
+@keyframes lacquer{0%{left:-50%}100%{left:120%}}
+.secu{display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:center;position:relative;z-index:2}
+.secu .sec-head{text-align:left;margin:0 0 26px}
+.secu .sec-head h2{color:#F3E6CE}.secu .sec-head p{color:#B9C4D6}
+.secu-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.secu-item{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.05);border:1px solid rgba(228,201,147,.16);border-radius:13px;padding:15px 16px}
+.secu-item svg{width:22px;height:22px;flex-shrink:0;color:var(--gold-lt)}
+.secu-item b{display:block;font-size:14.5px;font-weight:600;color:#F3E6CE;margin-bottom:2px}
+.secu-item span{font-size:12.5px;color:#AEBACF}
+.seal-big{display:flex;align-items:center;justify-content:center}
+.seal-big svg{width:100%;max-width:320px}
+
+/* heritage story */
+.heritage{background:radial-gradient(700px 400px at 50% 0,var(--giay-2),var(--giay));text-align:center}
+.heritage .lotus{width:66px}
+.heritage-quote{font-family:var(--fd);font-style:italic;font-weight:500;font-size:clamp(24px,3.2vw,38px);line-height:1.4;color:var(--son-deep);max-width:820px;margin:22px auto 22px}
+.heritage-quote .hl{color:var(--gold-deep);font-style:normal;font-weight:600}
+.heritage p.body{font-size:16.5px;color:var(--muc-soft);max-width:640px;margin:0 auto}
+.heritage .sig{margin-top:26px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-deep)}
+
+/* testimonials */
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.tcard{background:var(--giay-2);border:1px solid var(--giay-3);border-radius:18px;padding:30px 26px;position:relative;transition:transform .35s var(--ease),box-shadow .35s}
+.tcard:hover{transform:translateY(-6px);box-shadow:var(--shadow-lift)}
+.tquote{font-family:var(--fd);font-size:44px;line-height:1;color:var(--gold);height:24px}
+.tcard p{font-size:15px;color:var(--muc);margin:8px 0 20px}
+.tperson{display:flex;align-items:center;gap:13px;border-top:1px solid var(--giay-3);padding-top:18px}
+.tav{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:17px;color:#F6E9D8;flex-shrink:0}
+.tperson b{display:block;font-size:14.5px;color:var(--son-deep)}
+.tperson span{font-size:12.5px;color:var(--muc-faint)}
+
+/* pricing */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch}
+.plan{background:var(--giay-2);border:1px solid var(--giay-3);border-radius:20px;padding:34px 28px;display:flex;flex-direction:column;transition:transform .35s var(--ease),box-shadow .35s}
+.plan:hover{transform:translateY(-6px);box-shadow:var(--shadow-lift)}
+.plan.pop{border:1.6px solid var(--gold);box-shadow:0 20px 46px var(--gold-glow);position:relative}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,var(--gold-lt),var(--gold));color:var(--son-ink);font-size:12px;font-weight:600;padding:5px 16px;border-radius:20px;white-space:nowrap}
+.plan h3{font-family:var(--fd);font-weight:700;font-size:22px;color:var(--son-deep);margin-bottom:6px}
+.plan .desc{font-size:13.5px;color:var(--muc-faint);margin-bottom:18px;min-height:38px}
+.plan .amt{font-family:var(--fd);font-weight:700;font-size:40px;color:var(--son);line-height:1}
+.plan .amt small{font-family:var(--fb);font-size:14px;font-weight:500;color:var(--muc-faint)}
+.plan ul{list-style:none;margin:22px 0 26px;flex:1}
+.plan li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:14px;color:var(--muc-soft)}
+.plan li svg{width:17px;height:17px;flex-shrink:0;margin-top:3px;color:var(--luc)}
+.plan .btn{width:100%;justify-content:center}
+
+/* faq */
+.faq{max-width:820px;margin:0 auto}
+.qa{border-bottom:1px solid var(--giay-3)}
+.qa-q{display:flex;align-items:center;gap:16px;width:100%;background:none;border:0;text-align:left;padding:22px 4px;cursor:pointer;font-family:var(--fb);font-size:17px;font-weight:600;color:var(--son-deep)}
+.qa-q .ic{margin-left:auto;flex-shrink:0;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold-deep);display:flex;align-items:center;justify-content:center;font-size:18px;transition:transform .35s var(--ease)}
+.qa.open .qa-q .ic{transform:rotate(45deg)}
+.qa-a{max-height:0;overflow:hidden;transition:max-height .45s var(--ease)}
+.qa-a p{padding:0 4px 22px;font-size:15px;color:var(--muc-soft)}
+
+/* final cta */
+.cta{position:relative;background:radial-gradient(800px 420px at 50% 120%,var(--son-2),var(--son-deep) 55%,var(--son-ink));color:#F6E9D8;text-align:center;overflow:hidden}
+.cta-drum{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:640px;opacity:.08;animation:spin 90s linear infinite}
+.cta-in{position:relative;z-index:2;padding:104px 24px}
+.cta-in h2{font-family:var(--fd);font-weight:700;font-size:clamp(30px,3.8vw,50px);margin-bottom:16px}
+.cta-in h2 .g{color:var(--gold-lt)}
+.cta-in p{font-size:17px;color:#DCC6A9;max-width:540px;margin:0 auto 32px}
+.cta-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* footer */
+.ft{background:linear-gradient(180deg,var(--cham),var(--cham-deep));color:#9FAEC6;padding:64px 0 30px;position:relative}
+.ft::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,var(--gold) 0 10px,transparent 10px 20px);opacity:.5}
+.ft-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.2fr;gap:36px;margin-bottom:44px}
+.ft-brand .brand b{color:#F3E6CE}
+.ft-brand p{font-size:13.5px;margin-top:14px;max-width:290px;line-height:1.7}
+.ft-col h4{color:#F3E6CE;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px}
+.ft-col a{display:block;font-size:14px;padding:5px 0;transition:color .2s}
+.ft-col a:hover{color:var(--gold-lt)}
+.ft-bot{border-top:1px solid rgba(255,255,255,.1);padding-top:24px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:13px}
+.ft-bot a:hover{color:var(--gold-lt)}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:1024px){
+  .nav{display:none}.nav-toggle{display:block}
+  .hdr.menu-open{background:linear-gradient(90deg,var(--son-ink),var(--son-deep))}
+  .hdr.menu-open .nav{display:flex;position:absolute;top:100%;left:0;right:0;flex-direction:column;gap:2px;background:var(--son-deep);padding:14px 26px;box-shadow:0 20px 40px rgba(50,11,9,.4)}
+  .hdr.menu-open .nav a{padding:12px 14px}
+  .hero-grid{grid-template-columns:1fr;padding-top:120px;min-height:auto}
+  .hero-art{order:-1;height:440px;margin-bottom:10px}
+  .secu{grid-template-columns:1fr;gap:34px}.secu .sec-head{text-align:center;margin-inline:auto}
+  .feat-grid,.tgrid,.price-grid{grid-template-columns:repeat(2,1fr)}
+  .how{grid-template-columns:repeat(2,1fr);gap:40px 22px}.how .step::after{display:none}
+  .ft-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:680px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:34px 20px}
+  .ps,.role-panel.on{grid-template-columns:1fr}
+  .feat-grid,.tgrid,.price-grid,.secu-grid{grid-template-columns:1fr}
+  .how{grid-template-columns:1fr}
+  .ft-grid{grid-template-columns:1fr}
+  .hero-art{height:380px}.pcard{width:200px}.pcard.two{display:none}
+  .hdr-cta .btn:first-child{display:none}
+}
+
+/* ---------- REDUCED MOTION ---------- */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  html{scroll-behavior:auto}
+  .tw{transform:none}.rv{opacity:1;transform:none}
+  .hero-eyebrow,.hero-sub,.hero-actions,.hero-trust,.intro-seal{opacity:1;transform:none;animation:none}
+  .intro{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== INTRO OVERLAY ===== -->
+<div class="intro" id="intro">
+  <div class="intro-curtain top"></div>
+  <div class="intro-curtain bot"></div>
+  <svg class="intro-seal" viewBox="0 0 120 120" aria-hidden="true">
+    <rect x="10" y="10" width="100" height="100" rx="14" fill="none" stroke="#C29A45" stroke-width="2"/>
+    <rect x="20" y="20" width="80" height="80" rx="8" fill="none" stroke="#9A7A2E" stroke-width="1"/>
+    <path d="M60,34 L84,60 Q60,70 36,60 Z" fill="#C29A45"/>
+    <path d="M36,60 Q60,70 84,60 Q60,76 36,60 Z" fill="#9A7A2E"/>
+    <path d="M35,80 Q47,74 60,80 Q73,74 85,80 L85,88 Q73,82 60,88 Q47,82 35,88 Z" fill="#E4CE93"/>
+    <text x="60" y="107" text-anchor="middle" font-family="Playfair Display,serif" font-size="12" fill="#C29A45" letter-spacing="2">LUMINA</text>
+  </svg>
+</div>
+
+<!-- ===== HEADER ===== -->
+<header class="hdr" id="hdr">
+  <div class="wrap hdr-in">
+    <a class="brand" href="#top" aria-label="Lumina Tutors — trang chủ">
+      <svg class="seal" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="4" y="4" width="56" height="56" rx="10" fill="none" stroke="#C29A45" stroke-width="2"/>
+        <path d="M32,16 L48,34 Q32,41 16,34 Z" fill="#C29A45"/>
+        <path d="M16,34 Q32,41 48,34 Q32,45 16,34 Z" fill="#9A7A2E"/>
+        <path d="M15,46 Q23,42 32,46 Q41,42 49,46 L49,52 Q41,48 32,52 Q23,48 15,52 Z" fill="#E4CE93"/>
+      </svg>
+      <span><b>Lumina Tutors</b><small>Quản trị nhà trường</small></span>
+    </a>
+    <nav class="nav" aria-label="Điều hướng chính">
+      <a href="#tinh-nang">Tính năng</a>
+      <a href="#vai-tro">Vai trò</a>
+      <a href="#bao-mat">Bảo mật</a>
+      <a href="#hoc-phi">Học phí</a>
+      <a href="#di-san">Về chúng tôi</a>
+    </nav>
+    <div class="hdr-cta">
+      <a href="#" class="btn btn-ghost-light">Đăng nhập</a>
+      <a href="#hoc-phi" class="btn btn-gold">Đăng ký trường</a>
+    </div>
+    <button class="nav-toggle" aria-label="Mở menu">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="top">
+  <div class="hero-tex"></div>
+  <canvas class="hero-embers" id="embers" aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <div class="hero-eyebrow"><span class="eyebrow light">Nền tảng quản lý giáo dục</span></div>
+      <h1 class="hero-title" id="heroTitle">
+        <span class="tl"><span class="tw">Quản</span> <span class="tw">trị</span> <span class="tw">nhà</span> <span class="tw">trường</span></span>
+        <span class="tl"><span class="tw gold">trên</span> <span class="tw gold">nền</span> <span class="tw gold">đạo</span> <span class="tw gold">học</span></span>
+      </h1>
+      <p class="hero-sub">Điểm danh, học phí, sổ điểm TT22 và nhân sự — hợp nhất trong một hệ thống. Bảo mật đa trường, vận hành nhẹ tênh cho ban giám hiệu Việt.</p>
+      <div class="hero-actions">
+        <a href="#hoc-phi" class="btn btn-gold">Đăng ký dùng thử
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="#" class="btn btn-ghost-light">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z" fill="currentColor"/></svg>
+          Xem demo 2 phút
+        </a>
+      </div>
+      <div class="hero-trust">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 21l-4.9-2.8.9-5.5-4-3.9 5.5-.8z"/></svg>4.9/5 mức độ hài lòng</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Miễn phí 30 ngày</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Không cần thẻ thanh toán</span>
+      </div>
+    </div>
+
+    <div class="hero-art" id="heroArt" aria-hidden="true">
+      <div class="halo" data-depth="0.6"></div>
+      <svg class="orbit" viewBox="0 0 520 520" data-depth="0.3">
+        <defs><linearGradient id="og" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C29A45" stop-opacity="0"/><stop offset=".5" stop-color="#E4CE93" stop-opacity=".9"/><stop offset="1" stop-color="#C29A45" stop-opacity="0"/></linearGradient></defs>
+        <ellipse cx="260" cy="320" rx="238" ry="64" fill="none" stroke="url(#og)" stroke-width="2.5" stroke-dasharray="44 24"/>
+        <ellipse cx="260" cy="320" rx="205" ry="50" fill="none" stroke="#C29A45" stroke-width="1" stroke-dasharray="3 10" opacity=".5"/>
+      </svg>
+
+      <svg class="drum" viewBox="0 0 400 430" data-depth="1.1" role="img" aria-label="Trống đồng Đông Sơn">
+        <defs>
+          <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#48120F"/><stop offset=".26" stop-color="#9A7A2E"/><stop offset=".5" stop-color="#E4CE93"/><stop offset=".74" stop-color="#8A6B2F"/><stop offset="1" stop-color="#3A0F0E"/></linearGradient>
+          <radialGradient id="tg1" cx=".5" cy=".42" r=".75"><stop offset="0" stop-color="#EAD08A"/><stop offset=".55" stop-color="#BF9540"/><stop offset="1" stop-color="#7A5E23"/></radialGradient>
+          <linearGradient id="sh1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+        </defs>
+        <ellipse cx="200" cy="406" rx="150" ry="15" fill="#000" opacity=".22"/>
+        <path d="M48,112 C44,152 36,170 30,198 C26,240 60,260 66,290 C70,320 46,336 38,374 L38,386 A162,26 0 0 0 362,386 L362,374 C354,336 330,320 334,290 C340,260 374,240 370,198 C364,170 356,152 352,112 A152,56 0 0 1 48,112 Z" fill="url(#bg1)"/>
+        <path d="M31,196 Q200,242 369,196" fill="none" stroke="#3A0F0E" stroke-width="1.4" opacity=".5" transform="translate(0,-13)"/>
+        <path d="M31,196 Q200,242 369,196" fill="none" stroke="#3A0F0E" stroke-width="1.4" opacity=".5" transform="translate(0,13)"/>
+        <path d="M120,120 C110,220 130,320 150,392 L120,392 C95,310 90,210 100,122 Z" fill="#fff" opacity=".08"/>
+        <g class="rings" transform="translate(200,112)">
+          <ellipse rx="152" ry="56" fill="url(#tg1)" stroke="#5C4A1E" stroke-width="2.5"/>
+          <g transform="scale(1,0.368)" fill="none" stroke="#5C4A1E">
+            <circle r="140" stroke-width="2.2"/>
+            <circle r="126" stroke-width="1.5" stroke-dasharray="9 6"/>
+            <circle r="108" stroke-width="7" opacity=".28"/>
+            <circle r="90" stroke-width="1.7"/>
+            <circle r="74" stroke-width="1.3" stroke-dasharray="3 5"/>
+            <circle r="56" stroke-width="2.2"/>
+            <g fill="#5C4A1E" stroke="none">
+              <circle cx="93.7" cy="25.1" r="4"/><circle cx="68.6" cy="68.6" r="4"/><circle cx="25.1" cy="93.7" r="4"/>
+              <circle cx="-25.1" cy="93.7" r="4"/><circle cx="-68.6" cy="68.6" r="4"/><circle cx="-93.7" cy="25.1" r="4"/>
+              <circle cx="-93.7" cy="-25.1" r="4"/><circle cx="-68.6" cy="-68.6" r="4"/><circle cx="-25.1" cy="-93.7" r="4"/>
+              <circle cx="25.1" cy="-93.7" r="4"/><circle cx="68.6" cy="-68.6" r="4"/><circle cx="93.7" cy="-25.1" r="4"/>
+            </g>
+            <polygon fill="#5C4A1E" stroke="none" points="44,0 17.4,4.7 38.1,22 12.7,12.7 22,38.1 4.7,17.4 0,44 -4.7,17.4 -22,38.1 -12.7,12.7 -38.1,22 -17.4,4.7 -44,0 -17.4,-4.7 -38.1,-22 -12.7,-12.7 -22,-38.1 -4.7,-17.4 0,-44 4.7,-17.4 22,-38.1 12.7,-12.7 38.1,-22 17.4,-4.7"/>
+            <circle r="9" fill="#8A6B2F" stroke="none"/>
+          </g>
+        </g>
+        <rect class="sheen" x="60" y="60" width="60" height="300" fill="url(#sh1)" opacity="0"/>
+      </svg>
+
+      <div class="pcard" data-depth="1.6">
+        <div class="pcard-h"><span class="pcard-dot" style="background:#3E7A55"></span><span class="pcard-t">Điểm danh · Lớp 9A</span></div>
+        <div class="pcard-row"><span>Sĩ số hôm nay</span><b style="color:#3E7A55">38/40</b></div>
+        <div class="pcard-row"><span>Nguyễn An</span><span class="pcard-badge" style="background:#E3F1E9;color:#3E7A55">Có mặt</span></div>
+        <div class="pcard-row"><span>Trần Bình</span><span class="pcard-badge" style="background:#FBEFD9;color:#9A7A2E">Muộn</span></div>
+      </div>
+      <div class="pcard two" data-depth="1.9">
+        <div class="pcard-h"><span class="pcard-dot" style="background:#8A2724"></span><span class="pcard-t">Học phí tháng 7</span></div>
+        <div class="pcard-row"><span>Đã thu</span><b style="color:#3E7A55">86%</b></div>
+        <div class="pcard-row"><span>Công nợ</span><b style="color:#8A2724">24 HS</b></div>
+      </div>
+
+      <div class="chip a" data-depth="2.1"><svg viewBox="0 0 56 56"><path d="M28,8 L50,34 Q28,42 6,34 Z" fill="#C29A45"/><path d="M6,34 Q28,42 50,34 Q28,47 6,34 Z" fill="#9A7A2E"/><polygon points="28,16 29.6,20.2 34,20.4 30.5,23.2 31.7,27.6 28,25 24.3,27.6 25.5,23.2 22,20.4 26.4,20.2" fill="#8A2724"/></svg></div>
+      <div class="chip b" data-depth="2.4"><svg viewBox="0 0 56 56"><g stroke="#8A2724" stroke-width="1.5" fill="none"><path d="M28,46 C24,32 26,18 28,12 C30,18 32,32 28,46 Z" fill="#E4CE93"/><path d="M28,46 C19,39 15,29 17,21 C22,26 26,36 28,46 Z" fill="#D9B98F"/><path d="M28,46 C37,39 41,29 39,21 C34,26 30,36 28,46 Z" fill="#D9B98F"/></g><circle cx="28" cy="42" r="3.5" fill="#C29A45"/></svg></div>
+      <div class="chip c" data-depth="2.2"><svg viewBox="0 0 56 56"><rect x="10" y="8" width="36" height="40" rx="5" fill="#F5EDDF" stroke="#C29A45" stroke-width="1.8"/><path d="M20,18 Q30,15 26,23 Q22,30 32,27 M20,34 L34,34 M20,40 L30,40" fill="none" stroke="#2B211C" stroke-width="2" stroke-linecap="round"/></svg></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== STATS ===== -->
+<section class="stats">
+  <div class="wrap stats-grid">
+    <div class="stat rv"><b data-count="480" data-suffix="+">0</b><span>Trường &amp; trung tâm tin dùng</span></div>
+    <div class="stat rv" style="--d:1"><b data-count="320000" data-suffix="+">0</b><span>Hồ sơ học sinh được quản lý</span></div>
+    <div class="stat rv" style="--d:2"><b data-count="30" data-prefix="&lt;" data-suffix="s">0</b><span>Thời gian mỗi lượt điểm danh</span></div>
+    <div class="stat rv" style="--d:3"><b data-count="99.9" data-suffix="%" data-dec="1">0</b><span>Thời gian hệ thống hoạt động</span></div>
+  </div>
+</section>
+
+<!-- ===== PROBLEM / SOLUTION ===== -->
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <svg class="lotus" viewBox="0 0 64 32"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z M32,30 C20,26 12,20 10,14 C18,16 27,22 32,30 Z M32,30 C44,26 52,20 54,14 C46,16 37,22 32,30 Z"/></svg>
+      <h2>Từ giấy tờ rời rạc đến một guồng máy trơn tru</h2>
+      <p>Sổ điểm danh giấy, bảng tính học phí, tin nhắn Zalo tản mát — Lumina hợp nhất tất cả vào một nơi.</p>
+    </div>
+    <div class="ps">
+      <div class="ps-card bad rv">
+        <div class="ps-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>Trước đây · phân mảnh</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#8A2724" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>Điểm danh bằng sổ giấy, cuối tháng tổng hợp thủ công</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#8A2724" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>Học phí, công nợ rải rác trên nhiều file Excel</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#8A2724" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>Liên lạc phụ huynh qua tin nhắn cá nhân, khó truy vết</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#8A2724" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>Dữ liệu học sinh phân tán, khó tổng hợp báo cáo</li>
+        </ul>
+      </div>
+      <div class="ps-card good rv" style="--d:1">
+        <div class="ps-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Với Lumina · hợp nhất</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#3E7A55" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Điểm danh QR trong 30 giây, tự tổng hợp theo thời gian thực</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#3E7A55" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Hoá đơn học phí &amp; công nợ tự động, lọc theo lớp/khối</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#3E7A55" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Kênh liên lạc phụ huynh chính thức, lưu vết đầy đủ</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#3E7A55" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Một nguồn dữ liệu, báo cáo xuất trong vài cú nhấp</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FEATURES ===== -->
+<section class="sec tint" id="tinh-nang">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <svg class="lotus" viewBox="0 0 64 32"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/></svg>
+      <h2>Sáu module, một guồng máy vận hành</h2>
+      <p>Được thiết kế cho quy trình thật của trường học Việt — chuẩn TT22, định dạng tài chính Việt Nam.</p>
+    </div>
+    <div class="feat-grid">
+      <article class="feat rv">
+        <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 17v.01"/></svg></div>
+        <h3>Điểm danh thông minh</h3>
+        <p>QR, thủ công và nhận diện khuôn mặt (lộ trình). Chốt sĩ số toàn lớp trong 30 giây, đồng bộ tức thì.</p>
+        <span class="more">Tìm hiểu thêm <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+      <article class="feat rv" style="--d:1">
+        <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></div>
+        <h3>Sổ điểm chuẩn TT22</h3>
+        <p>Nhập điểm theo đúng Thông tư 22, tự xếp loại và tổng kết học kỳ, xuất học bạ điện tử.</p>
+        <span class="more">Tìm hiểu thêm <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+      <article class="feat rv" style="--d:2">
+        <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M14.5 9c-.6-.8-1.6-1.2-2.5-1.2-1.7 0-2.5 1-2.5 2s.8 1.8 2.5 2 2.5 1 2.5 2-1 2-2.5 2c-1 0-2-.4-2.5-1.2M12 6.5v11"/></svg></div>
+        <h3>Học phí &amp; công nợ</h3>
+        <p>Sinh hoá đơn hàng loạt, theo dõi công nợ từng học sinh, đối soát và nhắc thu tự động.</p>
+        <span class="more">Tìm hiểu thêm <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+      <article class="feat rv">
+        <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><path d="M16 4.5a3 3 0 010 6M18.5 20c0-2.6-1.2-4.6-3-5.4"/></svg></div>
+        <h3>Nhân sự &amp; tuyển dụng</h3>
+        <p>Quản lý hồ sơ giáo viên, mời giảng viên mới chỉ bằng một đường link, phân quyền theo vai trò.</p>
+        <span class="more">Tìm hiểu thêm <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+      <article class="feat rv" style="--d:1">
+        <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg></div>
+        <h3>Nề nếp &amp; kỷ luật</h3>
+        <p>Ghi nhận vi phạm, theo dõi nề nếp từng lớp, thông báo phụ huynh kịp thời và minh bạch.</p>
+        <span class="more">Tìm hiểu thêm <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+      <article class="feat rv" style="--d:2">
+        <div class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 3z"/><path d="M8 9h8M8 12h5"/></svg></div>
+        <h3>Liên lạc phụ huynh</h3>
+        <p>Gửi thông báo, kết quả học tập và nề nếp tới phụ huynh; hai chiều, lưu vết, đúng người đúng lớp.</p>
+        <span class="more">Tìm hiểu thêm <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ROLES ===== -->
+<section class="sec" id="vai-tro">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <svg class="lotus" viewBox="0 0 64 32"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/></svg>
+      <h2>Mỗi vai trò, một giao diện dành riêng</h2>
+      <p>Việc của giáo viên khác việc của kế toán. Lumina thiết kế đúng cho từng người, không gộp chung một khuôn.</p>
+    </div>
+    <div class="roles rv">
+      <div class="tabs" role="tablist">
+        <button class="tab on" data-role="0">Ban giám hiệu</button>
+        <button class="tab" data-role="1">Giáo viên</button>
+        <button class="tab" data-role="2">Kế toán</button>
+        <button class="tab" data-role="3">Giám thị</button>
+        <button class="tab" data-role="4">Phụ huynh &amp; Học sinh</button>
+      </div>
+
+      <div class="role-panel on" data-panel="0">
+        <div>
+          <div class="role-role">Điều hành toàn trường</div>
+          <h3>Toàn cảnh nhà trường trong một màn hình</h3>
+          <p>Cấu hình hệ thống, quản lý nhân sự và nắm mọi chỉ số vận hành — từ sĩ số đến dòng tiền — theo thời gian thực.</p>
+          <ul class="role-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Mời giáo viên mới bằng một đường link</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Báo cáo học vụ &amp; tài chính tổng hợp</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Phân quyền chi tiết cho sáu vai trò</li>
+          </ul>
+        </div>
+        <div class="role-shot"><div class="shot-bar"><i></i><i></i><i></i><b>Bảng điều hành · Ban giám hiệu</b></div><div class="shot-body"><div class="shot-line" style="width:60%"></div><div class="shot-block"></div><div class="shot-mini"><div></div><div></div><div></div></div></div></div>
+      </div>
+
+      <div class="role-panel" data-panel="1">
+        <div>
+          <div class="role-role">Trên bục giảng</div>
+          <h3>Điểm danh và vào điểm, gọn trong vài chạm</h3>
+          <p>Thiết kế cho nhịp làm việc nhanh giữa các tiết: quét QR, chốt sĩ số, nhập điểm TT22 ngay trên điện thoại.</p>
+          <ul class="role-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Điểm danh cả lớp dưới 30 giây</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Sổ điểm TT22 tự xếp loại</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Theo dõi sĩ số lớp chủ nhiệm</li>
+          </ul>
+        </div>
+        <div class="role-shot"><div class="shot-bar"><i></i><i></i><i></i><b>Điểm danh · Giáo viên</b></div><div class="shot-body"><div class="shot-line" style="width:50%"></div><div class="shot-mini"><div></div><div></div><div></div></div><div class="shot-block" style="margin-top:12px"></div></div></div>
+      </div>
+
+      <div class="role-panel" data-panel="2">
+        <div>
+          <div class="role-role">Phòng tài vụ</div>
+          <h3>Xử lý hàng trăm hoá đơn, không cần bảng tính</h3>
+          <p>Sinh hoá đơn học phí hàng loạt, lọc công nợ theo lớp/khối và đối soát dòng tiền trong một luồng làm việc tập trung.</p>
+          <ul class="role-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Xuất 200 hoá đơn trong một lần</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Theo dõi công nợ từng học sinh</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Định dạng tài chính chuẩn Việt Nam</li>
+          </ul>
+        </div>
+        <div class="role-shot"><div class="shot-bar"><i></i><i></i><i></i><b>Học phí · Kế toán</b></div><div class="shot-body"><div class="shot-line" style="width:70%"></div><div class="shot-line" style="width:90%"></div><div class="shot-line" style="width:55%"></div><div class="shot-block"></div></div></div>
+      </div>
+
+      <div class="role-panel" data-panel="3">
+        <div>
+          <div class="role-role">Giám thị · nề nếp</div>
+          <h3>Giữ nề nếp minh bạch, thông tin kịp thời</h3>
+          <p>Ghi nhận vi phạm, tổng hợp nề nếp theo lớp và gửi thông báo tới phụ huynh với đầy đủ vết lưu.</p>
+          <ul class="role-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Nhật ký kỷ luật theo học sinh</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Thông báo phụ huynh có lưu vết</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Bảng xếp hạng nề nếp theo lớp</li>
+          </ul>
+        </div>
+        <div class="role-shot"><div class="shot-bar"><i></i><i></i><i></i><b>Nề nếp · Giám thị</b></div><div class="shot-body"><div class="shot-line" style="width:65%"></div><div class="shot-block"></div><div class="shot-line" style="width:80%"></div><div class="shot-line" style="width:45%"></div></div></div>
+      </div>
+
+      <div class="role-panel" data-panel="4">
+        <div>
+          <div class="role-role">Đồng hành cùng con</div>
+          <h3>Phụ huynh &amp; học sinh luôn nắm rõ tình hình</h3>
+          <p>Xem điểm, chuyên cần, thông báo nề nếp và học phí — minh bạch, cập nhật, mọi lúc mọi nơi.</p>
+          <ul class="role-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Kết quả học tập theo thời gian thực</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Lịch sử chuyên cần &amp; nề nếp</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Thông báo học phí &amp; sự kiện</li>
+          </ul>
+        </div>
+        <div class="role-shot"><div class="shot-bar"><i></i><i></i><i></i><b>Cổng phụ huynh</b></div><div class="shot-body"><div class="shot-line" style="width:55%"></div><div class="shot-mini"><div></div><div></div><div></div></div><div class="shot-block" style="margin-top:12px"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HOW ===== -->
+<section class="sec tint">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <svg class="lotus" viewBox="0 0 64 32"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/></svg>
+      <h2>Đưa cả trường lên hệ thống trong bốn bước</h2>
+      <p>Không cần đội ngũ kỹ thuật. Đội ngũ Lumina đồng hành từ ngày đầu.</p>
+    </div>
+    <div class="how">
+      <div class="step rv"><div class="step-num">1</div><h3>Tạo trường</h3><p>Khởi tạo không gian riêng cho trường, dữ liệu cô lập tuyệt đối theo mã trường.</p></div>
+      <div class="step rv" style="--d:1"><div class="step-num">2</div><h3>Mời giáo viên</h3><p>Gửi một đường link mời; giáo viên tự tạo tài khoản và nhận đúng phân quyền.</p></div>
+      <div class="step rv" style="--d:2"><div class="step-num">3</div><h3>Nhập lớp &amp; học sinh</h3><p>Tải danh sách lớp và học sinh từ Excel sẵn có chỉ trong vài phút.</p></div>
+      <div class="step rv" style="--d:3"><div class="step-num">4</div><h3>Vận hành</h3><p>Điểm danh, vào điểm, thu học phí — tất cả sẵn sàng ngay từ hôm sau.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECURITY ===== -->
+<section class="sec sec-dark" id="bao-mat">
+  <div class="sheen-sweep"></div>
+  <div class="wrap secu">
+    <div>
+      <div class="sec-head rv">
+        <h2>An toàn dữ liệu là điều kiện tiên quyết</h2>
+        <p>Mỗi trường là một pháo đài dữ liệu riêng. Tuân thủ quy định giáo dục và tài chính Việt Nam.</p>
+      </div>
+      <div class="secu-grid">
+        <div class="secu-item rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg><div><b>Cô lập đa trường</b><span>Dữ liệu tách biệt theo mã trường (SchoolId)</span></div></div>
+        <div class="secu-item rv" style="--d:1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h13l3 3v11H4z"/><path d="M8 10h8M8 14h5"/></svg><div><b>Chuẩn TT22</b><span>Chấm điểm &amp; xếp loại đúng quy định</span></div></div>
+        <div class="secu-item rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><div><b>Phân quyền 6 vai trò</b><span>Mỗi người chỉ thấy điều được phép</span></div></div>
+        <div class="secu-item rv" style="--d:1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><div><b>Nhật ký kiểm toán</b><span>Sao lưu định kỳ, truy vết đầy đủ</span></div></div>
+        <div class="secu-item rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7z"/></svg><div><b>Mã hoá &amp; bảo mật</b><span>Kết nối an toàn, cookie HttpOnly</span></div></div>
+        <div class="secu-item rv" style="--d:1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg><div><b>Chuẩn tiếp cận AA</b><span>WCAG 2.1 AA, dùng được cho mọi người</span></div></div>
+      </div>
+    </div>
+    <div class="seal-big rv">
+      <svg viewBox="0 0 300 300" role="img" aria-label="Con dấu bảo mật">
+        <circle cx="150" cy="150" r="120" fill="none" stroke="#C29A45" stroke-width="2"/>
+        <circle cx="150" cy="150" r="104" fill="none" stroke="#E4CE93" stroke-width="1" stroke-dasharray="4 6"/>
+        <rect x="102" y="108" width="96" height="96" rx="10" fill="none" stroke="#C29A45" stroke-width="2"/>
+        <path d="M126 150v-14a24 24 0 0148 0v14" fill="none" stroke="#E4CE93" stroke-width="2.4"/>
+        <rect x="120" y="150" width="60" height="42" rx="6" fill="#C29A45"/>
+        <circle cx="150" cy="168" r="6" fill="#20304C"/><rect x="147" y="170" width="6" height="12" fill="#20304C"/>
+        <g stroke="#9A7A2E" stroke-width="1.4" fill="none" opacity=".7"><path d="M150 30v20M150 250v20M30 150h20M250 150h20"/></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ===== HERITAGE STORY ===== -->
+<section class="sec heritage" id="di-san">
+  <div class="wrap">
+    <svg class="lotus rv" viewBox="0 0 64 32" style="width:66px"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z M32,30 C20,26 12,20 10,14 C18,16 27,22 32,30 Z M32,30 C44,26 52,20 54,14 C46,16 37,22 32,30 Z"/></svg>
+    <div class="eyebrow rv" style="justify-content:center;display:flex">Sứ mệnh của chúng tôi</div>
+    <p class="heritage-quote rv" style="--d:1">“Hiền tài là nguyên khí quốc gia.” Chúng tôi dựng Lumina để nhà trường nhẹ gánh việc giấy tờ, dành trọn tâm sức cho điều quan trọng nhất — <span class="hl">dạy người</span>.</p>
+    <p class="body rv" style="--d:2">Từ tinh thần <b>tôn sư trọng đạo</b> ngàn đời đến lớp học số hôm nay, Lumina Tutors mang công nghệ hiện đại phục vụ một giá trị không đổi: sự học được nâng niu, người thầy được trân trọng.</p>
+    <div class="sig rv" style="--d:3">Lumina Tutors · Vững nền nếp — Trọn niềm tin</div>
+  </div>
+</section>
+
+<!-- ===== TESTIMONIALS ===== -->
+<section class="sec tint">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <svg class="lotus" viewBox="0 0 64 32"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/></svg>
+      <h2>Được các nhà trường tin cậy</h2>
+      <p>Những người điều hành trường học nói gì sau khi chuyển sang Lumina.</p>
+    </div>
+    <div class="tgrid">
+      <div class="tcard rv">
+        <div class="tquote">&ldquo;</div>
+        <p>Việc tổng hợp điểm danh cuối tháng từng ngốn của chúng tôi cả tuần. Nay chỉ còn vài phút, số liệu lại chính xác tuyệt đối.</p>
+        <div class="tperson"><div class="tav" style="background:linear-gradient(135deg,#8A2724,#6E1D28)">HM</div><div><b>Cô Hoàng Minh</b><span>Hiệu trưởng · THCS Lạc Hồng</span></div></div>
+      </div>
+      <div class="tcard rv" style="--d:1">
+        <div class="tquote">&ldquo;</div>
+        <p>Phòng kế toán xuất hơn 300 hoá đơn học phí chỉ trong một buổi sáng. Công nợ theo dõi rõ ràng tới từng em.</p>
+        <div class="tperson"><div class="tav" style="background:linear-gradient(135deg,#20304C,#16233A)">TP</div><div><b>Anh Trần Phú</b><span>Giám đốc · Trung tâm Anh ngữ Đông Đô</span></div></div>
+      </div>
+      <div class="tcard rv" style="--d:2">
+        <div class="tquote">&ldquo;</div>
+        <p>Phụ huynh nắm được tình hình học tập của con theo thời gian thực. Niềm tin của họ với nhà trường tăng lên rõ rệt.</p>
+        <div class="tperson"><div class="tav" style="background:linear-gradient(135deg,#9A7A2E,#C29A45)">LA</div><div><b>Thầy Lê An</b><span>Quản lý · Hệ thống Trí Đức</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRICING ===== -->
+<section class="sec" id="hoc-phi">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <svg class="lotus" viewBox="0 0 64 32"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/></svg>
+      <h2>Học phí nền tảng, minh bạch theo quy mô</h2>
+      <p>Bắt đầu miễn phí 30 ngày. Không ràng buộc, huỷ bất cứ lúc nào.</p>
+    </div>
+    <div class="price-grid">
+      <div class="plan rv">
+        <h3>Khởi đầu</h3>
+        <div class="desc">Cho trung tâm &amp; trường nhỏ mới số hoá</div>
+        <div class="amt">1,2tr<small> /tháng</small></div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Đến 300 học sinh</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Điểm danh &amp; sổ điểm TT22</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Quản lý học phí cơ bản</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Hỗ trợ qua email</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">Chọn gói</a>
+      </div>
+      <div class="plan pop rv" style="--d:1">
+        <div class="plan-badge">Được chọn nhiều nhất</div>
+        <h3>Tiêu chuẩn</h3>
+        <div class="desc">Cho trường học vận hành đầy đủ nghiệp vụ</div>
+        <div class="amt">2,9tr<small> /tháng</small></div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Đến 1.500 học sinh</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Trọn 6 module nghiệp vụ</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Cổng phụ huynh &amp; học sinh</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Hỗ trợ ưu tiên trong ngày</li>
+        </ul>
+        <a href="#" class="btn btn-gold">Dùng thử miễn phí</a>
+      </div>
+      <div class="plan rv" style="--d:2">
+        <h3>Trường lớn</h3>
+        <div class="desc">Cho hệ thống nhiều cơ sở, quy mô lớn</div>
+        <div class="amt">Liên hệ</div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Không giới hạn học sinh</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Đa cơ sở, báo cáo hợp nhất</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Nhận diện khuôn mặt &amp; API</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Chuyên viên đồng hành riêng</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">Liên hệ tư vấn</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="sec tint">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <svg class="lotus" viewBox="0 0 64 32"><path d="M32,30 C28,18 30,8 32,4 C34,8 36,18 32,30 Z M32,30 C24,22 20,14 22,8 C27,12 31,20 32,30 Z M32,30 C40,22 44,14 42,8 C37,12 33,20 32,30 Z"/></svg>
+      <h2>Câu hỏi thường gặp</h2>
+    </div>
+    <div class="faq">
+      <div class="qa"><button class="qa-q">Chúng tôi đang dùng Excel, có chuyển dữ liệu sang được không?<span class="ic">+</span></button><div class="qa-a"><p>Được. Lumina hỗ trợ nhập danh sách lớp, học sinh và giáo viên trực tiếp từ file Excel sẵn có. Đội ngũ triển khai sẽ hỗ trợ bạn chuyển đổi trong buổi đầu tiên.</p></div></div>
+      <div class="qa"><button class="qa-q">Dữ liệu của trường tôi có được tách riêng không?<span class="ic">+</span></button><div class="qa-a"><p>Có. Hệ thống đa trường cô lập dữ liệu hoàn toàn theo mã trường (SchoolId). Không trường nào truy cập được dữ liệu của trường khác.</p></div></div>
+      <div class="qa"><button class="qa-q">Giáo viên có cần đào tạo phức tạp không?<span class="ic">+</span></button><div class="qa-a"><p>Không. Giao diện được thiết kế cho nhịp làm việc thật của giáo viên — điểm danh và vào điểm chỉ trong vài chạm. Chúng tôi có video hướng dẫn và buổi đào tạo trực tuyến miễn phí.</p></div></div>
+      <div class="qa"><button class="qa-q">Việc chấm điểm có đúng chuẩn TT22 không?<span class="ic">+</span></button><div class="qa-a"><p>Hoàn toàn đúng. Sổ điểm tuân thủ Thông tư 22, tự động xếp loại và tổng kết học kỳ, xuất học bạ điện tử theo mẫu.</p></div></div>
+      <div class="qa"><button class="qa-q">Chi phí triển khai ban đầu là bao nhiêu?<span class="ic">+</span></button><div class="qa-a"><p>Miễn phí. Bạn dùng thử trọn tính năng trong 30 ngày, không cần thẻ thanh toán. Sau đó chọn gói phù hợp theo quy mô; huỷ bất cứ lúc nào.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FINAL CTA ===== -->
+<section class="cta">
+  <svg class="cta-drum" viewBox="0 0 300 300" aria-hidden="true"><g fill="none" stroke="#E4CE93" stroke-width="1.4"><circle cx="150" cy="150" r="140"/><circle cx="150" cy="150" r="116" stroke-dasharray="9 7"/><circle cx="150" cy="150" r="92"/><circle cx="150" cy="150" r="66" stroke-dasharray="4 6"/><circle cx="150" cy="150" r="40"/></g><polygon fill="#E4CE93" points="150,120 156,144 180,144 161,158 168,182 150,168 132,182 139,158 120,144 144,144"/></svg>
+  <div class="cta-in">
+    <div class="eyebrow light rv" style="justify-content:center;display:flex">Bắt đầu hôm nay</div>
+    <h2 class="rv" style="--d:1">Vững nền nếp, <span class="g">trọn niềm tin</span></h2>
+    <p class="rv" style="--d:2">Tạo tài khoản miễn phí và trải nghiệm trọn vẹn Lumina Tutors trong 30 ngày — không cần thẻ thanh toán.</p>
+    <div class="cta-actions rv" style="--d:3">
+      <a href="#" class="btn btn-gold">Đăng ký dùng thử miễn phí
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a href="#" class="btn btn-ghost-light">Đặt lịch demo</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="ft">
+  <div class="wrap">
+    <div class="ft-grid">
+      <div class="ft-brand">
+        <a class="brand" href="#top">
+          <svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="10" fill="none" stroke="#C29A45" stroke-width="2"/><path d="M32,16 L48,34 Q32,41 16,34 Z" fill="#C29A45"/><path d="M16,34 Q32,41 48,34 Q32,45 16,34 Z" fill="#9A7A2E"/><path d="M15,46 Q23,42 32,46 Q41,42 49,46 L49,52 Q41,48 32,52 Q23,48 15,52 Z" fill="#E4CE93"/></svg>
+          <span><b>Lumina Tutors</b><small>Quản trị nhà trường</small></span>
+        </a>
+        <p>Nền tảng quản lý giáo dục toàn diện cho trường học Việt — số hoá vận hành, gìn giữ đạo học.</p>
+      </div>
+      <div class="ft-col"><h4>Sản phẩm</h4><a href="#tinh-nang">Tính năng</a><a href="#vai-tro">Vai trò</a><a href="#bao-mat">Bảo mật</a><a href="#hoc-phi">Học phí</a></div>
+      <div class="ft-col"><h4>Hỗ trợ</h4><a href="#">Trung tâm trợ giúp</a><a href="#">Hướng dẫn triển khai</a><a href="#">Chính sách bảo mật</a><a href="#">Điều khoản sử dụng</a></div>
+      <div class="ft-col"><h4>Liên hệ</h4><a href="tel:19001234">Hotline: 1900 1234</a><a href="mailto:hello@luminatutors.vn">hello@luminatutors.vn</a><a href="#">Tầng 8, Toà nhà Tri Thức, Hà Nội</a></div>
+    </div>
+    <div class="ft-bot">
+      <span>© 2026 Lumina Tutors. Vững nền nếp — Trọn niềm tin.</span>
+      <span><a href="#">Tiếng Việt</a> · <a href="#">English</a></span>
+    </div>
+  </div>
+</footer>
+
+<script id="fx">
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $=function(s,c){return (c||document).querySelector(s)};
+  var $$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
+
+  setTimeout(function(){ $$('.rv').forEach(function(e){e.classList.add('in')}); var ht=$('#heroTitle'); if(ht)ht.classList.add('ready'); },3200);
+
+  var hdr=$('#hdr');
+  function onScroll(){ hdr.classList.toggle('scrolled', window.scrollY>12); }
+  window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+
+  var tog=$('.nav-toggle');
+  if(tog){ tog.addEventListener('click',function(){ hdr.classList.toggle('menu-open'); });
+    $$('.nav a').forEach(function(a){ a.addEventListener('click',function(){ hdr.classList.remove('menu-open'); }); }); }
+
+  try{
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); },{threshold:.16,rootMargin:'0px 0px -40px 0px'});
+    $$('.rv').forEach(function(e){ io.observe(e); });
+  }catch(err){ $$('.rv').forEach(function(e){ e.classList.add('in'); }); }
+
+  function fmt(v,dec){ return v.toLocaleString('vi-VN',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+  function count(el){
+    var target=parseFloat(el.dataset.count), dec=parseInt(el.dataset.dec||'0',10), suf=el.dataset.suffix||'', pre=el.dataset.prefix||'';
+    if(reduce){ el.textContent=pre+fmt(target,dec)+suf; return; }
+    var dur=1600, st=null;
+    function tick(t){ if(!st)st=t; var p=Math.min((t-st)/dur,1), e=1-Math.pow(1-p,3); el.textContent=pre+fmt(target*e,dec)+suf; if(p<1)requestAnimationFrame(tick); }
+    requestAnimationFrame(tick);
+  }
+  try{
+    var cio=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ cio.unobserve(e.target); count(e.target); } }); },{threshold:.6});
+    $$('[data-count]').forEach(function(e){ cio.observe(e); });
+  }catch(err){ $$('[data-count]').forEach(function(e){ count(e); }); }
+
+  $$('.tab').forEach(function(t){ t.addEventListener('click',function(){
+    var i=t.dataset.role;
+    $$('.tab').forEach(function(x){ x.classList.toggle('on',x===t); });
+    $$('.role-panel').forEach(function(p){ p.classList.toggle('on',p.dataset.panel===i); });
+  }); });
+
+  $$('.qa-q').forEach(function(b){ b.addEventListener('click',function(){
+    var qa=b.parentElement, a=qa.querySelector('.qa-a'), open=qa.classList.contains('open');
+    $$('.qa').forEach(function(x){ x.classList.remove('open'); x.querySelector('.qa-a').style.maxHeight=null; });
+    if(!open){ qa.classList.add('open'); a.style.maxHeight=a.scrollHeight+'px'; }
+  }); });
+
+  if(reduce){ var ht2=$('#heroTitle'); if(ht2)ht2.classList.add('ready'); var in0=$('#intro'); if(in0)in0.style.display='none'; return; }
+
+  var intro=$('#intro'), heroTitle=$('#heroTitle');
+  setTimeout(function(){ if(intro)intro.classList.add('lift'); },1100);
+  setTimeout(function(){ if(heroTitle)heroTitle.classList.add('ready'); },1250);
+  setTimeout(function(){ if(intro)intro.classList.add('done'); },1950);
+
+  try{
+    var cv=$('#embers');
+    if(cv){ var ctx=cv.getContext('2d'), W=0,H=0, parts=[];
+      function resize(){ var r=cv.parentElement.getBoundingClientRect(); W=cv.width=r.width; H=cv.height=r.height; }
+      resize(); window.addEventListener('resize',resize);
+      for(var i=0;i<46;i++){ parts.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+0.6,s:Math.random()*0.5+0.15,a:Math.random()*0.45+0.2,d:Math.random()*6.28}); }
+      (function draw(){ ctx.clearRect(0,0,W,H);
+        for(var i=0;i<parts.length;i++){ var p=parts[i]; p.y-=p.s; p.x+=Math.sin(p.d+p.y*0.01)*0.3; p.d+=0.002;
+          if(p.y<-6){ p.y=H+6; p.x=Math.random()*W; }
+          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fillStyle='rgba(228,201,147,'+p.a+')'; ctx.fill(); }
+        requestAnimationFrame(draw); })();
+    }
+  }catch(err){}
+
+  try{
+    var art=$('#heroArt'), hero=$('.hero'), drum=art?$('.drum',art):null, orbit=art?$('.orbit',art):null, mx=0,my=0,tx=0,ty=0;
+    if(hero&&art){
+      hero.addEventListener('mousemove',function(e){ var r=hero.getBoundingClientRect(); mx=(e.clientX-r.left)/r.width-0.5; my=(e.clientY-r.top)/r.height-0.5; });
+      hero.addEventListener('mouseleave',function(){ mx=0; my=0; });
+      (function loop(){ tx+=(mx-tx)*0.06; ty+=(my-ty)*0.06;
+        art.style.transform='translate('+(tx*10).toFixed(2)+'px,'+(ty*10).toFixed(2)+'px)';
+        if(drum)drum.style.transform='translate(-50%,-50%) translate('+(tx*-16).toFixed(2)+'px,'+(ty*-16).toFixed(2)+'px)';
+        if(orbit)orbit.style.transform='translate(-50%,-50%) translate('+(tx*-7).toFixed(2)+'px,'+(ty*-7).toFixed(2)+'px)';
+        requestAnimationFrame(loop); })();
+    }
+  }catch(err){}
+})();
+</script>
+</body>
+</html>

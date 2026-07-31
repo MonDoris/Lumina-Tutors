@@ -15,10 +15,35 @@
     var hasAiTutor    = isAuth && schoolIdNav > 0 && await SubsSvc.HasFeatureAsync(schoolIdNav, LuminaTutors.Domain.Enums.PremiumFeature.AiTutor);
     var hasVirtualLab = isAuth && schoolIdNav > 0 && await SubsSvc.HasFeatureAsync(schoolIdNav, LuminaTutors.Domain.Enums.PremiumFeature.VirtualLab);
 
-    string Nav(string ctrl, string? action = "Index")
-        => Context.Request.Path.StartsWithSegments($"/{ctrl}", StringComparison.OrdinalIgnoreCase)
-            ? "lt-nav__item active"
-            : "lt-nav__item";
+    // Đánh dấu menu "active" chính xác theo controller + action.
+    //  • Không truyền action  → active ở mọi trang của controller (mục 1 controller/1 menu).
+    //  • action = "Index"     → chỉ active ở trang gốc controller (mục "Tổng quan/Dashboard").
+    //  • action = "X"         → chỉ active ở /Ctrl/X (và trang con của nó).
+    string Nav(string ctrl, string? action = null)
+    {
+        var p = (Context.Request.Path.Value ?? "/").TrimEnd('/');
+        if (p.Length == 0) p = "/";
+        bool active;
+        if (action is null)
+            active = p.Equals($"/{ctrl}", StringComparison.OrdinalIgnoreCase)
+                  || p.StartsWith($"/{ctrl}/", StringComparison.OrdinalIgnoreCase);
+        else if (action.Equals("Index", StringComparison.OrdinalIgnoreCase))
+            active = p.Equals($"/{ctrl}", StringComparison.OrdinalIgnoreCase)
+                  || p.Equals($"/{ctrl}/Index", StringComparison.OrdinalIgnoreCase);
+        else
+            active = p.Equals($"/{ctrl}/{action}", StringComparison.OrdinalIgnoreCase)
+                  || p.StartsWith($"/{ctrl}/{action}/", StringComparison.OrdinalIgnoreCase);
+        return active ? "lt-nav__item active" : "lt-nav__item";
+    }
+
+    // Riêng mục Tài khoản: 5 mục cùng trỏ /Account, phân biệt bằng query ?role=...
+    string NavRole(string? role)
+    {
+        var onAccount = Context.Request.Path.StartsWithSegments("/Account", StringComparison.OrdinalIgnoreCase);
+        var cur = Context.Request.Query["role"].ToString();
+        var active = onAccount && string.Equals(cur, role ?? "", StringComparison.OrdinalIgnoreCase);
+        return active ? "lt-nav__item active" : "lt-nav__item";
+    }
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -52,6 +77,11 @@
     <link rel="stylesheet" href="~/css/lt-confirm.css" asp-append-version="true"/>
 
     @await RenderSectionAsync("Styles", required: false)
+
+    <!-- Frost Mint glass theme — nạp CUỐI để phủ lên toàn hệ thống (mọi role). Gỡ dòng này để tắt theme. -->
+    <link rel="stylesheet" href="~/css/frost-mint.css" asp-append-version="true"/>
+    <!-- Bố cục dashboard 6 role theo phong cách demo (nạp sau frost-mint). -->
+    <link rel="stylesheet" href="~/css/dashboard-glass.css" asp-append-version="true"/>
 </head>
 <body>
 
@@ -160,7 +190,7 @@
             {
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Tổng quan</div>
-                <a asp-controller="Dashboard" asp-action="Index" class="@Nav("Dashboard")">
+                <a asp-controller="Dashboard" asp-action="Index" class="@Nav("Dashboard", "Index")">
                     <span class="lt-nav__icon"><i class="bi bi-grid-1x2-fill"></i></span>
                     Dashboard
                 </a>
@@ -245,6 +275,16 @@
                                  font-size:.6rem;font-weight:800;letter-spacing:.04em;
                                  padding:1px 5px;border-radius:4px;line-height:1.4">WebRTC</span>
                 </a>
+                @* Nhà trường chỉ giám sát (Manage); giáo viên soạn nội dung (Index) *@
+                <a asp-controller="Course" asp-action="@(roleCode == "TEACHER" ? "Index" : "Manage")" class="@Nav("Course")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-mortarboard-fill"></i></span>
+                    Khóa học E-Learning
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:var(--lt-gold);color:var(--lt-navy);
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
+                </a>
                 <a asp-controller="Homework" asp-action="Teacher" class="@Nav("Homework")">
                     <span class="lt-nav__icon"><i class="bi bi-journal-bookmark-fill"></i></span>
                     Bài tập
@@ -270,7 +310,7 @@
             {
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Tài chính</div>
-                <a asp-controller="Finance" asp-action="Index" class="@Nav("Finance")">
+                <a asp-controller="Finance" asp-action="Index" class="@Nav("Finance", "Index")">
                     <span class="lt-nav__icon"><i class="bi bi-currency-dollar"></i></span>
                     Tổng quan
                 </a>
@@ -290,23 +330,23 @@
             {
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Tài khoản</div>
-                <a asp-controller="Account" asp-action="Index" class="@Nav("Account")">
+                <a asp-controller="Account" asp-action="Index" class="@NavRole(null)">
                     <span class="lt-nav__icon"><i class="bi bi-people-fill"></i></span>
                     Tất cả tài khoản
                 </a>
-                <a asp-controller="Account" asp-action="Index" asp-route-role="STUDENT" class="@Nav("Account")">
+                <a asp-controller="Account" asp-action="Index" asp-route-role="STUDENT" class="@NavRole("STUDENT")">
                     <span class="lt-nav__icon"><i class="bi bi-mortarboard-fill"></i></span>
                     Học sinh
                 </a>
-                <a asp-controller="Account" asp-action="Index" asp-route-role="TEACHER" class="@Nav("Account")">
+                <a asp-controller="Account" asp-action="Index" asp-route-role="TEACHER" class="@NavRole("TEACHER")">
                     <span class="lt-nav__icon"><i class="bi bi-person-video3"></i></span>
                     Giáo viên
                 </a>
-                <a asp-controller="Account" asp-action="Index" asp-route-role="SUPERVISOR" class="@Nav("Account")">
+                <a asp-controller="Account" asp-action="Index" asp-route-role="SUPERVISOR" class="@NavRole("SUPERVISOR")">
                     <span class="lt-nav__icon"><i class="bi bi-shield-fill"></i></span>
                     Giám thị
                 </a>
-                <a asp-controller="Account" asp-action="Index" asp-route-role="PARENT" class="@Nav("Account")">
+                <a asp-controller="Account" asp-action="Index" asp-route-role="PARENT" class="@NavRole("PARENT")">
                     <span class="lt-nav__icon"><i class="bi bi-house-heart-fill"></i></span>
                     Phụ huynh
                 </a>
@@ -409,7 +449,7 @@
             {
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Giám thị</div>
-                <a asp-controller="Supervisor" asp-action="Index" class="@Nav("Supervisor")">
+                <a asp-controller="Supervisor" asp-action="Index" class="@Nav("Supervisor", "Index")">
                     <span class="lt-nav__icon"><i class="bi bi-shield-fill"></i></span>
                     Tổng quan
                 </a>
@@ -445,6 +485,10 @@
                     <span class="lt-nav__icon"><i class="bi bi-calendar-x-fill"></i></span>
                     Xin nghỉ phép
                 </a>
+                <a asp-controller="Parent" asp-action="Tuition" class="@Nav("Parent", "Tuition")">
+                    <span class="lt-nav__icon"><i class="bi bi-cash-coin"></i></span>
+                    Học phí
+                </a>
                 <a asp-controller="Parent" asp-action="Messages" class="@Nav("Parent", "Messages")">
                     <span class="lt-nav__icon"><i class="bi bi-chat-dots-fill"></i></span>
                     Tin nhắn
@@ -457,6 +501,15 @@
             {
             <div class="lt-nav__section">
                 <div class="lt-nav__section-label">Học tập</div>
+                <a asp-controller="Learn" asp-action="Index" class="@Nav("Learn")"
+                   style="position:relative">
+                    <span class="lt-nav__icon"><i class="bi bi-mortarboard-fill"></i></span>
+                    Khóa học của tôi
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 background:var(--lt-gold);color:var(--lt-navy);
+                                 font-size:.6rem;font-weight:800;letter-spacing:.04em;
+                                 padding:1px 5px;border-radius:4px;line-height:1.4">MỚI</span>
+                </a>
                 <a asp-controller="StudentGrades" asp-action="Index" class="@Nav("StudentGrades")">
                     <span class="lt-nav__icon"><i class="bi bi-journal-text"></i></span>
                     Bảng điểm
@@ -538,7 +591,7 @@
             <!-- Desktop: thu gọn / mở rộng sidebar -->
             <button class="lt-topbar__btn d-none d-lg-flex" id="sidebarCollapse"
                     aria-label="Thu gọn hoặc mở rộng menu" title="Thu gọn / mở rộng menu">
-                <i class="bi bi-text-indent-left" style="font-size:1.25rem"></i>
+                <i class="bi bi-list" style="font-size:1.35rem"></i>
             </button>
 
             <h1 class="lt-topbar__title">@(ViewData["Title"] ?? "Dashboard")</h1>

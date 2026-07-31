@@ -48,7 +48,7 @@ public sealed class FinanceService : IFinanceService
 
         if (duplicate.Any())
             return Result<TuitionFeeConfigDto>.Failure(
-                "DUPLICATE", "Đã tồn tại cấu hình học phí cho khối lớp này trong năm học.");
+                "Đã tồn tại cấu hình học phí cho khối lớp này trong năm học.", "DUPLICATE");
 
         var config = new TuitionFeeConfig
         {
@@ -79,7 +79,7 @@ public sealed class FinanceService : IFinanceService
     {
         var config = await _uow.TuitionFeeConfigs.GetByIdAsync(configId, ct);
         if (config is null)
-            return Result.Failure("NOT_FOUND", "Cấu hình học phí không tồn tại.");
+            return Result.Failure("Cấu hình học phí không tồn tại.", "NOT_FOUND");
 
         config.IsActive = false;
         await _uow.SaveChangesAsync(ct);
@@ -99,7 +99,7 @@ public sealed class FinanceService : IFinanceService
 
         var invoice = invoices.FirstOrDefault();
         if (invoice is null)
-            return Result<InvoiceDto>.Failure("NOT_FOUND", "Hóa đơn không tồn tại.");
+            return Result<InvoiceDto>.Failure("Hóa đơn không tồn tại.", "NOT_FOUND");
 
         return Result<InvoiceDto>.Success(_mapper.Map<InvoiceDto>(invoice));
     }
@@ -129,6 +129,26 @@ public sealed class FinanceService : IFinanceService
         return Result<PagedResult<InvoiceDto>>.Success(result);
     }
 
+    public async Task<Result<IReadOnlyList<InvoiceDto>>> GetInvoicesForStudentsAsync(
+        int schoolId, IReadOnlyCollection<int> studentIds, CancellationToken ct = default)
+    {
+        if (studentIds.Count == 0)
+            return Result<IReadOnlyList<InvoiceDto>>.Success(new List<InvoiceDto>());
+
+        var invoices = await _uow.TuitionInvoices.FindAsync(
+            i => i.SchoolId == schoolId && studentIds.Contains(i.StudentId),
+            include: q => q.Include(i => i.Student).Include(i => i.Payments),
+            ct: ct);
+
+        // Chưa trả (Pending/Partial/Overdue) lên trước, rồi tới hạn gần nhất.
+        var ordered = invoices
+            .OrderBy(i => i.Status == InvoiceStatus.Paid || i.Status == InvoiceStatus.Cancelled ? 1 : 0)
+            .ThenBy(i => i.DueDate)
+            .ToList();
+
+        return Result<IReadOnlyList<InvoiceDto>>.Success(_mapper.Map<List<InvoiceDto>>(ordered));
+    }
+
     // ─── CreateInvoice (thủ công 1 học sinh) ─────────────────────────────────
 
     public async Task<Result<InvoiceDto>> CreateInvoiceAsync(
@@ -137,12 +157,12 @@ public sealed class FinanceService : IFinanceService
         // Validate config belongs to school
         var config = await _uow.TuitionFeeConfigs.GetByIdAsync(request.ConfigId, ct);
         if (config is null || config.SchoolId != schoolId)
-            return Result<InvoiceDto>.Failure("CFG_NOT_FOUND", "Loại phí không tồn tại.");
+            return Result<InvoiceDto>.Failure("Loại phí không tồn tại.", "CFG_NOT_FOUND");
 
         // Validate student belongs to school
         var student = await _uow.Users.GetByIdAsync(request.StudentId, ct);
         if (student is null || student.SchoolId != schoolId)
-            return Result<InvoiceDto>.Failure("STU_NOT_FOUND", "Học sinh không tồn tại.");
+            return Result<InvoiceDto>.Failure("Học sinh không tồn tại.", "STU_NOT_FOUND");
 
         // Check duplicate invoice for same student + period + fee type
         var duplicate = await _uow.TuitionInvoices.AnyAsync(
@@ -152,8 +172,8 @@ public sealed class FinanceService : IFinanceService
                  i.BillingPeriod == request.BillingPeriod, ct);
 
         if (duplicate)
-            return Result<InvoiceDto>.Failure("DUPLICATE",
-                $"Học sinh đã có hóa đơn cho loại phí '{config.FeeType}' kỳ {request.BillingPeriod}.");
+            return Result<InvoiceDto>.Failure(
+                $"Học sinh đã có hóa đơn cho loại phí '{config.FeeType}' kỳ {request.BillingPeriod}.", "DUPLICATE");
 
         // Generate invoice code
         var count = await _uow.TuitionInvoices.CountAsync(i => i.SchoolId == schoolId, ct);
@@ -254,64 +274,68 @@ public sealed class FinanceService : IFinanceService
             ct: ct);
 
         if (invoice is null || invoice.SchoolId != schoolId)
-            return Result<PaymentSummaryDto>.Failure("NOT_FOUND", "Hóa đơn không tồn tại.");
+            return Result<PaymentSummaryDto>.Failure("Hóa đơn không tồn tại.", "NOT_FOUND");
 
         if (invoice.Status == InvoiceStatus.Paid)
-            return Result<PaymentSummaryDto>.Failure("ALREADY_PAID", "Hóa đơn đã được thanh toán.");
+            return Result<PaymentSummaryDto>.Failure("Hóa đơn đã được thanh toán.", "ALREADY_PAID");
 
         if (request.AmountPaid <= 0)
-            return Result<PaymentSummaryDto>.Failure("INVALID_AMOUNT", "Số tiền thanh toán không hợp lệ.");
+            return Result<PaymentSummaryDto>.Failure("Số tiền thanh toán không hợp lệ.", "INVALID_AMOUNT");
 
-        await _uow.BeginTransactionAsync(ct);
+        var alreadyPaid = invoice.Payments.Sum(p => p.AmountPaid);
+        if (alreadyPaid + request.AmountPaid > invoice.FinalAmount)
+            return Result<PaymentSummaryDto>.Failure(
+                $"Số tiền vượt quá công nợ còn lại ({invoice.FinalAmount - alreadyPaid:N0}đ).", "AMOUNT_EXCEEDS");
+
+        var payment = new TuitionPayment
+        {
+            InvoiceId         = request.InvoiceId,
+            SchoolId          = schoolId,
+            AmountPaid        = request.AmountPaid,
+            PaymentDate       = DateTime.UtcNow,
+            PaymentMethod     = request.PaymentMethod,
+            TransactionCode   = request.TransactionCode?.Trim(),
+            PaymentStatus     = PaymentStatus.Success,
+            Note              = request.Note?.Trim(),
+            ProcessedByUserId = processedByUserId
+        };
+
         try
         {
-            var payment = new TuitionPayment
+            // ExecuteInTransactionAsync bọc trong execution strategy — bắt buộc khi bật
+            // EnableRetryOnFailure (BeginTransaction thủ công sẽ ném lỗi với retry strategy).
+            await _uow.ExecuteInTransactionAsync(async () =>
             {
-                InvoiceId         = request.InvoiceId,
-                SchoolId          = schoolId,
-                AmountPaid        = request.AmountPaid,
-                PaymentDate       = DateTime.UtcNow,
-                PaymentMethod     = request.PaymentMethod,
-                TransactionCode   = request.TransactionCode?.Trim(),
-                PaymentStatus     = PaymentStatus.Success,
-                Note              = request.Note?.Trim(),
-                ProcessedByUserId = processedByUserId
-            };
+                await _uow.TuitionPayments.AddAsync(payment, ct);
 
-            await _uow.TuitionPayments.AddAsync(payment, ct);
+                var totalPaid = alreadyPaid + request.AmountPaid;
+                if (totalPaid >= invoice.FinalAmount)
+                    invoice.Status = InvoiceStatus.Paid;
+                else if (totalPaid > 0)
+                    invoice.Status = InvoiceStatus.Partial;
 
-            var totalPaid = invoice.Payments.Sum(p => p.AmountPaid) + request.AmountPaid;
-
-            if (totalPaid >= invoice.FinalAmount)
-                invoice.Status = InvoiceStatus.Paid;
-            else if (totalPaid > 0)
-                invoice.Status = InvoiceStatus.Partial;
-
-            await _uow.SaveChangesAsync(ct);
-            await _uow.CommitTransactionAsync(ct);
-
-            _logger.LogInformation(
-                "Payment recorded: Invoice={InvoiceId}, Amount={Amount}, By={UserId}",
-                request.InvoiceId, request.AmountPaid, processedByUserId);
-
-            var summary = new PaymentSummaryDto
-            {
-                PaymentId       = payment.Id,
-                AmountPaid      = payment.AmountPaid,
-                PaymentMethod   = payment.PaymentMethod.ToString(),
-                PaymentStatus   = payment.PaymentStatus.ToString(),
-                TransactionCode = payment.TransactionCode,
-                PaymentDate     = payment.PaymentDate
-            };
-
-            return Result<PaymentSummaryDto>.Success(summary);
+                await _uow.SaveChangesAsync(ct);
+            }, ct);
         }
         catch (Exception ex)
         {
-            await _uow.RollbackTransactionAsync(ct);
             _logger.LogError(ex, "RecordPayment failed for invoice {InvoiceId}", request.InvoiceId);
-            return Result<PaymentSummaryDto>.Failure("INTERNAL_ERROR", "Có lỗi khi ghi nhận thanh toán.");
+            return Result<PaymentSummaryDto>.Failure("Có lỗi khi ghi nhận thanh toán.", "INTERNAL_ERROR");
         }
+
+        _logger.LogInformation(
+            "Payment recorded: Invoice={InvoiceId}, Amount={Amount}, By={UserId}",
+            request.InvoiceId, request.AmountPaid, processedByUserId);
+
+        return Result<PaymentSummaryDto>.Success(new PaymentSummaryDto
+        {
+            PaymentId       = payment.Id,
+            AmountPaid      = payment.AmountPaid,
+            PaymentMethod   = payment.PaymentMethod.ToString(),
+            PaymentStatus   = payment.PaymentStatus.ToString(),
+            TransactionCode = payment.TransactionCode,
+            PaymentDate     = payment.PaymentDate
+        });
     }
 
     public async Task<VnPayConfirmResult> ConfirmVnPayPaymentAsync(
@@ -324,27 +348,28 @@ public sealed class FinanceService : IFinanceService
         if (invoice.Status == InvoiceStatus.Paid)  return VnPayConfirmResult.AlreadyConfirmed;
         if (gatewayAmount != invoice.FinalAmount)  return VnPayConfirmResult.InvalidAmount;
 
-        await _uow.BeginTransactionAsync(ct);
         try
         {
-            await _uow.TuitionPayments.AddAsync(new TuitionPayment
+            await _uow.ExecuteInTransactionAsync(async () =>
             {
-                InvoiceId         = invoice.Id,
-                SchoolId          = invoice.SchoolId,
-                AmountPaid        = gatewayAmount,
-                PaymentDate       = DateTime.UtcNow,
-                PaymentMethod     = PaymentMethod.VnPay,
-                TransactionCode   = transactionNo,
-                GatewayResponse   = gatewayRaw,
-                PaymentStatus     = PaymentStatus.Success,
-                Note              = "Thanh toán online qua VNPay",
-                ProcessedByUserId = null               // hệ thống tự xác nhận
+                await _uow.TuitionPayments.AddAsync(new TuitionPayment
+                {
+                    InvoiceId         = invoice.Id,
+                    SchoolId          = invoice.SchoolId,
+                    AmountPaid        = gatewayAmount,
+                    PaymentDate       = DateTime.UtcNow,
+                    PaymentMethod     = PaymentMethod.VnPay,
+                    TransactionCode   = transactionNo,
+                    GatewayResponse   = gatewayRaw,
+                    PaymentStatus     = PaymentStatus.Success,
+                    Note              = "Thanh toán online qua VNPay",
+                    ProcessedByUserId = null               // hệ thống tự xác nhận
+                }, ct);
+
+                invoice.Status = InvoiceStatus.Paid;
+
+                await _uow.SaveChangesAsync(ct);
             }, ct);
-
-            invoice.Status = InvoiceStatus.Paid;
-
-            await _uow.SaveChangesAsync(ct);
-            await _uow.CommitTransactionAsync(ct);
 
             _logger.LogInformation("VNPay confirmed: Invoice={Id} Amount={Amount} TxnNo={Txn}",
                 invoice.Id, gatewayAmount, transactionNo);
@@ -352,7 +377,6 @@ public sealed class FinanceService : IFinanceService
         }
         catch (Exception ex)
         {
-            await _uow.RollbackTransactionAsync(ct);
             _logger.LogError(ex, "VNPay confirm failed for invoice {Id}", invoiceId);
             return VnPayConfirmResult.Error;
         }

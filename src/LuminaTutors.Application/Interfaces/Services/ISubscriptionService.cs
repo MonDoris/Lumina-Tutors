@@ -35,6 +35,12 @@ public interface ISubscriptionService
     /// <summary>Hủy đăng ký — không tự gia hạn nữa; vẫn dùng đến hết kỳ đã trả.</summary>
     Task<Result> CancelAsync(int schoolId, CancellationToken ct = default);
 
+    /// <summary>
+    /// Đặt email nhận hóa đơn của trường (School.Email). Để trống = xóa,
+    /// khi đó hóa đơn gửi về email tài khoản Nhà trường.
+    /// </summary>
+    Task<Result> UpdateBillingEmailAsync(int schoolId, string? email, CancellationToken ct = default);
+
     Task<Result<SubscriptionOrderDto>> GetOrderAsync(int orderId, int schoolId, CancellationToken ct = default);
 
     /// <summary>Xác nhận thanh toán 1 đơn (idempotent) — kích hoạt gói/add-on, gia hạn kỳ.</summary>

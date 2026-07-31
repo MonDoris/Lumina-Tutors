@@ -65,6 +65,33 @@ public class MappingProfile : Profile
             ))
             .ForAllMembers(o => o.Ignore()); // all members set via ConstructUsing
 
+        // StudentService.GetByIdAsync/CreateAsync/UpdateAsync map StudentProfile → StudentDetailDto.
+        // Cũng là positional record ⇒ dùng ConstructUsing. Danh sách Parents được service ghi đè
+        // sau khi map (qua "with { Parents = ... }"), nên ở đây khởi tạo rỗng.
+        CreateMap<StudentProfile, StudentDetailDto>()
+            .ConstructUsing((s, _) => new StudentDetailDto(
+                UserId:              s.UserId,
+                StudentCode:         s.StudentCode,
+                FullName:            s.User != null ? s.User.FullName : string.Empty,
+                Email:               s.User != null ? s.User.Email    : string.Empty,
+                PhoneNumber:         s.User != null ? s.User.PhoneNumber : null,
+                AvatarUrl:           s.User != null ? s.User.AvatarUrl   : null,
+                DateOfBirth:         s.DateOfBirth,
+                Gender:              s.Gender != null ? s.Gender.ToString() : null,
+                PlaceOfBirth:        s.PlaceOfBirth,
+                PermanentAddress:    s.PermanentAddress,
+                EthnicGroup:         s.EthnicGroup,
+                AdmissionDate:       s.AdmissionDate,
+                AdmissionType:       s.AdmissionType != null ? s.AdmissionType.ToString() : null,
+                CurrentClassId:      null,
+                CurrentClassName:    null,
+                CurrentGradeName:    null,
+                HomeRoomTeacherName: null,
+                Parents:             new List<ParentInfoDto>(),
+                IsActive:            s.User != null && s.User.IsActive
+            ))
+            .ForAllMembers(o => o.Ignore());
+
         CreateMap<ParentStudentRelation, ParentInfoDto>()
             .ForMember(d => d.FullName,    o => o.MapFrom(s => s.Parent.FullName))
             .ForMember(d => d.PhoneNumber, o => o.MapFrom(s => s.Parent.PhoneNumber));
@@ -112,24 +139,43 @@ public class MappingProfile : Profile
             .ForMember(d => d.ContractType,          o => o.MapFrom(s => s.TeacherProfile != null && s.TeacherProfile.ContractType.HasValue ? s.TeacherProfile.ContractType.Value.ToString() : null));
 
         // ── Attendance ────────────────────────────────────────────────────────
+        // AttendanceSessionDto/AttendanceRecordDto là positional record ⇒ phải dùng ConstructUsing
+        // (ForMember không gán được vào tham số constructor của record — xem chú thích ở StudentSummaryDto).
         CreateMap<AttendanceSession, AttendanceSessionDto>()
-            .ForMember(d => d.SessionId,    o => o.MapFrom(s => s.Id))
-            .ForMember(d => d.ClassName,    o => o.MapFrom(s => s.Schedule.SubjectAssignment.Class.ClassName))
-            .ForMember(d => d.SubjectName,  o => o.MapFrom(s => s.Schedule.SubjectAssignment.Subject.SubjectName))
-            .ForMember(d => d.SessionStatus,o => o.MapFrom(s => s.SessionStatus.ToString()))
-            .ForMember(d => d.IsQRExpired,  o => o.MapFrom(s => DateTime.UtcNow > s.QRExpiresAt))
-            .ForMember(d => d.TotalStudents,o => o.MapFrom(s => s.Attendances.Count))
-            .ForMember(d => d.PresentCount, o => o.MapFrom(s => s.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Present)))
-            .ForMember(d => d.AbsentCount,  o => o.MapFrom(s => s.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Absent)))
-            .ForMember(d => d.LateCount,    o => o.MapFrom(s => s.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Late)))
-            .ForMember(d => d.ExcusedCount, o => o.MapFrom(s => s.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Excused)));
+            .ConstructUsing((s, _) => new AttendanceSessionDto(
+                SessionId:     s.Id,
+                ScheduleId:    s.ScheduleId,
+                ClassName:     s.Schedule != null && s.Schedule.SubjectAssignment != null && s.Schedule.SubjectAssignment.Class != null ? s.Schedule.SubjectAssignment.Class.ClassName : string.Empty,
+                SubjectName:   s.Schedule != null && s.Schedule.SubjectAssignment != null && s.Schedule.SubjectAssignment.Subject != null ? s.Schedule.SubjectAssignment.Subject.SubjectName : string.Empty,
+                SessionDate:   s.SessionDate,
+                SessionStatus: s.SessionStatus.ToString(),
+                QRToken:       s.QRToken,
+                QRExpiresAt:   s.QRExpiresAt,
+                IsQRExpired:   DateTime.UtcNow > s.QRExpiresAt,
+                TopicNote:     s.TopicNote,
+                TotalStudents: s.Attendances != null ? s.Attendances.Count : 0,
+                PresentCount:  s.Attendances != null ? s.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Present) : 0,
+                AbsentCount:   s.Attendances != null ? s.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Absent) : 0,
+                LateCount:     s.Attendances != null ? s.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Late) : 0,
+                ExcusedCount:  s.Attendances != null ? s.Attendances.Count(a => a.Status == Domain.Enums.AttendanceStatus.Excused) : 0,
+                CreatedAt:     s.CreatedAt,
+                Records:       null
+            ))
+            .ForAllMembers(o => o.Ignore());
 
         CreateMap<StudentAttendance, AttendanceRecordDto>()
-            .ForMember(d => d.AttendanceId, o => o.MapFrom(s => s.Id))
-            .ForMember(d => d.StudentCode,  o => o.MapFrom(s => s.Student.StudentProfile != null ? s.Student.StudentProfile.StudentCode : ""))
-            .ForMember(d => d.StudentName,  o => o.MapFrom(s => s.Student.FullName))
-            .ForMember(d => d.Status,       o => o.MapFrom(s => s.Status.ToString()))
-            .ForMember(d => d.CheckMethod,  o => o.MapFrom(s => s.CheckMethod.HasValue ? s.CheckMethod.Value.ToString() : null));
+            .ConstructUsing((s, _) => new AttendanceRecordDto(
+                AttendanceId:   s.Id,
+                StudentId:      s.StudentId,
+                StudentCode:    s.Student != null && s.Student.StudentProfile != null ? s.Student.StudentProfile.StudentCode : string.Empty,
+                StudentName:    s.Student != null ? s.Student.FullName : string.Empty,
+                Status:         s.Status.ToString(),
+                CheckedInAt:    s.CheckedInAt,
+                CheckMethod:    s.CheckMethod.HasValue ? s.CheckMethod.Value.ToString() : null,
+                NotifiedParent: s.NotifiedParent,
+                Note:           s.Note
+            ))
+            .ForAllMembers(o => o.Ignore());
 
         // ── Grading ───────────────────────────────────────────────────────────
         CreateMap<ScoreEntry, ScoreEntryDto>()
@@ -140,14 +186,23 @@ public class MappingProfile : Profile
             .ForMember(d => d.CategoryName,  o => o.MapFrom(s => s.GradeCategory.CategoryName))
             .ForMember(d => d.Coefficient,   o => o.MapFrom(s => s.GradeCategory.Coefficient));
 
+        // ExamDto là positional record ⇒ dùng ConstructUsing (xem chú thích ở StudentSummaryDto).
         CreateMap<Exam, ExamDto>()
-            .ForMember(d => d.ExamId,          o => o.MapFrom(s => s.Id))
-            .ForMember(d => d.SubjectName,     o => o.MapFrom(s => s.Subject.SubjectName))
-            .ForMember(d => d.GradeName,       o => o.MapFrom(s => s.GradeLevel.GradeName))
-            .ForMember(d => d.SemesterName,    o => o.MapFrom(s => s.Semester.SemesterName))
-            .ForMember(d => d.StartTime,       o => o.MapFrom(s => s.StartTime.ToString("HH:mm")))
-            .ForMember(d => d.RoomCount,       o => o.MapFrom(s => s.ExamRooms.Count))
-            .ForMember(d => d.TotalStudents,   o => o.MapFrom(s => s.ExamRooms.Sum(r => r.SeatAssignments.Count)));
+            .ConstructUsing((s, _) => new ExamDto(
+                ExamId:          s.Id,
+                ExamName:        s.ExamName,
+                ExamType:        s.ExamType.ToString(),
+                SubjectName:     s.Subject != null ? s.Subject.SubjectName : string.Empty,
+                GradeName:       s.GradeLevel != null ? s.GradeLevel.GradeName : string.Empty,
+                SemesterName:    s.Semester != null ? s.Semester.SemesterName : string.Empty,
+                ExamDate:        s.ExamDate,
+                StartTime:       s.StartTime.ToString("HH:mm"),
+                DurationMinutes: s.DurationMinutes,
+                MaxScore:        s.MaxScore,
+                RoomCount:       s.ExamRooms != null ? s.ExamRooms.Count : 0,
+                TotalStudents:   s.ExamRooms != null ? s.ExamRooms.Sum(r => r.SeatAssignments != null ? r.SeatAssignments.Count : 0) : 0
+            ))
+            .ForAllMembers(o => o.Ignore());
 
         // ── Finance ───────────────────────────────────────────────────────────
         CreateMap<TuitionFeeConfig, TuitionFeeConfigDto>()
@@ -178,30 +233,62 @@ public class MappingProfile : Profile
             .ForMember(d => d.PaymentStatus, o => o.MapFrom(s => s.PaymentStatus.ToString()));
 
         // ── HR ────────────────────────────────────────────────────────────────
+        // PayrollDto là positional record ⇒ dùng ConstructUsing (xem chú thích ở StudentSummaryDto).
         CreateMap<Payroll, PayrollDto>()
-            .ForMember(d => d.PayrollId,    o => o.MapFrom(s => s.Id))
-            .ForMember(d => d.TeacherName,  o => o.MapFrom(s => s.User.FullName))
-            .ForMember(d => d.GrossIncome,  o => o.MapFrom(s => s.GrossIncome))
-            .ForMember(d => d.NetSalary,    o => o.MapFrom(s => s.NetSalary))
-            .ForMember(d => d.Status,       o => o.MapFrom(s => s.Status.ToString()));
+            .ConstructUsing((s, _) => new PayrollDto(
+                PayrollId:          s.Id,
+                TeacherName:        s.User != null ? s.User.FullName : string.Empty,
+                Month:              s.PayrollMonth,
+                Year:               s.PayrollYear,
+                BaseSalary:         s.BaseSalary,
+                TeachingAllowance:  s.TeachingAllowance,
+                PositionAllowance:  s.PositionAllowance,
+                OvertimePay:        s.OvertimePay,
+                Bonus:              s.Bonus,
+                GrossIncome:        s.GrossIncome,
+                InsuranceDeduction: s.InsuranceDeduction,
+                TaxDeduction:       s.TaxDeduction,
+                OtherDeductions:    s.OtherDeductions,
+                NetSalary:          s.NetSalary,
+                Status:             s.Status.ToString()
+            ))
+            .ForAllMembers(o => o.Ignore());
 
         // ── Discipline ────────────────────────────────────────────────────────
+        // DisciplineRecordDto là positional record ⇒ dùng ConstructUsing (xem chú thích ở StudentSummaryDto).
         CreateMap<DisciplineRecord, DisciplineRecordDto>()
-            .ForMember(d => d.RecordId,      o => o.MapFrom(s => s.Id))
-            .ForMember(d => d.StudentCode,   o => o.MapFrom(s => s.Student.StudentProfile != null ? s.Student.StudentProfile.StudentCode : ""))
-            .ForMember(d => d.StudentName,   o => o.MapFrom(s => s.Student.FullName))
-            .ForMember(d => d.ClassName,     o => o.Ignore())
-            .ForMember(d => d.ReportedByName,o => o.MapFrom(s => s.ReportedBy.FullName))
-            .ForMember(d => d.Severity,      o => o.MapFrom(s => s.Severity.ToString()))
-            .ForMember(d => d.Status,        o => o.MapFrom(s => s.Status.ToString()));
+            .ConstructUsing((s, _) => new DisciplineRecordDto(
+                RecordId:       s.Id,
+                StudentId:      s.StudentId,
+                StudentCode:    s.Student != null && s.Student.StudentProfile != null ? s.Student.StudentProfile.StudentCode : string.Empty,
+                StudentName:    s.Student != null ? s.Student.FullName : string.Empty,
+                ClassName:      string.Empty,   // được service điền riêng nếu cần
+                ReportedByName: s.ReportedBy != null ? s.ReportedBy.FullName : string.Empty,
+                RecordDate:     s.RecordDate,
+                ViolationType:  s.ViolationType,
+                Severity:       s.Severity.ToString(),
+                Description:    s.Description,
+                ActionTaken:    s.ActionTaken,
+                Status:         s.Status.ToString(),
+                CreatedAt:      s.CreatedAt
+            ))
+            .ForAllMembers(o => o.Ignore());
 
         // ── Communication ─────────────────────────────────────────────────────
+        // NotificationDto là positional record ⇒ dùng ConstructUsing (xem chú thích ở StudentSummaryDto).
+        // IsRead được service ghi đè theo từng người nhận qua "with { IsRead = ... }".
         CreateMap<Notification, NotificationDto>()
-            .ForMember(d => d.NotificationId,  o => o.MapFrom(s => s.Id))
-            .ForMember(d => d.NotificationType,o => o.MapFrom(s => s.NotificationType.ToString()))
-            .ForMember(d => d.Channel,         o => o.MapFrom(s => s.Channel.ToString()))
-            .ForMember(d => d.SentByName,      o => o.MapFrom(s => s.SentBy != null ? s.SentBy.FullName : "System"))
-            .ForMember(d => d.IsRead,          o => o.Ignore());  // Set separately per user
+            .ConstructUsing((s, _) => new NotificationDto(
+                NotificationId:   s.Id,
+                Title:            s.Title,
+                Body:             s.Body,
+                NotificationType: s.NotificationType.ToString(),
+                Channel:          s.Channel.ToString(),
+                SentByName:       s.SentBy != null ? s.SentBy.FullName : "System",
+                CreatedAt:        s.CreatedAt,
+                IsRead:           false
+            ))
+            .ForAllMembers(o => o.Ignore());
 
         CreateMap<Message, MessageDto>()
             .ConstructUsing((s, _) => new MessageDto(
@@ -233,11 +320,22 @@ public class MappingProfile : Profile
             ))
             .ForAllMembers(o => o.Ignore());
 
+        // NewsBoardDto là positional record ⇒ dùng ConstructUsing (xem chú thích ở StudentSummaryDto).
         CreateMap<NewsBoard, NewsBoardDto>()
-            .ForMember(d => d.NewsId,          o => o.MapFrom(s => s.Id))
-            .ForMember(d => d.Scope,           o => o.MapFrom(s => s.Scope.ToString()))
-            .ForMember(d => d.TargetClassName, o => o.MapFrom(s => s.TargetClass != null ? s.TargetClass.ClassName : null))
-            .ForMember(d => d.PublishedByName, o => o.MapFrom(s => s.PublishedBy.FullName));
+            .ConstructUsing((s, _) => new NewsBoardDto(
+                NewsId:          s.Id,
+                Title:           s.Title,
+                ContentHtml:     s.ContentHtml,
+                CoverImageUrl:   s.CoverImageUrl,
+                Scope:           s.Scope.ToString(),
+                TargetClassName: s.TargetClass != null ? s.TargetClass.ClassName : null,
+                IsPinned:        s.IsPinned,
+                IsPublished:     s.IsPublished,
+                PublishedByName: s.PublishedBy != null ? s.PublishedBy.FullName : string.Empty,
+                PublishedAt:     s.PublishedAt,
+                CreatedAt:       s.CreatedAt
+            ))
+            .ForAllMembers(o => o.Ignore());
     }
 
     private static string GetDayName(byte day) => day switch

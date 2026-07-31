@@ -20,13 +20,19 @@ public sealed class SubscriptionService : ISubscriptionService
 {
     private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher<User> _hasher;
+    private readonly IBillingEmailService _billingMail;
     private readonly ILogger<SubscriptionService> _logger;
 
-    public SubscriptionService(IUnitOfWork uow, IPasswordHasher<User> hasher, ILogger<SubscriptionService> logger)
+    public SubscriptionService(
+        IUnitOfWork uow,
+        IPasswordHasher<User> hasher,
+        IBillingEmailService billingMail,
+        ILogger<SubscriptionService> logger)
     {
-        _uow    = uow;
-        _hasher = hasher;
-        _logger = logger;
+        _uow         = uow;
+        _hasher      = hasher;
+        _billingMail = billingMail;
+        _logger      = logger;
     }
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.UtcNow);
@@ -128,14 +134,42 @@ public sealed class SubscriptionService : ISubscriptionService
             };
         }).ToList();
 
+        var school = await _uow.Schools.GetByIdAsync(schoolId, ct);
+
         return Result<SubscriptionOverviewDto>.Success(new SubscriptionOverviewDto
         {
             Current      = current,
             Plans        = planDtos,
             AddOns       = addOnDtos,
             QuotaAddOns  = quotaAddOnDtos,
-            RecentOrders = orders
+            RecentOrders = orders,
+            BillingEmail = school?.Email
         });
+    }
+
+    // ─── Email nhận hóa đơn ───────────────────────────────────────────────────
+
+    public async Task<Result> UpdateBillingEmailAsync(int schoolId, string? email, CancellationToken ct = default)
+    {
+        var school = await _uow.Schools.GetByIdAsync(schoolId, ct);
+        if (school is null) return Result.Failure("Không tìm thấy trường.", "SCHOOL_NOT_FOUND");
+
+        var value = email?.Trim();
+        if (!string.IsNullOrEmpty(value))
+        {
+            if (value.Length > 150)
+                return Result.Failure("Email quá dài (tối đa 150 ký tự).", "EMAIL_TOO_LONG");
+            var at = value.IndexOf('@');
+            if (at <= 0 || at == value.Length - 1 || value.Contains(' ') || !value[(at + 1)..].Contains('.'))
+                return Result.Failure("Email không hợp lệ.", "EMAIL_INVALID");
+        }
+
+        school.Email = string.IsNullOrEmpty(value) ? null : value;
+        _uow.Schools.Update(school);
+        await _uow.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Trường {SchoolId} đổi email nhận hóa đơn thành {Email}", schoolId, school.Email ?? "(trống)");
+        return Result.Success();
     }
 
     // ─── Subscribe / Upgrade ──────────────────────────────────────────────────
@@ -509,6 +543,21 @@ public sealed class SubscriptionService : ISubscriptionService
 
             _logger.LogInformation("Subscription order {Id} confirmed paid ({Method}) for school {School}",
                 orderId, method, order.SchoolId);
+
+            // Gửi hóa đơn về nhà trường. Chỉ chạy đúng 1 lần vì đơn đã chuyển sang Paid
+            // (lần xác nhận sau trả AlreadyConfirmed và thoát sớm ở trên).
+            // Lỗi gửi mail KHÔNG được làm hỏng giao dịch đã thanh toán.
+            try
+            {
+                var mail = await _billingMail.SendSubscriptionReceiptAsync(orderId, ct);
+                if (!mail.IsSuccess)
+                    _logger.LogWarning("Không gửi được hóa đơn đơn {Id}: {Error}", orderId, mail.Error);
+            }
+            catch (Exception mailEx)
+            {
+                _logger.LogError(mailEx, "Lỗi khi gửi hóa đơn đơn {Id}", orderId);
+            }
+
             return SubscriptionConfirmResult.Ok;
         }
         catch (Exception ex)

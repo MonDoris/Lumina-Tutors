@@ -1,0 +1,98 @@
+@using LuminaTutors.Application.DTOs.Course
+@using LuminaTutors.Domain.Enums
+@{
+    var outline = (StudentCourseOutlineDto)ViewBag.Outline;
+    ViewData["Title"] = outline.Title;
+    var pct = outline.ProgressPercent.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    string TypeIcon(CourseLessonType t) => t switch
+    {
+        CourseLessonType.Video => "bi-play-circle",
+        CourseLessonType.Quiz  => "bi-patch-question",
+        _                      => "bi-file-text"
+    };
+}
+
+<div class="lt-page-header">
+    <div>
+        <div style="margin-bottom:.35rem">
+            <a href="@Url.Action("Index")" style="color:var(--lt-text-muted);text-decoration:none;font-size:.85rem">
+                <i class="bi bi-arrow-left"></i> Khóa học của tôi
+            </a>
+        </div>
+        <h1 class="lt-page-title">
+            <i class="bi bi-mortarboard-fill" style="color:var(--lt-gold);margin-right:8px"></i>
+            @outline.Title
+        </h1>
+        @if (!string.IsNullOrWhiteSpace(outline.Description))
+        { <p class="lt-page-subtitle">@outline.Description</p> }
+    </div>
+    @if (outline.ResumeLessonId.HasValue)
+    {
+        <a href="@Url.Action("Lesson", new { id = outline.ResumeLessonId })" class="lt-btn lt-btn--gold">
+            <i class="bi bi-play-fill"></i> Học tiếp
+        </a>
+    }
+</div>
+
+<div class="lt-card" style="margin-bottom:1rem">
+    <div class="lt-card__body" style="display:flex;align-items:center;gap:1rem">
+        <div class="lt-progress" style="flex:1">
+            <div class="lt-progress__bar @(outline.ProgressPercent >= 100 ? "lt-progress__bar--success" : "")" style="width:@(pct)%"></div>
+        </div>
+        <strong>@outline.ProgressPercent.ToString("0.#")%</strong>
+        <span style="color:var(--lt-text-muted);font-size:.9rem">@outline.CompletedLessons/@outline.TotalLessons bài</span>
+        @if (outline.IsSequential)
+        { <span class="lt-badge lt-badge--info" title="Hoàn thành bài trước để mở bài sau"><i class="bi bi-list-ol"></i> Học tuần tự</span> }
+    </div>
+</div>
+
+@foreach (var m in outline.Modules)
+{
+    <div class="lt-card" style="margin-bottom:.85rem;@(m.IsLocked ? "opacity:.65" : "")">
+        <div class="lt-card__body" style="padding:.95rem 1.1rem">
+            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.55rem">
+                <strong style="color:var(--lt-navy)">
+                    <i class="bi @(m.IsLocked ? "bi-lock-fill" : "bi-folder-fill")" style="color:var(--lt-gold)"></i>
+                    @m.Title
+                </strong>
+                @if (m.IsLocked && m.LockReason != null)
+                { <span class="lt-badge lt-badge--warning">@m.LockReason</span> }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(m.Description))
+            { <div style="color:var(--lt-text-muted);font-size:.85rem;margin-bottom:.5rem">@m.Description</div> }
+
+            <div style="display:flex;flex-direction:column;gap:.35rem">
+                @foreach (var l in m.Lessons)
+                {
+                    var done = l.Status == ProgressStatus.Completed;
+                    if (l.IsLocked)
+                    {
+                        <div style="display:flex;align-items:center;gap:.6rem;padding:.55rem .7rem;border:1px dashed #cbd5e1;border-radius:8px;color:var(--lt-text-muted)">
+                            <i class="bi bi-lock-fill"></i>
+                            <span>@l.Title</span>
+                            @if (l.VideoDurationSec is > 0)
+                            { <span style="font-size:.78rem;margin-left:auto"><i class="bi bi-clock"></i> @(TimeSpan.FromSeconds(l.VideoDurationSec.Value).ToString("mm\\:ss"))</span> }
+                        </div>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action("Lesson", new { id = l.Id })"
+                           style="display:flex;align-items:center;gap:.6rem;padding:.55rem .7rem;border:1px solid #e2e8f0;border-radius:8px;
+                                  text-decoration:none;color:inherit;@(done ? "background:#f0fdf4;border-color:#bbf7d0" : "background:#fff")">
+                            @if (done)
+                            { <i class="bi bi-check-circle-fill" style="color:var(--lt-success,#16a34a)"></i> }
+                            else if (l.Status == ProgressStatus.InProgress)
+                            { <i class="bi bi-play-circle-fill" style="color:var(--lt-gold)"></i> }
+                            else
+                            { <i class="bi @TypeIcon(l.ContentType)" style="color:var(--lt-navy)"></i> }
+                            <span style="font-weight:@(done ? "500" : "600")">@l.Title</span>
+                            @if (l.VideoDurationSec is > 0)
+                            { <span style="font-size:.78rem;color:var(--lt-text-muted);margin-left:auto"><i class="bi bi-clock"></i> @(TimeSpan.FromSeconds(l.VideoDurationSec.Value).ToString("mm\\:ss"))</span> }
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}

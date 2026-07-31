@@ -1,0 +1,246 @@
+@using LuminaTutors.Application.DTOs.Course
+@using LuminaTutors.Domain.Enums
+@{
+    var lesson = (StudentLessonContentDto)ViewBag.Lesson;
+    ViewData["Title"] = lesson.Title;
+    var isVideo   = lesson.ContentType == CourseLessonType.Video;
+    var isQuiz    = lesson.ContentType == CourseLessonType.Quiz;
+    var isArticle = lesson.ContentType == CourseLessonType.Article;
+}
+
+<div class="lt-page-header">
+    <div>
+        <div style="margin-bottom:.35rem">
+            <a href="javascript:history.back()" style="color:var(--lt-text-muted);text-decoration:none;font-size:.85rem">
+                <i class="bi bi-arrow-left"></i> Mục lục khóa học
+            </a>
+        </div>
+        <h1 class="lt-page-title">
+            <i class="bi @(isVideo ? "bi-play-circle-fill" : isQuiz ? "bi-patch-question-fill" : "bi-file-text-fill")"
+               style="color:var(--lt-gold);margin-right:8px"></i>
+            @lesson.Title
+        </h1>
+    </div>
+    <div id="lessonStatus">
+        @if (lesson.IsCompleted)
+        { <span class="lt-badge lt-badge--success" style="font-size:.9rem"><i class="bi bi-check-lg"></i> Đã hoàn thành</span> }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-8">
+        <div class="lt-card">
+            <div class="lt-card__body">
+                @if (isVideo)
+                {
+                    <div id="playerWrap" style="position:relative;background:#000;border-radius:10px;overflow:hidden;aspect-ratio:16/9">
+                        <!-- Player gắn bằng JS: HTML5 <video> hoặc YouTube iframe -->
+                    </div>
+                    <div style="display:flex;align-items:center;gap:.6rem;margin-top:.6rem;font-size:.85rem;color:var(--lt-text-muted)">
+                        <i class="bi bi-info-circle"></i>
+                        <span id="watchInfo">
+                            Cần xem tối thiểu @lesson.MinWatchPercent% thời lượng để hoàn thành bài học — tiến độ lưu tự động.
+                        </span>
+                    </div>
+                }
+                @if (isQuiz)
+                {
+                    <div class="lt-empty lt-empty--sm" style="padding:2rem 0">
+                        <div class="lt-empty__icon"><i class="bi bi-patch-question"></i></div>
+                        <div class="lt-empty__title">Bài trắc nghiệm</div>
+                        <div class="lt-empty__text">Làm bài và nộp, sau đó quay lại đây bấm "Hoàn thành bài học".</div>
+                        <a class="lt-btn lt-btn--gold" style="margin-top:.8rem"
+                           href="@Url.Action("Take", "QuizExam", new { id = lesson.QuizExamId })" target="_blank">
+                            <i class="bi bi-pencil-square"></i> Vào làm bài
+                        </a>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(lesson.ContentHtml))
+                {
+                    <div style="@(isVideo ? "margin-top:1rem;" : "")line-height:1.7">
+                        @Html.Raw(lesson.ContentHtml)   @* Nội dung do giáo viên soạn *@
+                    </div>
+                }
+                else if (isArticle)
+                {
+                    <div style="color:var(--lt-text-muted)">Bài học chưa có nội dung.</div>
+                }
+            </div>
+        </div>
+
+        <!-- Điều hướng bài trước / sau -->
+        <div style="display:flex;justify-content:space-between;margin-top:1rem;gap:.5rem">
+            @if (lesson.PrevLessonId.HasValue)
+            {
+                <a href="@Url.Action("Lesson", new { id = lesson.PrevLessonId })" class="lt-btn lt-btn--outline">
+                    <i class="bi bi-chevron-left"></i> Bài trước
+                </a>
+            }
+            else { <span></span> }
+            @if (lesson.NextLessonId.HasValue)
+            {
+                <a id="btnNext" href="@Url.Action("Lesson", new { id = lesson.NextLessonId })" class="lt-btn lt-btn--primary">
+                    Bài tiếp theo <i class="bi bi-chevron-right"></i>
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        @if (!string.IsNullOrWhiteSpace(lesson.Objectives))
+        {
+            <div class="lt-card" style="margin-bottom:1rem;border-left:3px solid var(--lt-gold)">
+                <div class="lt-card__header"><div class="lt-card__title"><i class="bi bi-bullseye"></i> Yêu cầu cần đạt</div></div>
+                <div class="lt-card__body" style="font-size:.9rem;line-height:1.65;white-space:pre-line">@lesson.Objectives</div>
+            </div>
+        }
+        <div class="lt-card" style="margin-bottom:1rem">
+            <div class="lt-card__header"><div class="lt-card__title"><i class="bi bi-flag"></i> Hoàn thành</div></div>
+            <div class="lt-card__body" style="display:flex;flex-direction:column;gap:.6rem">
+                <div id="completeHint" style="font-size:.88rem;color:var(--lt-text-muted)">
+                    @if (lesson.IsCompleted)
+                    { <span><i class="bi bi-check-circle-fill" style="color:#16a34a"></i> Bạn đã hoàn thành bài học này.</span> }
+                    else if (isVideo && lesson.VideoDurationSec is > 0)
+                    { <span>Xem đủ @lesson.MinWatchPercent% video, bài học tự được đánh dấu hoàn thành.</span> }
+                    else if (isQuiz)
+                    { <span>Nộp bài trắc nghiệm rồi bấm nút bên dưới.</span> }
+                    else
+                    { <span>Đọc xong nội dung, bấm nút bên dưới để ghi nhận.</span> }
+                </div>
+                @if (!lesson.IsCompleted && !(isVideo && lesson.VideoDurationSec is > 0))
+                {
+                    <button id="btnComplete" class="lt-btn lt-btn--gold" onclick="completeLesson()">
+                        <i class="bi bi-check-lg"></i> Hoàn thành bài học
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (lesson.Materials.Any())
+        {
+            <div class="lt-card">
+                <div class="lt-card__header"><div class="lt-card__title"><i class="bi bi-paperclip"></i> Tài liệu</div></div>
+                <div class="lt-card__body" style="display:flex;flex-direction:column;gap:.4rem">
+                    @foreach (var mt in lesson.Materials)
+                    {
+                        <a href="@mt.FileUrl" target="_blank"
+                           style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border:1px solid #e2e8f0;border-radius:8px;text-decoration:none;color:inherit">
+                            <i class="bi bi-file-earmark-arrow-down" style="color:var(--lt-navy)"></i>
+                            <span style="font-size:.9rem">@mt.FileName</span>
+                            @if (mt.FileSizeKB is > 0)
+                            { <span style="margin-left:auto;font-size:.75rem;color:var(--lt-text-muted)">@(mt.FileSizeKB >= 1024 ? $"{mt.FileSizeKB / 1024.0:0.#} MB" : $"{mt.FileSizeKB} KB")</span> }
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+const LESSON_ID    = @lesson.Id;
+const IS_VIDEO     = @(isVideo ? "true" : "false");
+const IS_COMPLETED = @(lesson.IsCompleted ? "true" : "false");
+const VIDEO_URL    = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(lesson.VideoUrl ?? ""));
+const RESUME_SEC   = @lesson.LastPositionSec;
+const TOKEN        = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+// ── API helpers ───────────────────────────────────────────────────────────────
+async function post(url, body, keepalive = false) {
+    try {
+        const resp = await fetch(url, {
+            method: 'POST', keepalive,
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': TOKEN },
+            body: body === undefined ? null : JSON.stringify(body)
+        });
+        return resp.ok ? await resp.json() : null;
+    } catch { return null; }
+}
+
+function markCompletedUi() {
+    document.getElementById('lessonStatus').innerHTML =
+        '<span class="lt-badge lt-badge--success" style="font-size:.9rem"><i class="bi bi-check-lg"></i> Đã hoàn thành</span>';
+    const hint = document.getElementById('completeHint');
+    if (hint) hint.innerHTML = '<span><i class="bi bi-check-circle-fill" style="color:#16a34a"></i> Bạn đã hoàn thành bài học này.</span>';
+    document.getElementById('btnComplete')?.remove();
+}
+
+async function completeLesson() {
+    const res = await post('@Url.Action("Complete", new { id = lesson.Id })');
+    if (!res) { alert('Không kết nối được máy chủ.'); return; }
+    if (!res.ok) { alert(res.error); return; }
+    markCompletedUi();
+    if (res.data.courseCompleted) alert('🎉 Chúc mừng! Bạn đã hoàn thành toàn bộ khóa học.');
+}
+
+// ── Video player + heartbeat ─────────────────────────────────────────────────
+if (IS_VIDEO) (function () {
+    let getPosition = () => 0;
+    let isPlaying   = () => false;
+    let watchedDelta = 0;
+    let completed = IS_COMPLETED;
+
+    // Đếm giây xem thực tế (chỉ khi đang phát)
+    setInterval(() => { if (isPlaying()) watchedDelta += 1; }, 1000);
+
+    async function heartbeat(keepalive = false) {
+        if (completed && watchedDelta === 0) return;
+        const body = { positionSec: Math.floor(getPosition()), watchedDeltaSec: watchedDelta };
+        watchedDelta = 0;
+        const res = await post('@Url.Action("Heartbeat", new { id = lesson.Id })', body, keepalive);
+        if (res?.ok && res.data.lessonCompleted && !completed) {
+            completed = true;
+            markCompletedUi();
+        }
+    }
+    setInterval(heartbeat, 15000);
+    window.addEventListener('pagehide', () => heartbeat(true));
+
+    // ── Khởi tạo player theo loại URL ────────────────────────────────────────
+    const wrap = document.getElementById('playerWrap');
+    const ytMatch = VIDEO_URL.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{6,20})/);
+
+    if (ytMatch) {
+        // YouTube IFrame API
+        const div = document.createElement('div');
+        div.id = 'ytPlayer';
+        wrap.appendChild(div);
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+
+        window.onYouTubeIframeAPIReady = function () {
+            const player = new YT.Player('ytPlayer', {
+                width: '100%', height: '100%',
+                videoId: ytMatch[1],
+                playerVars: { rel: 0, start: RESUME_SEC > 3 ? RESUME_SEC : 0 },
+                events: { onStateChange: () => {} }
+            });
+            getPosition = () => player.getCurrentTime ? player.getCurrentTime() : 0;
+            isPlaying   = () => player.getPlayerState && player.getPlayerState() === YT.PlayerState.PLAYING;
+        };
+        // iframe chiếm toàn khung
+        const style = document.createElement('style');
+        style.textContent = '#playerWrap iframe{position:absolute;inset:0;width:100%;height:100%}';
+        document.head.appendChild(style);
+    } else {
+        // HTML5 video (mp4 / m3u8 native)
+        const video = document.createElement('video');
+        video.src = VIDEO_URL;
+        video.controls = true;
+        video.preload = 'metadata';
+        video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+        video.addEventListener('loadedmetadata', () => {
+            if (RESUME_SEC > 3 && RESUME_SEC < video.duration - 5) video.currentTime = RESUME_SEC;
+        });
+        video.addEventListener('ended', () => heartbeat());
+        wrap.appendChild(video);
+        getPosition = () => video.currentTime || 0;
+        isPlaying   = () => !video.paused && !video.ended && video.readyState > 2;
+    }
+})();
+</script>
+}

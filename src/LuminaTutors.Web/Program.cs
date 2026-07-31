@@ -95,6 +95,9 @@ try
         options.AddPolicy("SchoolAdminOnly", p => p.RequireAssertion(ctx =>
             ctx.User.IsInRole("ADMIN") && !ctx.User.IsInRole("SYSADMIN")));
         options.AddPolicy("TeacherOrAdmin",  p => p.RequireRole("TEACHER", "ADMIN"));
+        // Soạn nội dung khóa học E-Learning: CHỈ giáo viên. Nhà trường (ADMIN) chỉ
+        // giám sát — xem khóa của từng giáo viên, từng lớp, bài tập và % hoàn thành.
+        options.AddPolicy("CourseAuthoring", p => p.RequireRole("TEACHER"));
         options.AddPolicy("FinanceAccess",   p => p.RequireRole("ACCOUNTANT", "ADMIN"));
         options.AddPolicy("SupervisorAccess",p => p.RequireRole("SUPERVISOR", "ADMIN"));
         options.AddPolicy("AnyAuthenticated",p => p.RequireAuthenticatedUser());

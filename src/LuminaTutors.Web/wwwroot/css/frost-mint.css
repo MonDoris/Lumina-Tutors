@@ -1,0 +1,289 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LUMINA TUTORS — "FROST MINT" GLASS THEME (override layer)
+   Purpose : Reskin toàn hệ thống (mọi role) sang glassmorphism tông teal/mint.
+   Load    : SAU lumina.css / dashboard.css / @section Styles để thắng cascade.
+   An toàn : Chỉ override màu & bề mặt (surface), KHÔNG đổi layout/vị trí.
+             Muốn tắt theme → gỡ 1 dòng <link> trong _Layout.cshtml.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. Token override: gold → teal, navy → teal-ink ──────────────────────── */
+:root {
+  --lt-gold:        #0d9488;   /* accent chính: link, nav active, badge, focus  */
+  --lt-gold-light:  #14b8a6;
+  --lt-gold-pale:   #d3f2ec;   /* nền hover nhạt                                */
+  --lt-navy:        #0c2a24;   /* dùng cho chữ tiêu đề (giữ đủ tối để đọc)      */
+  --lt-navy-light:  #115e56;
+  --lt-navy-muted:  #0f766e;
+
+  /* Frost Mint palette (dùng nội bộ theme) */
+  --fm-teal:        #0d9488;
+  --fm-teal-500:    #14b8a6;
+  --fm-teal-400:    #2dd4bf;
+  --fm-teal-700:    #0f766e;
+  --fm-ink:         #0f2c26;
+  --fm-ink-2:       rgba(15,44,38,.66);
+  --fm-ink-3:       rgba(15,44,38,.45);
+  --fm-glass:       rgba(255,255,255,.55);
+  --fm-glass-2:     rgba(255,255,255,.72);
+  --fm-glass-brd:   rgba(255,255,255,.85);
+  --fm-glass-brd-t: rgba(13,148,136,.22);
+  --fm-shadow:      0 18px 44px -22px rgba(15,60,52,.35);
+}
+
+/* ─── 2. Page canvas: gradient mint + blob trôi động phía sau ───────────────── */
+body {
+  background: linear-gradient(135deg, #e8f6f1 0%, #eef4fb 100%) fixed !important;
+  color: var(--fm-ink);
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(420px 420px at 12% 8%,  rgba(45,212,191,.30), transparent 60%),
+    radial-gradient(460px 460px at 88% 14%, rgba(186,230,253,.34), transparent 62%),
+    radial-gradient(520px 520px at 70% 92%, rgba(167,243,208,.30), transparent 60%),
+    radial-gradient(360px 360px at 30% 80%, rgba(94,234,212,.24), transparent 60%);
+  filter: blur(24px);
+  animation: fmDrift 22s ease-in-out infinite alternate;
+}
+@keyframes fmDrift {
+  from { transform: translate3d(0,0,0) scale(1); }
+  to   { transform: translate3d(-16px,18px,0) scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce){ body::before{ animation:none; } }
+
+/* ─── 3. SIDEBAR → kính mờ trắng, chữ đậm, accent teal ─────────────────────── */
+.lt-sidebar {
+  background: var(--fm-glass) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  backdrop-filter: blur(26px) saturate(160%);
+  border-right: 1px solid var(--fm-glass-brd);
+  box-shadow: var(--fm-shadow);
+}
+.lt-sidebar__brand { border-bottom-color: rgba(13,148,136,.14); }
+.lt-sidebar__brand-name { color: var(--fm-ink); }
+.lt-sidebar__brand-sub  { color: var(--fm-teal-700); }
+
+.lt-nav__section-label { color: var(--fm-ink-3); }
+.lt-nav__item { color: var(--fm-ink-2); }
+.lt-nav__item:hover { color: var(--fm-ink); background: rgba(13,148,136,.08); }
+.lt-nav__item.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--fm-teal), var(--fm-teal-500)) !important;
+  box-shadow: 0 10px 22px -10px var(--fm-teal);
+  border-radius: 10px; margin: 0 8px; padding-left: 16px; padding-right: 16px;
+}
+.lt-nav__item.active::before { display: none; }           /* bỏ stripe, dùng nền pill */
+.lt-nav__badge { background: var(--fm-teal); color: #fff; }
+
+.lt-sidebar__footer { border-top-color: rgba(13,148,136,.14); }
+.lt-sidebar__user-name { color: var(--fm-ink); }
+.lt-sidebar__user-role { color: var(--fm-teal-700); }
+.lt-sidebar__avatar,
+.lt-sidebar__brand-icon {
+  background: linear-gradient(135deg, var(--fm-teal), var(--fm-teal-400)) !important;
+  color: #fff !important;
+}
+/* nút đăng xuất trong footer (đang là lt-topbar__btn) */
+.lt-sidebar__footer .lt-topbar__btn { color: var(--fm-ink-2); }
+.lt-sidebar__footer .lt-topbar__btn:hover { background: rgba(13,148,136,.1); color: var(--fm-teal-700); }
+
+/* ─── 4. TOPBAR → kính mờ ──────────────────────────────────────────────────── */
+.lt-topbar {
+  background: var(--fm-glass-2) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--fm-glass-brd);
+  box-shadow: 0 4px 24px -18px rgba(15,60,52,.5);
+}
+.lt-topbar__title { color: var(--fm-ink); }
+.lt-topbar__btn { color: var(--fm-ink-2); }
+.lt-topbar__btn:hover { background: rgba(13,148,136,.12); color: var(--fm-teal-700); }
+.lt-topbar__notif-dot { border-color: #eafaf4; }
+
+/* ─── 5. CARDS / STATS chung của lumina ────────────────────────────────────── */
+.lt-card, .lt-stat {
+  background: var(--fm-glass-2) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid var(--fm-glass-brd);
+  box-shadow: var(--fm-shadow) !important;
+}
+.lt-card__footer { background: rgba(255,255,255,.35); border-top-color: rgba(13,148,136,.12); }
+.lt-stat__icon--gold { background: rgba(13,148,136,.12); color: var(--fm-teal); }
+.lt-stat__icon--navy { background: rgba(13,148,136,.1);  color: var(--fm-teal-700); }
+.lt-stat__value, .lt-card__title, .lt-card__header, .lt-metric__value--navy { color: var(--fm-ink); }
+.lt-metric__value--gold { color: var(--fm-teal); }
+.lt-progress { background: rgba(13,148,136,.14); }
+.lt-progress__bar { background: linear-gradient(90deg, var(--fm-teal), var(--fm-teal-400)); }
+
+/* ─── 6. BUTTONS ───────────────────────────────────────────────────────────── */
+.lt-btn--primary {
+  background: linear-gradient(135deg, var(--fm-teal), var(--fm-teal-500)) !important;
+  color: #fff; box-shadow: 0 10px 22px -10px var(--fm-teal);
+}
+.lt-btn--gold {
+  background: linear-gradient(135deg, var(--fm-teal-500), var(--fm-teal-400)) !important;
+  color: #06322b !important;
+}
+.lt-btn--outline:hover { border-color: var(--fm-teal); color: var(--fm-teal-700); background: var(--lt-gold-pale); }
+.lt-btn:focus-visible { outline-color: rgba(13,148,136,.5); }
+
+/* ─── 7. BADGES / TABLES / FORM / PAGINATION ───────────────────────────────── */
+.lt-badge--gold { background: rgba(13,148,136,.15); color: var(--fm-teal-700); }
+.lt-badge--navy { background: rgba(13,148,136,.1);  color: var(--fm-teal-700); }
+
+.lt-table thead th { background: rgba(209,242,236,.55); color: #0f766e; border-bottom-color: rgba(13,148,136,.18); }
+.lt-table tbody tr:hover { background: rgba(13,148,136,.05); }
+
+.lt-input:focus, .lt-select:focus, .lt-textarea:focus {
+  border-color: var(--fm-teal); box-shadow: 0 0 0 3px rgba(13,148,136,.15);
+}
+.lt-page-btn:hover  { border-color: var(--fm-teal); color: var(--fm-teal-700); }
+.lt-page-btn.active { background: var(--fm-teal); border-color: var(--fm-teal); color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8. DASHBOARD CÁC ROLE (class dùng chung: px-*, hero-*, gcard, dark-card, qa-*)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.px-body { background: transparent !important; }             /* để nền mint hiện xuyên qua */
+
+.px-tab.active { color: var(--fm-teal-700) !important; border-bottom-color: var(--fm-teal) !important; }
+.px-tab:hover  { color: var(--fm-ink); }
+
+/* Glass card của dashboard: tăng độ trong + viền sáng */
+.gcard {
+  background: var(--fm-glass) !important;
+  border: 1px solid var(--fm-glass-brd) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(155%);
+  backdrop-filter: blur(18px) saturate(155%);
+  box-shadow: var(--fm-shadow) !important;
+}
+
+/* HERO — mọi role về chung Frost Mint: kính mờ teal, chữ đậm */
+.hero-card {
+  background: linear-gradient(135deg, rgba(45,212,191,.30) 0%, rgba(186,230,253,.28) 55%, rgba(255,255,255,.55) 100%) !important;
+  border: 1px solid var(--fm-glass-brd);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: var(--fm-shadow);
+}
+.hero-card::before { background: radial-gradient(circle, rgba(13,148,136,.28) 0%, transparent 70%) !important; }
+.hero-orb {
+  background: linear-gradient(135deg, rgba(13,148,136,.18), rgba(255,255,255,.35)) !important;
+  border: 1px solid var(--fm-glass-brd) !important;
+}
+.hero-eyebrow { color: var(--fm-teal-700) !important; }
+.hero-title   { color: var(--fm-ink) !important; }
+.hero-sub     { color: var(--fm-ink-2) !important; }
+.hero-btn--primary { background: linear-gradient(135deg, var(--fm-teal), var(--fm-teal-500)) !important; color: #fff !important; box-shadow: 0 10px 22px -10px var(--fm-teal); }
+.hero-btn--outline { background: rgba(13,148,136,.1) !important; color: var(--fm-teal-700) !important; border: 1px solid var(--fm-glass-brd-t) !important; }
+
+/* Stat / mini-stat / activity text → tông teal-ink */
+.stat-value, .mini-stat__value { color: var(--fm-ink); }
+.stat-label, .mini-stat__label { color: var(--fm-ink-3); }
+.activity-title, .act-name, .act-amount { color: var(--fm-ink); }
+
+/* DARK-CARD (ô "Phòng học online"/tổng hợp) — đổi từ nền tối sang kính mờ teal */
+.dark-card {
+  background: linear-gradient(145deg, rgba(13,148,136,.16), rgba(255,255,255,.5)) !important;
+  border: 1px solid var(--fm-glass-brd);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+.dark-card-label { color: var(--fm-teal-700) !important; }
+.dark-card-value { color: var(--fm-ink) !important; }
+.dark-card-sub   { color: var(--fm-ink-2) !important; }
+
+/* QUICK ACTIONS */
+.qa-btn { background: rgba(255,255,255,.4) !important; border: 1px solid var(--fm-glass-brd) !important; }
+.qa-btn:hover { background: rgba(13,148,136,.08) !important; }
+.qa-label { color: var(--fm-ink); }
+.qa-icon  { background: rgba(13,148,136,.1); color: var(--fm-teal-700); }
+.qa-btn.qa-dark { background: linear-gradient(135deg, var(--fm-teal), var(--fm-teal-500)) !important; border-color: transparent !important; box-shadow: 0 10px 22px -10px var(--fm-teal); }
+.qa-btn.qa-dark .qa-icon { background: rgba(255,255,255,.2); color: #fff; }
+
+/* ─── 9. dashboard.css (dstat/dcard/banner…) — phòng khi role dùng tới ──────── */
+.dstat, .dcard {
+  background: var(--fm-glass-2) !important;
+  border: 1px solid var(--fm-glass-brd) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: var(--fm-shadow) !important;
+}
+.dstat__value, .dcard__title { color: var(--fm-ink); }
+.dcard__action { background: rgba(13,148,136,.1); color: var(--fm-teal-700); }
+.dcard__action:hover { background: rgba(13,148,136,.18); }
+.dash-progress__bar { background: linear-gradient(90deg, var(--fm-teal), var(--fm-teal-400)); }
+.qa-btn:hover { border-color: var(--fm-teal); color: var(--fm-teal-700); }
+
+/* Banner (nếu view nào còn dùng dash-banner) → phủ kính mờ teal, chữ đậm */
+.dash-banner { border: 1px solid var(--fm-glass-brd); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+.dash-banner[class*="dash-banner--"] { background: linear-gradient(135deg, rgba(45,212,191,.32), rgba(186,230,253,.3)) !important; }
+.dash-banner__title { color: var(--fm-ink) !important; }
+.dash-banner__eyebrow, .dash-banner__sub { color: var(--fm-ink-2) !important; }
+.dash-banner__icon-bg { background: rgba(13,148,136,.14) !important; border-color: var(--fm-glass-brd) !important; color: var(--fm-teal-700) !important; }
+
+/* ─── 10. Scrollbar mảnh tông teal ─────────────────────────────────────────── */
+.lt-nav { scrollbar-color: rgba(13,148,136,.25) transparent; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   11. THIẾT KẾ LẠI: user card chân sidebar + nút topbar + tiêu đề (khớp demo)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 11a. User card ở chân sidebar → thẻ kính bo tròn, avatar squircle */
+.lt-sidebar__footer { border-top: 0 !important; padding: 12px !important; }
+.lt-sidebar__user {
+  background: var(--fm-glass-2);
+  border: 1px solid var(--fm-glass-brd);
+  border-radius: 16px;
+  padding: 10px 11px;
+  gap: 11px;
+  box-shadow: 0 10px 24px -16px rgba(15,60,52,.55);
+}
+.lt-sidebar__avatar {
+  width: 38px !important; height: 38px !important;
+  border-radius: 12px !important;         /* squircle giống demo (thay vì tròn) */
+  font-weight: 700;
+}
+.lt-sidebar__user-name { color: var(--fm-ink) !important; font-size: .84rem; font-weight: 600; }
+.lt-sidebar__user-role {
+  color: var(--fm-teal-700) !important;
+  font-size: .62rem; letter-spacing: .12em; font-weight: 700;
+}
+.lt-sidebar__footer .lt-topbar__btn {
+  width: 32px !important; height: 32px !important; border-radius: 10px !important;
+  color: var(--fm-ink-3);
+}
+.lt-sidebar__footer .lt-topbar__btn:hover { background: rgba(13,148,136,.14); color: var(--fm-teal-700); }
+
+/* Khi thu gọn sidebar (rail desktop) → bỏ khung thẻ cho gọn */
+@media (min-width: 1025px) {
+  .lt-collapsed .lt-sidebar__user {
+    background: transparent; border: 0; box-shadow: none; padding: 0; justify-content: center;
+  }
+}
+
+/* 11b. Nút trên topbar (3 gạch / chuông / khoá) → nút vuông bo góc, kính mờ */
+.lt-topbar .lt-topbar__btn {
+  width: 40px; height: 40px; border-radius: 12px;
+  border: 1px solid var(--fm-glass-brd);
+  background: var(--fm-glass);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+  color: var(--fm-ink-2);
+  transition: background .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease), transform .18s var(--ease);
+}
+.lt-topbar .lt-topbar__btn:hover {
+  background: rgba(13,148,136,.12); color: var(--fm-teal-700);
+  border-color: var(--fm-glass-brd-t); transform: translateY(-1px);
+}
+.lt-topbar .lt-topbar__btn:active { transform: translateY(0); }
+
+/* 11c. Tiêu đề "Dashboard" → sans đậm (bỏ serif Playfair), khớp demo */
+.lt-topbar__title {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1.35rem !important;
+  letter-spacing: -.3px;
+  color: var(--fm-ink) !important;
+}

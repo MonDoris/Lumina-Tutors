@@ -73,6 +73,15 @@ public interface IUnitOfWork : IDisposable
     IRepository<StudentQuizAnswer>    StudentQuizAnswers    { get; }
     IRepository<QuestionImportJob>    QuestionImportJobs    { get; }
 
+    // ── E-Learning (Course & Progress) ────────────────────────────────────────
+    IRepository<Course>                Courses                { get; }
+    IRepository<CourseModule>          CourseModules          { get; }
+    IRepository<CourseLesson>          CourseLessons          { get; }
+    IRepository<CourseLessonMaterial>  CourseLessonMaterials  { get; }
+    IRepository<ClassCourseAssignment> ClassCourseAssignments { get; }
+    IRepository<CourseEnrollment>      CourseEnrollments      { get; }
+    IRepository<LessonProgress>        LessonProgresses       { get; }
+
     // ── Grading ───────────────────────────────────────────────────────────────
     IRepository<GradeCategory>           GradeCategories           { get; }
     IRepository<SubjectGradeRequirement> SubjectGradeRequirements  { get; }

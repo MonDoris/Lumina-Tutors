@@ -80,6 +80,15 @@ public class LuminaTutorsDbContext : DbContext
     public DbSet<SessionRecording>     SessionRecordings     => Set<SessionRecording>();
     public DbSet<QuestionImportJob>    QuestionImportJobs    => Set<QuestionImportJob>();
 
+    // ── E-Learning (Course & Progress) ────────────────────────────────────────
+    public DbSet<Course>                Courses                => Set<Course>();
+    public DbSet<CourseModule>          CourseModules          => Set<CourseModule>();
+    public DbSet<CourseLesson>          CourseLessons          => Set<CourseLesson>();
+    public DbSet<CourseLessonMaterial>  CourseLessonMaterials  => Set<CourseLessonMaterial>();
+    public DbSet<ClassCourseAssignment> ClassCourseAssignments => Set<ClassCourseAssignment>();
+    public DbSet<CourseEnrollment>      CourseEnrollments      => Set<CourseEnrollment>();
+    public DbSet<LessonProgress>        LessonProgresses       => Set<LessonProgress>();
+
     // ── Grading ───────────────────────────────────────────────────────────────
     public DbSet<GradeCategory>           GradeCategories          => Set<GradeCategory>();
     public DbSet<SubjectGradeRequirement> SubjectGradeRequirements => Set<SubjectGradeRequirement>();

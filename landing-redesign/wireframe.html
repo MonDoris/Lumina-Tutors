@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Lumina Tutors Landing (bản duyệt)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ---- wireframe (blueprint) tokens ---- */
+  --paper:#F3ECDE;
+  --paper-2:#FBF6EC;
+  --line:#C3B7A1;
+  --line-strong:#9A8C74;
+  --fill:#E7DECD;
+  --fill-2:#DBD0BB;
+  --bar:#CBBFA8;
+  --bar-2:#D8CEBB;
+  --wf-ink:#3B342C;
+  --wf-soft:#7C7062;
+  --note:#8A6D22;
+  --note-bg:#FBF1D6;
+  --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,'Courier New',monospace;
+
+  /* ---- proposed HERITAGE palette (Sơn son thếp vàng) ---- */
+  --son:#8A2724;          /* đỏ son / cinnabar lacquer  */
+  --son-deep:#48120F;     /* sơn ta lên nước / aged lacquer */
+  --gold:#C29A45;         /* vàng thếp / gilt */
+  --gold-lt:#E4CE93;      /* vàng nhạt */
+  --cham:#20304C;         /* chàm / indigo */
+  --giay:#F5EDDF;         /* giấy dó / poonah paper */
+  --muc:#2B211C;          /* mực nho / ink */
+  --muc-soft:#6E5F55;
+  --luc:#3E7A55;          /* lục / success */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Be Vietnam Pro',system-ui,sans-serif;
+  color:var(--wf-ink);
+  background:var(--paper);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 26px}
+
+/* ============ REVIEW TOOLBAR ============ */
+.review-bar{
+  position:sticky;top:0;z-index:100;
+  background:var(--muc);color:#F1E7D2;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  padding:11px 26px;font-size:13px;
+  border-bottom:2px solid var(--gold);
+}
+.review-bar strong{color:var(--gold-lt);letter-spacing:.5px}
+.review-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block}
+.review-bar .rb-note{color:#C9BCA6;font-size:12.5px}
+.review-bar .rb-tag{margin-left:auto;font-family:var(--mono);font-size:11px;background:rgba(255,255,255,.1);padding:4px 10px;border-radius:5px;letter-spacing:.5px}
+
+/* ============ DOC HEADER ============ */
+.doc-head{padding:46px 0 30px;border-bottom:1px dashed var(--line-strong)}
+.doc-kicker{font-family:var(--mono);font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--note)}
+.doc-head h1{font-family:'Playfair Display',serif;font-weight:800;font-size:clamp(30px,4vw,46px);color:var(--muc);line-height:1.12;margin:12px 0 14px}
+.doc-head p{max-width:760px;color:var(--muc-soft);font-size:15.5px}
+.doc-meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:20px;font-family:var(--mono);font-size:12px;color:var(--wf-soft)}
+.doc-meta b{color:var(--wf-ink)}
+
+/* ============ SECTION SCAFFOLD ============ */
+.block{padding:34px 0;border-bottom:1px dashed var(--line)}
+.block-head{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.tag{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:1px;color:var(--giay);background:var(--cham);padding:5px 11px;border-radius:5px;white-space:nowrap}
+.tag.alt{background:var(--son)}
+.block-head h2{font-family:'Playfair Display',serif;font-weight:700;font-size:19px;color:var(--muc)}
+.block-head .hint{margin-left:auto;font-size:12.5px;color:var(--wf-soft);font-style:italic}
+
+/* frame = the low-fi canvas for each section */
+.frame{
+  background:var(--paper-2);
+  border:1.5px dashed var(--line-strong);
+  border-radius:12px;
+  padding:22px;
+  position:relative;
+}
+.frame + .note{margin-top:12px}
+
+/* low-fi primitives */
+.ph{background:var(--fill);border:1px dashed var(--line);border-radius:8px}
+.ph-img{
+  background:
+    repeating-linear-gradient(45deg,var(--fill-2) 0 10px,var(--fill) 10px 20px);
+  border:1px dashed var(--line-strong);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  color:var(--wf-soft);font-family:var(--mono);font-size:11px;letter-spacing:.5px;padding:10px;
+}
+.bar{height:11px;background:var(--bar);border-radius:6px;display:block}
+.bar.lg{height:20px;background:var(--bar-2)}
+.bar.xl{height:30px;background:var(--bar-2)}
+.bar.sm{height:8px;background:var(--bar-2)}
+.w25{width:25%}.w33{width:33%}.w40{width:40%}.w50{width:50%}.w60{width:60%}.w70{width:70%}.w80{width:80%}.w90{width:90%}.w100{width:100%}
+.stack>*{margin-bottom:9px}.stack>*:last-child{margin-bottom:0}
+.btn-ph{height:38px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;padding:0 16px;letter-spacing:.5px}
+.btn-solid{background:var(--son);color:#F3E7D6}
+.btn-line{background:transparent;border:1.5px solid var(--line-strong);color:var(--wf-soft)}
+.btn-gold{background:var(--gold);color:var(--muc)}
+.chip-ph{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;color:var(--wf-soft);background:var(--fill);border:1px dashed var(--line);padding:4px 10px;border-radius:20px}
+.icon-ph{width:44px;height:44px;border-radius:10px;background:var(--fill-2);border:1px dashed var(--line-strong);display:flex;align-items:center;justify-content:center;color:var(--wf-soft);font-family:var(--mono);font-size:9px}
+.row{display:flex;gap:18px}
+.col{flex:1;min-width:0}
+.center{text-align:center}
+.mini{font-family:var(--mono);font-size:10.5px;color:var(--wf-soft);letter-spacing:.4px}
+
+/* annotation callout */
+.note{
+  display:flex;gap:10px;align-items:flex-start;
+  background:var(--note-bg);border-left:3px solid var(--gold);
+  border-radius:0 8px 8px 0;padding:11px 14px;font-size:13px;color:#6b551b;
+}
+.note b{color:var(--note)}
+.note .pen{flex-shrink:0;font-size:13px;line-height:1.4}
+.note-grid{display:grid;gap:10px;margin-top:12px}
+
+/* ============ STYLE TILE ============ */
+.tile{background:var(--paper-2);border:1.5px solid var(--line);border-radius:14px;padding:24px;margin-top:8px}
+.tile h3{font-family:var(--mono);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--note);margin-bottom:16px}
+.swatches{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:8px}
+.sw{border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.08)}
+.sw .chip{height:62px}
+.sw .meta{padding:7px 8px;background:#fff}
+.sw .meta b{display:block;font-size:11.5px;color:var(--muc)}
+.sw .meta span{font-family:var(--mono);font-size:9.5px;color:var(--wf-soft)}
+.type-row{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;padding:14px 0;border-top:1px dashed var(--line);margin-top:14px}
+.type-demo .lbl{font-family:var(--mono);font-size:10.5px;color:var(--wf-soft);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.serif{font-family:'Playfair Display',serif}
+.motif-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+.motif{flex:1;min-width:150px;border:1px dashed var(--line);border-radius:10px;padding:14px;text-align:center;background:#fff}
+.motif svg{display:block;margin:0 auto 8px}
+.motif .mini{display:block}
+
+/* sitemap */
+.sitemap{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px;margin-top:8px}
+.sm-item{display:flex;gap:10px;align-items:center;background:var(--paper-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:13px;color:var(--muc)}
+.sm-item .n{font-family:var(--mono);font-size:11px;color:var(--giay);background:var(--son);width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sm-item a{color:inherit;text-decoration:none}
+.sm-item:hover{border-color:var(--gold)}
+
+/* grids */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card-ph{background:var(--paper);border:1px dashed var(--line);border-radius:10px;padding:16px}
+
+/* nav preview */
+.navbar{display:flex;align-items:center;gap:18px;padding:12px 16px;background:var(--paper);border:1px dashed var(--line);border-radius:9px}
+.navlinks{display:flex;gap:16px;margin-left:8px}
+.navlinks .bar{width:56px}
+.nav-r{margin-left:auto;display:flex;gap:10px}
+
+/* tabs */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab{font-family:var(--mono);font-size:11.5px;padding:8px 14px;border-radius:8px;border:1px dashed var(--line);background:var(--paper);color:var(--wf-soft)}
+.tab.on{background:var(--cham);color:var(--giay);border-style:solid;border-color:var(--cham)}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.step .num{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--gold);color:var(--note);font-family:var(--mono);font-size:13px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-family:var(--mono);font-size:11px;color:var(--wf-soft);margin-top:14px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend .k{width:26px;height:14px;border-radius:4px;display:inline-block}
+
+.foot-note{padding:34px 0 70px;text-align:center;color:var(--wf-soft);font-size:13px}
+.foot-note .serif{font-size:17px;color:var(--muc);display:block;margin-bottom:6px}
+
+@media(max-width:860px){
+  .g3,.g4,.g2,.steps{grid-template-columns:1fr 1fr}
+  .swatches{grid-template-columns:repeat(4,1fr)}
+  .row{flex-direction:column}
+}
+@media(max-width:560px){
+  .g3,.g4,.g2,.steps,.swatches{grid-template-columns:1fr}
+  .navlinks{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== REVIEW TOOLBAR ===== -->
+<div class="review-bar">
+  <span class="dot"></span>
+  <strong>WIREFRAME · BẢN NHÁP ĐỂ DUYỆT</strong>
+  <span class="rb-note">Đây là bản dựng cấu trúc + định hướng thị giác — chưa phải giao diện final. Trang hiện tại chưa bị thay đổi.</span>
+  <span class="rb-tag">Lumina Tutors · Landing v2</span>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== DOC HEADER ===== -->
+  <header class="doc-head">
+    <div class="doc-kicker">Đề xuất thiết kế · Landing Page</div>
+    <h1>Lumina Tutors — Nền tảng quản lý trường học<br>mang hồn cốt hiếu học Việt</h1>
+    <p>Hướng: <b>B2B (bán cho ban giám hiệu) kết hợp kể chuyện di sản</b>. Bảng màu di sản mới
+    “Sơn son thếp vàng”. Hoạ tiết Đông Sơn / hoa sen dùng tiết chế theo tinh thần <i>earned elegance</i>.
+    Cuộn xuống để xem style-tile, sơ đồ trang và wireframe từng section.</p>
+    <div class="doc-meta">
+      <span>Định vị: <b>B2B + Di sản</b></span>
+      <span>Palette: <b>Sơn son thếp vàng</b></span>
+      <span>Typography: <b>Playfair Display + Be Vietnam Pro</b></span>
+      <span>Hoạ tiết: <b>Tinh tế, tiết chế</b></span>
+    </div>
+    <div class="legend">
+      <span><i class="k" style="background:var(--bar)"></i> vạch = dòng chữ</span>
+      <span><i class="k" style="background:repeating-linear-gradient(45deg,var(--fill-2) 0 6px,var(--fill) 6px 12px)"></i> gạch chéo = ảnh/hoạ tiết</span>
+      <span><i class="k" style="background:var(--son)"></i> nút chính</span>
+      <span><i class="k" style="background:var(--note-bg);border:1px solid var(--gold)"></i> ✎ ghi chú intent</span>
+    </div>
+  </header>
+
+  <!-- ===== STYLE TILE ===== -->
+  <section class="block" id="style">
+    <div class="block-head"><span class="tag alt">STYLE TILE</span><h2>Định hướng thị giác</h2><span class="hint">duyệt cả màu + chữ + hoạ tiết</span></div>
+
+    <div class="tile">
+      <h3>Bảng màu — “Sơn son thếp vàng”</h3>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#8A2724"></div><div class="meta"><b>Son</b><span>#8A2724</span></div></div>
+        <div class="sw"><div class="chip" style="background:#48120F"></div><div class="meta"><b>Son đậm</b><span>#48120F</span></div></div>
+        <div class="sw"><div class="chip" style="background:#C29A45"></div><div class="meta"><b>Vàng thếp</b><span>#C29A45</span></div></div>
+        <div class="sw"><div class="chip" style="background:#E4CE93"></div><div class="meta"><b>Vàng nhạt</b><span>#E4CE93</span></div></div>
+        <div class="sw"><div class="chip" style="background:#20304C"></div><div class="meta"><b>Chàm</b><span>#20304C</span></div></div>
+        <div class="sw"><div class="chip" style="background:#F5EDDF;border-bottom:1px solid #e2d8c4"></div><div class="meta"><b>Giấy dó</b><span>#F5EDDF</span></div></div>
+        <div class="sw"><div class="chip" style="background:#2B211C"></div><div class="meta"><b>Mực nho</b><span>#2B211C</span></div></div>
+      </div>
+      <div class="note" style="margin-top:14px">
+        <span class="pen">✎</span>
+        <span><b>Quy tắc dùng màu:</b> nền chủ đạo là <b>giấy dó</b> (ấm, không trắng lạnh); <b>son</b> làm khối cấu trúc &amp; nút chính; <b>chàm</b> cho section tương phản/footer; <b>vàng thếp</b> chỉ điểm xuyết ≤10% (đường kẻ, active, con dấu thương hiệu) — giữ nguyên tinh thần “gold scarcity” trong DESIGN.md.</span>
+      </div>
+
+      <div class="type-row">
+        <div class="type-demo">
+          <div class="lbl">Display · Playfair Display 800</div>
+          <div class="serif" style="font-size:34px;font-weight:800;color:var(--muc);line-height:1.1">Quản lý trường học</div>
+        </div>
+        <div class="type-demo">
+          <div class="lbl">Headline · Playfair 700</div>
+          <div class="serif" style="font-size:22px;font-weight:700;color:var(--son)">Tôn sư trọng đạo</div>
+        </div>
+        <div class="type-demo">
+          <div class="lbl">Body · Be Vietnam Pro 400</div>
+          <div style="font-size:14.5px;color:var(--muc-soft);max-width:280px">Điểm danh trong 30 giây, xuất 200 hoá đơn học phí không cần bảng tính.</div>
+        </div>
+        <div class="type-demo">
+          <div class="lbl">Label · BVP 600 · uppercase</div>
+          <div style="font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--note)">HỌC VỤ · TÀI CHÍNH</div>
+        </div>
+      </div>
+
+      <div class="motif-row">
+        <div class="motif">
+          <svg width="70" height="34" viewBox="0 0 70 34" fill="none" stroke="#C29A45" stroke-width="1.3">
+            <circle cx="35" cy="17" r="14"/><circle cx="35" cy="17" r="9" stroke-dasharray="2 3"/>
+            <polygon points="35,7 36.5,14 43,15 37.5,18.5 39,25 35,21 31,25 32.5,18.5 27,15 33.5,14" fill="#C29A45" stroke="none"/>
+          </svg>
+          <span class="mini">Ngôi sao / tia trống đồng<br>→ divider, icon nền</span>
+        </div>
+        <div class="motif">
+          <svg width="70" height="34" viewBox="0 0 70 34" fill="none" stroke="#8A2724" stroke-width="1.3">
+            <path d="M35,30 C31,20 33,11 35,7 C37,11 39,20 35,30 Z"/>
+            <path d="M35,30 C28,24 25,16 27,11 C31,14 34,22 35,30 Z"/>
+            <path d="M35,30 C42,24 45,16 43,11 C39,14 36,22 35,30 Z"/>
+          </svg>
+          <span class="mini">Hoa sen (line-art)<br>→ dấu ngắt section</span>
+        </div>
+        <div class="motif">
+          <svg width="70" height="34" viewBox="0 0 70 34" fill="none" stroke="#20304C" stroke-width="1.3">
+            <path d="M6,6 h12 v4 h-8 v14 h-4 Z M64,6 h-12 v4 h8 v14 h4 Z M6,28 h12 v-4 h-8 v-6 M64,28 h-12 v-4 h8 v-6" />
+            <rect x="30" y="12" width="10" height="10" stroke="#C29A45"/>
+          </svg>
+          <span class="mini">Hồi văn / khung triện<br>→ viền, con dấu</span>
+        </div>
+        <div class="motif">
+          <div class="ph-img" style="height:52px">CHỤP GIAO DIỆN SP</div>
+          <span class="mini" style="margin-top:6px">Ảnh thật màn hình app<br>→ hero, feature</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SITEMAP ===== -->
+  <section class="block" id="map">
+    <div class="block-head"><span class="tag">SITEMAP</span><h2>Sơ đồ trang · 14 khối</h2></div>
+    <div class="sitemap">
+      <div class="sm-item"><span class="n">00</span><a href="#s-nav">Header / Điều hướng</a></div>
+      <div class="sm-item"><span class="n">01</span><a href="#s-hero">Hero — value proposition</a></div>
+      <div class="sm-item"><span class="n">02</span><a href="#s-trust">Thanh tin cậy + số liệu</a></div>
+      <div class="sm-item"><span class="n">03</span><a href="#s-problem">Vấn đề → Giải pháp</a></div>
+      <div class="sm-item"><span class="n">04</span><a href="#s-features">6 module cốt lõi</a></div>
+      <div class="sm-item"><span class="n">05</span><a href="#s-roles">Thiết kế theo vai trò</a></div>
+      <div class="sm-item"><span class="n">06</span><a href="#s-how">Cách triển khai (4 bước)</a></div>
+      <div class="sm-item"><span class="n">07</span><a href="#s-security">Bảo mật &amp; tuân thủ</a></div>
+      <div class="sm-item"><span class="n">08</span><a href="#s-heritage">Câu chuyện di sản</a></div>
+      <div class="sm-item"><span class="n">09</span><a href="#s-proof">Cảm nhận khách hàng</a></div>
+      <div class="sm-item"><span class="n">10</span><a href="#s-pricing">Gói &amp; học phí nền tảng</a></div>
+      <div class="sm-item"><span class="n">11</span><a href="#s-faq">Câu hỏi thường gặp</a></div>
+      <div class="sm-item"><span class="n">12</span><a href="#s-cta">CTA cuối</a></div>
+      <div class="sm-item"><span class="n">13</span><a href="#s-footer">Footer</a></div>
+    </div>
+  </section>
+
+  <!-- ===== 00 NAV ===== -->
+  <section class="block" id="s-nav">
+    <div class="block-head"><span class="tag">00</span><h2>Header / Điều hướng</h2><span class="hint">sticky, nền son đậm</span></div>
+    <div class="frame">
+      <div class="navbar">
+        <div class="icon-ph" style="width:38px;height:38px">LOGO</div>
+        <div class="bar w25" style="max-width:120px"></div>
+        <div class="navlinks">
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        </div>
+        <div class="nav-r">
+          <span class="btn-ph btn-line">Đăng nhập</span>
+          <span class="btn-ph btn-gold">Đăng ký trường</span>
+        </div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Nav: <b>Tính năng · Vai trò · Bảo mật · Học phí · Về chúng tôi</b>. Nền <b>son đậm #48120F</b>, chữ kem; link active gạch chân <b>vàng thếp</b>. Logo = dấu triện vuông + chữ “Lumina Tutors”. CTA phải: “Đăng nhập” (outline) + “Đăng ký trường” (vàng).</span></div>
+  </section>
+
+  <!-- ===== 01 HERO ===== -->
+  <section class="block" id="s-hero">
+    <div class="block-head"><span class="tag">01</span><h2>Hero — Value proposition</h2><span class="hint">nền son đậm + hoạ tiết Đông Sơn mờ</span></div>
+    <div class="frame">
+      <div class="row">
+        <div class="col stack">
+          <span class="chip-ph">◈ NỀN TẢNG QUẢN LÝ GIÁO DỤC</span>
+          <span class="bar xl w90"></span>
+          <span class="bar xl w70"></span>
+          <span class="bar w80" style="margin-top:6px"></span>
+          <span class="bar w60"></span>
+          <div style="display:flex;gap:12px;margin-top:14px">
+            <span class="btn-ph btn-solid">Đăng ký dùng thử</span>
+            <span class="btn-ph btn-line">▷ Xem demo 2 phút</span>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:14px">
+            <span class="chip-ph">★ 4.9/5 hài lòng</span>
+            <span class="chip-ph">Miễn phí 30 ngày</span>
+          </div>
+        </div>
+        <div class="col">
+          <div class="ph-img" style="height:250px">ẢNH GIAO DIỆN SẢN PHẨM<br>(Dashboard / Điểm danh / Sổ điểm)<br>lồng trong khung, hoạ tiết trống đồng mờ phía sau</div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span><b>Thông điệp chính:</b> “Số hoá toàn bộ vận hành trường học — điểm danh, học phí, học vụ trên một nền tảng.” Nền <b>son đậm</b>, hoạ tiết vòng tròn trống đồng làm texture rất mờ (opacity ~6%). Ảnh phải là <b>screenshot thật</b> của app (không icon minh hoạ) để tạo tin cậy B2B.</span></div>
+  </section>
+
+  <!-- ===== 02 TRUST ===== -->
+  <section class="block" id="s-trust">
+    <div class="block-head"><span class="tag">02</span><h2>Thanh tin cậy + Số liệu</h2></div>
+    <div class="frame stack">
+      <div class="center mini">ĐƯỢC TIN DÙNG BỞI CÁC TRƯỜNG &amp; TRUNG TÂM</div>
+      <div class="g4" style="margin-top:6px">
+        <div class="ph-img" style="height:44px">LOGO TRƯỜNG</div>
+        <div class="ph-img" style="height:44px">LOGO TRƯỜNG</div>
+        <div class="ph-img" style="height:44px">LOGO TRƯỜNG</div>
+        <div class="ph-img" style="height:44px">LOGO TRƯỜNG</div>
+      </div>
+      <div class="g4" style="margin-top:14px">
+        <div class="card-ph center stack"><span class="bar lg w50" style="margin:0 auto"></span><span class="mini">Trường sử dụng</span></div>
+        <div class="card-ph center stack"><span class="bar lg w50" style="margin:0 auto"></span><span class="mini">Học sinh quản lý</span></div>
+        <div class="card-ph center stack"><span class="bar lg w50" style="margin:0 auto"></span><span class="mini">Giây / lượt điểm danh</span></div>
+        <div class="card-ph center stack"><span class="bar lg w50" style="margin:0 auto"></span><span class="mini">Uptime hệ thống</span></div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Số liệu = con số Playfair lớn màu <b>son</b>, nhãn Be Vietnam Pro in hoa nhỏ. Logo trường dạng grayscale để đồng nhất. Dải ngăn cách trên/dưới bằng đường <b>hồi văn vàng</b> mảnh.</span></div>
+  </section>
+
+  <!-- ===== 03 PROBLEM/SOLUTION ===== -->
+  <section class="block" id="s-problem">
+    <div class="block-head"><span class="tag">03</span><h2>Vấn đề → Giải pháp</h2></div>
+    <div class="frame">
+      <div class="g2">
+        <div class="card-ph stack">
+          <span class="mini" style="color:var(--son)">TRƯỚC · rời rạc</span>
+          <span class="bar w70"></span><span class="bar w90"></span><span class="bar w60"></span><span class="bar w80"></span>
+        </div>
+        <div class="card-ph stack">
+          <span class="mini" style="color:var(--luc)">VỚI LUMINA · một nền tảng</span>
+          <span class="bar w80"></span><span class="bar w60"></span><span class="bar w90"></span><span class="bar w50"></span>
+        </div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Đối chiếu 2 cột: sổ giấy / Excel / Zalo rời rạc &nbsp;→&nbsp; quy trình hợp nhất. Có thể làm dạng “gạch bỏ” các gạch đầu dòng bên trái. Ngắn gọn, 1 màn hình.</span></div>
+  </section>
+
+  <!-- ===== 04 FEATURES ===== -->
+  <section class="block" id="s-features">
+    <div class="block-head"><span class="tag">04</span><h2>6 Module cốt lõi</h2><span class="hint">grid 3×2 card</span></div>
+    <div class="frame">
+      <div class="g3">
+        <div class="card-ph stack"><div class="icon-ph">QR</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+        <div class="card-ph stack"><div class="icon-ph">TT22</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+        <div class="card-ph stack"><div class="icon-ph">₫</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+        <div class="card-ph stack"><div class="icon-ph">HR</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+        <div class="card-ph stack"><div class="icon-ph">☷</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+        <div class="card-ph stack"><div class="icon-ph">✉</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>6 module: <b>Điểm danh</b> (QR/thủ công/khuôn mặt) · <b>Sổ điểm TT22</b> · <b>Học phí &amp; công nợ</b> · <b>Nhân sự &amp; mời giáo viên</b> · <b>Nề nếp / kỷ luật</b> · <b>Liên lạc phụ huynh</b>. Icon đặt trong ô nền <b>vàng nhạt</b>, nét mảnh; hover viền son.</span></div>
+  </section>
+
+  <!-- ===== 05 ROLES ===== -->
+  <section class="block" id="s-roles">
+    <div class="block-head"><span class="tag">05</span><h2>Thiết kế theo vai trò</h2><span class="hint">“role-shaped surfaces” — DESIGN.md</span></div>
+    <div class="frame">
+      <div class="tabs">
+        <span class="tab on">Ban giám hiệu</span><span class="tab">Giáo viên</span><span class="tab">Kế toán</span><span class="tab">Giám thị</span><span class="tab">Phụ huynh / HS</span>
+      </div>
+      <div class="row">
+        <div class="col stack">
+          <span class="bar lg w60"></span><span class="bar w100"></span><span class="bar w90"></span>
+          <span class="chip-ph">✓ điểm khác biệt 1</span><span class="chip-ph">✓ điểm khác biệt 2</span><span class="chip-ph">✓ điểm khác biệt 3</span>
+        </div>
+        <div class="col"><div class="ph-img" style="height:170px">SCREENSHOT THEO VAI TRÒ<br>(đổi ảnh theo tab)</div></div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Mỗi tab kể đúng “job” của vai trò: GV điểm danh &lt;30s; kế toán lọc 200 hoá đơn; hiệu trưởng mời GV bằng 1 link. Ảnh minh hoạ đổi theo tab. Đây là phần thể hiện chiều sâu sản phẩm.</span></div>
+  </section>
+
+  <!-- ===== 06 HOW ===== -->
+  <section class="block" id="s-how">
+    <div class="block-head"><span class="tag">06</span><h2>Triển khai trong 4 bước</h2></div>
+    <div class="frame">
+      <div class="steps">
+        <div class="step card-ph stack"><div class="num">1</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+        <div class="step card-ph stack"><div class="num">2</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+        <div class="step card-ph stack"><div class="num">3</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+        <div class="step card-ph stack"><div class="num">4</div><span class="bar lg w70"></span><span class="bar w100"></span><span class="bar w80"></span></div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Bước: <b>1</b> Tạo trường → <b>2</b> Mời giáo viên bằng link → <b>3</b> Nhập lớp &amp; học sinh → <b>4</b> Vận hành. Số bước trong vòng tròn viền <b>vàng thếp</b>, nối bằng đường đứt.</span></div>
+  </section>
+
+  <!-- ===== 07 SECURITY ===== -->
+  <section class="block" id="s-security">
+    <div class="block-head"><span class="tag">07</span><h2>Bảo mật &amp; Tuân thủ</h2><span class="hint">trọng yếu cho niềm tin B2B</span></div>
+    <div class="frame">
+      <div class="row">
+        <div class="col stack">
+          <span class="bar lg w50"></span>
+          <div class="g2" style="margin-top:4px">
+            <span class="chip-ph">⛨ Cô lập dữ liệu đa trường (SchoolId)</span>
+            <span class="chip-ph">⛨ Chuẩn chấm điểm TT22</span>
+            <span class="chip-ph">⛨ Mã hoá &amp; phân quyền 6 vai trò</span>
+            <span class="chip-ph">⛨ WCAG 2.1 AA</span>
+            <span class="chip-ph">⛨ Sao lưu &amp; nhật ký kiểm toán</span>
+            <span class="chip-ph">⛨ Định dạng tài chính VN</span>
+          </div>
+        </div>
+        <div class="col"><div class="ph-img" style="height:150px">HÌNH KHOÁ / CON DẤU<br>hoạ tiết triện</div></div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Nhấn mạnh multi-tenant cô lập bằng <b>SchoolId</b>, tuân thủ <b>TT22</b> &amp; định dạng tài chính VN. Nền có thể chuyển tông <b>chàm</b> để tạo cảm giác “két sắt/uy tín”.</span></div>
+  </section>
+
+  <!-- ===== 08 HERITAGE ===== -->
+  <section class="block" id="s-heritage">
+    <div class="block-head"><span class="tag alt">08</span><h2>Câu chuyện di sản</h2><span class="hint">điểm chạm cảm xúc — “kết hợp B2B + di sản”</span></div>
+    <div class="frame center stack" style="background:#F7F0E2">
+      <svg width="60" height="30" viewBox="0 0 70 34" fill="none" stroke="#C29A45" stroke-width="1.3" style="margin:0 auto">
+        <path d="M35,30 C31,20 33,11 35,7 C37,11 39,20 35,30 Z"/><path d="M35,30 C28,24 25,16 27,11 C31,14 34,22 35,30 Z"/><path d="M35,30 C42,24 45,16 43,11 C39,14 36,22 35,30 Z"/>
+      </svg>
+      <span class="bar lg w60" style="margin:0 auto;background:var(--fill-2)"></span>
+      <span class="bar w80" style="margin:0 auto"></span>
+      <span class="bar w70" style="margin:0 auto"></span>
+      <span class="bar w50" style="margin:0 auto"></span>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Section “thở”: kết nối sứ mệnh sản phẩm với tinh thần <b>“Tôn sư trọng đạo”, truyền thống hiếu học, Văn Miếu – Quốc Tử Giám</b>. Chữ Playfair lớn, căn giữa, nền <b>giấy dó</b>, sen line-art vàng. Đây là chỗ “di sản” toả sáng nhưng vẫn tiết chế — không ảnh nặng.</span></div>
+  </section>
+
+  <!-- ===== 09 TESTIMONIALS ===== -->
+  <section class="block" id="s-proof">
+    <div class="block-head"><span class="tag">09</span><h2>Cảm nhận khách hàng</h2></div>
+    <div class="frame">
+      <div class="g3">
+        <div class="card-ph stack"><span class="mini">❝</span><span class="bar w100"></span><span class="bar w90"></span><span class="bar w70"></span><div style="display:flex;gap:8px;align-items:center;margin-top:6px"><span class="icon-ph" style="width:34px;height:34px;border-radius:50%">AV</span><span class="bar w40"></span></div></div>
+        <div class="card-ph stack"><span class="mini">❝</span><span class="bar w100"></span><span class="bar w90"></span><span class="bar w70"></span><div style="display:flex;gap:8px;align-items:center;margin-top:6px"><span class="icon-ph" style="width:34px;height:34px;border-radius:50%">AV</span><span class="bar w40"></span></div></div>
+        <div class="card-ph stack"><span class="mini">❝</span><span class="bar w100"></span><span class="bar w90"></span><span class="bar w70"></span><div style="display:flex;gap:8px;align-items:center;margin-top:6px"><span class="icon-ph" style="width:34px;height:34px;border-radius:50%">AV</span><span class="bar w40"></span></div></div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Trích dẫn từ <b>hiệu trưởng / quản lý trung tâm</b> có thật (tên, chức vụ, tên trường). Dấu ngoặc kép lớn màu <b>vàng thếp</b>. 3 thẻ, có thể thành carousel ở mobile.</span></div>
+  </section>
+
+  <!-- ===== 10 PRICING ===== -->
+  <section class="block" id="s-pricing">
+    <div class="block-head"><span class="tag">10</span><h2>Gói &amp; học phí nền tảng</h2></div>
+    <div class="frame">
+      <div class="g3">
+        <div class="card-ph stack"><span class="bar lg w50"></span><span class="bar xl w70"></span><span class="bar w100"></span><span class="bar w90"></span><span class="bar w80"></span><span class="btn-ph btn-line" style="width:100%;margin-top:6px">Chọn gói</span></div>
+        <div class="card-ph stack" style="border:1.5px solid var(--gold);position:relative"><span class="chip-ph" style="position:absolute;top:-11px;left:16px;background:var(--gold);color:var(--muc);border:none">Phổ biến</span><span class="bar lg w50"></span><span class="bar xl w70"></span><span class="bar w100"></span><span class="bar w90"></span><span class="bar w80"></span><span class="btn-ph btn-solid" style="width:100%;margin-top:6px">Chọn gói</span></div>
+        <div class="card-ph stack"><span class="bar lg w50"></span><span class="bar xl w70"></span><span class="bar w100"></span><span class="bar w90"></span><span class="bar w80"></span><span class="btn-ph btn-line" style="width:100%;margin-top:6px">Liên hệ</span></div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>3 gói: <b>Khởi đầu · Tiêu chuẩn · Trường lớn (liên hệ)</b>. Gói giữa nổi bật viền <b>vàng thếp</b> + nhãn “Phổ biến”. Nếu chưa chốt giá, thay bằng bảng so sánh tính năng + “Đăng ký tư vấn”.</span></div>
+  </section>
+
+  <!-- ===== 11 FAQ ===== -->
+  <section class="block" id="s-faq">
+    <div class="block-head"><span class="tag">11</span><h2>Câu hỏi thường gặp</h2></div>
+    <div class="frame stack">
+      <div class="card-ph" style="display:flex;align-items:center;gap:12px"><span class="bar w70"></span><span style="margin-left:auto;color:var(--gold)">＋</span></div>
+      <div class="card-ph" style="display:flex;align-items:center;gap:12px"><span class="bar w60"></span><span style="margin-left:auto;color:var(--gold)">＋</span></div>
+      <div class="card-ph" style="display:flex;align-items:center;gap:12px"><span class="bar w80"></span><span style="margin-left:auto;color:var(--gold)">＋</span></div>
+      <div class="card-ph" style="display:flex;align-items:center;gap:12px"><span class="bar w50"></span><span style="margin-left:auto;color:var(--gold)">＋</span></div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Accordion. Câu hỏi thường gặp của ban giám hiệu: chuyển dữ liệu từ Excel? bảo mật? đào tạo GV? hỗ trợ? chi phí? — trả lời ngắn, trấn an.</span></div>
+  </section>
+
+  <!-- ===== 12 CTA ===== -->
+  <section class="block" id="s-cta">
+    <div class="block-head"><span class="tag alt">12</span><h2>CTA cuối</h2></div>
+    <div class="frame center stack" style="background:#2B211C">
+      <span class="bar lg w50" style="margin:0 auto;background:#5a4d40"></span>
+      <span class="bar w70" style="margin:0 auto;background:#4a3f34"></span>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:8px">
+        <span class="btn-ph btn-gold">Đăng ký dùng thử miễn phí</span>
+        <span class="btn-ph" style="border:1.5px solid #6a5c4c;color:#cbbca6">Đặt lịch demo</span>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Nền <b>mực nho/son đậm</b>, hoạ tiết trống đồng mờ. Khẩu hiệu Playfair: “Vững nền nếp — Trọn niềm tin”. Nút chính <b>vàng thếp</b>, phụ là outline sáng.</span></div>
+  </section>
+
+  <!-- ===== 13 FOOTER ===== -->
+  <section class="block" id="s-footer">
+    <div class="block-head"><span class="tag">13</span><h2>Footer</h2></div>
+    <div class="frame" style="background:#1b2740">
+      <div class="row" style="gap:26px">
+        <div class="col stack"><div class="icon-ph" style="background:#2a3550;color:#a9b6cf;width:120px">LOGO + slogan</div><span class="bar w80" style="background:#33405d"></span><span class="bar w60" style="background:#33405d"></span></div>
+        <div class="col stack"><span class="bar sm w60" style="background:#4a577580"></span><span class="bar w70" style="background:#33405d"></span><span class="bar w60" style="background:#33405d"></span><span class="bar w70" style="background:#33405d"></span></div>
+        <div class="col stack"><span class="bar sm w60" style="background:#4a577580"></span><span class="bar w70" style="background:#33405d"></span><span class="bar w60" style="background:#33405d"></span><span class="bar w70" style="background:#33405d"></span></div>
+        <div class="col stack"><span class="bar sm w60" style="background:#4a577580"></span><span class="bar w80" style="background:#33405d"></span><span class="bar w70" style="background:#33405d"></span><span class="bar w50" style="background:#33405d"></span></div>
+      </div>
+    </div>
+    <div class="note"><span class="pen">✎</span><span>Nền <b>chàm #20304C</b>. Cột: Thương hiệu · Sản phẩm · Hỗ trợ · Liên hệ. Dòng cuối: bản quyền + chuyển ngữ Tiếng Việt/English. Viền trên bằng đường <b>hồi văn vàng</b> mảnh.</span></div>
+  </section>
+
+  <div class="foot-note">
+    <span class="serif">Hết wireframe.</span>
+    Nếu bạn duyệt hướng này, tôi sẽ dựng bản high-fidelity hoàn chỉnh và thay cho <code>landing/index.html</code>.<br>
+    Muốn chỉnh gì ở cấu trúc, thứ tự section, palette hay hoạ tiết — cứ nói, tôi sửa trên wireframe trước.
+  </div>
+
+</div>
+</body>
+</html>

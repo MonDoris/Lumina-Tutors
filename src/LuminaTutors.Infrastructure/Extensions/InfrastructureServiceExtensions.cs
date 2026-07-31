@@ -49,6 +49,12 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 
+        // ── Email (SMTP: App Password hoặc Gmail OAuth) ───────────────────────
+        // Chưa cấu hình section "Email" → sender ghi email ra logs/emails thay vì gửi thật.
+        services.AddHttpClient("GmailOAuth", c => c.Timeout = TimeSpan.FromSeconds(20));
+        services.AddSingleton<IGmailTokenProvider, GmailOAuthTokenProvider>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
+
         // ── AI Tutor (Ollama) ─────────────────────────────────────────────────
         services.AddHttpClient("Ollama", client =>
         {
